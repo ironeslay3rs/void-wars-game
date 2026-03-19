@@ -1,23 +1,59 @@
-export const careerScreenData = {
-  eyebrow: "Identity Path",
-  title: "Career",
+export type StatCard = {
+  label: string;
+  value: string;
+  hint: string;
+};
+
+export type CareerSection = {
+  title: string;
+  description: string;
+  body: string;
+};
+
+export type CareerScreenData = {
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+  cards: StatCard[];
+  sections: CareerSection[];
+};
+
+export const careerScreenData: CareerScreenData = {
+  eyebrow: "Void Wars / Career Protocol",
+  title: "Career Systems",
   subtitle:
-    "Shape long-term progression through focused development tracks, future class roles, and strategic specialization.",
+    "Define long-term role identity, specialization direction, and class progression across Bio, Mecha, and Spirit paths.",
+
   cards: [
     {
-      label: "Current Path",
-      value: "Unassigned",
-      hint: "No permanent career lock has been selected yet.",
+      label: "Tracks",
+      value: "03",
+      hint: "Bio / Mecha / Spirit foundations",
     },
     {
-      label: "Focus Tier",
-      value: "Tier 0",
-      hint: "Career depth will unlock as progression systems expand.",
+      label: "Branches",
+      value: "12",
+      hint: "Future specialization routes",
     },
     {
-      label: "Potential",
-      value: "Open",
-      hint: "All evolution-aligned role paths remain available.",
+      label: "Status",
+      value: "Alpha",
+      hint: "First-pass progression shell",
+    },
+  ],
+
+  sections: [
+    {
+      title: "Career Tracks",
+      description:
+        "Reserved for long-term identity choices and specialization branches.",
+      body: "Reserved for role paths, branching commitments, and future class development.",
+    },
+    {
+      title: "Progress Outlook",
+      description:
+        "Forward view of how your role path could evolve over time.",
+      body: "Reserved for synergy forecasting, class milestones, and role unlocks.",
     },
   ],
 };
