@@ -1,23 +1,58 @@
-export const factionsScreenData = {
-  eyebrow: "Alignment Network",
-  title: "Factions",
+export type StatCard = {
+  label: string;
+  value: string;
+  hint: string;
+};
+
+export type FactionsSection = {
+  title: string;
+  description: string;
+  body?: string;
+};
+
+export type FactionsScreenData = {
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+  cards: StatCard[];
+  sections: FactionsSection[];
+};
+
+export const factionsScreenData: FactionsScreenData = {
+  eyebrow: "Void Wars / Faction Protocol",
+  title: "Faction Systems",
   subtitle:
-    "Review the major power blocs shaping the Void, their ideology, and your future standing with each path.",
+    "Track ideological powers, world influence, and standing systems across the evolving conflict.",
+
   cards: [
     {
-      label: "Bio",
-      value: "Neutral",
-      hint: "Predator-growth faction standing is not yet committed.",
+      label: "Blocs",
+      value: "03",
+      hint: "Primary world powers",
     },
     {
-      label: "Mecha",
-      value: "Watching",
-      hint: "Precision-aligned forces are observing your development.",
+      label: "Standings",
+      value: "12",
+      hint: "Planned rank and rep tiers",
     },
     {
-      label: "Spirit",
-      value: "Linked",
-      hint: "Soul-path resonance remains your strongest current alignment.",
+      label: "Status",
+      value: "Alpha",
+      hint: "First-pass faction shell",
+    },
+  ],
+
+  sections: [
+    {
+      title: "Power Blocs",
+      description:
+        "Major ideological forces competing for influence across the evolving world.",
+    },
+    {
+      title: "Faction Standing",
+      description:
+        "Reserved for reputation systems, unlock tiers, and future alliance choices.",
+      body: "Reserved for faction reputation, rank rewards, path loyalty, and alliance consequences.",
     },
   ],
 };

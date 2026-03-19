@@ -1,23 +1,60 @@
-export const inventoryScreenData = {
-  eyebrow: "Resource Control",
-  title: "Inventory",
+export type StatCard = {
+  label: string;
+  value: string;
+  hint: string;
+};
+
+export type InventorySection = {
+  title: string;
+  description: string;
+  body?: string;
+  items?: string[];
+};
+
+export type InventoryScreenData = {
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+  cards: StatCard[];
+  sections: InventorySection[];
+};
+
+export const inventoryScreenData: InventoryScreenData = {
+  eyebrow: "Void Wars / Inventory Protocol",
+  title: "Inventory Systems",
   subtitle:
-    "Manage equipped assets, carry resources, and prepare future loadout systems for combat, crafting, and trade.",
+    "Track equipment, materials, and carried assets across combat, crafting, and gathering loops.",
+
   cards: [
     {
-      label: "Credits",
-      value: "12,450",
-      hint: "Primary soft currency for daily progression and local services.",
+      label: "Tabs",
+      value: "03",
+      hint: "Gear / Materials / Consumables",
     },
     {
-      label: "Void Crystals",
-      value: "350",
-      hint: "Rare progression resource reserved for special systems.",
+      label: "Slots",
+      value: "24",
+      hint: "Planned starter storage grid",
     },
     {
-      label: "Bio Essence",
-      value: "1,180",
-      hint: "Organic adaptation resource used by Bio-aligned systems.",
+      label: "Status",
+      value: "Alpha",
+      hint: "First-pass inventory shell",
+    },
+  ],
+
+  sections: [
+    {
+      title: "Inventory Categories",
+      description:
+        "Core storage groups that organize player items and carried resources.",
+      items: ["Gear", "Materials", "Consumables"],
+    },
+    {
+      title: "Capacity Console",
+      description:
+        "Reserved for slot usage, weight logic, and storage expansion systems.",
+      body: "Reserved for inventory limits, sorting controls, stack rules, and bag expansion progression.",
     },
   ],
 };
