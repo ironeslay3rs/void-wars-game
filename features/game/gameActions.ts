@@ -11,6 +11,10 @@ import {
   processMissionQueue,
   rebuildMissionQueueSchedule,
 } from "@/features/game/gameMissionUtils";
+import {
+  buildNavigationState,
+  getAvailableRoutes,
+} from "@/features/navigation/navigationUtils";
 import type {
   GameAction,
   GameState,
@@ -21,7 +25,7 @@ import type {
 function updateSingleResource(
   resources: ResourcesState,
   key: ResourceKey,
-  amount: number,
+  amount: number
 ) {
   return {
     ...resources,
@@ -60,7 +64,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           resources: updateSingleResource(
             state.player.resources,
             action.payload.key,
-            action.payload.amount,
+            action.payload.amount
           ),
         },
       };
@@ -73,7 +77,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           resources: updateSingleResource(
             state.player.resources,
             action.payload.key,
-            -action.payload.amount,
+            -action.payload.amount
           ),
         },
       };
@@ -82,7 +86,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const rankState = applyRankXp(
         state.player.rankLevel,
         state.player.rankXp,
-        action.payload,
+        action.payload
       );
 
       return {
@@ -90,20 +94,33 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         player: {
           ...state.player,
           ...rankState,
+          navigation: buildNavigationState(
+            rankState.rankLevel,
+            state.player.unlockedRoutes,
+            state.player.navigation.currentRoute
+          ),
         },
       };
     }
 
-    case "SET_RANK_LEVEL":
+    case "SET_RANK_LEVEL": {
+      const nextRankLevel = Math.max(1, action.payload);
+
       return {
         ...state,
         player: {
           ...state.player,
-          rankLevel: Math.max(1, action.payload),
-          rankXpToNext: getXpToNext(Math.max(1, action.payload)),
-          rank: getRankName(Math.max(1, action.payload)),
+          rankLevel: nextRankLevel,
+          rankXpToNext: getXpToNext(nextRankLevel),
+          rank: getRankName(nextRankLevel),
+          navigation: buildNavigationState(
+            nextRankLevel,
+            state.player.unlockedRoutes,
+            state.player.navigation.currentRoute
+          ),
         },
       };
+    }
 
     case "SET_RANK_NAME":
       return {
@@ -180,7 +197,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const removedAt = action.payload.removedAt ?? Date.now();
 
       const filteredQueue = missionQueue.filter(
-        (entry) => entry.queueId !== action.payload.queueId,
+        (entry) => entry.queueId !== action.payload.queueId
       );
 
       if (filteredQueue.length === missionQueue.length) {
@@ -211,7 +228,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         : [];
 
       const claimIndex = missionQueue.findIndex(
-        (entry) => entry.queueId === action.payload.queueId,
+        (entry) => entry.queueId === action.payload.queueId
       );
 
       if (claimIndex === -1) {
@@ -231,7 +248,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           player: {
             ...state.player,
             missionQueue: missionQueue.filter(
-              (queueEntry) => queueEntry.queueId !== entry.queueId,
+              (queueEntry) => queueEntry.queueId !== entry.queueId
             ),
           },
         };
@@ -239,7 +256,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
       const nextPlayer = applyMissionReward(state.player, mission.reward);
       const nextQueue = missionQueue.filter(
-        (queueEntry) => queueEntry.queueId !== entry.queueId,
+        (queueEntry) => queueEntry.queueId !== entry.queueId
       );
 
       return {
@@ -262,14 +279,58 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         },
       };
 
-    case "UNLOCK_ROUTE":
+    case "UNLOCK_ROUTE": {
       if (state.player.unlockedRoutes.includes(action.payload)) return state;
+
+      const nextUnlockedRoutes = [...state.player.unlockedRoutes, action.payload];
 
       return {
         ...state,
         player: {
           ...state.player,
-          unlockedRoutes: [...state.player.unlockedRoutes, action.payload],
+          unlockedRoutes: nextUnlockedRoutes,
+          navigation: buildNavigationState(
+            state.player.rankLevel,
+            nextUnlockedRoutes,
+            state.player.navigation.currentRoute
+          ),
+        },
+      };
+    }
+
+    case "SET_CURRENT_ROUTE": {
+      const availableRoutes = getAvailableRoutes(
+        state.player.rankLevel,
+        state.player.unlockedRoutes
+      );
+
+      if (!availableRoutes.includes(action.payload)) {
+        return state;
+      }
+
+      return {
+        ...state,
+        player: {
+          ...state.player,
+          navigation: {
+            ...state.player.navigation,
+            currentRoute: action.payload,
+            availableRoutes,
+          },
+        },
+      };
+    }
+
+    case "REFRESH_AVAILABLE_ROUTES":
+      return {
+        ...state,
+        player: {
+          ...state.player,
+          navigation: buildNavigationState(
+            state.player.rankLevel,
+            state.player.unlockedRoutes,
+            state.player.navigation.currentRoute
+          ),
         },
       };
 

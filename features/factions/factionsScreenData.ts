@@ -14,6 +14,9 @@ function formatFactionLabel(alignment: GameState["player"]["factionAlignment"]) 
 }
 
 export function getFactionHqsScreenData(state: GameState) {
+  const factionAlignment = formatFactionLabel(state.player.factionAlignment);
+  const isAligned = state.player.factionAlignment !== "unbound";
+
   return {
     eyebrow: "Bazaar / Faction HQs",
     title: "Faction HQs",
@@ -22,7 +25,7 @@ export function getFactionHqsScreenData(state: GameState) {
     cards: [
       {
         label: "Faction Alignment",
-        value: formatFactionLabel(state.player.factionAlignment),
+        value: factionAlignment,
         hint: "Live shared faction state from the global game store.",
       },
       {
@@ -32,8 +35,23 @@ export function getFactionHqsScreenData(state: GameState) {
       },
       {
         label: "Faction Reward Tier",
-        value: state.player.factionAlignment === "unbound" ? "Locked" : "Tier 1",
+        value: isAligned ? "Tier 1" : "Locked",
         hint: "Reward availability now reacts to faction alignment.",
+      },
+    ],
+    sections: [
+      {
+        title: "Aligned Power Centers",
+        description:
+          "Review the known faction networks, identities, and ideological branches currently shaping the bazaar sphere.",
+      },
+      {
+        title: "Faction Operations",
+        description:
+          "Reserved for faction reputation tracks, allegiance perks, contracts, and unlockable command options.",
+        body: isAligned
+          ? `Current alignment detected: ${factionAlignment}. Future faction operations can now branch from this live shared state.`
+          : "No faction alignment detected yet. Choose a path to unlock faction operations, contracts, and deeper progression.",
       },
     ],
   };

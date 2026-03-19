@@ -1,3 +1,8 @@
+import type {
+  NavigationState,
+  RouteNodeId,
+} from "@/features/navigation/navigationTypes";
+
 export type FactionAlignment = "unbound" | "bio" | "mecha" | "spirit";
 export type PathType = Exclude<FactionAlignment, "unbound">;
 
@@ -87,6 +92,7 @@ export type PlayerState = {
 
   knownRecipes: string[];
   unlockedRoutes: string[];
+  navigation: NavigationState;
 
   districtState: DistrictState;
 
@@ -126,6 +132,8 @@ export type GameAction =
   | { type: "CLAIM_MISSION"; payload: { queueId: string; claimedAt?: number } }
   | { type: "ADD_RECIPE"; payload: string }
   | { type: "UNLOCK_ROUTE"; payload: string }
+  | { type: "SET_CURRENT_ROUTE"; payload: RouteNodeId }
+  | { type: "REFRESH_AVAILABLE_ROUTES" }
   | { type: "ADD_INFLUENCE"; payload: number }
   | { type: "SET_FORGE_STATUS"; payload: ForgeStatus }
   | { type: "SET_ARENA_STATUS"; payload: ArenaStatus }

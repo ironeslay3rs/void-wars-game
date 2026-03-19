@@ -1,10 +1,16 @@
+"use client";
+
 import ScreenHeader from "@/components/shared/ScreenHeader";
 import SectionCard from "@/components/shared/SectionCard";
 import PlaceholderPanel from "@/components/shared/PlaceholderPanel";
-import { factionsScreenData } from "@/features/factions/factionsScreenData";
+import { useGame } from "@/features/game/gameContext";
+import { getFactionHqsScreenData } from "@/features/factions/factionsScreenData";
 import { factionData } from "@/features/factions/factionData";
 
 export default function FactionsScreen() {
+  const { state } = useGame();
+  const factionsScreenData = getFactionHqsScreenData(state);
+
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(70,40,110,0.24),_rgba(5,8,20,1)_55%)] px-6 py-10 text-white md:px-10">
       <div className="mx-auto flex max-w-7xl flex-col gap-8">

@@ -1,3 +1,4 @@
+import { buildNavigationState } from "@/features/navigation/navigationUtils";
 import type { GameState } from "@/features/game/gameTypes";
 
 export const initialGameState: GameState = {
@@ -25,7 +26,8 @@ export const initialGameState: GameState = {
     },
 
     knownRecipes: [],
-    unlockedRoutes: ["bazaar-hub"],
+    unlockedRoutes: ["home", "bazaar"],
+    navigation: buildNavigationState(1, ["home", "bazaar"], "home"),
 
     districtState: {
       forgeStatus: "idle",
