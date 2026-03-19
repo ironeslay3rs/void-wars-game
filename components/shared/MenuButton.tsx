@@ -4,12 +4,14 @@ type MenuButtonProps = {
   label: string;
   isPrimary?: boolean;
   href?: string;
+  onClick?: () => void;
 };
 
 export default function MenuButton({
   label,
   isPrimary = false,
   href,
+  onClick,
 }: MenuButtonProps) {
   const className = [
     "group relative flex w-full items-center overflow-hidden rounded-[14px]",
@@ -41,11 +43,11 @@ export default function MenuButton({
 
       <span className="relative z-10">{label}</span>
 
-      <span className="ml-auto relative z-10 h-[10px] w-[10px] rotate-45 border-t border-r border-white/20 group-hover:border-white/40" />
+      <span className="relative z-10 ml-auto h-[10px] w-[10px] rotate-45 border-t border-r border-white/20 group-hover:border-white/40" />
     </>
   );
 
-  if (href) {
+  if (href && !onClick) {
     return (
       <Link href={href} className={className}>
         {content}
@@ -53,5 +55,9 @@ export default function MenuButton({
     );
   }
 
-  return <button className={className}>{content}</button>;
+  return (
+    <button type="button" className={className} onClick={onClick}>
+      {content}
+    </button>
+  );
 }

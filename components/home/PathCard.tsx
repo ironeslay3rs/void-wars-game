@@ -9,6 +9,8 @@ type PathCardProps = {
   icon: string;
   themeKey: ThemeKey;
   tagline?: string;
+  isSelected?: boolean;
+  onClick?: () => void;
 };
 
 export default function PathCard({
@@ -17,11 +19,16 @@ export default function PathCard({
   icon,
   themeKey,
   tagline,
+  isSelected = false,
+  onClick,
 }: PathCardProps) {
   const theme = factionThemes[themeKey];
 
   return (
     <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={isSelected}
       className={[
         "group relative w-full overflow-hidden rounded-[16px] border text-left transition duration-200",
         "shadow-[0_18px_44px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.05)]",
@@ -29,6 +36,9 @@ export default function PathCard({
         theme.border,
         theme.background,
         theme.glow,
+        isSelected
+          ? "scale-[1.01] ring-2 ring-white/25 brightness-110"
+          : "",
       ].join(" ")}
     >
       <div className="pointer-events-none absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
@@ -52,7 +62,14 @@ export default function PathCard({
               {name}
             </div>
 
-            <div className="h-[10px] w-[10px] shrink-0 rotate-45 border-t border-r border-white/25 transition duration-200 group-hover:border-white/50" />
+            <div
+              className={[
+                "h-[10px] w-[10px] shrink-0 rotate-45 border-t border-r transition duration-200",
+                isSelected
+                  ? "border-white/70"
+                  : "border-white/25 group-hover:border-white/50",
+              ].join(" ")}
+            />
           </div>
 
           {tagline ? (
@@ -66,6 +83,12 @@ export default function PathCard({
           <div className="mt-3 max-w-[240px] text-[12px] leading-5 text-slate-200/90 md:text-[13px]">
             {description}
           </div>
+
+          {isSelected ? (
+            <div className="mt-3 text-[10px] font-black uppercase tracking-[0.22em] text-white/80">
+              Selected
+            </div>
+          ) : null}
         </div>
       </div>
 

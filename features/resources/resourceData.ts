@@ -1,25 +1,29 @@
-import { assets } from "@/lib/assets";
+export type ResourceKey = "credits" | "voidCrystals" | "bioEssence";
 
-export const resourceData = [
+export type ResourceMeta = {
+  id: ResourceKey;
+  label: string;
+  icon: string;
+  iconAlt: string;
+};
+
+export const resourceData: ResourceMeta[] = [
   {
     id: "credits",
     label: "Credits",
-    value: "12,450",
-    icon: assets.resources.credits,
-    accent: "gold",
+    icon: "/icons/resources/resource-credits.png",
+    iconAlt: "Credits",
   },
   {
-    id: "void-crystals",
+    id: "voidCrystals",
     label: "Void Crystals",
-    value: "350",
-    icon: assets.resources.voidCrystals,
-    accent: "violet",
+    icon: "/icons/resources/resource-void-crystals.png",
+    iconAlt: "Void Crystals",
   },
   {
-    id: "bio-essence",
+    id: "bioEssence",
     label: "Bio Essence",
-    value: "1,180",
-    icon: assets.resources.bioEssence,
-    accent: "green",
+    icon: "/icons/resources/resource-bio-essence.png",
+    iconAlt: "Bio Essence",
   },
-] as const;
+];
