@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import DamagePopup from "@/components/combat/DamagePopup";
 import { useGame } from "@/features/game/gameContext";
 
 type CombatPhase = "ready" | "victory" | "defeat";
@@ -20,6 +21,8 @@ type MatchRewards = {
   bioSamples: number;
   emberCore: number;
 };
+
+type HitTarget = "player" | "enemy" | null;
 
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
@@ -82,6 +85,8 @@ function getPlayerCombatProfile(
       maxHp: Math.round((340 + levelBonus * 2.2) * conditionScale),
       minDamage: Math.round((28 + rankLevel * 4) * conditionScale),
       maxDamage: Math.round((42 + rankLevel * 5) * conditionScale),
+      critChance: 0.16,
+      critMultiplier: 1.45,
       title: "Adaptive Hunter",
     };
   }
@@ -91,6 +96,8 @@ function getPlayerCombatProfile(
       maxHp: Math.round((360 + levelBonus * 2.4) * conditionScale),
       minDamage: Math.round((24 + rankLevel * 4) * conditionScale),
       maxDamage: Math.round((46 + rankLevel * 5) * conditionScale),
+      critChance: 0.14,
+      critMultiplier: 1.5,
       title: "Synod Duelist",
     };
   }
@@ -100,6 +107,8 @@ function getPlayerCombatProfile(
       maxHp: Math.round((320 + levelBonus * 2.1) * conditionScale),
       minDamage: Math.round((30 + rankLevel * 4) * conditionScale),
       maxDamage: Math.round((48 + rankLevel * 5) * conditionScale),
+      critChance: 0.18,
+      critMultiplier: 1.4,
       title: "Ember Channeler",
     };
   }
@@ -108,6 +117,8 @@ function getPlayerCombatProfile(
     maxHp: Math.round((330 + levelBonus * 2.1) * conditionScale),
     minDamage: Math.round((22 + rankLevel * 3) * conditionScale),
     maxDamage: Math.round((36 + rankLevel * 4) * conditionScale),
+    critChance: 0.1,
+    critMultiplier: 1.35,
     title: "Unbound Drifter",
   };
 }
@@ -118,6 +129,8 @@ function getEnemyCombatProfile(rankLevel: number) {
     maxHp: 360 + rankLevel * 34,
     minDamage: 20 + rankLevel * 4,
     maxDamage: 34 + rankLevel * 5,
+    critChance: 0.08,
+    critMultiplier: 1.35,
   };
 }
 
@@ -125,6 +138,24 @@ function getRandomInt(min: number, max: number) {
   const low = Math.ceil(min);
   const high = Math.floor(max);
   return Math.floor(Math.random() * (high - low + 1)) + low;
+}
+
+function rollDamage(
+  minDamage: number,
+  maxDamage: number,
+  critChance: number,
+  critMultiplier: number,
+) {
+  const baseDamage = getRandomInt(minDamage, maxDamage);
+  const isCrit = Math.random() < critChance;
+  const finalDamage = isCrit
+    ? Math.round(baseDamage * critMultiplier)
+    : baseDamage;
+
+  return {
+    damage: finalDamage,
+    isCrit,
+  };
 }
 
 function getMatchRewards(
@@ -215,6 +246,8 @@ export default function ArenaMatchPage() {
     [player.factionAlignment, player.rankLevel, player.condition],
   );
 
+  const logIdRef = useRef(2);
+
   const [playerHp, setPlayerHp] = useState(playerProfile.maxHp);
   const [enemyHp, setEnemyHp] = useState(enemyProfile.maxHp);
   const [phase, setPhase] = useState<CombatPhase>("ready");
@@ -225,14 +258,42 @@ export default function ArenaMatchPage() {
       text: `Combat link established. ${player.playerName} enters the arena against ${enemyProfile.name}.`,
     },
   ]);
-  const [logId, setLogId] = useState(2);
+
+  const [lastHitTarget, setLastHitTarget] = useState<HitTarget>(null);
+  const [lastHitValue, setLastHitValue] = useState(0);
+  const [lastHitCrit, setLastHitCrit] = useState(false);
 
   const playerHpPercent = clamp((playerHp / playerProfile.maxHp) * 100, 0, 100);
   const enemyHpPercent = clamp((enemyHp / enemyProfile.maxHp) * 100, 0, 100);
 
+  useEffect(() => {
+    if (!lastHitTarget) return;
+
+    const timeout = window.setTimeout(() => {
+      setLastHitTarget(null);
+      setLastHitValue(0);
+      setLastHitCrit(false);
+    }, 800);
+
+    return () => window.clearTimeout(timeout);
+  }, [lastHitTarget]);
+
+  function getNextLogId() {
+    const nextId = logIdRef.current;
+    logIdRef.current += 1;
+    return nextId;
+  }
+
   function pushLog(text: string) {
-    setCombatLog((current) => [{ id: logId, text }, ...current].slice(0, 8));
-    setLogId((current) => current + 1);
+    setCombatLog((current) =>
+      [{ id: getNextLogId(), text }, ...current].slice(0, 8),
+    );
+  }
+
+  function showHit(target: HitTarget, value: number, crit: boolean) {
+    setLastHitTarget(target);
+    setLastHitValue(value);
+    setLastHitCrit(crit);
   }
 
   function resetCombat() {
@@ -240,26 +301,41 @@ export default function ArenaMatchPage() {
     setEnemyHp(enemyProfile.maxHp);
     setPhase("ready");
     setRewardsClaimed(false);
+    setLastHitTarget(null);
+    setLastHitValue(0);
+    setLastHitCrit(false);
     setCombatLog([
       {
-        id: logId,
+        id: getNextLogId(),
         text: `Arena reset complete. ${enemyProfile.name} re-enters the combat shard.`,
       },
     ]);
-    setLogId((current) => current + 1);
   }
 
   function handleAttack() {
     if (phase !== "ready") return;
 
-    const playerDamage = getRandomInt(
+    const playerHit = rollDamage(
       playerProfile.minDamage,
       playerProfile.maxDamage,
+      playerProfile.critChance,
+      playerProfile.critMultiplier,
     );
-    const nextEnemyHp = clamp(enemyHp - playerDamage, 0, enemyProfile.maxHp);
 
-    pushLog(`${player.playerName} deals ${playerDamage} damage to ${enemyProfile.name}.`);
+    const nextEnemyHp = clamp(
+      enemyHp - playerHit.damage,
+      0,
+      enemyProfile.maxHp,
+    );
+
+    pushLog(
+      playerHit.isCrit
+        ? `${player.playerName} lands a critical strike for ${playerHit.damage} damage on ${enemyProfile.name}.`
+        : `${player.playerName} deals ${playerHit.damage} damage to ${enemyProfile.name}.`,
+    );
+
     setEnemyHp(nextEnemyHp);
+    showHit("enemy", playerHit.damage, playerHit.isCrit);
 
     if (nextEnemyHp <= 0) {
       setPhase("victory");
@@ -267,14 +343,27 @@ export default function ArenaMatchPage() {
       return;
     }
 
-    const enemyDamage = getRandomInt(
+    const enemyHit = rollDamage(
       enemyProfile.minDamage,
       enemyProfile.maxDamage,
+      enemyProfile.critChance,
+      enemyProfile.critMultiplier,
     );
-    const nextPlayerHp = clamp(playerHp - enemyDamage, 0, playerProfile.maxHp);
 
-    pushLog(`${enemyProfile.name} counters for ${enemyDamage} damage.`);
+    const nextPlayerHp = clamp(
+      playerHp - enemyHit.damage,
+      0,
+      playerProfile.maxHp,
+    );
+
+    pushLog(
+      enemyHit.isCrit
+        ? `${enemyProfile.name} lands a critical counter for ${enemyHit.damage} damage.`
+        : `${enemyProfile.name} counters for ${enemyHit.damage} damage.`,
+    );
+
     setPlayerHp(nextPlayerHp);
+    showHit("player", enemyHit.damage, enemyHit.isCrit);
 
     if (nextPlayerHp <= 0) {
       setPhase("defeat");
@@ -361,10 +450,18 @@ export default function ArenaMatchPage() {
             <div className="grid gap-6 lg:grid-cols-2">
               <section
                 className={[
-                  "rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(18,18,28,0.92),rgba(8,10,16,0.97))] p-6",
+                  "relative rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(18,18,28,0.92),rgba(8,10,16,0.97))] p-6",
                   accent.glow,
                 ].join(" ")}
               >
+                {lastHitTarget === "player" && (
+                  <DamagePopup
+                    value={lastHitValue}
+                    crit={lastHitCrit}
+                    variant="player"
+                  />
+                )}
+
                 <div className="flex items-center justify-between gap-4">
                   <div>
                     <div className="text-[10px] uppercase tracking-[0.24em] text-white/40">
@@ -430,7 +527,7 @@ export default function ArenaMatchPage() {
                   <div className="mt-3 h-4 overflow-hidden rounded-full border border-white/10 bg-white/5">
                     <div
                       className={[
-                        "h-full rounded-full bg-gradient-to-r",
+                        "h-full rounded-full bg-gradient-to-r transition-all duration-300",
                         accent.playerBar,
                       ].join(" ")}
                       style={{ width: `${playerHpPercent}%` }}
@@ -439,7 +536,15 @@ export default function ArenaMatchPage() {
                 </div>
               </section>
 
-              <section className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(18,18,28,0.92),rgba(8,10,16,0.97))] p-6 shadow-[0_0_30px_rgba(255,255,255,0.04)]">
+              <section className="relative rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(18,18,28,0.92),rgba(8,10,16,0.97))] p-6 shadow-[0_0_30px_rgba(255,255,255,0.04)]">
+                {lastHitTarget === "enemy" && (
+                  <DamagePopup
+                    value={lastHitValue}
+                    crit={lastHitCrit}
+                    variant="enemy"
+                  />
+                )}
+
                 <div className="flex items-center justify-between gap-4">
                   <div>
                     <div className="text-[10px] uppercase tracking-[0.24em] text-white/40">
@@ -500,7 +605,7 @@ export default function ArenaMatchPage() {
                   <div className="mt-3 h-4 overflow-hidden rounded-full border border-white/10 bg-white/5">
                     <div
                       className={[
-                        "h-full rounded-full bg-gradient-to-r",
+                        "h-full rounded-full bg-gradient-to-r transition-all duration-300",
                         accent.enemyBar,
                       ].join(" ")}
                       style={{ width: `${enemyHpPercent}%` }}

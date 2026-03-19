@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import ScreenHeader from "@/components/shared/ScreenHeader";
 import SectionCard from "@/components/shared/SectionCard";
 import { useGame } from "@/features/game/gameContext";
@@ -78,25 +79,43 @@ function formatRewardLabel(key: string) {
   }
 }
 
-function formatTimeRemaining(endsAt: number) {
-  const remainingMs = Math.max(0, endsAt - Date.now());
+function formatCountdown(targetTime: number, now: number, prefix: string) {
+  const remainingMs = Math.max(0, targetTime - now);
   const totalSeconds = Math.floor(remainingMs / 1000);
 
   if (totalSeconds < 60) {
-    return `${totalSeconds}s remaining`;
+    return `${prefix} ${totalSeconds}s`;
   }
 
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
 
   if (minutes < 60) {
-    return `${minutes}m ${seconds}s remaining`;
+    return `${prefix} ${minutes}m ${seconds}s`;
   }
 
   const hours = Math.floor(minutes / 60);
   const remainingMinutes = minutes % 60;
 
-  return `${hours}h ${remainingMinutes}m remaining`;
+  return `${prefix} ${hours}h ${remainingMinutes}m`;
+}
+
+function getQueueStatus(entry: MissionQueueEntry, now: number) {
+  if (now < entry.startsAt) {
+    return "queued";
+  }
+
+  return "active";
+}
+
+function getQueueStatusLabel(entry: MissionQueueEntry, now: number) {
+  const status = getQueueStatus(entry, now);
+
+  if (status === "queued") {
+    return formatCountdown(entry.startsAt, now, "Starts in");
+  }
+
+  return formatCountdown(entry.endsAt, now, "Ends in");
 }
 
 function StatCard({
@@ -123,6 +142,15 @@ function StatCard({
 
 export default function MissionsScreen() {
   const { state, dispatch } = useGame();
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setNow(Date.now());
+    }, 1000);
+
+    return () => window.clearInterval(interval);
+  }, []);
 
   const missionQueue = Array.isArray(state.player.missionQueue)
     ? state.player.missionQueue
@@ -145,14 +173,14 @@ export default function MissionsScreen() {
 
       return acc;
     },
-    []
+    [],
   );
 
-  const completedEntries = queuedEntries.filter(
-    (entry) => entry.completedAt !== null
+  const inProgressEntries = queuedEntries.filter(
+    (entry) => now >= entry.startsAt && now < entry.endsAt,
   );
 
-  const activeEntries = queuedEntries.filter((entry) => entry.completedAt === null);
+  const pendingEntries = queuedEntries.filter((entry) => now < entry.startsAt);
 
   const availableMissions = state.missions.filter((mission) => {
     if (mission.path === "neutral") return true;
@@ -177,12 +205,12 @@ export default function MissionsScreen() {
           <StatCard
             label="Queue"
             value={`${missionQueue.length}/${state.player.maxMissionQueueSlots}`}
-            hint="Active or pending operations in your queue."
+            hint="Operations currently running or waiting in line."
           />
           <StatCard
-            label="Claimable"
-            value={`${completedEntries.length}`}
-            hint="Completed missions waiting for reward claim."
+            label="In Progress"
+            value={`${inProgressEntries.length}`}
+            hint="Active missions auto-complete and auto-reward."
             valueClassName="text-emerald-300"
           />
           <StatCard
@@ -210,7 +238,7 @@ export default function MissionsScreen() {
                 const isQueued = queuedMissionIds.has(mission.id);
 
                 const resourceRewards = Object.entries(
-                  mission.reward.resources ?? {}
+                  mission.reward.resources ?? {},
                 ).filter(([, value]) => typeof value === "number" && value !== 0);
 
                 return (
@@ -323,7 +351,7 @@ export default function MissionsScreen() {
             <div className="flex flex-col gap-6">
               <SectionCard
                 title="Operations"
-                description="Your queue, claims, and current progression status."
+                description="Your queue updates in real time and rewards resolve automatically."
               >
                 <div className="space-y-3">
                   {queuedEntries.length === 0 ? (
@@ -332,7 +360,8 @@ export default function MissionsScreen() {
                     </div>
                   ) : (
                     queuedEntries.map((entry) => {
-                      const isCompleted = entry.completedAt !== null;
+                      const status = getQueueStatus(entry, now);
+                      const isActive = status === "active";
 
                       return (
                         <div
@@ -345,52 +374,35 @@ export default function MissionsScreen() {
                                 {entry.mission.title}
                               </div>
                               <div className="mt-1 text-xs text-white/50">
-                                {isCompleted
-                                  ? "Completed — ready to claim"
-                                  : formatTimeRemaining(entry.endsAt)}
+                                {getQueueStatusLabel(entry, now)}
                               </div>
                             </div>
 
                             <span
                               className={[
                                 "rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.15em]",
-                                isCompleted
+                                isActive
                                   ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-200"
                                   : "border-cyan-500/25 bg-cyan-500/10 text-cyan-200",
                               ].join(" ")}
                             >
-                              {isCompleted ? "Claimable" : "Queued"}
+                              {isActive ? "Active" : "Queued"}
                             </span>
                           </div>
 
                           <div className="mt-3 flex gap-2">
-                            {isCompleted ? (
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  dispatch({
-                                    type: "CLAIM_MISSION",
-                                    payload: { queueId: entry.queueId },
-                                  })
-                                }
-                                className="w-full rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-emerald-100 transition hover:border-emerald-400/45 hover:bg-emerald-500/15"
-                              >
-                                Claim Rewards
-                              </button>
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  dispatch({
-                                    type: "REMOVE_QUEUED_MISSION",
-                                    payload: { queueId: entry.queueId },
-                                  })
-                                }
-                                className="w-full rounded-xl border border-red-500/25 bg-red-500/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-red-100 transition hover:border-red-400/45 hover:bg-red-500/15"
-                              >
-                                Remove
-                              </button>
-                            )}
+                            <button
+                              type="button"
+                              onClick={() =>
+                                dispatch({
+                                  type: "REMOVE_QUEUED_MISSION",
+                                  payload: { queueId: entry.queueId },
+                                })
+                              }
+                              className="w-full rounded-xl border border-red-500/25 bg-red-500/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-red-100 transition hover:border-red-400/45 hover:bg-red-500/15"
+                            >
+                              Remove
+                            </button>
                           </div>
                         </div>
                       );
@@ -401,7 +413,7 @@ export default function MissionsScreen() {
 
               <SectionCard
                 title="Progress Snapshot"
-                description="Quick read on what missions are feeding right now."
+                description="Quick read on what your mission loop is feeding right now."
               >
                 <div className="space-y-3">
                   <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
@@ -425,7 +437,7 @@ export default function MissionsScreen() {
                       {state.player.condition}/100
                     </div>
                     <div className="mt-1 text-sm text-white/55">
-                      Queue pressure turns condition into progression.
+                      Timed operations convert pressure into progression.
                     </div>
                   </div>
 
@@ -438,13 +450,13 @@ export default function MissionsScreen() {
                       {state.player.influence} Influence
                     </div>
                     <div className="mt-1 text-sm text-white/55">
-                      Claims convert completed runs into long-term growth.
+                      Completed missions now reward automatically when timers end.
                     </div>
                   </div>
 
                   <div className="rounded-2xl border border-dashed border-white/10 p-4 text-sm text-white/50">
-                    Active queue: {activeEntries.length} · Claimable:{" "}
-                    {completedEntries.length}
+                    Active queue: {inProgressEntries.length} · Pending:{" "}
+                    {pendingEntries.length}
                   </div>
                 </div>
               </SectionCard>

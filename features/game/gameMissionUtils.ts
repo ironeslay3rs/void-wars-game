@@ -1,3 +1,4 @@
+import { buildNavigationState } from "@/features/navigation/navigationUtils";
 import type {
   GameState,
   MissionDefinition,
@@ -87,6 +88,11 @@ export function applyMissionReward(
     condition: clamp(player.condition + reward.conditionDelta, 0, 100),
     influence: Math.max(0, player.influence + (reward.influence ?? 0)),
     resources: addPartialResources(player.resources, reward.resources),
+    navigation: buildNavigationState(
+      rankState.rankLevel,
+      player.unlockedRoutes,
+      player.navigation.currentRoute,
+    ),
   };
 }
 
@@ -136,7 +142,15 @@ export function rebuildMissionQueueSchedule(params: {
       return entry;
     }
 
-    const startsAt = anchorTime;
+    const isAlreadyFinished = entry.endsAt <= now;
+    const isCurrentlyActive = entry.startsAt <= now && now < entry.endsAt;
+
+    if (isAlreadyFinished || isCurrentlyActive) {
+      anchorTime = entry.endsAt;
+      return entry;
+    }
+
+    const startsAt = Math.max(anchorTime, now);
     const endsAt = startsAt + getMissionDurationMs(mission);
 
     const nextEntry: MissionQueueEntry = {
@@ -179,7 +193,8 @@ export function getCompletedMissionQueueEntry(
   return (
     safeQueue.find(
       (entry) =>
-        entry.completedAt !== null || (entry.endsAt <= now && entry.completedAt === null),
+        entry.completedAt !== null ||
+        (entry.endsAt <= now && entry.completedAt === null),
     ) ?? null
   );
 }
@@ -189,22 +204,45 @@ export function processMissionQueue(state: GameState, now: number): GameState {
     ? state.player.missionQueue
     : [];
 
-  const nextQueue = safeQueue.map((entry, index) => {
-    if (index !== 0) return entry;
-    if (entry.completedAt !== null) return entry;
-    if (entry.endsAt > now) return entry;
+  if (safeQueue.length === 0) {
+    return state;
+  }
 
-    return {
-      ...entry,
-      completedAt: now,
-    };
-  });
+  let nextPlayer = state.player;
+  let playerChanged = false;
+  let queueChanged = false;
+
+  const remainingQueue: MissionQueueEntry[] = [];
+
+  for (const entry of safeQueue) {
+    const isFinished = entry.endsAt <= now;
+
+    if (!isFinished) {
+      remainingQueue.push(entry);
+      continue;
+    }
+
+    queueChanged = true;
+
+    const mission = getMissionById(state.missions, entry.missionId);
+
+    if (!mission) {
+      continue;
+    }
+
+    nextPlayer = applyMissionReward(nextPlayer, mission.reward);
+    playerChanged = true;
+  }
+
+  if (!queueChanged && !playerChanged) {
+    return state;
+  }
 
   return {
     ...state,
     player: {
-      ...state.player,
-      missionQueue: nextQueue,
+      ...nextPlayer,
+      missionQueue: remainingQueue,
     },
   };
 }

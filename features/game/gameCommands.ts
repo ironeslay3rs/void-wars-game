@@ -7,24 +7,24 @@ type PathSelection = Exclude<FactionAlignment, "unbound">;
 
 export function selectFactionPath(
   dispatch: React.Dispatch<GameAction>,
-  path: PathSelection
+  path: PathSelection,
 ) {
   dispatch({ type: "SET_FACTION_ALIGNMENT", payload: path });
 }
 
 export function unlockRoute(
   dispatch: React.Dispatch<GameAction>,
-  route: string
+  route: string,
 ) {
   dispatch({ type: "UNLOCK_ROUTE", payload: route });
 }
 
 export function chargeTeleportGate(dispatch: React.Dispatch<GameAction>) {
-  dispatch({ type: "SET_GATE_STATUS", payload: "charging" });
+  dispatch({ type: "SET_GATE_STATUS", payload: "traveling" });
 }
 
 export function openTeleportGate(dispatch: React.Dispatch<GameAction>) {
-  dispatch({ type: "SET_GATE_STATUS", payload: "open" });
+  dispatch({ type: "SET_GATE_STATUS", payload: "available" });
   dispatch({ type: "UNLOCK_ROUTE", payload: "/bazaar/teleport-gate" });
 }
 

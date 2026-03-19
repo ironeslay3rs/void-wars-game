@@ -25,7 +25,7 @@ import type {
 function updateSingleResource(
   resources: ResourcesState,
   key: ResourceKey,
-  amount: number
+  amount: number,
 ) {
   return {
     ...resources,
@@ -64,7 +64,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           resources: updateSingleResource(
             state.player.resources,
             action.payload.key,
-            action.payload.amount
+            action.payload.amount,
           ),
         },
       };
@@ -77,7 +77,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           resources: updateSingleResource(
             state.player.resources,
             action.payload.key,
-            -action.payload.amount
+            -action.payload.amount,
           ),
         },
       };
@@ -86,7 +86,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const rankState = applyRankXp(
         state.player.rankLevel,
         state.player.rankXp,
-        action.payload
+        action.payload,
       );
 
       return {
@@ -97,7 +97,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           navigation: buildNavigationState(
             rankState.rankLevel,
             state.player.unlockedRoutes,
-            state.player.navigation.currentRoute
+            state.player.navigation.currentRoute,
           ),
         },
       };
@@ -116,7 +116,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           navigation: buildNavigationState(
             nextRankLevel,
             state.player.unlockedRoutes,
-            state.player.navigation.currentRoute
+            state.player.navigation.currentRoute,
           ),
         },
       };
@@ -172,7 +172,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
       const queuedAt = action.payload.queuedAt ?? Date.now();
       const lastEntry = missionQueue[missionQueue.length - 1] ?? null;
-      const anchorTime = lastEntry ? Math.max(queuedAt, lastEntry.endsAt) : queuedAt;
+      const anchorTime = lastEntry
+        ? Math.max(queuedAt, lastEntry.endsAt)
+        : queuedAt;
 
       const nextEntry = buildMissionQueueEntry({
         mission,
@@ -197,7 +199,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const removedAt = action.payload.removedAt ?? Date.now();
 
       const filteredQueue = missionQueue.filter(
-        (entry) => entry.queueId !== action.payload.queueId
+        (entry) => entry.queueId !== action.payload.queueId,
       );
 
       if (filteredQueue.length === missionQueue.length) {
@@ -228,7 +230,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         : [];
 
       const claimIndex = missionQueue.findIndex(
-        (entry) => entry.queueId === action.payload.queueId
+        (entry) => entry.queueId === action.payload.queueId,
       );
 
       if (claimIndex === -1) {
@@ -248,7 +250,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           player: {
             ...state.player,
             missionQueue: missionQueue.filter(
-              (queueEntry) => queueEntry.queueId !== entry.queueId
+              (queueEntry) => queueEntry.queueId !== entry.queueId,
             ),
           },
         };
@@ -256,7 +258,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
       const nextPlayer = applyMissionReward(state.player, mission.reward);
       const nextQueue = missionQueue.filter(
-        (queueEntry) => queueEntry.queueId !== entry.queueId
+        (queueEntry) => queueEntry.queueId !== entry.queueId,
       );
 
       return {
@@ -292,7 +294,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           navigation: buildNavigationState(
             state.player.rankLevel,
             nextUnlockedRoutes,
-            state.player.navigation.currentRoute
+            state.player.navigation.currentRoute,
           ),
         },
       };
@@ -301,7 +303,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     case "SET_CURRENT_ROUTE": {
       const availableRoutes = getAvailableRoutes(
         state.player.rankLevel,
-        state.player.unlockedRoutes
+        state.player.unlockedRoutes,
       );
 
       if (!availableRoutes.includes(action.payload)) {
@@ -329,7 +331,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           navigation: buildNavigationState(
             state.player.rankLevel,
             state.player.unlockedRoutes,
-            state.player.navigation.currentRoute
+            state.player.navigation.currentRoute,
           ),
         },
       };
