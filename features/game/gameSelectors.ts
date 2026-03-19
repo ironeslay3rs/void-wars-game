@@ -28,7 +28,7 @@ export function canAccessTeleportGate(state: GameState) {
 export function canContinueGame(state: GameState) {
   return (
     hasChosenPath(state) ||
-    state.player.level > 1 ||
+    state.player.rankLevel > 1 ||
     state.player.influence > 0 ||
     state.player.knownRecipes.length > 0 ||
     hasUnlockedRoutes(state) ||

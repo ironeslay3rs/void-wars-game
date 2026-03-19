@@ -24,12 +24,32 @@ export type ResourcesState = Record<ResourceKey, number>;
    DISTRICT STATES
 ========================= */
 
-export type ForgeStatus = "idle" | "active" | "locked";
+export type ForgeStatus =
+  | "idle"
+  | "crafting"
+  | "complete"
+  | "active"
+  | "locked";
+
 export type ArenaStatus = "open" | "closed" | "locked";
-export type MechaStatus = "stable" | "unstable" | "locked";
+
+export type MechaStatus =
+  | "stable"
+  | "upgrading"
+  | "ready"
+  | "unstable"
+  | "locked";
+
 export type MutationState = "dormant" | "active" | "critical";
 export type AttunementState = "unbound" | "resonating" | "awakened";
-export type GateStatus = "sealed" | "available" | "traveling";
+
+export type GateStatus =
+  | "sealed"
+  | "available"
+  | "traveling"
+  | "standby"
+  | "charging"
+  | "open";
 
 export type DistrictState = {
   forgeStatus: ForgeStatus;
