@@ -1,12 +1,12 @@
 "use client";
 
-import BottomNav from "@/components/layout/BottomNav";
+import FactionPathPanel from "@/components/home/FactionPathPanel";
 import ResourceBar from "@/components/layout/ResourceBar";
+import BottomNav from "@/components/layout/BottomNav";
+import MissionPanel from "@/components/home/MissionPanel";
+
 import { useGame } from "@/features/game/gameContext";
 import type { FactionAlignment } from "@/features/game/gameTypes";
-import ConditionWidget from "@/components/home/ConditionWidget";
-import FactionPathPanel from "@/components/home/FactionPathPanel";
-import MissionPanel from "@/components/home/MissionPanel";
 
 function getSelectedPath(alignment: FactionAlignment) {
   return alignment === "unbound" ? null : alignment;
@@ -30,26 +30,12 @@ export default function HomeHudClient() {
         />
       </section>
 
-      {/* CONDITION / STATUS */}
-      <section className="absolute right-8 top-[420px] z-30 w-[320px] xl:w-[360px]">
-        <ConditionWidget
-          path={getSelectedPath(state.player.factionAlignment)}
-          rank={state.player.rank}
-          rankLevel={state.player.rankLevel}
-          rankXp={state.player.rankXp}
-          rankXpToNext={state.player.rankXpToNext}
-          condition={state.player.condition}
-          masteryProgress={state.player.masteryProgress}
-        />
-      </section>
-
-      {/* RESOURCE BAR */}
-      <section className="absolute inset-x-8 bottom-20 z-30">
+      {/* BOTTOM */}
+      <section className="absolute inset-x-8 bottom-16 z-30">
         <ResourceBar values={state.player.resources} />
       </section>
 
-      {/* BOTTOM NAV */}
-      <section className="absolute inset-x-8 bottom-4 z-30">
+      <section className="absolute inset-x-8 bottom-3 z-30">
         <BottomNav />
       </section>
     </>

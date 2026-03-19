@@ -2,87 +2,97 @@
 
 import {
   createContext,
-  ReactNode,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
   useReducer,
   useState,
+  type ReactNode,
 } from "react";
-import { completeMission, selectPath, startMission } from "./gameActions";
-import { initialGameState } from "./initialGameState";
-import { clearGameState, loadGameState, saveGameState } from "./gameStorage";
-import { PathType, PlayerState } from "./gameTypes";
+import { gameReducer } from "@/features/game/gameActions";
+import { initialGameState } from "@/features/game/initialGameState";
+import { loadGameState, saveGameState } from "@/features/game/gameStorage";
+import type {
+  FactionAlignment,
+  GameAction,
+  GameState,
+} from "@/features/game/gameTypes";
 
-type GameAction =
-  | { type: "SELECT_PATH"; payload: PathType }
-  | { type: "START_MISSION"; payload: string }
-  | { type: "COMPLETE_MISSION"; payload: string }
-  | { type: "LOAD_STATE"; payload: PlayerState }
-  | { type: "RESET_GAME" };
+type PathSelection = Exclude<FactionAlignment, "unbound">;
 
 type GameContextValue = {
-  state: PlayerState;
+  state: GameState;
+  dispatch: React.Dispatch<GameAction>;
+  selectPath: (path: PathSelection) => void;
   resetGame: () => void;
-  selectPath: (path: PathType) => void;
-  startMission: (missionId: string) => void;
-  completeMission: (missionId: string) => void;
 };
 
 const GameContext = createContext<GameContextValue | null>(null);
 
-function reducer(state: PlayerState, action: GameAction): PlayerState {
-  switch (action.type) {
-    case "SELECT_PATH":
-      return selectPath(state, action.payload);
-    case "START_MISSION":
-      return startMission(state, action.payload);
-    case "COMPLETE_MISSION":
-      return completeMission(state, action.payload);
-    case "LOAD_STATE":
-      return action.payload;
-    case "RESET_GAME":
-      return initialGameState;
-    default:
-      return state;
-  }
-}
-
 export function GameProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(reducer, initialGameState);
-  const [hasLoadedStorage, setHasLoadedStorage] = useState(false);
+  const [hasHydratedFromStorage, setHasHydratedFromStorage] = useState(false);
+  const [state, dispatch] = useReducer(gameReducer, initialGameState);
 
   useEffect(() => {
     const savedState = loadGameState();
 
     if (savedState) {
-      dispatch({ type: "LOAD_STATE", payload: savedState });
+      dispatch({
+        type: "HYDRATE_STATE",
+        payload: savedState,
+      });
     }
 
-    setHasLoadedStorage(true);
+    setHasHydratedFromStorage(true);
   }, []);
 
   useEffect(() => {
-    if (!hasLoadedStorage) return;
+    if (!hasHydratedFromStorage) return;
 
+    dispatch({
+      type: "PROCESS_MISSION_QUEUE",
+      payload: { now: Date.now() },
+    });
+  }, [hasHydratedFromStorage]);
+
+  useEffect(() => {
+    if (!hasHydratedFromStorage) return;
     saveGameState(state);
-  }, [state, hasLoadedStorage]);
+  }, [state, hasHydratedFromStorage]);
+
+  useEffect(() => {
+    if (!hasHydratedFromStorage) return;
+
+    const interval = window.setInterval(() => {
+      dispatch({
+        type: "PROCESS_MISSION_QUEUE",
+        payload: { now: Date.now() },
+      });
+    }, 1000);
+
+    return () => window.clearInterval(interval);
+  }, [hasHydratedFromStorage]);
+
+  const selectPath = useCallback((path: PathSelection) => {
+    dispatch({
+      type: "SET_FACTION_ALIGNMENT",
+      payload: path,
+    });
+  }, []);
+
+  const resetGame = useCallback(() => {
+    dispatch({ type: "RESET_GAME" });
+  }, []);
 
   const value = useMemo(
     () => ({
       state,
-      resetGame: () => {
-        clearGameState();
-        dispatch({ type: "RESET_GAME" });
-      },
-      selectPath: (path: PathType) =>
-        dispatch({ type: "SELECT_PATH", payload: path }),
-      startMission: (missionId: string) =>
-        dispatch({ type: "START_MISSION", payload: missionId }),
-      completeMission: (missionId: string) =>
-        dispatch({ type: "COMPLETE_MISSION", payload: missionId }),
+      dispatch,
+      selectPath,
+      resetGame,
     }),
-    [state]
+    [state, selectPath, resetGame],
   );
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
@@ -92,7 +102,7 @@ export function useGame() {
   const context = useContext(GameContext);
 
   if (!context) {
-    throw new Error("useGame must be used inside GameProvider");
+    throw new Error("useGame must be used within a GameProvider");
   }
 
   return context;

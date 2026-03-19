@@ -1,54 +1,32 @@
-import { PlayerState } from "./gameTypes";
+import type { PlayerState } from "@/features/game/gameTypes";
 
-export function hasMeaningfulProgress(state: PlayerState): boolean {
-  const hasCompletedMission = state.missions.some(
-    (mission) => mission.status === "completed"
-  );
-
-  const hasActiveMission = state.missions.some(
-    (mission) => mission.status === "active"
-  );
-
-  const hasNonStarterInventory = state.inventory.some(
-    (item) => item.id !== "starter-ration"
-  );
-
-  const hasAdvancedDistricts = state.unlockedDistricts.length > 1;
+export function hasMeaningfulProgress(player: PlayerState): boolean {
+  const hasChosenPath = player.factionAlignment !== "unbound";
+  const hasAdvancedLevel = player.level > 1;
+  const hasInfluence = player.influence > 0;
+  const hasRecipes = player.knownRecipes.length > 0;
+  const hasUnlockedRoutes = player.unlockedRoutes.length > 0;
+  const gateMoved = player.districtState.gateStatus !== "standby";
+  const arenaMoved = player.districtState.arenaStatus !== "locked";
 
   return (
-    state.path !== null ||
-    hasCompletedMission ||
-    hasActiveMission ||
-    hasNonStarterInventory ||
-    hasAdvancedDistricts ||
-    state.rankLevel > 1 ||
-    state.rankXp > 0
+    hasChosenPath ||
+    hasAdvancedLevel ||
+    hasInfluence ||
+    hasRecipes ||
+    hasUnlockedRoutes ||
+    gateMoved ||
+    arenaMoved
   );
 }
 
-export function getContinueRoute(state: PlayerState): string {
-  if (state.activeMissionId) {
-    return "/missions";
-  }
+export function getContinueRoute(player: PlayerState): string {
+  const hasTeleportRoute =
+    player.unlockedRoutes.includes("/bazaar/teleport-gate") ||
+    player.unlockedRoutes.includes("teleport-gate");
 
-  const hasAvailableMission = state.missions.some(
-    (mission) => mission.status === "available"
-  );
-
-  const hasCompletedMission = state.missions.some(
-    (mission) => mission.status === "completed"
-  );
-
-  if (hasAvailableMission || hasCompletedMission) {
-    return "/missions";
-  }
-
-  if (state.rankLevel > 1 || state.rankXp > 0) {
-    return "/status";
-  }
-
-  if (state.path) {
-    return "/missions";
+  if (hasTeleportRoute || player.districtState.gateStatus !== "standby") {
+    return "/bazaar/teleport-gate";
   }
 
   return "/";

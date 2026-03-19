@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 type MenuButtonProps = {
   label: string;
@@ -7,49 +10,79 @@ type MenuButtonProps = {
   onClick?: () => void;
 };
 
+function getIsActive(pathname: string, href?: string) {
+  if (!href) return false;
+  if (href === "/") return pathname === "/";
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
 export default function MenuButton({
   label,
   isPrimary = false,
   href,
   onClick,
 }: MenuButtonProps) {
+  const pathname = usePathname();
+  const isActive = getIsActive(pathname, href);
+
   const className = [
     "group relative flex w-full items-center overflow-hidden rounded-[14px]",
     "border px-4 py-4 text-left text-[15px] font-extrabold uppercase tracking-[0.04em]",
     "transition duration-200",
     isPrimary
       ? [
-          "border-red-500/60 bg-[linear-gradient(135deg,rgba(120,0,0,0.85),rgba(45,0,0,0.85))] text-red-50",
+          isActive
+            ? "border-red-300/90 bg-[linear-gradient(135deg,rgba(145,0,0,0.92),rgba(58,0,0,0.92))] text-red-50"
+            : "border-red-500/60 bg-[linear-gradient(135deg,rgba(120,0,0,0.85),rgba(45,0,0,0.85))] text-red-50",
           "shadow-[0_0_25px_rgba(220,38,38,0.18),inset_0_1px_0_rgba(255,255,255,0.08)]",
           "hover:border-red-400/80 hover:brightness-110",
         ].join(" ")
       : [
-          "border-white/10 bg-[linear-gradient(135deg,rgba(8,10,18,0.88),rgba(6,7,12,0.82))] text-slate-100",
-          "shadow-[0_10px_30px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.04)]",
-          "hover:border-white/20 hover:bg-[linear-gradient(135deg,rgba(18,20,30,0.92),rgba(10,11,18,0.88))]",
+          isActive
+            ? "border-white/30 bg-[linear-gradient(135deg,rgba(50,18,18,0.92),rgba(18,10,16,0.94))] text-white"
+            : "border-white/10 bg-[linear-gradient(135deg,rgba(22,18,26,0.84),rgba(10,10,16,0.9))] text-white/85",
+          "shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]",
+          "hover:border-white/20 hover:text-white hover:brightness-110",
         ].join(" "),
   ].join(" ");
 
   const content = (
     <>
-      <span
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),transparent_55%)] opacity-0 transition duration-200 group-hover:opacity-100" />
+
+      <div className="absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+
+      <div
         className={[
-          "absolute inset-y-0 left-0 w-[3px]",
-          isPrimary ? "bg-red-400" : "bg-white/10 group-hover:bg-white/25",
+          "absolute left-0 top-2 bottom-2 w-[3px] rounded-r-full transition-all duration-200",
+          isPrimary
+            ? isActive
+              ? "bg-red-200 shadow-[0_0_12px_rgba(254,202,202,0.65)]"
+              : "bg-red-500/70 shadow-[0_0_10px_rgba(239,68,68,0.4)]"
+            : isActive
+              ? "bg-white/80 shadow-[0_0_10px_rgba(255,255,255,0.25)]"
+              : "bg-transparent group-hover:bg-white/25",
         ].join(" ")}
       />
 
-      <span className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.05),transparent_30%,transparent_70%,rgba(255,255,255,0.03))]" />
-
       <span className="relative z-10">{label}</span>
 
-      <span className="relative z-10 ml-auto h-[10px] w-[10px] rotate-45 border-t border-r border-white/20 group-hover:border-white/40" />
+      <span
+        className={[
+          "ml-auto relative z-10 text-[11px] tracking-[0.2em] transition duration-200",
+          isActive
+            ? "text-white/70"
+            : "text-white/25 group-hover:text-white/45",
+        ].join(" ")}
+      >
+        {isActive ? "LIVE" : "GO"}
+      </span>
     </>
   );
 
-  if (href && !onClick) {
+  if (href) {
     return (
-      <Link href={href} className={className}>
+      <Link href={href} className={className} aria-current={isActive ? "page" : undefined}>
         {content}
       </Link>
     );

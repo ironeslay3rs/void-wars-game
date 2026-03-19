@@ -2,11 +2,13 @@ import PathCard from "@/components/home/PathCard";
 import { factionData } from "@/features/factions/factionData";
 import SectionTitle from "@/components/shared/SectionTitle";
 import PanelFrame from "@/components/shared/PanelFrame";
-import { PathType } from "@/features/game/gameTypes";
+import type { FactionAlignment } from "@/features/game/gameTypes";
+
+type PathSelection = Exclude<FactionAlignment, "unbound">;
 
 type FactionPathPanelProps = {
-  selectedPath: PathType | null;
-  onSelectPath: (path: PathType) => void;
+  selectedPath: PathSelection | null;
+  onSelectPath: (path: PathSelection) => void;
 };
 
 export default function FactionPathPanel({
@@ -21,7 +23,8 @@ export default function FactionPathPanel({
 
       <div className="space-y-3">
         {factionData.map((faction) => {
-          const isSelected = selectedPath === faction.name;
+          const factionKey = faction.id as PathSelection;
+          const isSelected = selectedPath === factionKey;
 
           return (
             <PathCard
@@ -32,7 +35,7 @@ export default function FactionPathPanel({
               themeKey={faction.themeKey}
               tagline={faction.tagline}
               isSelected={isSelected}
-              onClick={() => onSelectPath(faction.name as PathType)}
+              onClick={() => onSelectPath(factionKey)}
             />
           );
         })}

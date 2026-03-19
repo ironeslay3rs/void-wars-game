@@ -1,4 +1,10 @@
-export type ResourceKey = "credits" | "voidCrystals" | "bioEssence";
+export type ResourceKey =
+  | "credits"
+  | "ironOre"
+  | "scrapAlloy"
+  | "runeDust"
+  | "emberCore"
+  | "bioSamples";
 
 export type ResourceMeta = {
   id: ResourceKey;
@@ -15,15 +21,33 @@ export const resourceData: ResourceMeta[] = [
     iconAlt: "Credits",
   },
   {
-    id: "voidCrystals",
-    label: "Void Crystals",
-    icon: "/icons/resources/resource-void-crystals.png",
-    iconAlt: "Void Crystals",
+    id: "ironOre",
+    label: "Iron Ore",
+    icon: "/icons/resources/resource-credits.png",
+    iconAlt: "Iron Ore",
   },
   {
-    id: "bioEssence",
-    label: "Bio Essence",
-    icon: "/icons/resources/resource-bio-essence.png",
-    iconAlt: "Bio Essence",
+    id: "scrapAlloy",
+    label: "Scrap Alloy",
+    icon: "/icons/resources/resource-credits.png",
+    iconAlt: "Scrap Alloy",
+  },
+  {
+    id: "runeDust",
+    label: "Rune Dust",
+    icon: "/icons/resources/resource-credits.png",
+    iconAlt: "Rune Dust",
+  },
+  {
+    id: "emberCore",
+    label: "Ember Core",
+    icon: "/icons/resources/resource-credits.png",
+    iconAlt: "Ember Core",
+  },
+  {
+    id: "bioSamples",
+    label: "Bio Samples",
+    icon: "/icons/resources/resource-credits.png",
+    iconAlt: "Bio Samples",
   },
 ];

@@ -1,0 +1,1 @@
+export { initialGameState } from "@/features/game/initialGameState";

@@ -1,24 +1,13 @@
 import StatChip from "@/components/shared/StatChip";
 import PanelFrame from "@/components/shared/PanelFrame";
 import { resourceData } from "@/features/resources/resourceData";
+import type { ResourcesState } from "@/features/game/gameTypes";
 
 type ResourceBarProps = {
-  credits: number;
-  voidCrystals: number;
-  bioEssence: number;
+  values: ResourcesState;
 };
 
-export default function ResourceBar({
-  credits,
-  voidCrystals,
-  bioEssence,
-}: ResourceBarProps) {
-  const values = {
-    credits,
-    voidCrystals,
-    bioEssence,
-  };
-
+export default function ResourceBar({ values }: ResourceBarProps) {
   return (
     <div className="mx-auto max-w-[1100px]">
       <PanelFrame className="bg-black/50">
@@ -26,7 +15,9 @@ export default function ResourceBar({
           {resourceData.map((resource) => (
             <StatChip
               key={resource.id}
-              label={`${resource.label} ${values[resource.id].toLocaleString()}`}
+              label={`${resource.label} ${
+                values[resource.id as keyof ResourcesState] ?? 0
+              }`}
               icon={resource.icon}
               iconAlt={resource.iconAlt}
             />
