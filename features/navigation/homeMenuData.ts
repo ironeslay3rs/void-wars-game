@@ -1,16 +1,17 @@
-export const homeMenuData = [
-  { id: "continue", label: "Continue", href: "/continue", iconKey: "continue" },
-  { id: "new-game", label: "New Game", href: "/new-game", iconKey: "newGame" },
-  { id: "career", label: "Career", href: "/career", iconKey: "career" },
-  { id: "mastery", label: "Mastery", href: "/mastery", iconKey: "mastery" },
-  {
-    id: "professions",
-    label: "Professions",
-    href: "/professions",
-    iconKey: "professions",
-  },
-  { id: "market", label: "Market", href: "/market", iconKey: "market" },
-  { id: "arena", label: "Arena", href: "/arena", iconKey: "arena" },
-  { id: "guild", label: "Guild", href: "/guild", iconKey: "guild" },
-  { id: "settings", label: "Settings", href: "/settings", iconKey: "settings" },
-] as const;
+export type HomeMenuItem = {
+  id: string;
+  label: string;
+  href?: string;
+};
+
+export const homeMenuData: HomeMenuItem[] = [
+  { id: "continue", label: "Continue", href: "/" },
+  { id: "new-game", label: "New Game", href: "/" },
+  { id: "career", label: "Career", href: "/career" },
+  { id: "mastery", label: "Mastery", href: "/mastery" },
+  { id: "professions", label: "Professions", href: "/professions" },
+  { id: "market", label: "Market", href: "/bazaar" },
+  { id: "arena", label: "Arena", href: "/arena" },
+  { id: "guild", label: "Guild", href: "/guild" },
+  { id: "settings", label: "Settings", href: "/settings" },
+];
