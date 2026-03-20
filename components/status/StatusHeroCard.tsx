@@ -1,6 +1,7 @@
 "use client";
 
 import { useGame } from "@/features/game/gameContext";
+import { getFirstSessionGuidance } from "@/features/guidance/firstSessionGuidance";
 import { useRecoveryCooldown } from "@/features/status/useRecoveryCooldown";
 import { STATUS_RECOVERY_COST } from "@/features/status/statusRecovery";
 
@@ -27,12 +28,20 @@ function getProgressPercent(current: number, max: number) {
 export default function StatusHeroCard() {
   const { state, dispatch } = useGame();
   const { player } = state;
+  const guidance = getFirstSessionGuidance(state);
   const {
     recoveryCooldownRemainingSeconds,
     isRecoveryOnCooldown,
   } = useRecoveryCooldown(player.conditionRecoveryAvailableAt);
   const canAffordRecovery = player.resources.credits >= STATUS_RECOVERY_COST;
   const canRecoverCondition = canAffordRecovery && !isRecoveryOnCooldown;
+  const recoveryActionMessage = isRecoveryOnCooldown
+    ? `Blocked. Recovery is cooling down for ${recoveryCooldownRemainingSeconds}s before another stabilization cycle can begin.`
+    : !canAffordRecovery
+      ? `Blocked. Recovery needs ${STATUS_RECOVERY_COST} credits before stabilization can begin.`
+      : guidance.nextAction === "recover"
+        ? "Recommended. Low condition is the main blocker before the next loop step."
+        : "Ready. Condition is stable enough to continue, but recovery remains available if needed.";
 
   const rankProgress = getProgressPercent(
     player.rankXp,
@@ -142,6 +151,10 @@ export default function StatusHeroCard() {
                 ? "Recover Condition"
                 : "Need 10 Credits"}
           </button>
+
+          <div className="mt-3 text-xs text-white/55">
+            {recoveryActionMessage}
+          </div>
         </div>
 
         {/* MASTERY */}

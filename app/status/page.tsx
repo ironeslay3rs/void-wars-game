@@ -3,6 +3,7 @@
 import ScreenHeader from "@/components/shared/ScreenHeader";
 import SectionCard from "@/components/shared/SectionCard";
 import StatusHeroCard from "@/components/status/StatusHeroCard";
+import StatusScreenSummary from "@/components/status/StatusScreenSummary";
 import StatusResourcesCard from "@/components/status/StatusResourcesCard";
 import StatusSystemsCard from "@/components/status/StatusSystemsCard";
 
@@ -15,6 +16,8 @@ export default function StatusPage() {
           title="Player Status"
           subtitle="Identity, progression, live system condition, and current operational profile."
         />
+
+        <StatusScreenSummary />
 
         <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
           <SectionCard

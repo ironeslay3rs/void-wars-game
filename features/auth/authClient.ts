@@ -8,11 +8,6 @@ function getSupabaseConfig() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  console.log("[authClient] Supabase env check", {
-    hasUrl: Boolean(url),
-    hasAnonKey: Boolean(anonKey),
-  });
-
   if (!url || !anonKey) {
     throw new Error(
       "Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY.",
@@ -75,27 +70,15 @@ async function supabaseRequest(
 ) {
   const { url, anonKey } = getSupabaseConfig();
   const requestUrl = `${url}${path}`;
-
-  console.log("[authClient] Supabase base URL", url);
-  console.log("[authClient] Supabase path", path);
-  console.log("[authClient] Supabase request URL", requestUrl);
-
-  try {
-    const response = await fetch(requestUrl, {
-      ...init,
-      headers: {
-        "Content-Type": "application/json",
-        apikey: anonKey,
-        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-        ...(init.headers ?? {}),
-      },
-    });
-
-    return response;
-  } catch (error) {
-    console.error("[authClient] Supabase fetch failed", error);
-    throw error;
-  }
+  return fetch(requestUrl, {
+    ...init,
+    headers: {
+      "Content-Type": "application/json",
+      apikey: anonKey,
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+      ...(init.headers ?? {}),
+    },
+  });
 }
 
 async function readErrorMessage(response: Response) {
