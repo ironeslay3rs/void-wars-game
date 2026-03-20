@@ -61,7 +61,7 @@ export default function BiotechLabsPage() {
         <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           <SectionCard
             title="Mutation Bays"
-            description="Reserved for genetic harvest, body adaptation, and organic enhancement systems."
+            description="Current biotech hunt surface: confirm the active specimen lead, then resolve the hunt from here."
           >
             <div className="space-y-3">
               <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-white/70">
@@ -150,7 +150,7 @@ export default function BiotechLabsPage() {
 
           <SectionCard
             title="Bio Console"
-            description="Future mutation state, instability checks, and specimen tracking."
+            description="Current specimen-readout surface for the active biotech lead."
           >
             {activeSpecimen ? (
               <div className="rounded-xl border border-white/10 bg-white/5 p-6">

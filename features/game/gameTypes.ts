@@ -94,8 +94,11 @@ export type MissionReward = {
   resources?: Partial<ResourcesState>;
 };
 
+export type MissionCategory = "operation" | "hunting-ground";
+
 export type MissionDefinition = {
   id: string;
+  category: MissionCategory;
   title: string;
   description: string;
   path: PathType | "neutral";

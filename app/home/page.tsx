@@ -2,6 +2,7 @@ import GameHudShell from "@/components/layout/GameHudShell";
 import ExplorationPanel from "@/components/exploration/ExplorationPanel";
 import ExplorationScreenSummary from "@/components/exploration/ExplorationScreenSummary";
 import FirstSessionObjective from "@/components/guidance/FirstSessionObjective";
+import CurrentOpportunityCard from "@/components/guidance/CurrentOpportunityCard";
 
 export default function HomePage() {
   return (
@@ -16,6 +17,10 @@ export default function HomePage() {
 
           <div className="pointer-events-auto">
             <FirstSessionObjective />
+          </div>
+
+          <div className="pointer-events-auto">
+            <CurrentOpportunityCard />
           </div>
 
           <div className="pointer-events-auto mx-auto w-full max-w-md">

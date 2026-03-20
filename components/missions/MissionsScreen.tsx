@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ScreenHeader from "@/components/shared/ScreenHeader";
 import SectionCard from "@/components/shared/SectionCard";
 import { useGame } from "@/features/game/gameContext";
@@ -12,6 +12,16 @@ import type {
 
 type QueuedMissionView = MissionQueueEntry & {
   mission: MissionDefinition;
+};
+
+type CompletionFeedback = {
+  title: string;
+  detail: string;
+  rankXp: number;
+  masteryProgress: number;
+  influence: number;
+  conditionDelta: number;
+  resources: Array<[string, number]>;
 };
 
 function formatDuration(durationHours: number) {
@@ -118,6 +128,65 @@ function getQueueStatusLabel(entry: MissionQueueEntry, now: number) {
   return formatCountdown(entry.endsAt, now, "Ends in");
 }
 
+function buildCompletionFeedback(completedMissions: MissionDefinition[]): CompletionFeedback {
+  const rankXp = completedMissions.reduce(
+    (sum, mission) => sum + mission.reward.rankXp,
+    0,
+  );
+  const masteryProgress = completedMissions.reduce(
+    (sum, mission) => sum + mission.reward.masteryProgress,
+    0,
+  );
+  const influence = completedMissions.reduce(
+    (sum, mission) => sum + (mission.reward.influence ?? 0),
+    0,
+  );
+  const conditionDelta = completedMissions.reduce(
+    (sum, mission) => sum + mission.reward.conditionDelta,
+    0,
+  );
+  const resourceTotals = completedMissions.reduce<Record<string, number>>(
+    (totals, mission) => {
+      Object.entries(mission.reward.resources ?? {}).forEach(([key, value]) => {
+        if (typeof value !== "number" || value === 0) {
+          return;
+        }
+
+        totals[key] = (totals[key] ?? 0) + value;
+      });
+
+      return totals;
+    },
+    {},
+  );
+  const resources = Object.entries(resourceTotals);
+
+  if (completedMissions.length === 1) {
+    const mission = completedMissions[0];
+
+    return {
+      title: "Mission Complete",
+      detail: `${mission.title} resolved and rewards were added to your progression.`,
+      rankXp,
+      masteryProgress,
+      influence,
+      conditionDelta,
+      resources,
+    };
+  }
+
+  return {
+    title: `${completedMissions.length} Operations Complete`,
+    detail:
+      "Multiple queued operations resolved together and their rewards were applied.",
+    rankXp,
+    masteryProgress,
+    influence,
+    conditionDelta,
+    resources,
+  };
+}
+
 function StatCard({
   label,
   value,
@@ -143,6 +212,8 @@ function StatCard({
 export default function MissionsScreen() {
   const { state, dispatch } = useGame();
   const [now, setNow] = useState(() => Date.now());
+  const [completionFeedback, setCompletionFeedback] =
+    useState<CompletionFeedback | null>(null);
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -182,10 +253,45 @@ export default function MissionsScreen() {
 
   const pendingEntries = queuedEntries.filter((entry) => now < entry.startsAt);
 
-  const availableMissions = state.missions.filter((mission) => {
+  const standardMissions = state.missions.filter(
+    (mission) => mission.category !== "hunting-ground",
+  );
+
+  const availableMissions = standardMissions.filter((mission) => {
     if (mission.path === "neutral") return true;
     return state.player.factionAlignment === mission.path;
   });
+  const previousQueuedEntriesRef = useRef<QueuedMissionView[]>(queuedEntries);
+
+  useEffect(() => {
+    const previousEntries = previousQueuedEntriesRef.current;
+    const currentIds = new Set(queuedEntries.map((entry) => entry.queueId));
+    const completedMissions = previousEntries
+      .filter(
+        (entry) =>
+          !currentIds.has(entry.queueId) &&
+          entry.endsAt <= Date.now(),
+      )
+      .map((entry) => entry.mission);
+
+    if (completedMissions.length > 0) {
+      setCompletionFeedback(buildCompletionFeedback(completedMissions));
+    }
+
+    previousQueuedEntriesRef.current = queuedEntries;
+  }, [queuedEntries]);
+
+  useEffect(() => {
+    if (!completionFeedback) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      setCompletionFeedback(null);
+    }, 6000);
+
+    return () => window.clearTimeout(timeout);
+  }, [completionFeedback]);
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(70,90,120,0.18),_rgba(5,8,20,0.96)_55%)] px-4 py-6 text-white md:px-6 md:py-8 xl:px-8">
@@ -224,13 +330,50 @@ export default function MissionsScreen() {
           />
         </div>
 
+        {completionFeedback ? (
+          <SectionCard
+            title={completionFeedback.title}
+            description={completionFeedback.detail}
+          >
+            <div className="space-y-4">
+              <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/10 p-4">
+                <div className="text-[10px] uppercase tracking-[0.18em] text-emerald-200/70">
+                  Rewards Applied
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-xs text-white/85">
+                    +{completionFeedback.rankXp} XP
+                  </span>
+                  <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-xs text-white/85">
+                    +{completionFeedback.masteryProgress} Mastery
+                  </span>
+                  <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-xs text-white/85">
+                    +{completionFeedback.influence} Influence
+                  </span>
+                  <span className="rounded-full border border-red-500/20 bg-red-500/10 px-3 py-1 text-xs text-red-200">
+                    {completionFeedback.conditionDelta} Condition
+                  </span>
+                  {completionFeedback.resources.map(([key, value]) => (
+                    <span
+                      key={key}
+                      className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-100"
+                    >
+                      +{value} {formatRewardLabel(key)}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </SectionCard>
+        ) : null}
+
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_360px]">
           <SectionCard
             title="Mission Board"
-            description="Inspect rewards, queue operations, and keep the loop moving."
+            description="Queue standard operations here. Hunting Ground contracts run from the Mercenary Guild on the same shared timer stack."
           >
             <div className="space-y-3">
-              {state.missions.map((mission) => {
+              {standardMissions.map((mission) => {
                 const isAccessible =
                   mission.path === "neutral" ||
                   state.player.factionAlignment === mission.path;
@@ -351,7 +494,7 @@ export default function MissionsScreen() {
             <div className="flex flex-col gap-6">
               <SectionCard
                 title="Operations"
-                description="Your queue updates in real time and rewards resolve automatically."
+                description="This is the shared live queue for both standard missions and Hunting Ground hunts."
               >
                 <div className="space-y-3">
                   {queuedEntries.length === 0 ? (
@@ -413,7 +556,7 @@ export default function MissionsScreen() {
 
               <SectionCard
                 title="Progress Snapshot"
-                description="Quick read on what your mission loop is feeding right now."
+                description="Quick read on how the shared mission queue is feeding progression right now."
               >
                 <div className="space-y-3">
                   <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
@@ -421,7 +564,7 @@ export default function MissionsScreen() {
                       Rank
                     </div>
                     <div className="mt-2 text-sm font-semibold text-white">
-                      {state.player.rank} — Level {state.player.rankLevel}
+                      {state.player.rank} - Level {state.player.rankLevel}
                     </div>
                     <div className="mt-1 text-sm text-white/55">
                       {state.player.rankXp}/{state.player.rankXpToNext} XP toward
@@ -446,7 +589,7 @@ export default function MissionsScreen() {
                       Mastery & Influence
                     </div>
                     <div className="mt-2 text-sm font-semibold text-white">
-                      {state.player.masteryProgress} Mastery ·{" "}
+                      {state.player.masteryProgress} Mastery /{" "}
                       {state.player.influence} Influence
                     </div>
                     <div className="mt-1 text-sm text-white/55">
@@ -455,7 +598,7 @@ export default function MissionsScreen() {
                   </div>
 
                   <div className="rounded-2xl border border-dashed border-white/10 p-4 text-sm text-white/50">
-                    Active queue: {inProgressEntries.length} · Pending:{" "}
+                    Active queue: {inProgressEntries.length} / Pending:{" "}
                     {pendingEntries.length}
                   </div>
                 </div>

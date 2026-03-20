@@ -38,7 +38,7 @@ function updateSingleResource(
 const CONDITION_RECOVERY_COST = 10;
 const CONDITION_RECOVERY_AMOUNT = 20;
 const CONDITION_RECOVERY_COOLDOWN_MS = 60000;
-const CONDITION_DECAY_INTERVAL_MS = 10000;
+const CONDITION_DECAY_INTERVAL_MS = 60000;
 
 function applyConditionDecay(player: PlayerState, now: number): PlayerState {
   if (now <= player.lastConditionTickAt) {

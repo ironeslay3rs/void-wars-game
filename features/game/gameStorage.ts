@@ -3,6 +3,7 @@ import type {
   ActiveProcess,
   GameState,
   LatestHuntResult,
+  MissionCategory,
   MissionDefinition,
   MissionQueueEntry,
   PlayerState,
@@ -156,24 +157,34 @@ function normalizeMissionQueue(value: unknown): MissionQueueEntry[] {
 function normalizeMissions(value: unknown): MissionDefinition[] {
   if (!Array.isArray(value)) return initialGameState.missions;
 
-  const valid = value.filter((mission): mission is MissionDefinition => {
-    if (!isRecord(mission)) return false;
-    if (!isRecord(mission.reward)) return false;
+  const valid = value
+    .filter((mission): mission is MissionDefinition => {
+      if (!isRecord(mission)) return false;
+      if (!isRecord(mission.reward)) return false;
 
-    return (
-      typeof mission.id === "string" &&
-      typeof mission.title === "string" &&
-      typeof mission.description === "string" &&
-      (mission.path === "neutral" ||
-        mission.path === "bio" ||
-        mission.path === "mecha" ||
-        mission.path === "spirit") &&
-      typeof mission.durationHours === "number" &&
-      typeof mission.reward.rankXp === "number" &&
-      typeof mission.reward.masteryProgress === "number" &&
-      typeof mission.reward.conditionDelta === "number"
-    );
-  });
+      return (
+        typeof mission.id === "string" &&
+        typeof mission.title === "string" &&
+        typeof mission.description === "string" &&
+        (mission.path === "neutral" ||
+          mission.path === "bio" ||
+          mission.path === "mecha" ||
+          mission.path === "spirit") &&
+        typeof mission.durationHours === "number" &&
+        typeof mission.reward.rankXp === "number" &&
+        typeof mission.reward.masteryProgress === "number" &&
+        typeof mission.reward.conditionDelta === "number"
+      );
+    })
+    .map((mission) => {
+      const category: MissionCategory =
+        mission.category === "hunting-ground" ? "hunting-ground" : "operation";
+
+      return {
+        ...mission,
+        category,
+      };
+    });
 
   return valid.length > 0 ? valid : initialGameState.missions;
 }

@@ -88,9 +88,9 @@ export const bazaarDistrictData: BazaarDistrict[] = [
   {
     id: "mercenary-guild",
     title: "Mercenary Guild",
-    subtitle: "Contracts & Bounties",
+    subtitle: "AFK Hunting Ground",
     description:
-      "Take contracts, hunt targets, and build city-wide influence.",
+      "Queue repeatable timed hunt contracts, gather steady materials, and build city-wide influence.",
     route: "/bazaar/mercenary-guild",
     themeKey: "guild",
     positionClass: "right-[5%] top-[70%]",

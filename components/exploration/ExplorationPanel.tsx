@@ -59,13 +59,13 @@ export default function ExplorationPanel() {
   return (
     <SectionCard
       title="Exploration"
-      description="Phase 1 always-active loop: start a run, check progress, then claim the reward."
+      description="Main loop starting point: run a sweep, wait for completion, then claim the lead that opens Biotech Labs."
     >
       <div className="space-y-4">
         {!activeProcess ? (
           <>
             <p className="text-sm text-white/60">
-              No exploration sweep is active. Start a run to search the wastes for the next biotech signal.
+              Exploration is where the main loop begins. Start a sweep to search the wastes for the next biotech signal.
             </p>
 
             <button

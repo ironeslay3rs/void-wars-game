@@ -14,7 +14,7 @@ export default function StatusPage() {
         <ScreenHeader
           eyebrow="Operative Status"
           title="Player Status"
-          subtitle="Identity, progression, live system condition, and current operational profile."
+          subtitle="Check condition pressure, recover if needed, and confirm whether you should repeat the loop or stabilize first."
         />
 
         <StatusScreenSummary />
@@ -22,7 +22,7 @@ export default function StatusPage() {
         <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
           <SectionCard
             title="Operative Profile"
-            description="Primary identity panel for faction alignment, rank status, and mission readiness."
+            description="Primary recovery and readiness panel for current condition, rank state, and whether the next loop step is safe."
           >
             <StatusHeroCard />
           </SectionCard>

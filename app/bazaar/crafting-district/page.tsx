@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import {
   Hammer,
   Package,
@@ -43,34 +44,26 @@ const craftingStations = [
 export default function CraftingDistrictPage() {
   const { state, dispatch } = useGame();
   const screenData = getCraftingDistrictScreenData(state);
+  const [refineResult, setRefineResult] = useState<string | null>(null);
 
   const { ironOre, scrapAlloy, runeDust, emberCore } = state.player.resources;
-  const knownRecipes = state.player.knownRecipes;
-  const forgeStatus = state.player.districtState.forgeStatus;
+  const canRefineScrapAlloy = ironOre >= 3;
 
-  const canForgeEmberRune = runeDust >= 10 && emberCore >= 1;
-
-  function startForgeCycle() {
-    dispatch({ type: "SET_FORGE_STATUS", payload: "crafting" });
-  }
-
-  function completeForgeCycle() {
-    dispatch({ type: "SET_FORGE_STATUS", payload: "complete" });
-  }
-
-  function craftMinorEmberRune() {
-    if (!canForgeEmberRune) return;
+  function refineScrapAlloy() {
+    if (!canRefineScrapAlloy) {
+      setRefineResult("Need 3 Iron Ore to refine 1 Scrap Alloy.");
+      return;
+    }
 
     dispatch({
       type: "SPEND_RESOURCE",
-      payload: { key: "runeDust", amount: 10 },
+      payload: { key: "ironOre", amount: 3 },
     });
     dispatch({
-      type: "SPEND_RESOURCE",
-      payload: { key: "emberCore", amount: 1 },
+      type: "ADD_RESOURCE",
+      payload: { key: "scrapAlloy", amount: 1 },
     });
-    dispatch({ type: "ADD_RECIPE", payload: "Minor Ember Rune" });
-    dispatch({ type: "SET_FORGE_STATUS", payload: "complete" });
+    setRefineResult("Refinement complete. 3 Iron Ore became 1 Scrap Alloy.");
   }
 
   return (
@@ -147,46 +140,34 @@ export default function CraftingDistrictPage() {
         <section className="grid gap-4 xl:grid-cols-[1.3fr_0.7fr]">
           <div className="rounded-2xl border border-white/10 bg-black/25 p-6">
             <div className="text-[11px] uppercase tracking-[0.22em] text-orange-300/70">
-              Craft Queue
+              Material Refining
             </div>
-            <h2 className="mt-2 text-xl font-black uppercase">Production Bay</h2>
+            <h2 className="mt-2 text-xl font-black uppercase">Refinery Bay</h2>
 
             <div className="mt-4 grid gap-3">
-              <div className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white/80">
-                Current forge status: {forgeStatus}
-              </div>
-
-              <button
-                type="button"
-                onClick={startForgeCycle}
-                className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-left text-sm text-white/80 transition hover:bg-white/[0.07]"
-              >
-                Start Forge Cycle
-              </button>
-
-              <button
-                type="button"
-                onClick={completeForgeCycle}
-                className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-left text-sm text-white/80 transition hover:bg-white/[0.07]"
-              >
-                Complete Forge Cycle
-              </button>
-
-              <button
-                type="button"
-                onClick={craftMinorEmberRune}
-                disabled={!canForgeEmberRune}
-                className="rounded-xl border border-orange-400/30 bg-orange-500/10 px-4 py-3 text-left text-sm text-orange-100 transition hover:bg-orange-500/20 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                Craft Minor Ember Rune
-                <div className="mt-1 text-xs text-white/60">
-                  Costs 10 Rune Dust + 1 Ember Core
+              <div className="rounded-xl border border-orange-400/20 bg-orange-500/8 p-4">
+                <div className="mt-2 text-sm font-semibold text-white">
+                  Convert raw ore into usable alloy plating.
                 </div>
-              </button>
+                <div className="mt-2 text-sm text-white/65">
+                  Immediate district function for M1: refine 3 Iron Ore into 1 Scrap Alloy.
+                </div>
 
-              <div className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white/80">
-                Known recipes:{" "}
-                {knownRecipes.length > 0 ? knownRecipes.join(", ") : "None yet"}
+                <button
+                  type="button"
+                  onClick={refineScrapAlloy}
+                  disabled={!canRefineScrapAlloy}
+                  className="mt-4 w-full rounded-xl border border-orange-400/30 bg-orange-500/10 px-4 py-3 text-left text-sm font-semibold text-orange-100 transition hover:bg-orange-500/20 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Refine Scrap Alloy
+                  <div className="mt-1 text-xs text-white/60">
+                    Costs 3 Iron Ore / Produces 1 Scrap Alloy
+                  </div>
+                </button>
+
+                <div className="mt-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/75">
+                  {refineResult ?? "Refinery idle. Process raw ore whenever you need alloy."}
+                </div>
               </div>
             </div>
           </div>
