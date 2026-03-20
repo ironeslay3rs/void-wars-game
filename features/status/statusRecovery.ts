@@ -1,0 +1,4 @@
+export const STATUS_RECOVERY_COST = 10;
+export const STATUS_RECOVERY_AMOUNT = 20;
+export const STATUS_RECOVERY_COOLDOWN_MS = 60000;
+

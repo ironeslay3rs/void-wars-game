@@ -20,6 +20,28 @@ export type ResourceKey =
 
 export type ResourcesState = Record<ResourceKey, number>;
 
+export type LatestHuntResult = {
+  missionId: string;
+  huntTitle: string;
+  resolvedAt: number;
+  conditionDelta: number;
+  conditionAfter: number;
+  rankXpGained: number;
+  masteryProgressGained: number;
+  influenceGained: number;
+  resourcesGained: Partial<ResourcesState>;
+};
+
+export type ActiveProcess = {
+  id: string;
+  kind: "exploration";
+  status: "running" | "complete";
+  title: string;
+  sourceId: string | null;
+  startedAt: number;
+  endsAt: number;
+};
+
 /* =========================
    DISTRICT STATES
 ========================= */
@@ -99,6 +121,8 @@ export type PlayerState = {
   factionAlignment: FactionAlignment;
 
   condition: number;
+  conditionRecoveryAvailableAt: number;
+  lastConditionTickAt: number;
 
   rank: string;
   rankLevel: number;
@@ -107,6 +131,7 @@ export type PlayerState = {
 
   masteryProgress: number;
   influence: number;
+  hasBiotechSpecimenLead: boolean;
 
   resources: ResourcesState;
 
@@ -115,6 +140,8 @@ export type PlayerState = {
   navigation: NavigationState;
 
   districtState: DistrictState;
+  activeProcess: ActiveProcess | null;
+  lastHuntResult: LatestHuntResult | null;
 
   missionQueue: MissionQueueEntry[];
   maxMissionQueueSlots: number;
@@ -142,6 +169,21 @@ export type GameAction =
   | { type: "SET_RANK_LEVEL"; payload: number }
   | { type: "SET_RANK_NAME"; payload: string }
   | { type: "ADJUST_CONDITION"; payload: number }
+  | { type: "RECOVER_CONDITION" }
+  | { type: "RESOLVE_HUNT"; payload: { missionId: string; resolvedAt?: number } }
+  | {
+      type: "START_EXPLORATION_PROCESS";
+      payload: {
+        id: string;
+        title: string;
+        sourceId?: string | null;
+        startedAt?: number;
+        endsAt: number;
+      };
+    }
+  | { type: "RESOLVE_ACTIVE_PROCESS"; payload?: { now?: number } }
+  | { type: "CLAIM_EXPLORATION_REWARD" }
+  | { type: "CLEAR_ACTIVE_PROCESS" }
   | { type: "SET_MASTERY_PROGRESS"; payload: number }
   | { type: "QUEUE_MISSION"; payload: { missionId: string; queuedAt?: number } }
   | {

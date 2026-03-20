@@ -7,12 +7,22 @@ import {
   useEffect,
   useMemo,
   useReducer,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
+import { useAuth } from "@/features/auth/useAuth";
 import { gameReducer } from "@/features/game/gameActions";
 import { initialGameState } from "@/features/game/initialGameState";
-import { loadGameState, saveGameState } from "@/features/game/gameStorage";
+import {
+  clearGameState,
+  loadGameState,
+  saveGameState,
+} from "@/features/game/gameStorage";
+import {
+  loadRemoteGameState,
+  saveRemoteGameState,
+} from "@/features/save/remoteGameState";
 import type {
   FactionAlignment,
   GameAction,
@@ -31,38 +41,171 @@ type GameContextValue = {
 const GameContext = createContext<GameContextValue | null>(null);
 
 export function GameProvider({ children }: { children: ReactNode }) {
-  const [hasHydratedFromStorage, setHasHydratedFromStorage] = useState(false);
+  const { status, user, session, setBeforeLogoutHandler } = useAuth();
+  const [hasHydratedForUser, setHasHydratedForUser] = useState(false);
+  const [hydratedUserId, setHydratedUserId] = useState<string | null>(null);
   const [state, dispatch] = useReducer(gameReducer, initialGameState);
+  const pendingSaveTimeoutRef = useRef<number | null>(null);
+  const latestStateRef = useRef(state);
+  const skipNextRemoteSaveRef = useRef(false);
 
-  useEffect(() => {
-    const savedState = loadGameState();
+  latestStateRef.current = state;
 
-    if (savedState) {
-      dispatch({
-        type: "HYDRATE_STATE",
-        payload: savedState,
-      });
+  const clearPendingRemoteSave = useCallback(() => {
+    if (pendingSaveTimeoutRef.current !== null) {
+      window.clearTimeout(pendingSaveTimeoutRef.current);
+      pendingSaveTimeoutRef.current = null;
     }
-
-    setHasHydratedFromStorage(true);
   }, []);
 
+  const persistRemoteSaveNow = useCallback(async () => {
+    if (
+      typeof window === "undefined" ||
+      status !== "authenticated" ||
+      !user ||
+      !session ||
+      !hasHydratedForUser ||
+      hydratedUserId !== user.id
+    ) {
+      return;
+    }
+
+    clearPendingRemoteSave();
+
+    await saveRemoteGameState({
+      userId: user.id,
+      accessToken: session.accessToken,
+      gameState: latestStateRef.current,
+    });
+  }, [
+    clearPendingRemoteSave,
+    hasHydratedForUser,
+    hydratedUserId,
+    session,
+    status,
+    user,
+  ]);
+
   useEffect(() => {
-    if (!hasHydratedFromStorage) return;
+    setBeforeLogoutHandler(persistRemoteSaveNow);
+
+    return () => {
+      setBeforeLogoutHandler(null);
+    };
+  }, [persistRemoteSaveNow, setBeforeLogoutHandler]);
+
+  useEffect(() => {
+    clearPendingRemoteSave();
+
+    if (status !== "authenticated" || !user || !session) {
+      setHasHydratedForUser(false);
+      setHydratedUserId(null);
+      return;
+    }
+
+    const authenticatedUser = user;
+    const authenticatedSession = session;
+
+    let isCancelled = false;
+
+    async function hydrateGameState() {
+      setHasHydratedForUser(false);
+      setHydratedUserId(null);
+
+      let nextState: GameState = {
+        ...initialGameState,
+        player: {
+          ...initialGameState.player,
+          lastConditionTickAt: Date.now(),
+        },
+      };
+
+      try {
+        const remoteState = await loadRemoteGameState(
+          authenticatedUser.id,
+          authenticatedSession.accessToken,
+        );
+
+        if (remoteState) {
+          nextState = remoteState;
+        } else {
+          clearGameState(authenticatedUser.id);
+        }
+      } catch {
+        const cachedState = loadGameState(authenticatedUser.id);
+
+        if (cachedState) {
+          nextState = cachedState;
+        }
+      }
+
+      if (isCancelled) {
+        return;
+      }
+
+      skipNextRemoteSaveRef.current = true;
+      dispatch({
+        type: "HYDRATE_STATE",
+        payload: nextState,
+      });
+      setHydratedUserId(authenticatedUser.id);
+      setHasHydratedForUser(true);
+    }
+
+    void hydrateGameState();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [clearPendingRemoteSave, session, status, user]);
+
+  useEffect(() => {
+    if (!hasHydratedForUser) return;
 
     dispatch({
       type: "PROCESS_MISSION_QUEUE",
       payload: { now: Date.now() },
     });
-  }, [hasHydratedFromStorage]);
+  }, [hasHydratedForUser]);
 
   useEffect(() => {
-    if (!hasHydratedFromStorage) return;
-    saveGameState(state);
-  }, [state, hasHydratedFromStorage]);
+    if (
+      !hasHydratedForUser ||
+      status !== "authenticated" ||
+      !user ||
+      hydratedUserId !== user.id
+    ) {
+      return;
+    }
+
+    saveGameState(user.id, state);
+
+    if (skipNextRemoteSaveRef.current) {
+      skipNextRemoteSaveRef.current = false;
+      return;
+    }
+
+    clearPendingRemoteSave();
+
+    pendingSaveTimeoutRef.current = window.setTimeout(() => {
+      void persistRemoteSaveNow();
+    }, 1000);
+
+    return () => {
+      clearPendingRemoteSave();
+    };
+  }, [
+    clearPendingRemoteSave,
+    hasHydratedForUser,
+    hydratedUserId,
+    persistRemoteSaveNow,
+    state,
+    status,
+    user,
+  ]);
 
   useEffect(() => {
-    if (!hasHydratedFromStorage) return;
+    if (!hasHydratedForUser) return;
 
     const interval = window.setInterval(() => {
       dispatch({
@@ -72,7 +215,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     }, 1000);
 
     return () => window.clearInterval(interval);
-  }, [hasHydratedFromStorage]);
+  }, [hasHydratedForUser]);
 
   const selectPath = useCallback((path: PathSelection) => {
     dispatch({
@@ -94,6 +237,14 @@ export function GameProvider({ children }: { children: ReactNode }) {
     }),
     [state, selectPath, resetGame],
   );
+
+  if (status === "authenticated" && !hasHydratedForUser) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-black text-sm text-white/70">
+        Syncing wasteland record...
+      </div>
+    );
+  }
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
 }

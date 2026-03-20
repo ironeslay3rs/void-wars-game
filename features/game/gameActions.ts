@@ -1,4 +1,5 @@
 import { initialGameState } from "@/features/game/initialGameState";
+import { phase1ExplorationReward } from "@/features/exploration/explorationData";
 import {
   applyMissionReward,
   applyRankXp,
@@ -18,6 +19,7 @@ import {
 import type {
   GameAction,
   GameState,
+  PlayerState,
   ResourceKey,
   ResourcesState,
 } from "@/features/game/gameTypes";
@@ -33,10 +35,36 @@ function updateSingleResource(
   };
 }
 
+const CONDITION_RECOVERY_COST = 10;
+const CONDITION_RECOVERY_AMOUNT = 20;
+const CONDITION_RECOVERY_COOLDOWN_MS = 60000;
+const CONDITION_DECAY_INTERVAL_MS = 10000;
+
+function applyConditionDecay(player: PlayerState, now: number): PlayerState {
+  if (now <= player.lastConditionTickAt) {
+    return player;
+  }
+
+  const elapsedMs = now - player.lastConditionTickAt;
+  const decay = Math.floor(elapsedMs / CONDITION_DECAY_INTERVAL_MS);
+
+  return {
+    ...player,
+    condition: Math.max(0, player.condition - decay),
+    lastConditionTickAt: now,
+  };
+}
+
 export function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
-    case "HYDRATE_STATE":
-      return action.payload;
+    case "HYDRATE_STATE": {
+      const now = Date.now();
+
+      return {
+        ...action.payload,
+        player: applyConditionDecay(action.payload.player, now),
+      };
+    }
 
     case "SET_PLAYER_NAME":
       return {
@@ -137,6 +165,193 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         player: {
           ...state.player,
           condition: clamp(state.player.condition + action.payload, 0, 100),
+        },
+      };
+
+    case "RECOVER_CONDITION": {
+      const now = Date.now();
+
+      if (state.player.conditionRecoveryAvailableAt > now) {
+        return state;
+      }
+
+      if (state.player.resources.credits < CONDITION_RECOVERY_COST) {
+        return state;
+      }
+
+      return {
+        ...state,
+        player: {
+          ...state.player,
+          condition: clamp(
+            state.player.condition + CONDITION_RECOVERY_AMOUNT,
+            0,
+            100,
+          ),
+          conditionRecoveryAvailableAt: now + CONDITION_RECOVERY_COOLDOWN_MS,
+          resources: updateSingleResource(
+            state.player.resources,
+            "credits",
+            -CONDITION_RECOVERY_COST,
+          ),
+        },
+      };
+    }
+
+    case "RESOLVE_HUNT": {
+      const now = action.payload.resolvedAt ?? Date.now();
+      const player = applyConditionDecay(state.player, now);
+      const mission = getMissionById(state.missions, action.payload.missionId);
+
+      if (!mission) {
+        return {
+          ...state,
+          player,
+        };
+      }
+
+      const selectedPath =
+        player.factionAlignment === "unbound"
+          ? "unbound"
+          : player.factionAlignment;
+
+      if (!canAccessMission(mission, selectedPath)) {
+        return {
+          ...state,
+          player,
+        };
+      }
+
+      if (mission.id === "bio-hunt-specimen" && !player.hasBiotechSpecimenLead) {
+        return {
+          ...state,
+          player,
+        };
+      }
+
+      const resolvedAt = action.payload.resolvedAt ?? now;
+      const nextPlayer = applyMissionReward(player, mission.reward);
+
+      return {
+        ...state,
+        player: {
+          ...nextPlayer,
+          hasBiotechSpecimenLead:
+            mission.id === "bio-hunt-specimen"
+              ? false
+              : player.hasBiotechSpecimenLead,
+          lastHuntResult: {
+            missionId: mission.id,
+            huntTitle: mission.title,
+            resolvedAt,
+            conditionDelta: mission.reward.conditionDelta,
+            conditionAfter: nextPlayer.condition,
+            rankXpGained: mission.reward.rankXp,
+            masteryProgressGained: mission.reward.masteryProgress,
+            influenceGained: mission.reward.influence ?? 0,
+            resourcesGained: mission.reward.resources ?? {},
+          },
+        },
+      };
+    }
+
+    case "START_EXPLORATION_PROCESS": {
+      if (state.player.activeProcess !== null) {
+        return state;
+      }
+
+      const startedAt = action.payload.startedAt ?? Date.now();
+
+      if (action.payload.endsAt <= startedAt) {
+        return state;
+      }
+
+      return {
+        ...state,
+        player: {
+          ...state.player,
+          activeProcess: {
+            id: action.payload.id,
+            kind: "exploration",
+            status: "running",
+            title: action.payload.title,
+            sourceId: action.payload.sourceId ?? null,
+            startedAt,
+            endsAt: action.payload.endsAt,
+          },
+        },
+      };
+    }
+
+    case "RESOLVE_ACTIVE_PROCESS": {
+      const now = action.payload?.now ?? Date.now();
+      const player = applyConditionDecay(state.player, now);
+      const activeProcess = player.activeProcess;
+
+      if (!activeProcess || activeProcess.status === "complete") {
+        return {
+          ...state,
+          player,
+        };
+      }
+
+      if (now < activeProcess.endsAt) {
+        return {
+          ...state,
+          player,
+        };
+      }
+
+      return {
+        ...state,
+        player: {
+          ...player,
+          activeProcess: {
+            ...activeProcess,
+            status: "complete",
+          },
+        },
+      };
+    }
+
+    case "CLAIM_EXPLORATION_REWARD": {
+      const now = Date.now();
+      const player = applyConditionDecay(state.player, now);
+      const activeProcess = player.activeProcess;
+
+      if (
+        !activeProcess ||
+        activeProcess.kind !== "exploration" ||
+        activeProcess.status !== "complete"
+      ) {
+        return {
+          ...state,
+          player,
+        };
+      }
+
+      const nextPlayer = applyMissionReward(player, phase1ExplorationReward);
+
+      return {
+        ...state,
+        player: {
+          ...nextPlayer,
+          activeProcess: null,
+          hasBiotechSpecimenLead: true,
+        },
+      };
+    }
+
+    case "CLEAR_ACTIVE_PROCESS":
+      if (state.player.activeProcess === null) {
+        return state;
+      }
+
+      return {
+        ...state,
+        player: {
+          ...state.player,
+          activeProcess: null,
         },
       };
 

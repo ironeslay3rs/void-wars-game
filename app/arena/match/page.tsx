@@ -247,6 +247,7 @@ export default function ArenaMatchPage() {
   );
 
   const logIdRef = useRef(2);
+  const matchResolutionAppliedRef = useRef(false);
 
   const [playerHp, setPlayerHp] = useState(playerProfile.maxHp);
   const [enemyHp, setEnemyHp] = useState(enemyProfile.maxHp);
@@ -301,6 +302,7 @@ export default function ArenaMatchPage() {
     setEnemyHp(enemyProfile.maxHp);
     setPhase("ready");
     setRewardsClaimed(false);
+    matchResolutionAppliedRef.current = false;
     setLastHitTarget(null);
     setLastHitValue(0);
     setLastHitCrit(false);
@@ -338,6 +340,12 @@ export default function ArenaMatchPage() {
     showHit("enemy", playerHit.damage, playerHit.isCrit);
 
     if (nextEnemyHp <= 0) {
+      if (!matchResolutionAppliedRef.current) {
+        dispatch({ type: "ADJUST_CONDITION", payload: -6 });
+        pushLog("Condition -6 (combat strain)");
+        matchResolutionAppliedRef.current = true;
+      }
+
       setPhase("victory");
       pushLog(`${enemyProfile.name} collapses. Arena victory confirmed.`);
       return;
@@ -366,6 +374,12 @@ export default function ArenaMatchPage() {
     showHit("player", enemyHit.damage, enemyHit.isCrit);
 
     if (nextPlayerHp <= 0) {
+      if (!matchResolutionAppliedRef.current) {
+        dispatch({ type: "ADJUST_CONDITION", payload: -10 });
+        pushLog("Condition -10 (combat strain)");
+        matchResolutionAppliedRef.current = true;
+      }
+
       setPhase("defeat");
       pushLog(`${player.playerName} has been overwhelmed. Combat link lost.`);
     }

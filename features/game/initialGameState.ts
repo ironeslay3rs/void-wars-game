@@ -7,6 +7,8 @@ export const initialGameState: GameState = {
     factionAlignment: "unbound",
 
     condition: 100,
+    conditionRecoveryAvailableAt: 0,
+    lastConditionTickAt: Date.now(),
 
     rank: "Initiate",
     rankLevel: 1,
@@ -15,6 +17,7 @@ export const initialGameState: GameState = {
 
     masteryProgress: 0,
     influence: 0,
+    hasBiotechSpecimenLead: false,
 
     resources: {
       credits: 250,
@@ -38,6 +41,8 @@ export const initialGameState: GameState = {
       gateStatus: "sealed",
     },
 
+    activeProcess: null,
+    lastHuntResult: null,
     missionQueue: [],
     maxMissionQueueSlots: 3,
   },

@@ -1,13 +1,15 @@
 import { initialGameState } from "@/features/game/initialGameState";
 import type {
+  ActiveProcess,
   GameState,
+  LatestHuntResult,
   MissionDefinition,
   MissionQueueEntry,
   PlayerState,
   ResourcesState,
 } from "@/features/game/gameTypes";
 
-const STORAGE_KEY = "void-wars-oblivion-game-state";
+const STORAGE_KEY_PREFIX = "void-wars-oblivion-game-state";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -41,6 +43,82 @@ function normalizeResources(value: unknown): ResourcesState {
       typeof raw.bioSamples === "number"
         ? raw.bioSamples
         : initialGameState.player.resources.bioSamples,
+  };
+}
+
+function normalizePartialResources(
+  value: unknown,
+): Partial<ResourcesState> {
+  if (!isRecord(value)) return {};
+
+  const result: Partial<ResourcesState> = {};
+
+  if (typeof value.credits === "number") result.credits = value.credits;
+  if (typeof value.ironOre === "number") result.ironOre = value.ironOre;
+  if (typeof value.scrapAlloy === "number") {
+    result.scrapAlloy = value.scrapAlloy;
+  }
+  if (typeof value.runeDust === "number") result.runeDust = value.runeDust;
+  if (typeof value.emberCore === "number") result.emberCore = value.emberCore;
+  if (typeof value.bioSamples === "number") {
+    result.bioSamples = value.bioSamples;
+  }
+
+  return result;
+}
+
+function normalizeLatestHuntResult(value: unknown): LatestHuntResult | null {
+  if (!isRecord(value)) return null;
+
+  if (
+    typeof value.missionId !== "string" ||
+    typeof value.huntTitle !== "string" ||
+    typeof value.resolvedAt !== "number" ||
+    typeof value.conditionDelta !== "number" ||
+    typeof value.conditionAfter !== "number" ||
+    typeof value.rankXpGained !== "number" ||
+    typeof value.masteryProgressGained !== "number" ||
+    typeof value.influenceGained !== "number"
+  ) {
+    return null;
+  }
+
+  return {
+    missionId: value.missionId,
+    huntTitle: value.huntTitle,
+    resolvedAt: value.resolvedAt,
+    conditionDelta: value.conditionDelta,
+    conditionAfter: value.conditionAfter,
+    rankXpGained: value.rankXpGained,
+    masteryProgressGained: value.masteryProgressGained,
+    influenceGained: value.influenceGained,
+    resourcesGained: normalizePartialResources(value.resourcesGained),
+  };
+}
+
+function normalizeActiveProcess(value: unknown): ActiveProcess | null {
+  if (!isRecord(value)) return null;
+
+  if (
+    typeof value.id !== "string" ||
+    value.kind !== "exploration" ||
+    (value.status !== "running" && value.status !== "complete") ||
+    typeof value.title !== "string" ||
+    (value.sourceId !== null && typeof value.sourceId !== "string") ||
+    typeof value.startedAt !== "number" ||
+    typeof value.endsAt !== "number"
+  ) {
+    return null;
+  }
+
+  return {
+    id: value.id,
+    kind: value.kind,
+    status: value.status,
+    title: value.title,
+    sourceId: value.sourceId,
+    startedAt: value.startedAt,
+    endsAt: value.endsAt,
   };
 }
 
@@ -125,6 +203,16 @@ function normalizePlayer(value: unknown): PlayerState {
         ? raw.condition
         : initialGameState.player.condition,
 
+    conditionRecoveryAvailableAt:
+      typeof raw.conditionRecoveryAvailableAt === "number"
+        ? raw.conditionRecoveryAvailableAt
+        : initialGameState.player.conditionRecoveryAvailableAt,
+
+    lastConditionTickAt:
+      typeof raw.lastConditionTickAt === "number"
+        ? raw.lastConditionTickAt
+        : Date.now(),
+
     rank:
       typeof raw.rank === "string" ? raw.rank : initialGameState.player.rank,
 
@@ -152,6 +240,11 @@ function normalizePlayer(value: unknown): PlayerState {
       typeof raw.influence === "number"
         ? raw.influence
         : initialGameState.player.influence,
+
+    hasBiotechSpecimenLead:
+      typeof raw.hasBiotechSpecimenLead === "boolean"
+        ? raw.hasBiotechSpecimenLead
+        : initialGameState.player.hasBiotechSpecimenLead,
 
     resources: normalizeResources(raw.resources),
 
@@ -222,6 +315,8 @@ function normalizePlayer(value: unknown): PlayerState {
           : initialGameState.player.districtState.gateStatus,
     },
 
+    activeProcess: normalizeActiveProcess(raw.activeProcess),
+    lastHuntResult: normalizeLatestHuntResult(raw.lastHuntResult),
     missionQueue: normalizeMissionQueue(raw.missionQueue),
 
     maxMissionQueueSlots:
@@ -240,11 +335,15 @@ function normalizeLoadedState(value: unknown): GameState | null {
   };
 }
 
-export function loadGameState(): GameState | null {
+export function getGameStorageKey(userId: string) {
+  return `${STORAGE_KEY_PREFIX}:${userId}`;
+}
+
+export function loadGameState(userId: string): GameState | null {
   if (typeof window === "undefined") return null;
 
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = window.localStorage.getItem(getGameStorageKey(userId));
     if (!raw) return null;
 
     const parsed = JSON.parse(raw);
@@ -254,11 +353,21 @@ export function loadGameState(): GameState | null {
   }
 }
 
-export function saveGameState(state: GameState) {
+export function saveGameState(userId: string, state: GameState) {
   if (typeof window === "undefined") return;
 
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    window.localStorage.setItem(getGameStorageKey(userId), JSON.stringify(state));
+  } catch {
+    // ignore storage errors
+  }
+}
+
+export function clearGameState(userId: string) {
+  if (typeof window === "undefined") return;
+
+  try {
+    window.localStorage.removeItem(getGameStorageKey(userId));
   } catch {
     // ignore storage errors
   }

@@ -1,6 +1,8 @@
 "use client";
 
 import { useGame } from "@/features/game/gameContext";
+import { useRecoveryCooldown } from "@/features/status/useRecoveryCooldown";
+import { STATUS_RECOVERY_COST } from "@/features/status/statusRecovery";
 
 function formatFactionLabel(faction: string) {
   if (faction === "unbound") return "Unbound";
@@ -23,13 +25,25 @@ function getProgressPercent(current: number, max: number) {
 }
 
 export default function StatusHeroCard() {
-  const { state } = useGame();
+  const { state, dispatch } = useGame();
   const { player } = state;
+  const {
+    recoveryCooldownRemainingSeconds,
+    isRecoveryOnCooldown,
+  } = useRecoveryCooldown(player.conditionRecoveryAvailableAt);
+  const canAffordRecovery = player.resources.credits >= STATUS_RECOVERY_COST;
+  const canRecoverCondition = canAffordRecovery && !isRecoveryOnCooldown;
 
   const rankProgress = getProgressPercent(
     player.rankXp,
     player.rankXpToNext,
   );
+
+  function handleRecoverCondition() {
+    if (!canRecoverCondition) return;
+
+    dispatch({ type: "RECOVER_CONDITION" });
+  }
 
   return (
     <div className="grid gap-6 lg:grid-cols-[300px_1fr]">
@@ -100,6 +114,34 @@ export default function StatusHeroCard() {
           <div className="text-xs text-white/60 mt-2">
             {getConditionLabel(player.condition)}
           </div>
+
+          <div className="mt-2 text-xs text-white/45">
+            Recovery Cost: {STATUS_RECOVERY_COST} Credits
+          </div>
+
+          <div className="mt-1 text-xs text-white/45">
+            {isRecoveryOnCooldown
+              ? `Recovery Cooldown: ${recoveryCooldownRemainingSeconds}s`
+              : "Recovery Cooldown: Ready"}
+          </div>
+
+          <button
+            type="button"
+            onClick={handleRecoverCondition}
+            disabled={!canRecoverCondition}
+            className={[
+              "mt-3 rounded-lg border px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] transition",
+              canRecoverCondition
+                ? "border-white/15 bg-white/5 text-white/85 hover:border-white/25 hover:bg-white/10"
+                : "cursor-not-allowed border-white/10 bg-white/[0.03] text-white/30",
+            ].join(" ")}
+          >
+            {isRecoveryOnCooldown
+              ? "Recovery Cooling Down"
+              : canAffordRecovery
+                ? "Recover Condition"
+                : "Need 10 Credits"}
+          </button>
         </div>
 
         {/* MASTERY */}
