@@ -74,18 +74,28 @@ async function supabaseRequest(
   accessToken?: string,
 ) {
   const { url, anonKey } = getSupabaseConfig();
+  const requestUrl = `${url}${path}`;
 
-  const response = await fetch(`${url}${path}`, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      apikey: anonKey,
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-      ...(init.headers ?? {}),
-    },
-  });
+  console.log("[authClient] Supabase base URL", url);
+  console.log("[authClient] Supabase path", path);
+  console.log("[authClient] Supabase request URL", requestUrl);
 
-  return response;
+  try {
+    const response = await fetch(requestUrl, {
+      ...init,
+      headers: {
+        "Content-Type": "application/json",
+        apikey: anonKey,
+        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        ...(init.headers ?? {}),
+      },
+    });
+
+    return response;
+  } catch (error) {
+    console.error("[authClient] Supabase fetch failed", error);
+    throw error;
+  }
 }
 
 async function readErrorMessage(response: Response) {
