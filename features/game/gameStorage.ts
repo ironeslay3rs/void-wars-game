@@ -167,9 +167,15 @@ function normalizePlayer(value: unknown): PlayerState {
         )
       : initialGameState.player.unlockedRoutes,
 
+    navigation: isRecord(raw.navigation)
+      ? initialGameState.player.navigation
+      : initialGameState.player.navigation,
+
     districtState: {
       forgeStatus:
         rawDistrictState.forgeStatus === "idle" ||
+        rawDistrictState.forgeStatus === "crafting" ||
+        rawDistrictState.forgeStatus === "complete" ||
         rawDistrictState.forgeStatus === "active" ||
         rawDistrictState.forgeStatus === "locked"
           ? rawDistrictState.forgeStatus
@@ -184,6 +190,8 @@ function normalizePlayer(value: unknown): PlayerState {
 
       mechaStatus:
         rawDistrictState.mechaStatus === "stable" ||
+        rawDistrictState.mechaStatus === "upgrading" ||
+        rawDistrictState.mechaStatus === "ready" ||
         rawDistrictState.mechaStatus === "unstable" ||
         rawDistrictState.mechaStatus === "locked"
           ? rawDistrictState.mechaStatus
@@ -206,7 +214,10 @@ function normalizePlayer(value: unknown): PlayerState {
       gateStatus:
         rawDistrictState.gateStatus === "sealed" ||
         rawDistrictState.gateStatus === "available" ||
-        rawDistrictState.gateStatus === "traveling"
+        rawDistrictState.gateStatus === "traveling" ||
+        rawDistrictState.gateStatus === "standby" ||
+        rawDistrictState.gateStatus === "charging" ||
+        rawDistrictState.gateStatus === "open"
           ? rawDistrictState.gateStatus
           : initialGameState.player.districtState.gateStatus,
     },
