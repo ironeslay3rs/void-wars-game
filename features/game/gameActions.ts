@@ -1,4 +1,5 @@
 import { initialGameState } from "@/features/game/initialGameState";
+import { feastHallOffers } from "@/features/black-market/feastHallData";
 import { phase1ExplorationReward } from "@/features/exploration/explorationData";
 import {
   applyMissionReward,
@@ -198,6 +199,57 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       };
     }
 
+
+    case "PURCHASE_FEAST_OFFER": {
+      if (state.player.activeProvision !== null) {
+        return state;
+      }
+
+      const offer = feastHallOffers.find(
+        (entry) => entry.id === action.payload.offerId,
+      );
+
+      if (!offer) {
+        return state;
+      }
+
+      const canAffordOffer = Object.entries(offer.cost).every(
+        ([resourceKey, amount]) =>
+          state.player.resources[resourceKey as ResourceKey] >= (amount ?? 0),
+      );
+
+      if (!canAffordOffer) {
+        return state;
+      }
+
+      const nextResources = Object.entries(offer.cost).reduce(
+        (resources, [resourceKey, amount]) => ({
+          ...resources,
+          [resourceKey]: Math.max(0, resources[resourceKey as ResourceKey] - (amount ?? 0)),
+        }),
+        state.player.resources,
+      );
+
+      return {
+        ...state,
+        player: {
+          ...state.player,
+          condition: clamp(
+            state.player.condition + offer.conditionRecovery,
+            0,
+            100,
+          ),
+          resources: nextResources,
+          activeProvision: {
+            offerId: offer.id,
+            title: offer.title,
+            conditionMitigation: offer.nextExpeditionMitigation,
+            purchasedAt: action.payload.purchasedAt ?? Date.now(),
+          },
+        },
+      };
+    }
+
     case "RESOLVE_HUNT": {
       const now = action.payload.resolvedAt ?? Date.now();
       const player = applyConditionDecay(state.player, now);
@@ -244,7 +296,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             missionId: mission.id,
             huntTitle: mission.title,
             resolvedAt,
-            conditionDelta: mission.reward.conditionDelta,
+            conditionDelta: nextPlayer.condition - player.condition,
             conditionAfter: nextPlayer.condition,
             rankXpGained: mission.reward.rankXp,
             masteryProgressGained: mission.reward.masteryProgress,

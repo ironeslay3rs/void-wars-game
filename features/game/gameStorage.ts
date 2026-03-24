@@ -1,6 +1,7 @@
 import { initialGameState } from "@/features/game/initialGameState";
 import type {
   ActiveProcess,
+  ActiveProvision,
   GameState,
   LatestHuntResult,
   MissionCategory,
@@ -94,6 +95,28 @@ function normalizeLatestHuntResult(value: unknown): LatestHuntResult | null {
     masteryProgressGained: value.masteryProgressGained,
     influenceGained: value.influenceGained,
     resourcesGained: normalizePartialResources(value.resourcesGained),
+  };
+}
+
+function normalizeActiveProvision(value: unknown): ActiveProvision | null {
+  if (!isRecord(value)) return null;
+
+  if (
+    (value.offerId !== "frontline-broth" &&
+      value.offerId !== "citadel-hotplate" &&
+      value.offerId !== "gluttons-compact") ||
+    typeof value.title !== "string" ||
+    typeof value.conditionMitigation !== "number" ||
+    typeof value.purchasedAt !== "number"
+  ) {
+    return null;
+  }
+
+  return {
+    offerId: value.offerId,
+    title: value.title,
+    conditionMitigation: value.conditionMitigation,
+    purchasedAt: value.purchasedAt,
   };
 }
 
@@ -258,6 +281,7 @@ function normalizePlayer(value: unknown): PlayerState {
         : initialGameState.player.hasBiotechSpecimenLead,
 
     resources: normalizeResources(raw.resources),
+    activeProvision: normalizeActiveProvision(raw.activeProvision),
 
     knownRecipes: Array.isArray(raw.knownRecipes)
       ? raw.knownRecipes.filter(

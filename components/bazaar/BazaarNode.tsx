@@ -10,6 +10,7 @@ const themeStyles: Record<BazaarDistrict["themeKey"], string> = {
   guild: "border-amber-400/25 bg-amber-500/10 hover:border-amber-300/45",
   faction: "border-fuchsia-400/25 bg-fuchsia-500/10 hover:border-fuchsia-300/45",
   travel: "border-sky-400/25 bg-sky-500/10 hover:border-sky-300/45",
+  feast: "border-amber-300/35 bg-amber-500/12 hover:border-amber-200/60",
 };
 
 export default function BazaarNode({

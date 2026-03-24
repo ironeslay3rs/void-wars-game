@@ -6,7 +6,8 @@ export type BazaarDistrictId =
   | "mecha-foundry"
   | "mercenary-guild"
   | "faction-hqs"
-  | "teleport-gate";
+  | "teleport-gate"
+  | "feast-hall";
 
 export type BazaarDistrictThemeKey =
   | "bio"
@@ -16,7 +17,8 @@ export type BazaarDistrictThemeKey =
   | "mecha"
   | "guild"
   | "faction"
-  | "travel";
+  | "travel"
+  | "feast";
 
 export type BazaarDistrict = {
   id: BazaarDistrictId;
@@ -105,6 +107,17 @@ export const bazaarDistrictData: BazaarDistrict[] = [
     route: "/bazaar/faction-hqs",
     themeKey: "faction",
     positionClass: "left-[16%] bottom-[6%]",
+    widthClass: "w-[320px]",
+  },
+  {
+    id: "feast-hall",
+    title: "Feast Hall",
+    subtitle: "Gluttony Lane",
+    description:
+      "Buy survival meals, convert scarce stock into readiness, and leave with one protected push into the front.",
+    route: "/bazaar/feast-hall",
+    themeKey: "feast",
+    positionClass: "left-[37%] top-[67%]",
     widthClass: "w-[320px]",
   },
   {

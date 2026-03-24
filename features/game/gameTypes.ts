@@ -6,6 +6,11 @@ import type {
 export type FactionAlignment = "unbound" | "bio" | "mecha" | "spirit";
 export type PathType = Exclude<FactionAlignment, "unbound">;
 
+export type FeastHallOfferId =
+  | "frontline-broth"
+  | "citadel-hotplate"
+  | "gluttons-compact";
+
 /* =========================
    RESOURCES
 ========================= */
@@ -119,6 +124,13 @@ export type MissionQueueEntry = {
    PLAYER
 ========================= */
 
+export type ActiveProvision = {
+  offerId: FeastHallOfferId;
+  title: string;
+  conditionMitigation: number;
+  purchasedAt: number;
+};
+
 export type PlayerState = {
   playerName: string;
   factionAlignment: FactionAlignment;
@@ -137,6 +149,7 @@ export type PlayerState = {
   hasBiotechSpecimenLead: boolean;
 
   resources: ResourcesState;
+  activeProvision: ActiveProvision | null;
 
   knownRecipes: string[];
   unlockedRoutes: string[];
@@ -173,6 +186,7 @@ export type GameAction =
   | { type: "SET_RANK_NAME"; payload: string }
   | { type: "ADJUST_CONDITION"; payload: number }
   | { type: "RECOVER_CONDITION" }
+  | { type: "PURCHASE_FEAST_OFFER"; payload: { offerId: FeastHallOfferId; purchasedAt?: number } }
   | { type: "RESOLVE_HUNT"; payload: { missionId: string; resolvedAt?: number } }
   | {
       type: "START_EXPLORATION_PROCESS";

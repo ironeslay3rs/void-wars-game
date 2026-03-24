@@ -27,6 +27,7 @@ export const initialGameState: GameState = {
       emberCore: 2,
       bioSamples: 0,
     },
+    activeProvision: null,
 
     knownRecipes: [],
     unlockedRoutes: ["home", "bazaar"],
