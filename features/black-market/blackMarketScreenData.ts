@@ -58,8 +58,7 @@ export const blackMarketLanes: BlackMarketLane[] = [
       "Luxury pricing and vanity trap: players sink scarce materials and credits into premium upgrades before their survival base is stable.",
     playerUse:
       "Best for players who already have a dependable loop and want focused quality upgrades, faction expression, or a gold sink for rare drops.",
-    archetype:
-      "Curator-Matriarch who sells perfection as a doctrine and duels over defects.",
+    archetype: "Curator-Matriarch who sells perfection as a doctrine and duels over defects.",
   },
   {
     id: "greed",
@@ -73,8 +72,7 @@ export const blackMarketLanes: BlackMarketLane[] = [
       "Debt pressure and asset lockups: missed payback windows can tie up resources, reduce profit, or force players to liquidate gear.",
     playerUse:
       "Best for players bridging short-term shortages, funding crafting bursts, or monetizing rare drops from hunts and expeditions.",
-    archetype:
-      "Ledger-Lord banker running a silent auction floor guarded by debt collectors.",
+    archetype: "Ledger-Lord banker running a silent auction floor guarded by debt collectors.",
   },
   {
     id: "lust",
@@ -88,8 +86,7 @@ export const blackMarketLanes: BlackMarketLane[] = [
       "Compounding obligations: players gain strong tempo now but inherit cooldowns, future penalties, or required follow-up tasks.",
     playerUse:
       "Best for players preparing for a difficult mission push, a timed hunt window, or a one-session progression spike.",
-    archetype:
-      "Velvet-voiced pact broker who weaponizes fine print and memory-bound vows.",
+    archetype: "Velvet-voiced pact broker who weaponizes fine print and memory-bound vows.",
   },
   {
     id: "wrath",
@@ -103,8 +100,7 @@ export const blackMarketLanes: BlackMarketLane[] = [
       "Condition loss and volatility: players take on harder encounters, attrition, and unstable payout ranges.",
     playerUse:
       "Best for combat-forward players who want to translate strength into faster resource gains and rarer contract targets.",
-    archetype:
-      "Scarred pit master who recruits champions and sells grudges as repeatable work.",
+    archetype: "Scarred pit master who recruits champions and sells grudges as repeatable work.",
   },
   {
     id: "gluttony",
@@ -118,8 +114,7 @@ export const blackMarketLanes: BlackMarketLane[] = [
       "Spoilage and overconsumption: players can waste raw materials on short-duration comfort effects instead of durable progression.",
     playerUse:
       "Best for players who need reliable healing, condition recovery, or prep items before long mission chains.",
-    archetype:
-      "Cannery sovereign overseeing cold vaults, ration lines, and ceremonial banquets.",
+    archetype: "Cannery sovereign overseeing cold vaults, ration lines, and ceremonial banquets.",
   },
   {
     id: "envy",
@@ -133,8 +128,7 @@ export const blackMarketLanes: BlackMarketLane[] = [
       "Instability and trace risk: fake parts can fail, mutate, or trigger faction suspicion if pushed too hard.",
     playerUse:
       "Best for experimental players who want preview access to future build paths before investing in permanent crafting.",
-    archetype:
-      "Chameleon surgeon who wears borrowed identities and sells unauthorized replicas.",
+    archetype: "Chameleon surgeon who wears borrowed identities and sells unauthorized replicas.",
   },
   {
     id: "sloth",
@@ -148,8 +142,7 @@ export const blackMarketLanes: BlackMarketLane[] = [
       "Throughput loss and dependency: automated jobs are slower or taxed, making convenience weaker than active play.",
     playerUse:
       "Best for players converting overflow materials, protecting perishables, or maintaining progress during offline windows.",
-    archetype:
-      "Sleep-blind overseer who manages a silent workforce of clockwork attendants.",
+    archetype: "Sleep-blind overseer who manages a silent workforce of clockwork attendants.",
   },
 ];
 
