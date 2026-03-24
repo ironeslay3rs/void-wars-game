@@ -3,11 +3,11 @@ import type { GameState } from "@/features/game/gameTypes";
 function formatFactionLabel(alignment: GameState["player"]["factionAlignment"]) {
   switch (alignment) {
     case "bio":
-      return "Bio";
+      return "Verdant Coil";
     case "mecha":
-      return "Mecha";
+      return "Chrome Synod";
     case "spirit":
-      return "Spirit";
+      return "Ember Vault";
     default:
       return "Unbound";
   }

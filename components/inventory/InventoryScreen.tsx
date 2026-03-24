@@ -12,9 +12,9 @@ import { inventoryScreenData } from "@/features/inventory/inventoryScreenData";
 
 function formatFactionLabel(faction: string) {
   if (faction === "unbound") return "Unbound";
-  if (faction === "bio") return "Bio";
-  if (faction === "mecha") return "Mecha";
-  if (faction === "spirit") return "Spirit";
+  if (faction === "bio") return "Verdant Coil";
+  if (faction === "mecha") return "Chrome Synod";
+  if (faction === "spirit") return "Ember Vault";
   return faction;
 }
 

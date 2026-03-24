@@ -3,11 +3,11 @@ import type { GameState } from "@/features/game/gameTypes";
 function formatFactionLabel(alignment: GameState["player"]["factionAlignment"]) {
   switch (alignment) {
     case "bio":
-      return "Bio";
+      return "Verdant Coil";
     case "mecha":
-      return "Mecha";
+      return "Chrome Synod";
     case "spirit":
-      return "Spirit";
+      return "Ember Vault";
     default:
       return "Unbound";
   }
@@ -18,7 +18,7 @@ export function getFactionHqsScreenData(state: GameState) {
     eyebrow: "Bazaar / Faction HQs",
     title: "Faction HQs",
     subtitle:
-      "Enter aligned power centers, build allegiance, and deepen faction-based progression systems.",
+      "Enter school strongholds, build allegiance, and prepare for guild-era expansion across the Void.",
     cards: [
       {
         label: "Faction Alignment",

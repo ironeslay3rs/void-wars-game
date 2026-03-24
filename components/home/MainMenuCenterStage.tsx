@@ -13,9 +13,9 @@ const pathGlowMap: Record<PathSelection, string> = {
 };
 
 const pathLabelMap: Record<PathSelection, string> = {
-  bio: "Bio Path Engaged",
-  mecha: "Mecha Path Engaged",
-  spirit: "Spirit Path Engaged",
+  bio: "Verdant Coil Engaged",
+  mecha: "Chrome Synod Engaged",
+  spirit: "Ember Vault Engaged",
 };
 
 const pathDescriptionMap: Record<PathSelection, string> = {

@@ -22,13 +22,13 @@ export const careerScreenData: CareerScreenData = {
   eyebrow: "Void Wars / Career Protocol",
   title: "Career Systems",
   subtitle:
-    "Define long-term role identity, specialization direction, and class progression across Bio, Mecha, and Spirit paths.",
+    "Define long-term role identity, specialization direction, and class progression across Verdant Coil, Chrome Synod, and Ember Vault paths.",
 
   cards: [
     {
       label: "Tracks",
       value: "03",
-      hint: "Bio / Mecha / Spirit foundations",
+      hint: "Bio / Mecha / Ember foundations",
     },
     {
       label: "Branches",
@@ -47,7 +47,7 @@ export const careerScreenData: CareerScreenData = {
       title: "Career Tracks",
       description:
         "Reserved for long-term identity choices and specialization branches.",
-      body: "Reserved for role paths, branching commitments, and future class development.",
+      body: "Reserved for school loyalties, branching commitments, and future class development.",
     },
     {
       title: "Progress Outlook",

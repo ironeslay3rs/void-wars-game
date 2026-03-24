@@ -47,11 +47,11 @@ function formatDuration(durationHours: number) {
 function formatPathLabel(path: "neutral" | "bio" | "mecha" | "spirit") {
   switch (path) {
     case "bio":
-      return "Bio";
+      return "Verdant Coil";
     case "mecha":
-      return "Mecha";
+      return "Chrome Synod";
     case "spirit":
-      return "Spirit";
+      return "Ember Vault";
     default:
       return "Neutral";
   }

@@ -43,8 +43,8 @@ export default function FactionHqsPage() {
 
         <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           <SectionCard
-            title="Faction Wings"
-            description="Choose an alignment and begin building influence inside the Bazaar."
+            title="School Wings"
+            description="Choose a school alignment and begin building influence inside the Bazaar."
           >
             <div className="space-y-3">
               <button
@@ -52,7 +52,7 @@ export default function FactionHqsPage() {
                 onClick={() => joinFaction("bio")}
                 className="block w-full rounded-xl border border-emerald-400/20 bg-emerald-500/10 p-4 text-left text-sm text-white transition hover:bg-emerald-500/20"
               >
-                Bio Wing
+                Verdant Coil Wing
               </button>
 
               <button
@@ -60,7 +60,7 @@ export default function FactionHqsPage() {
                 onClick={() => joinFaction("mecha")}
                 className="block w-full rounded-xl border border-cyan-400/20 bg-cyan-500/10 p-4 text-left text-sm text-white transition hover:bg-cyan-500/20"
               >
-                Mecha Wing
+                Chrome Synod Wing
               </button>
 
               <button
@@ -68,7 +68,7 @@ export default function FactionHqsPage() {
                 onClick={() => joinFaction("spirit")}
                 className="block w-full rounded-xl border border-violet-400/20 bg-violet-500/10 p-4 text-left text-sm text-white transition hover:bg-violet-500/20"
               >
-                Spirit Wing
+                Ember Vault Wing
               </button>
             </div>
           </SectionCard>

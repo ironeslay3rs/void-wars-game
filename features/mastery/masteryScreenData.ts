@@ -22,18 +22,18 @@ export const masteryScreenData: MasteryScreenData = {
   eyebrow: "Void Wars / Mastery Protocol",
   title: "Mastery Systems",
   subtitle:
-    "Track long-term growth, threshold unlocks, and path refinement across your evolution route.",
+    "Track long-term growth, Void-tier thresholds, and body / mind / soul refinement across your evolution route.",
 
   cards: [
     {
       label: "Trees",
       value: "03",
-      hint: "Primary mastery structures",
+      hint: "Body / Mind / Soul",
     },
     {
       label: "Milestones",
-      value: "12",
-      hint: "Major progression checkpoints",
+      value: "07",
+      hint: "Doctrine thresholds planned",
     },
     {
       label: "Status",
@@ -47,13 +47,13 @@ export const masteryScreenData: MasteryScreenData = {
       title: "Mastery Tree",
       description:
         "Future visual structure for growth branches, thresholds, and unlock paths.",
-      body: "Reserved for node trees, tier gates, and path refinement systems.",
+      body: "Reserved for body, mind, and soul node trees, Void-tier gates, and fusion refinement systems.",
     },
     {
       title: "Milestone Console",
       description:
         "Major progression checkpoints and reward state overview.",
-      body: "Reserved for milestone rewards, rank thresholds, and mastery state tracking.",
+      body: "Reserved for doctrine rewards, rank thresholds, and Legendary/Epic mastery state tracking.",
     },
   ],
 };

@@ -16,8 +16,8 @@ export const statusScreenData = {
     },
     {
       label: "Path",
-      value: "Spirit",
-      hint: "Current aligned path selection from the home screen.",
+      value: "Ember Vault",
+      hint: "Current aligned school selection from the home screen.",
     },
   ],
 };

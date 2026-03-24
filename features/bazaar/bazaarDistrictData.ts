@@ -43,10 +43,10 @@ export const bazaarDistrictData: BazaarDistrict[] = [
   },
   {
     id: "spirit-enclave",
-    title: "Spirit Enclave",
+    title: "Ash Archive",
     subtitle: "Ritual Sanctum",
     description:
-      "Soul rites, resonance chambers, and spirit-oriented progression paths.",
+      "Rune memory, ember rites, and Pure-path progression systems.",
     route: "/bazaar/spirit-enclave",
     themeKey: "spirit",
     positionClass: "left-[8%] top-[40%]",
@@ -99,7 +99,7 @@ export const bazaarDistrictData: BazaarDistrict[] = [
   {
     id: "faction-hqs",
     title: "Faction HQs",
-    subtitle: "Bio | Mecha | Spirit",
+    subtitle: "Verdant Coil | Chrome Synod | Ember Vault",
     description:
       "Enter your aligned power center and deepen faction identity.",
     route: "/bazaar/faction-hqs",

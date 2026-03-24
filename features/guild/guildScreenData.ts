@@ -2,7 +2,7 @@ export const guildScreenData = {
   eyebrow: "Collective Network",
   title: "Guild",
   subtitle:
-    "Manage alliance structure, member coordination, and future cooperative systems across the Void Wars world.",
+    "Manage guild reform, clan coordination, and cooperative systems as the schools awaken across the Void.",
   cards: [
     {
       label: "Guild Status",

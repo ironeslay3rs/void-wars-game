@@ -23,13 +23,13 @@ export const professionsScreenData: ProfessionsScreenData = {
   eyebrow: "Void Wars / Professions Protocol",
   title: "Profession Systems",
   subtitle:
-    "Define combat, crafting, and gathering roles across Bio, Mecha, and Spirit-aligned development paths.",
+    "Define combat, crafting, and gathering roles across Verdant Coil, Chrome Synod, and Ember Vault paths.",
 
   cards: [
     {
       label: "Roles",
-      value: "12",
-      hint: "Core profession identities",
+      value: "4",
+      hint: "Mage / Warlock / Assassin / Rune-Smith",
     },
     {
       label: "Focuses",
@@ -48,13 +48,13 @@ export const professionsScreenData: ProfessionsScreenData = {
       title: "Profession Classes",
       description:
         "Core profession families that will define combat, crafting, and support roles.",
-      items: ["Combat", "Crafting", "Gathering"],
+      items: ["Combat", "Crafting", "Gathering", "Doctrine"],
     },
     {
       title: "Role Development",
       description:
         "Reserved for profession depth, synergy, and specialization systems.",
-      body: "Reserved for role progression, advanced branches, and profession synergy.",
+      body: "Reserved for Rune-Smith, Mage, Assassin, and Warlock progression, advanced branches, and school synergy.",
     },
   ],
 };
