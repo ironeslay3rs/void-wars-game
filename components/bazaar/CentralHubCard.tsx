@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { bazaarHubThemes } from "@/config/bazaarTheme";
 
 type ThemeKey = keyof typeof bazaarHubThemes;
@@ -7,6 +8,7 @@ type CentralHubCardProps = {
   subtitle: string;
   badge: string;
   themeKey: ThemeKey;
+  route: string;
   positionClass: string;
   widthClass: string;
 };
@@ -16,14 +18,16 @@ export default function CentralHubCard({
   subtitle,
   badge,
   themeKey,
+  route,
   positionClass,
   widthClass,
 }: CentralHubCardProps) {
   const theme = bazaarHubThemes[themeKey];
 
   return (
-    <button
-      className={`absolute ${positionClass} ${widthClass} z-20 text-left transition duration-200 hover:scale-[1.02] hover:-translate-y-0.5`}
+    <Link
+      href={route}
+      className={`absolute ${positionClass} ${widthClass} z-20 block text-left transition duration-200 hover:scale-[1.02] hover:-translate-y-0.5`}
     >
       <div
         className={[
@@ -49,6 +53,6 @@ export default function CentralHubCard({
           </div>
         </div>
       </div>
-    </button>
+    </Link>
   );
 }

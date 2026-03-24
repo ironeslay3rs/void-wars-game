@@ -12,6 +12,12 @@ import {
 } from "lucide-react";
 import { useGame } from "@/features/game/gameContext";
 import { getCraftingDistrictScreenData } from "@/features/crafting-district/craftingDistrictScreenData";
+import {
+  hasStabilizationSigil,
+  RUNE_CRAFTER_STABILIZATION_SIGIL,
+  RUNE_CRAFTER_STABILIZATION_SIGIL_BONUS,
+  RUNE_CRAFTER_STABILIZATION_SIGIL_COST,
+} from "@/features/status/statusRecovery";
 
 const craftingStations = [
   {
@@ -45,9 +51,19 @@ export default function CraftingDistrictPage() {
   const { state, dispatch } = useGame();
   const screenData = getCraftingDistrictScreenData(state);
   const [refineResult, setRefineResult] = useState<string | null>(null);
+  const [sigilResult, setSigilResult] = useState<string | null>(null);
 
   const { ironOre, scrapAlloy, runeDust, emberCore } = state.player.resources;
   const canRefineScrapAlloy = ironOre >= 3;
+  const stabilizationSigilCrafted = hasStabilizationSigil(
+    state.player.knownRecipes,
+  );
+  const canCraftStabilizationSigil =
+    !stabilizationSigilCrafted &&
+    state.player.resources.credits >=
+      RUNE_CRAFTER_STABILIZATION_SIGIL_COST.credits &&
+    runeDust >= RUNE_CRAFTER_STABILIZATION_SIGIL_COST.runeDust &&
+    emberCore >= RUNE_CRAFTER_STABILIZATION_SIGIL_COST.emberCore;
 
   function refineScrapAlloy() {
     if (!canRefineScrapAlloy) {
@@ -64,6 +80,51 @@ export default function CraftingDistrictPage() {
       payload: { key: "scrapAlloy", amount: 1 },
     });
     setRefineResult("Refinement complete. 3 Iron Ore became 1 Scrap Alloy.");
+  }
+
+  function craftStabilizationSigil() {
+    if (stabilizationSigilCrafted) {
+      setSigilResult(
+        "Stabilization Sigil already inscribed. Recovery routines are permanently reinforced.",
+      );
+      return;
+    }
+
+    if (!canCraftStabilizationSigil) {
+      setSigilResult(
+        `Need ${RUNE_CRAFTER_STABILIZATION_SIGIL_COST.credits} Credits, ${RUNE_CRAFTER_STABILIZATION_SIGIL_COST.runeDust} Rune Dust, and ${RUNE_CRAFTER_STABILIZATION_SIGIL_COST.emberCore} Ember Core.`,
+      );
+      return;
+    }
+
+    dispatch({
+      type: "SPEND_RESOURCE",
+      payload: {
+        key: "credits",
+        amount: RUNE_CRAFTER_STABILIZATION_SIGIL_COST.credits,
+      },
+    });
+    dispatch({
+      type: "SPEND_RESOURCE",
+      payload: {
+        key: "runeDust",
+        amount: RUNE_CRAFTER_STABILIZATION_SIGIL_COST.runeDust,
+      },
+    });
+    dispatch({
+      type: "SPEND_RESOURCE",
+      payload: {
+        key: "emberCore",
+        amount: RUNE_CRAFTER_STABILIZATION_SIGIL_COST.emberCore,
+      },
+    });
+    dispatch({
+      type: "ADD_RECIPE",
+      payload: RUNE_CRAFTER_STABILIZATION_SIGIL,
+    });
+    setSigilResult(
+      `Sigil bound. All future recovery actions now restore +${RUNE_CRAFTER_STABILIZATION_SIGIL_BONUS} extra condition.`,
+    );
   }
 
   return (
@@ -150,7 +211,8 @@ export default function CraftingDistrictPage() {
                   Convert raw ore into usable alloy plating.
                 </div>
                 <div className="mt-2 text-sm text-white/65">
-                  Immediate district function for M1: refine 3 Iron Ore into 1 Scrap Alloy.
+                  Immediate district function for M1: refine 3 Iron Ore into 1
+                  Scrap Alloy.
                 </div>
 
                 <button
@@ -166,33 +228,78 @@ export default function CraftingDistrictPage() {
                 </button>
 
                 <div className="mt-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/75">
-                  {refineResult ?? "Refinery idle. Process raw ore whenever you need alloy."}
+                  {refineResult ??
+                    "Refinery idle. Process raw ore whenever you need alloy."}
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-black/25 p-6">
-            <div className="text-[11px] uppercase tracking-[0.22em] text-orange-300/70">
-              Resources
+          <div className="grid gap-4">
+            <div className="rounded-2xl border border-white/10 bg-black/25 p-6">
+              <div className="text-[11px] uppercase tracking-[0.22em] text-orange-300/70">
+                Rune Crafter Output
+              </div>
+              <h2 className="mt-2 text-xl font-black uppercase">
+                Stabilization Sigil
+              </h2>
+              <div className="mt-4 rounded-xl border border-amber-400/20 bg-amber-500/8 p-4">
+                <div className="text-sm font-semibold text-white">
+                  Inscribe a permanent recovery ward into your field kit.
+                </div>
+                <div className="mt-2 text-sm text-white/65">
+                  This is the first live profession output: Rune Crafter work
+                  that directly strengthens the recovery step after exploration
+                  and missions drain condition.
+                </div>
+
+                <button
+                  type="button"
+                  onClick={craftStabilizationSigil}
+                  disabled={!canCraftStabilizationSigil}
+                  className="mt-4 w-full rounded-xl border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-left text-sm font-semibold text-amber-100 transition hover:bg-amber-500/20 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {stabilizationSigilCrafted
+                    ? "Stabilization Sigil Inscribed"
+                    : "Craft Stabilization Sigil"}
+                  <div className="mt-1 text-xs text-white/60">
+                    Costs {RUNE_CRAFTER_STABILIZATION_SIGIL_COST.credits} Credits /{" "}
+                    {RUNE_CRAFTER_STABILIZATION_SIGIL_COST.runeDust} Rune Dust /{" "}
+                    {RUNE_CRAFTER_STABILIZATION_SIGIL_COST.emberCore} Ember Core
+                  </div>
+                </button>
+
+                <div className="mt-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/75">
+                  {sigilResult ??
+                    (stabilizationSigilCrafted
+                      ? `Active. Recovery actions now restore +${RUNE_CRAFTER_STABILIZATION_SIGIL_BONUS} extra condition.`
+                      : "Inactive. Craft the sigil to turn Rune Crafter output into a real recovery advantage.")}
+                </div>
+              </div>
             </div>
-            <h2 className="mt-2 text-xl font-black uppercase">Material Stock</h2>
-            <div className="mt-4 space-y-3 text-sm text-white/75">
-              <div className="flex justify-between rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2">
-                <span>Iron Ore</span>
-                <span>{ironOre}</span>
+
+            <div className="rounded-2xl border border-white/10 bg-black/25 p-6">
+              <div className="text-[11px] uppercase tracking-[0.22em] text-orange-300/70">
+                Resources
               </div>
-              <div className="flex justify-between rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2">
-                <span>Scrap Alloy</span>
-                <span>{scrapAlloy}</span>
-              </div>
-              <div className="flex justify-between rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2">
-                <span>Rune Dust</span>
-                <span>{runeDust}</span>
-              </div>
-              <div className="flex justify-between rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2">
-                <span>Ember Core</span>
-                <span>{emberCore}</span>
+              <h2 className="mt-2 text-xl font-black uppercase">Material Stock</h2>
+              <div className="mt-4 space-y-3 text-sm text-white/75">
+                <div className="flex justify-between rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2">
+                  <span>Iron Ore</span>
+                  <span>{ironOre}</span>
+                </div>
+                <div className="flex justify-between rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2">
+                  <span>Scrap Alloy</span>
+                  <span>{scrapAlloy}</span>
+                </div>
+                <div className="flex justify-between rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2">
+                  <span>Rune Dust</span>
+                  <span>{runeDust}</span>
+                </div>
+                <div className="flex justify-between rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2">
+                  <span>Ember Core</span>
+                  <span>{emberCore}</span>
+                </div>
               </div>
             </div>
           </div>
