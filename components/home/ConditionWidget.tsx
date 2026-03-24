@@ -8,6 +8,7 @@ type ConditionWidgetProps = {
   rankXp: number;
   rankXpToNext: number;
   condition: number;
+  hunger: number;
   masteryProgress: number;
 };
 
@@ -18,6 +19,7 @@ export default function ConditionWidget({
   rankXp,
   rankXpToNext,
   condition,
+  hunger,
   masteryProgress,
 }: ConditionWidgetProps) {
   const conditionLabel =
@@ -33,6 +35,12 @@ export default function ConditionWidget({
     rankXpToNext > 0 ? Math.min(100, (rankXp / rankXpToNext) * 100) : 0;
 
   const masteryPercent = Math.min(100, Math.max(0, masteryProgress));
+  const hungerLabel =
+    hunger >= 70
+      ? "Stores are full."
+      : hunger >= 40
+        ? "Stores are thinning."
+        : "Starvation pressure rising.";
 
   const pathLabel = path ? path.toUpperCase() : "UNBOUND";
 
@@ -85,6 +93,30 @@ export default function ConditionWidget({
             <div
               className="h-full rounded-full bg-red-500 transition-all"
               style={{ width: `${xpPercent}%` }}
+            />
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-[10px] uppercase tracking-[0.18em] text-white/45">
+                Hunger
+              </div>
+              <div className="mt-1 text-sm font-semibold text-white">
+                {hunger}%
+              </div>
+            </div>
+
+            <div className="text-right text-xs text-white/55">
+              {hungerLabel}
+            </div>
+          </div>
+
+          <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
+            <div
+              className="h-full rounded-full bg-amber-400 transition-all"
+              style={{ width: `${Math.max(0, Math.min(100, hunger))}%` }}
             />
           </div>
         </div>

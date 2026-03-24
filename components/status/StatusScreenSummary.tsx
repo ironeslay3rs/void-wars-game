@@ -5,6 +5,7 @@ import { useGame } from "@/features/game/gameContext";
 import { getFirstSessionGuidance } from "@/features/guidance/firstSessionGuidance";
 import { useRecoveryCooldown } from "@/features/status/useRecoveryCooldown";
 import { STATUS_RECOVERY_COST } from "@/features/status/statusRecovery";
+import { HUNGER_PRESSURE_THRESHOLD } from "@/features/status/survival";
 
 export default function StatusScreenSummary() {
   const { state } = useGame();
@@ -15,6 +16,22 @@ export default function StatusScreenSummary() {
     isRecoveryOnCooldown,
   } = useRecoveryCooldown(player.conditionRecoveryAvailableAt);
   const canAffordRecovery = player.resources.credits >= STATUS_RECOVERY_COST;
+
+  if (player.hunger < HUNGER_PRESSURE_THRESHOLD) {
+    return (
+      <ScreenStateSummary
+        eyebrow="Survival State"
+        title="Hungry"
+        consequence="Hunger is now feeding extra condition pressure. Stabilize before stretching the loop."
+        nextStep={
+          player.resources.mossRations > 0
+            ? "Recommended. Use a Moss Ration to restore stores and ease survival pressure."
+            : "Recommended. Craft a Moss Ration in the Crafting District, then return here to stabilize."
+        }
+        tone="warning"
+      />
+    );
+  }
 
   if (player.condition < 40) {
     return (

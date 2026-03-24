@@ -44,6 +44,10 @@ function normalizeResources(value: unknown): ResourcesState {
       typeof raw.bioSamples === "number"
         ? raw.bioSamples
         : initialGameState.player.resources.bioSamples,
+    mossRations:
+      typeof raw.mossRations === "number"
+        ? raw.mossRations
+        : initialGameState.player.resources.mossRations,
   };
 }
 
@@ -63,6 +67,9 @@ function normalizePartialResources(
   if (typeof value.emberCore === "number") result.emberCore = value.emberCore;
   if (typeof value.bioSamples === "number") {
     result.bioSamples = value.bioSamples;
+  }
+  if (typeof value.mossRations === "number") {
+    result.mossRations = value.mossRations;
   }
 
   return result;
@@ -213,6 +220,11 @@ function normalizePlayer(value: unknown): PlayerState {
       typeof raw.condition === "number"
         ? raw.condition
         : initialGameState.player.condition,
+
+    hunger:
+      typeof raw.hunger === "number"
+        ? raw.hunger
+        : initialGameState.player.hunger,
 
     conditionRecoveryAvailableAt:
       typeof raw.conditionRecoveryAvailableAt === "number"

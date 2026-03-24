@@ -7,6 +7,7 @@ export const initialGameState: GameState = {
     factionAlignment: "unbound",
 
     condition: 100,
+    hunger: 100,
     conditionRecoveryAvailableAt: 0,
     lastConditionTickAt: Date.now(),
 
@@ -26,6 +27,7 @@ export const initialGameState: GameState = {
       runeDust: 10,
       emberCore: 2,
       bioSamples: 0,
+      mossRations: 2,
     },
 
     knownRecipes: [],

@@ -16,7 +16,8 @@ export type ResourceKey =
   | "scrapAlloy"
   | "runeDust"
   | "emberCore"
-  | "bioSamples";
+  | "bioSamples"
+  | "mossRations";
 
 export type ResourcesState = Record<ResourceKey, number>;
 
@@ -124,6 +125,7 @@ export type PlayerState = {
   factionAlignment: FactionAlignment;
 
   condition: number;
+  hunger: number;
   conditionRecoveryAvailableAt: number;
   lastConditionTickAt: number;
 
@@ -172,7 +174,10 @@ export type GameAction =
   | { type: "SET_RANK_LEVEL"; payload: number }
   | { type: "SET_RANK_NAME"; payload: string }
   | { type: "ADJUST_CONDITION"; payload: number }
+  | { type: "ADJUST_HUNGER"; payload: number }
   | { type: "RECOVER_CONDITION" }
+  | { type: "CRAFT_MOSS_RATION" }
+  | { type: "CONSUME_MOSS_RATION" }
   | { type: "RESOLVE_HUNT"; payload: { missionId: string; resolvedAt?: number } }
   | {
       type: "START_EXPLORATION_PROCESS";

@@ -4,6 +4,11 @@ import { useGame } from "@/features/game/gameContext";
 import { getFirstSessionGuidance } from "@/features/guidance/firstSessionGuidance";
 import { useRecoveryCooldown } from "@/features/status/useRecoveryCooldown";
 import { STATUS_RECOVERY_COST } from "@/features/status/statusRecovery";
+import {
+  HUNGER_PRESSURE_THRESHOLD,
+  MOSS_RATION_CONDITION_RESTORE,
+  MOSS_RATION_HUNGER_RESTORE,
+} from "@/features/status/survival";
 
 function formatFactionLabel(faction: string) {
   if (faction === "unbound") return "Unbound";
@@ -18,6 +23,12 @@ function getConditionLabel(condition: number) {
   if (condition >= 65) return "Stable";
   if (condition >= 40) return "Strained";
   return "Critical";
+}
+
+function getHungerLabel(hunger: number) {
+  if (hunger >= 70) return "Fed";
+  if (hunger >= HUNGER_PRESSURE_THRESHOLD) return "Low";
+  return "Starving";
 }
 
 function getProgressPercent(current: number, max: number) {
@@ -35,6 +46,7 @@ export default function StatusHeroCard() {
   } = useRecoveryCooldown(player.conditionRecoveryAvailableAt);
   const canAffordRecovery = player.resources.credits >= STATUS_RECOVERY_COST;
   const canRecoverCondition = canAffordRecovery && !isRecoveryOnCooldown;
+  const canConsumeRation = player.resources.mossRations > 0;
   const recoveryActionMessage = isRecoveryOnCooldown
     ? `Blocked. Recovery is cooling down for ${recoveryCooldownRemainingSeconds}s before another stabilization cycle can begin.`
     : !canAffordRecovery
@@ -52,6 +64,12 @@ export default function StatusHeroCard() {
     if (!canRecoverCondition) return;
 
     dispatch({ type: "RECOVER_CONDITION" });
+  }
+
+  function handleConsumeRation() {
+    if (!canConsumeRation) return;
+
+    dispatch({ type: "CONSUME_MOSS_RATION" });
   }
 
   return (
@@ -154,6 +172,47 @@ export default function StatusHeroCard() {
 
           <div className="mt-3 text-xs text-white/55">
             {recoveryActionMessage}
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-white/10 p-4">
+          <div className="flex justify-between text-sm">
+            <span>Hunger</span>
+            <span>{player.hunger}%</span>
+          </div>
+
+          <div className="mt-2 h-2 rounded bg-white/10">
+            <div
+              className="h-full bg-amber-400"
+              style={{ width: `${player.hunger}%` }}
+            />
+          </div>
+
+          <div className="mt-2 text-xs text-white/60">
+            {getHungerLabel(player.hunger)}
+          </div>
+
+          <div className="mt-2 text-xs text-white/45">
+            Hunger below {HUNGER_PRESSURE_THRESHOLD}% adds steady condition pressure.
+          </div>
+
+          <button
+            type="button"
+            onClick={handleConsumeRation}
+            disabled={!canConsumeRation}
+            className={[
+              "mt-3 rounded-lg border px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] transition",
+              canConsumeRation
+                ? "border-amber-400/30 bg-amber-400/10 text-amber-100 hover:bg-amber-400/20"
+                : "cursor-not-allowed border-white/10 bg-white/[0.03] text-white/30",
+            ].join(" ")}
+          >
+            {canConsumeRation ? "Use Moss Ration" : "No Moss Rations"}
+          </button>
+
+          <div className="mt-3 text-xs text-white/55">
+            Restores {MOSS_RATION_HUNGER_RESTORE}% hunger and{" "}
+            {MOSS_RATION_CONDITION_RESTORE}% condition.
           </div>
         </div>
 
