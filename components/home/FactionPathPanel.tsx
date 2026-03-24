@@ -23,8 +23,7 @@ export default function FactionPathPanel({
 
       <div className="space-y-3">
         {factionData.map((faction) => {
-          const factionKey = faction.id as PathSelection;
-          const isSelected = selectedPath === factionKey;
+          const isSelected = selectedPath === faction.id;
 
           return (
             <PathCard
@@ -35,7 +34,7 @@ export default function FactionPathPanel({
               themeKey={faction.themeKey}
               tagline={faction.tagline}
               isSelected={isSelected}
-              onClick={() => onSelectPath(factionKey)}
+              onClick={() => onSelectPath(faction.id)}
             />
           );
         })}

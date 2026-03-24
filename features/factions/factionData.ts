@@ -1,28 +1,41 @@
 import { assets } from "@/lib/assets";
 
-export const factionData = [
+export type StableFactionId = "bio" | "mecha" | "spirit";
+
+export type FactionDisplayData = {
+  id: StableFactionId;
+  name: string;
+  description: string;
+  icon: string;
+  themeKey: StableFactionId;
+  tagline: string;
+};
+
+export const factionData: FactionDisplayData[] = [
   {
     id: "bio",
-    name: "Bio",
-    description: "Predator growth and adaptation",
+    name: "Verdant Coil",
+    description: "Bio doctrine of adaptive growth, grafting, and predatory evolution",
     icon: assets.factions.bio,
     themeKey: "bio",
-    tagline: "Adaptive dominance",
+    tagline: "Bio supremacy through adaptation",
   },
   {
     id: "mecha",
-    name: "Mecha",
-    description: "Precision, armor, and frame control",
+    name: "Chrome Synod",
+    description:
+      "Mecha doctrine of frame precision, hardened armor, and engineered control",
     icon: assets.factions.mecha,
     themeKey: "mecha",
-    tagline: "Engineered supremacy",
+    tagline: "Mecha order through machinery",
   },
   {
     id: "spirit",
-    name: "Spirit",
-    description: "Soul force and ritual resonance",
+    name: "Ember Vault",
+    description:
+      "Pure doctrine of ember rites, soul resonance, and ritual refinement",
     icon: assets.factions.spirit,
     themeKey: "spirit",
-    tagline: "Ritual ascension",
+    tagline: "Pure ascent through ember rites",
   },
-] as const;
+];
