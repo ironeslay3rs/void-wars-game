@@ -1,4 +1,5 @@
 import { buildNavigationState } from "@/features/navigation/navigationUtils";
+import { getPressureAdjustedConditionDelta } from "@/features/status/statusRecovery";
 import type {
   GameState,
   MissionDefinition,
@@ -71,11 +72,22 @@ export function addPartialResources(
   };
 }
 
+export function getResolvedConditionDelta(
+  player: PlayerState,
+  reward: MissionReward,
+) {
+  return getPressureAdjustedConditionDelta(
+    player.condition,
+    reward.conditionDelta,
+  );
+}
+
 export function applyMissionReward(
   player: PlayerState,
   reward: MissionReward,
 ): PlayerState {
   const rankState = applyRankXp(player.rankLevel, player.rankXp, reward.rankXp);
+  const resolvedConditionDelta = getResolvedConditionDelta(player, reward);
 
   return {
     ...player,
@@ -85,7 +97,7 @@ export function applyMissionReward(
       0,
       100,
     ),
-    condition: clamp(player.condition + reward.conditionDelta, 0, 100),
+    condition: clamp(player.condition + resolvedConditionDelta, 0, 100),
     influence: Math.max(0, player.influence + (reward.influence ?? 0)),
     resources: addPartialResources(player.resources, reward.resources),
     navigation: buildNavigationState(

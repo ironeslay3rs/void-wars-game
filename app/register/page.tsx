@@ -36,7 +36,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(39,83,59,0.28),_rgba(5,8,20,1)_58%)] px-6 py-10 text-white">
+    <main className="safe-min-h-screen safe-page-padding flex items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(39,83,59,0.28),_rgba(5,8,20,1)_58%)] py-10 text-white">
       <div className="w-full max-w-md rounded-3xl border border-white/10 bg-black/40 p-8 shadow-[0_0_40px_rgba(0,0,0,0.35)] backdrop-blur-sm">
         <div className="space-y-2">
           <p className="text-[11px] uppercase tracking-[0.35em] text-emerald-300/70">

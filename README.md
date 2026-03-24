@@ -40,7 +40,3 @@ Then open [http://localhost:3000](http://localhost:3000).
 
 ## Checks
 
-```bash
-npm run lint
-npm run build
-```
