@@ -18,6 +18,24 @@ import {
 
 type CharacterFilter = "all" | CharacterFaction;
 
+const factionOrder: CharacterFaction[] = ["ember", "bio", "mecha", "rune"];
+
+const coreDoctrine = [
+  "Humanity in the 3D Void is the shadow of a higher-dimensional form exiled after a lost war.",
+  "Bio, Mecha, and Pure are the three surviving schools of body, mind, and soul evolution.",
+  "Fusion is the endgame law: body + mind + soul must reunite to transcend the Void.",
+];
+
+const sinWorlds = [
+  "Norway • Wrath • Bio • Bonehowl of Fenrir",
+  "Peru • Gluttony • Pure • Mouth of Inti",
+  "Greece • Envy • Bio • Flesh Thrones of Olympus",
+  "Lebanon • Lust • Bio • Crimson Altars of Astarte",
+  "India • Greed • Pure • Thousand Hands of Vishrava",
+  "Egypt • Pride • Mecha • Divine Pharos of Ra",
+  "China • Sloth • Mecha • Clockwork Mandate of Heaven",
+];
+
 export default function FactionsScreen() {
   const { state } = useGame();
   const factionsScreenData = getFactionHqsScreenData(state);
@@ -25,8 +43,6 @@ export default function FactionsScreen() {
   const [activeFilter, setActiveFilter] = useState<CharacterFilter>("all");
   const [selectedCharacter, setSelectedCharacter] =
     useState<CharacterRecord | null>(null);
-
-  const factionOrder: CharacterFaction[] = ["ember", "bio", "mecha", "rune"];
 
   const visibleFactions = useMemo(() => {
     if (activeFilter === "all") {
@@ -104,7 +120,7 @@ export default function FactionsScreen() {
             ))}
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+          <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr_0.9fr]">
             <SectionCard
               title={factionsScreenData.sections[0].title}
               description={factionsScreenData.sections[0].description}
@@ -123,7 +139,7 @@ export default function FactionsScreen() {
                         <p className="mt-1 text-sm text-cyan-300">
                           {faction.tagline}
                         </p>
-                        <p className="mt-2 text-sm text-white/60">
+                        <p className="mt-2 text-sm leading-6 text-white/60">
                           {faction.description}
                         </p>
                       </div>
@@ -138,14 +154,43 @@ export default function FactionsScreen() {
             </SectionCard>
 
             <SectionCard
+              title="Core Doctrine"
+              description="Top-level rules distilled from the archive dump into a playable lore scaffold."
+            >
+              <div className="space-y-3 text-sm leading-6 text-white/65">
+                {coreDoctrine.map((entry) => (
+                  <div key={entry} className="rounded-xl border border-white/10 bg-white/5 p-4">
+                    {entry}
+                  </div>
+                ))}
+              </div>
+            </SectionCard>
+
+            <SectionCard
               title={factionsScreenData.sections[1].title}
               description={factionsScreenData.sections[1].description}
             >
-              <div className="rounded-xl border border-dashed border-white/10 p-6 text-sm text-white/50">
+              <div className="rounded-xl border border-dashed border-white/10 p-6 text-sm leading-6 text-white/50">
                 {factionsScreenData.sections[1].body}
               </div>
             </SectionCard>
           </div>
+
+          <SectionCard
+            title="Seven Sin Nations"
+            description="The final seven nations, dominant sins, and school anchors currently defining the world frame."
+          >
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              {sinWorlds.map((entry) => (
+                <div
+                  key={entry}
+                  className="rounded-xl border border-white/10 bg-black/20 p-4 text-sm text-white/65"
+                >
+                  {entry}
+                </div>
+              ))}
+            </div>
+          </SectionCard>
 
           <section className="mt-6 space-y-8">
             <div className="flex flex-col gap-4 rounded-2xl border border-white/10 bg-black/25 p-5">

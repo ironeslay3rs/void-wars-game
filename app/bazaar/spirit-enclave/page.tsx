@@ -26,29 +26,33 @@ export default function SpiritEnclavePage() {
 
         <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           <SectionCard
-            title="Resonance Chambers"
-            description="Reserved for soul attunement, rune memory, and spiritual progression systems."
+            title="Ember Doctrines"
+            description="Runes, memory, and saintcraft define the Pure school. Set resonance and soul-fire trials live here."
           >
             <div className="space-y-3">
-              {["Soul Alignment", "Rune Memory", "Resonance Trial"].map(
-                (entry) => (
-                  <div
-                    key={entry}
-                    className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-white/65"
-                  >
-                    {entry}
-                  </div>
-                )
-              )}
+              {[
+                "Rune Memory Recovery",
+                "Set Resonance Chamber",
+                "Saintcraft Trial",
+              ].map((entry) => (
+                <div
+                  key={entry}
+                  className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-white/65"
+                >
+                  {entry}
+                </div>
+              ))}
             </div>
           </SectionCard>
 
           <SectionCard
-            title="Spirit Console"
-            description="Future attunement state, soul capacity, and resonance tracking."
+            title="Fusion Pressure"
+            description="Pure is necessary, but not sufficient. This console frames how the Ember Vault supports the final trinity."
           >
-            <div className="rounded-xl border border-dashed border-white/10 p-6 text-sm text-white/50">
-              Reserved for spiritual status, resonance depth, and rune-linked outcomes.
+            <div className="rounded-xl border border-dashed border-white/10 p-6 text-sm leading-6 text-white/50">
+              The Ember Vault preserves the soul-side of humanity through fire, runes,
+              and memory. Future systems here should connect rune sets, saint tiers,
+              and fusion prerequisites with Bio and Mecha progression.
             </div>
           </SectionCard>
         </div>

@@ -3,26 +3,29 @@ import { assets } from "@/lib/assets";
 export const factionData = [
   {
     id: "bio",
-    name: "Bio",
-    description: "Predator growth and adaptation",
+    name: "Bio / Verdant Coil",
+    description:
+      "Body evolution, genetic hunts, and adaptive monstrosity shaped by the sin of Wrath.",
     icon: assets.factions.bio,
-    themeKey: "bio",
-    tagline: "Adaptive dominance",
+    themeKey: "verdant-coil",
+    tagline: "Bonehowl of Fenrir • flesh as weapon",
   },
   {
     id: "mecha",
-    name: "Mecha",
-    description: "Precision, armor, and frame control",
+    name: "Mecha / Chrome Synod",
+    description:
+      "Mind, precision, Ironheart, and aristocratic control forged through Pride and Sloth.",
     icon: assets.factions.mecha,
-    themeKey: "mecha",
-    tagline: "Engineered supremacy",
+    themeKey: "chrome-synod",
+    tagline: "Divine Pharos • Clockwork Mandate",
   },
   {
     id: "spirit",
-    name: "Spirit",
-    description: "Soul force and ritual resonance",
+    name: "Pure / Ember Vault",
+    description:
+      "Soul-fire, memory, runes, and saintcraft pursuing the fusion needed to escape the Void.",
     icon: assets.factions.spirit,
-    themeKey: "spirit",
-    tagline: "Ritual ascension",
+    themeKey: "ember-vault",
+    tagline: "Mouth of Inti • Thousand Hands",
   },
 ] as const;
