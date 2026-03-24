@@ -2,6 +2,7 @@
 
 import InventoryCategoriesCard from "@/components/inventory/InventoryCategoriesCard";
 import InventoryEquipmentReserveCard from "@/components/inventory/InventoryEquipmentReserveCard";
+import InventoryLoadoutCard from "@/components/inventory/InventoryLoadoutCard";
 import InventoryOperationsCard from "@/components/inventory/InventoryOperationsCard";
 import InventoryOverviewCard from "@/components/inventory/InventoryOverviewCard";
 import ScreenHeader from "@/components/shared/ScreenHeader";
@@ -91,9 +92,12 @@ export default function InventoryScreen() {
 
             <SectionCard
               title="Equipment Reserve"
-              description="Reserved for future equipment inventory, rarity filtering, and item-level details."
+              description="Faction-specific starter gear, utility items, and open reserve slots for future loot drops."
             >
-              <InventoryEquipmentReserveCard />
+              <div className="space-y-5">
+                <InventoryLoadoutCard />
+                <InventoryEquipmentReserveCard />
+              </div>
             </SectionCard>
           </div>
         </div>
