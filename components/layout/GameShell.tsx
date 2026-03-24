@@ -12,7 +12,7 @@ export default function GameShell({
   overlayClassName,
 }: GameShellProps) {
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#05070d] text-white">
+    <main className="safe-min-h-screen relative overflow-hidden bg-[#05070d] text-white">
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-90"
         style={{ backgroundImage: `url("${backgroundImage}")` }}
@@ -39,7 +39,7 @@ export default function GameShell({
 
       <div
         className={[
-          "relative z-10 min-h-screen",
+          "safe-min-h-screen relative z-10",
           overlayClassName ?? "",
         ].join(" ")}
       >
