@@ -1,4 +1,5 @@
 import { initialGameState } from "@/features/game/initialGameState";
+import { getFeastHallOfferById } from "@/features/black-market/feastHallData";
 import { phase1ExplorationReward } from "@/features/exploration/explorationData";
 import {
   applyMissionReward,
@@ -194,6 +195,62 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             "credits",
             -CONDITION_RECOVERY_COST,
           ),
+        },
+      };
+    }
+
+    case "USE_FEAST_HALL_OFFER": {
+      const now = Date.now();
+      const player = applyConditionDecay(state.player, now);
+      const offer = getFeastHallOfferById(action.payload.offerId);
+
+      if (!offer) {
+        return {
+          ...state,
+          player,
+        };
+      }
+
+      if (player.condition >= 100 || player.conditionRecoveryAvailableAt > now) {
+        return {
+          ...state,
+          player,
+        };
+      }
+
+      const offerCostEntries = Object.entries(offer.cost).filter(
+        (entry): entry is [string, number] => typeof entry[1] === "number",
+      );
+
+      const canAffordOffer = offerCostEntries.every(
+        ([resourceKey, amount]) =>
+          player.resources[resourceKey as ResourceKey] >= amount,
+      );
+
+      if (!canAffordOffer) {
+        return {
+          ...state,
+          player,
+        };
+      }
+
+      let nextResources = player.resources;
+
+      offerCostEntries.forEach(([resourceKey, amount]) => {
+        nextResources = updateSingleResource(
+          nextResources,
+          resourceKey as ResourceKey,
+          -amount,
+        );
+      });
+
+      return {
+        ...state,
+        player: {
+          ...player,
+          condition: clamp(player.condition + offer.conditionGain, 0, 100),
+          conditionRecoveryAvailableAt: now + offer.cooldownMs,
+          resources: nextResources,
         },
       };
     }
