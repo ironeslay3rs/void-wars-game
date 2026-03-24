@@ -19,7 +19,7 @@ export const factionData = [
   },
   {
     id: "spirit",
-    name: "Spirit",
+    name: "Pure",
     description: "Soul force and ritual resonance",
     icon: assets.factions.spirit,
     themeKey: "spirit",

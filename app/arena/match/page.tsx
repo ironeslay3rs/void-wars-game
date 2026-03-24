@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import DamagePopup from "@/components/combat/DamagePopup";
 import { useGame } from "@/features/game/gameContext";
+import { formatAffiliationLabel } from "@/lib/format";
 
 type CombatPhase = "ready" | "victory" | "defeat";
 
@@ -26,14 +27,6 @@ type HitTarget = "player" | "enemy" | null;
 
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
-}
-
-function formatFactionLabel(faction: string) {
-  if (faction === "unbound") return "Unbound";
-  if (faction === "bio") return "Bio";
-  if (faction === "mecha") return "Mecha";
-  if (faction === "spirit") return "Spirit";
-  return faction;
 }
 
 function getFactionAccent(faction: string) {
@@ -495,7 +488,7 @@ export default function ArenaMatchPage() {
                       accent.chip,
                     ].join(" ")}
                   >
-                    {formatFactionLabel(player.factionAlignment)}
+                    {formatAffiliationLabel(player.factionAlignment)}
                   </div>
                 </div>
 

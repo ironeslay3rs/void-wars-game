@@ -11,6 +11,7 @@ import SectionCard from "@/components/shared/SectionCard";
 import PlaceholderPanel from "@/components/shared/PlaceholderPanel";
 import { arenaScreenData } from "@/features/arena/arenaScreenData";
 import { useGame } from "@/features/game/gameContext";
+import { formatAffiliationLabel } from "@/lib/format";
 
 type ArenaMode = {
   title: string;
@@ -19,14 +20,6 @@ type ArenaMode = {
 };
 
 type QueueState = "idle" | "searching" | "matched";
-
-function formatFactionLabel(faction: string) {
-  if (faction === "unbound") return "Unbound";
-  if (faction === "bio") return "Bio";
-  if (faction === "mecha") return "Mecha";
-  if (faction === "spirit") return "Spirit";
-  return faction;
-}
 
 function getConditionLabel(condition: number) {
   if (condition >= 85) return "Combat Ready";
@@ -109,9 +102,9 @@ export default function ArenaPage() {
 
   const liveCards = [
     {
-      label: "Faction Alignment",
-      value: formatFactionLabel(player.factionAlignment),
-      hint: "Arena modifiers can later react to your active path.",
+      label: "Affiliation",
+      value: formatAffiliationLabel(player.factionAlignment),
+      hint: "Arena modifiers can later react to your active affiliation.",
     },
     {
       label: "Condition",

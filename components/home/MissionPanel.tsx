@@ -3,14 +3,7 @@
 import ScreenHeader from "@/components/shared/ScreenHeader";
 import SectionCard from "@/components/shared/SectionCard";
 import { useGame } from "@/features/game/gameContext";
-
-function formatFactionLabel(faction: string) {
-  if (faction === "unbound") return "Unbound";
-  if (faction === "bio") return "Bio";
-  if (faction === "mecha") return "Mecha";
-  if (faction === "spirit") return "Spirit";
-  return faction;
-}
+import { formatAffiliationLabel } from "@/lib/format";
 
 function formatStatusLabel(value: string) {
   return value
@@ -108,7 +101,7 @@ export default function StatusPage() {
         <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
           <SectionCard
             title="Operative Profile"
-            description="Primary identity panel for faction alignment, rank status, and mission readiness."
+            description="Primary identity panel for affiliation, rank status, and mission readiness."
           >
             <div className="grid gap-6 lg:grid-cols-[300px_1fr]">
               <div
@@ -132,7 +125,7 @@ export default function StatusPage() {
                         factionAccent.chip,
                       ].join(" ")}
                     >
-                      {formatFactionLabel(player.factionAlignment)}
+                      {formatAffiliationLabel(player.factionAlignment)}
                     </span>
                   </div>
 

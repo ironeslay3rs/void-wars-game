@@ -22,13 +22,13 @@ export const careerScreenData: CareerScreenData = {
   eyebrow: "Void Wars / Career Protocol",
   title: "Career Systems",
   subtitle:
-    "Define long-term role identity, specialization direction, and class progression across Bio, Mecha, and Spirit paths.",
+    "Define long-term role identity, specialization direction, and class progression across Bio, Mecha, and Pure paths.",
 
   cards: [
     {
       label: "Tracks",
       value: "03",
-      hint: "Bio / Mecha / Spirit foundations",
+      hint: "Bio / Mecha / Pure foundations",
     },
     {
       label: "Branches",

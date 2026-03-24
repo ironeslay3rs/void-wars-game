@@ -4,14 +4,7 @@ import { useGame } from "@/features/game/gameContext";
 import { getFirstSessionGuidance } from "@/features/guidance/firstSessionGuidance";
 import { useRecoveryCooldown } from "@/features/status/useRecoveryCooldown";
 import { STATUS_RECOVERY_COST } from "@/features/status/statusRecovery";
-
-function formatFactionLabel(faction: string) {
-  if (faction === "unbound") return "Unbound";
-  if (faction === "bio") return "Bio";
-  if (faction === "mecha") return "Mecha";
-  if (faction === "spirit") return "Spirit";
-  return faction;
-}
+import { formatAffiliationLabel } from "@/lib/format";
 
 function getConditionLabel(condition: number) {
   if (condition >= 85) return "Optimal";
@@ -59,7 +52,7 @@ export default function StatusHeroCard() {
       {/* LEFT PANEL */}
       <div className="rounded-[24px] border border-white/10 p-5">
         <div className="text-xs text-white/50 uppercase">
-          {formatFactionLabel(player.factionAlignment)}
+          {formatAffiliationLabel(player.factionAlignment)}
         </div>
 
         <div className="mt-4 text-2xl font-black">

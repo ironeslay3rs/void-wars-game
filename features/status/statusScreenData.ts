@@ -16,7 +16,7 @@ export const statusScreenData = {
     },
     {
       label: "Path",
-      value: "Spirit",
+      value: "Pure",
       hint: "Current aligned path selection from the home screen.",
     },
   ],

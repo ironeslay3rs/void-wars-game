@@ -5,6 +5,7 @@ import SectionCard from "@/components/shared/SectionCard";
 import PlaceholderPanel from "@/components/shared/PlaceholderPanel";
 import { useGame } from "@/features/game/gameContext";
 import { getFactionHqsScreenData } from "@/features/faction-hqs/factionHqsScreenData";
+import { formatAffiliationLabel, formatDoctrineLabel } from "@/lib/format";
 
 export default function FactionHqsPage() {
   const { state, dispatch } = useGame();
@@ -43,8 +44,8 @@ export default function FactionHqsPage() {
 
         <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           <SectionCard
-            title="Faction Wings"
-            description="Choose an alignment and begin building influence inside the Bazaar."
+            title="Doctrine Wings"
+            description="Choose an affiliation and begin building influence inside the Bazaar."
           >
             <div className="space-y-3">
               <button
@@ -52,7 +53,7 @@ export default function FactionHqsPage() {
                 onClick={() => joinFaction("bio")}
                 className="block w-full rounded-xl border border-emerald-400/20 bg-emerald-500/10 p-4 text-left text-sm text-white transition hover:bg-emerald-500/20"
               >
-                Bio Wing
+                {formatDoctrineLabel("bio")}
               </button>
 
               <button
@@ -60,7 +61,7 @@ export default function FactionHqsPage() {
                 onClick={() => joinFaction("mecha")}
                 className="block w-full rounded-xl border border-cyan-400/20 bg-cyan-500/10 p-4 text-left text-sm text-white transition hover:bg-cyan-500/20"
               >
-                Mecha Wing
+                {formatDoctrineLabel("mecha")}
               </button>
 
               <button
@@ -68,18 +69,18 @@ export default function FactionHqsPage() {
                 onClick={() => joinFaction("spirit")}
                 className="block w-full rounded-xl border border-violet-400/20 bg-violet-500/10 p-4 text-left text-sm text-white transition hover:bg-violet-500/20"
               >
-                Spirit Wing
+                {formatDoctrineLabel("spirit")}
               </button>
             </div>
           </SectionCard>
 
           <SectionCard
-            title="Faction Console"
-            description="Live alignment and influence controls for the shared game state."
+            title="Doctrine Console"
+            description="Live affiliation and influence controls for the shared game state."
           >
             <div className="space-y-3">
               <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-white/75">
-                Current faction: {currentAlignment}
+                Current affiliation: {formatAffiliationLabel(currentAlignment)}
               </div>
 
               <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-white/75">

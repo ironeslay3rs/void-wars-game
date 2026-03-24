@@ -9,14 +9,7 @@ import SectionCard from "@/components/shared/SectionCard";
 import PlaceholderPanel from "@/components/shared/PlaceholderPanel";
 import { useGame } from "@/features/game/gameContext";
 import { inventoryScreenData } from "@/features/inventory/inventoryScreenData";
-
-function formatFactionLabel(faction: string) {
-  if (faction === "unbound") return "Unbound";
-  if (faction === "bio") return "Bio";
-  if (faction === "mecha") return "Mecha";
-  if (faction === "spirit") return "Spirit";
-  return faction;
-}
+import { formatAffiliationLabel } from "@/lib/format";
 
 export default function InventoryScreen() {
   const { state } = useGame();
@@ -34,9 +27,9 @@ export default function InventoryScreen() {
 
   const liveCards = [
     {
-      label: "Faction Sync",
-      value: formatFactionLabel(player.factionAlignment),
-      hint: "Inventory visuals and future sorting rules can react to active path alignment.",
+      label: "Affiliation Sync",
+      value: formatAffiliationLabel(player.factionAlignment),
+      hint: "Inventory visuals and future sorting rules can react to active affiliation.",
     },
     {
       label: "Used Capacity",

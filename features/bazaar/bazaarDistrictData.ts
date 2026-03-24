@@ -99,7 +99,7 @@ export const bazaarDistrictData: BazaarDistrict[] = [
   {
     id: "faction-hqs",
     title: "Faction HQs",
-    subtitle: "Bio | Mecha | Spirit",
+    subtitle: "Bio | Mecha | Pure",
     description:
       "Enter your aligned power center and deepen faction identity.",
     route: "/bazaar/faction-hqs",

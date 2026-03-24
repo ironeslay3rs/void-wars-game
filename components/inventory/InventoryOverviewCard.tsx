@@ -1,14 +1,7 @@
 "use client";
 
 import { useGame } from "@/features/game/gameContext";
-
-function formatFactionLabel(faction: string) {
-  if (faction === "unbound") return "Unbound";
-  if (faction === "bio") return "Bio";
-  if (faction === "mecha") return "Mecha";
-  if (faction === "spirit") return "Spirit";
-  return faction;
-}
+import { formatAffiliationLabel } from "@/lib/format";
 
 function getFactionAccent(faction: string) {
   if (faction === "bio") {
@@ -89,7 +82,7 @@ export default function InventoryOverviewCard() {
             factionAccent.chip,
           ].join(" ")}
         >
-          {formatFactionLabel(player.factionAlignment)}
+          {formatAffiliationLabel(player.factionAlignment)}
         </div>
       </div>
 

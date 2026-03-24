@@ -1,32 +1,20 @@
 import type { GameState } from "@/features/game/gameTypes";
-
-function formatFactionLabel(alignment: GameState["player"]["factionAlignment"]) {
-  switch (alignment) {
-    case "bio":
-      return "Bio";
-    case "mecha":
-      return "Mecha";
-    case "spirit":
-      return "Spirit";
-    default:
-      return "Unbound";
-  }
-}
+import { formatAffiliationLabel } from "@/lib/format";
 
 export function getFactionHqsScreenData(state: GameState) {
-  const factionAlignment = formatFactionLabel(state.player.factionAlignment);
+  const factionAlignment = formatAffiliationLabel(state.player.factionAlignment);
   const isAligned = state.player.factionAlignment !== "unbound";
 
   return {
     eyebrow: "Bazaar / Faction HQs",
     title: "Faction HQs",
     subtitle:
-      "Enter aligned power centers, build allegiance, and deepen faction-based progression systems.",
+      "Enter aligned power centers, build affiliation, and deepen doctrine-based progression systems.",
     cards: [
       {
-        label: "Faction Alignment",
+        label: "Affiliation",
         value: factionAlignment,
-        hint: "Live shared faction state from the global game store.",
+        hint: "Live shared affiliation state from the global game store.",
       },
       {
         label: "Influence",
@@ -34,24 +22,24 @@ export function getFactionHqsScreenData(state: GameState) {
         hint: "Influence now comes from shared state.",
       },
       {
-        label: "Faction Reward Tier",
+        label: "Doctrine Reward Tier",
         value: isAligned ? "Tier 1" : "Locked",
-        hint: "Reward availability now reacts to faction alignment.",
+        hint: "Reward availability now reacts to active affiliation.",
       },
     ],
     sections: [
       {
-        title: "Aligned Power Centers",
+        title: "Aligned Doctrines",
         description:
-          "Review the known faction networks, identities, and ideological branches currently shaping the bazaar sphere.",
+          "Review the known doctrine networks, identities, and ideological branches currently shaping the bazaar sphere.",
       },
       {
-        title: "Faction Operations",
+        title: "Doctrine Operations",
         description:
-          "Reserved for faction reputation tracks, allegiance perks, contracts, and unlockable command options.",
+          "Reserved for doctrine reputation tracks, affiliation perks, contracts, and unlockable command options.",
         body: isAligned
-          ? `Current alignment detected: ${factionAlignment}. Future faction operations can now branch from this live shared state.`
-          : "No faction alignment detected yet. Choose a path to unlock faction operations, contracts, and deeper progression.",
+          ? `Current affiliation detected: ${factionAlignment}. Future doctrine operations can now branch from this live shared state.`
+          : "No affiliation detected yet. Choose a path to unlock doctrine operations, contracts, and deeper progression.",
       },
     ],
   };

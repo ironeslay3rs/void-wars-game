@@ -9,6 +9,7 @@ import type {
   MissionDefinition,
   MissionQueueEntry,
 } from "@/features/game/gameTypes";
+import { formatMissionPathLabel } from "@/lib/format";
 
 type QueuedMissionView = MissionQueueEntry & {
   mission: MissionDefinition;
@@ -42,19 +43,6 @@ function formatDuration(durationHours: number) {
   const remainingMinutes = minutes % 60;
 
   return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
-}
-
-function formatPathLabel(path: "neutral" | "bio" | "mecha" | "spirit") {
-  switch (path) {
-    case "bio":
-      return "Bio";
-    case "mecha":
-      return "Mecha";
-    case "spirit":
-      return "Spirit";
-    default:
-      return "Neutral";
-  }
 }
 
 function getPathBadgeClasses(path: "neutral" | "bio" | "mecha" | "spirit") {
@@ -324,7 +312,7 @@ export default function MissionsScreen() {
             value={
               state.player.factionAlignment === "unbound"
                 ? "Unbound"
-                : formatPathLabel(state.player.factionAlignment)
+                : formatMissionPathLabel(state.player.factionAlignment)
             }
             hint="Path-specific missions unlock after alignment."
           />
@@ -407,7 +395,7 @@ export default function MissionsScreen() {
                               getPathBadgeClasses(mission.path),
                             ].join(" ")}
                           >
-                            {formatPathLabel(mission.path)}
+                            {formatMissionPathLabel(mission.path)}
                           </span>
 
                           <span className="rounded-full border border-white/10 bg-black/20 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/60">
