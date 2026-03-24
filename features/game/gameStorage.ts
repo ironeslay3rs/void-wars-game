@@ -44,6 +44,10 @@ function normalizeResources(value: unknown): ResourcesState {
       typeof raw.bioSamples === "number"
         ? raw.bioSamples
         : initialGameState.player.resources.bioSamples,
+    fieldRations:
+      typeof raw.fieldRations === "number"
+        ? raw.fieldRations
+        : initialGameState.player.resources.fieldRations,
   };
 }
 
@@ -63,6 +67,9 @@ function normalizePartialResources(
   if (typeof value.emberCore === "number") result.emberCore = value.emberCore;
   if (typeof value.bioSamples === "number") {
     result.bioSamples = value.bioSamples;
+  }
+  if (typeof value.fieldRations === "number") {
+    result.fieldRations = value.fieldRations;
   }
 
   return result;

@@ -1,4 +1,8 @@
 import { initialGameState } from "@/features/game/initialGameState";
+import {
+  EXPLORATION_FIELD_RATION_COST,
+  MISSION_FIELD_RATION_COST,
+} from "@/config/survival";
 import { phase1ExplorationReward } from "@/features/exploration/explorationData";
 import {
   applyMissionReward,
@@ -266,10 +270,19 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         return state;
       }
 
+      if (state.player.resources.fieldRations < EXPLORATION_FIELD_RATION_COST) {
+        return state;
+      }
+
       return {
         ...state,
         player: {
           ...state.player,
+          resources: updateSingleResource(
+            state.player.resources,
+            "fieldRations",
+            -EXPLORATION_FIELD_RATION_COST,
+          ),
           activeProcess: {
             id: action.payload.id,
             kind: "exploration",
@@ -385,6 +398,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         return state;
       }
 
+      if (state.player.resources.fieldRations < MISSION_FIELD_RATION_COST) {
+        return state;
+      }
+
       const queuedAt = action.payload.queuedAt ?? Date.now();
       const lastEntry = missionQueue[missionQueue.length - 1] ?? null;
       const anchorTime = lastEntry
@@ -401,6 +418,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         ...state,
         player: {
           ...state.player,
+          resources: updateSingleResource(
+            state.player.resources,
+            "fieldRations",
+            -MISSION_FIELD_RATION_COST,
+          ),
           missionQueue: [...missionQueue, nextEntry],
         },
       };

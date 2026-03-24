@@ -19,8 +19,8 @@ export function getCraftingDistrictScreenData(state: GameState) {
       },
       {
         label: "Material Stock",
-        value: `${state.player.resources.ironOre + state.player.resources.scrapAlloy + state.player.resources.runeDust + state.player.resources.emberCore}`,
-        hint: "Combined tracked crafting materials.",
+        value: `${state.player.resources.ironOre + state.player.resources.scrapAlloy + state.player.resources.runeDust + state.player.resources.emberCore + state.player.resources.fieldRations}`,
+        hint: "Combined tracked materials and provision stock.",
       },
     ],
   };

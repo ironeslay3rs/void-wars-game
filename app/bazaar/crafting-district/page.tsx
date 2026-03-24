@@ -10,6 +10,11 @@ import {
   ArrowLeft,
   Flame,
 } from "lucide-react";
+import {
+  RATION_SYNTHESIS_BIO_SAMPLE_COST,
+  RATION_SYNTHESIS_CREDIT_COST,
+  RATION_SYNTHESIS_OUTPUT,
+} from "@/config/survival";
 import { useGame } from "@/features/game/gameContext";
 import { getCraftingDistrictScreenData } from "@/features/crafting-district/craftingDistrictScreenData";
 
@@ -45,9 +50,20 @@ export default function CraftingDistrictPage() {
   const { state, dispatch } = useGame();
   const screenData = getCraftingDistrictScreenData(state);
   const [refineResult, setRefineResult] = useState<string | null>(null);
+  const [rationResult, setRationResult] = useState<string | null>(null);
 
-  const { ironOre, scrapAlloy, runeDust, emberCore } = state.player.resources;
+  const {
+    ironOre,
+    scrapAlloy,
+    runeDust,
+    emberCore,
+    bioSamples,
+    fieldRations,
+  } = state.player.resources;
   const canRefineScrapAlloy = ironOre >= 3;
+  const canSynthesizeFieldRations =
+    bioSamples >= RATION_SYNTHESIS_BIO_SAMPLE_COST &&
+    state.player.resources.credits >= RATION_SYNTHESIS_CREDIT_COST;
 
   function refineScrapAlloy() {
     if (!canRefineScrapAlloy) {
@@ -64,6 +80,41 @@ export default function CraftingDistrictPage() {
       payload: { key: "scrapAlloy", amount: 1 },
     });
     setRefineResult("Refinement complete. 3 Iron Ore became 1 Scrap Alloy.");
+  }
+
+  function synthesizeFieldRations() {
+    if (!canSynthesizeFieldRations) {
+      setRationResult(
+        `Need ${RATION_SYNTHESIS_BIO_SAMPLE_COST} Bio Samples and ${RATION_SYNTHESIS_CREDIT_COST} Credits to press new field rations.`,
+      );
+      return;
+    }
+
+    dispatch({
+      type: "SPEND_RESOURCE",
+      payload: {
+        key: "bioSamples",
+        amount: RATION_SYNTHESIS_BIO_SAMPLE_COST,
+      },
+    });
+    dispatch({
+      type: "SPEND_RESOURCE",
+      payload: {
+        key: "credits",
+        amount: RATION_SYNTHESIS_CREDIT_COST,
+      },
+    });
+    dispatch({
+      type: "ADD_RESOURCE",
+      payload: {
+        key: "fieldRations",
+        amount: RATION_SYNTHESIS_OUTPUT,
+      },
+    });
+
+    setRationResult(
+      `Synthesis complete. ${RATION_SYNTHESIS_OUTPUT} field rations packed for the next push beyond the walls.`,
+    );
   }
 
   return (
@@ -140,7 +191,7 @@ export default function CraftingDistrictPage() {
         <section className="grid gap-4 xl:grid-cols-[1.3fr_0.7fr]">
           <div className="rounded-2xl border border-white/10 bg-black/25 p-6">
             <div className="text-[11px] uppercase tracking-[0.22em] text-orange-300/70">
-              Material Refining
+              District Production
             </div>
             <h2 className="mt-2 text-xl font-black uppercase">Refinery Bay</h2>
 
@@ -169,6 +220,34 @@ export default function CraftingDistrictPage() {
                   {refineResult ?? "Refinery idle. Process raw ore whenever you need alloy."}
                 </div>
               </div>
+
+              <div className="rounded-xl border border-amber-400/20 bg-amber-500/8 p-4">
+                <div className="mt-2 text-sm font-semibold text-white">
+                  Press survival packs for wasteland deployment.
+                </div>
+                <div className="mt-2 text-sm text-white/65">
+                  Bio slurry, district binders, and sealed ash-wraps become field rations used by exploration and mission deployment.
+                </div>
+
+                <button
+                  type="button"
+                  onClick={synthesizeFieldRations}
+                  disabled={!canSynthesizeFieldRations}
+                  className="mt-4 w-full rounded-xl border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-left text-sm font-semibold text-amber-100 transition hover:bg-amber-500/20 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Synthesize Field Rations
+                  <div className="mt-1 text-xs text-white/60">
+                    Costs {RATION_SYNTHESIS_BIO_SAMPLE_COST} Bio Samples +{" "}
+                    {RATION_SYNTHESIS_CREDIT_COST} Credits / Produces{" "}
+                    {RATION_SYNTHESIS_OUTPUT} Field Rations
+                  </div>
+                </button>
+
+                <div className="mt-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/75">
+                  {rationResult ??
+                    "Provision press idle. Package ration stock here before taking on extended loops."}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -193,6 +272,14 @@ export default function CraftingDistrictPage() {
               <div className="flex justify-between rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2">
                 <span>Ember Core</span>
                 <span>{emberCore}</span>
+              </div>
+              <div className="flex justify-between rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2">
+                <span>Bio Samples</span>
+                <span>{bioSamples}</span>
+              </div>
+              <div className="flex justify-between rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2">
+                <span>Field Rations</span>
+                <span>{fieldRations}</span>
               </div>
             </div>
           </div>

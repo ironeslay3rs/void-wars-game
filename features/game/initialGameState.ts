@@ -26,6 +26,7 @@ export const initialGameState: GameState = {
       runeDust: 10,
       emberCore: 2,
       bioSamples: 0,
+      fieldRations: 4,
     },
 
     knownRecipes: [],
@@ -65,6 +66,7 @@ export const initialGameState: GameState = {
           credits: 60,
           scrapAlloy: 8,
           ironOre: 4,
+          fieldRations: 1,
         },
       },
     },
@@ -145,6 +147,7 @@ export const initialGameState: GameState = {
           credits: 55,
           ironOre: 5,
           scrapAlloy: 7,
+          fieldRations: 1,
         },
       },
     },

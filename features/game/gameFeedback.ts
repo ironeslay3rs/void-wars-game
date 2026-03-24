@@ -14,6 +14,8 @@ export function formatResourceLabel(key: string) {
       return "Ember Core";
     case "bioSamples":
       return "Bio Samples";
+    case "fieldRations":
+      return "Field Rations";
     default:
       return key;
   }
