@@ -1,6 +1,11 @@
 import { initialGameState } from "@/features/game/initialGameState";
 import { phase1ExplorationReward } from "@/features/exploration/explorationData";
 import {
+  FEAST_HALL_SERVICE_BIO_SAMPLE_COST,
+  FEAST_HALL_SERVICE_CONDITION_GAIN,
+  FEAST_HALL_SERVICE_CREDITS_COST,
+} from "@/features/black-market/blackMarketFeastHallData";
+import {
   applyMissionReward,
   applyRankXp,
   buildMissionQueueEntry,
@@ -193,6 +198,53 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             state.player.resources,
             "credits",
             -CONDITION_RECOVERY_COST,
+          ),
+        },
+      };
+    }
+
+    case "DINE_AT_FEAST_HALL": {
+      const now = Date.now();
+      const player = applyConditionDecay(state.player, now);
+
+      if (player.condition >= 100) {
+        return {
+          ...state,
+          player,
+        };
+      }
+
+      if (player.resources.credits < FEAST_HALL_SERVICE_CREDITS_COST) {
+        return {
+          ...state,
+          player,
+        };
+      }
+
+      if (player.resources.bioSamples < FEAST_HALL_SERVICE_BIO_SAMPLE_COST) {
+        return {
+          ...state,
+          player,
+        };
+      }
+
+      return {
+        ...state,
+        player: {
+          ...player,
+          condition: clamp(
+            player.condition + FEAST_HALL_SERVICE_CONDITION_GAIN,
+            0,
+            100,
+          ),
+          resources: updateSingleResource(
+            updateSingleResource(
+              player.resources,
+              "credits",
+              -FEAST_HALL_SERVICE_CREDITS_COST,
+            ),
+            "bioSamples",
+            -FEAST_HALL_SERVICE_BIO_SAMPLE_COST,
           ),
         },
       };

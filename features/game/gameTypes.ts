@@ -173,6 +173,7 @@ export type GameAction =
   | { type: "SET_RANK_NAME"; payload: string }
   | { type: "ADJUST_CONDITION"; payload: number }
   | { type: "RECOVER_CONDITION" }
+  | { type: "DINE_AT_FEAST_HALL" }
   | { type: "RESOLVE_HUNT"; payload: { missionId: string; resolvedAt?: number } }
   | {
       type: "START_EXPLORATION_PROCESS";
