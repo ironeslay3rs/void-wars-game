@@ -34,3 +34,10 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Canon Docs
+
+- `docs/game-canon-registry.md` is the repo-facing source of truth for locked canon and implementation guardrails.
+- `docs/black-market-law.md` defines the citadel neutrality and Black Market development rules.
+- `docs/faction-visual-law.md` sets faction presentation constraints for UI and content work.
+- `docs/expansion-roadmap.md` outlines the safe expansion order for future tasks.
