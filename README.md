@@ -1,4 +1,41 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Void Wars Game
+
+A Next.js prototype for a UI-first adaptation of **Void Wars**, focused on building the game shell, screen flows, and progression systems in a way that can later support the locked seven-book canon roadmap.
+
+## Project Overview
+
+This repository currently functions as a playable interface and systems prototype. It already includes:
+
+- a multi-screen HUD and navigation shell
+- player state, resources, and persistence scaffolding
+- mission, inventory, status, faction, mastery, profession, guild, and bazaar-facing screens
+- combat, exploration, and progression support systems that can be expanded into canon-aligned content
+
+The repo should be treated as an implementation workspace, not a source of truth for lore. Canon sequencing belongs to the expansion planning document below.
+
+## Expansion Planning
+
+The repo-facing expansion roadmap is documented here:
+
+- [`docs/expansion-roadmap.md`](docs/expansion-roadmap.md)
+
+That document explicitly separates:
+
+1. **Locked canon expansion order** — the seven-book canon spine the game must follow.
+2. **Current repo implementation state** — what the codebase actually supports today.
+3. **Recommended development order** — how to ship practical milestones without breaking canon order.
+
+## Current Development Focus
+
+Based on the current repository state, the strongest implemented foundation is:
+
+- home / HUD presentation
+- mission loop scaffolding
+- progression and resource state
+- world-navigation shells
+- screen-specific data models for key districts and game systems
+
+This makes the repo well suited for feature-hardening, content tagging, gating rules, and canon-safe expansion planning.
 
 ## Getting Started
 
@@ -6,31 +43,28 @@ First, run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Scripts
 
-## Learn More
+- `npm run dev` — start the local development server
+- `npm run lint` — run ESLint
+- `npm run build` — create a production build
+- `npm run start` — run the production server
 
-To learn more about Next.js, take a look at the following resources:
+## Tech Stack
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Next.js
+- React
+- TypeScript
+- Tailwind CSS
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Repo Notes
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `DEV_LOG.md` tracks the implementation-phase status of core gameplay systems.
+- Lore canon is considered externally locked; missing manuscripts in the repo are **not** permission to redefine sequence or invent replacement canon.
+- Gameplay code and system scaffolding should stay flexible enough to map content to the canon seven-book ladder as those materials are integrated.
