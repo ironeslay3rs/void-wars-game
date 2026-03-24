@@ -1,36 +1,46 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Void Wars: Oblivion
 
-## Getting Started
+A Next.js prototype for a faction-driven sci-fi fantasy RPG centered on district progression, timed missions, biotech hunts, and long-term expansion into Bio, Mecha, and Spirit campaign arcs.
 
-First, run the development server:
+## Project snapshot
+
+The current repository already establishes the game's core pillars:
+- **Three primary faction paths**: Bio, Mecha, and Spirit.
+- **A city-based progression hub** anchored by the Black Bazaar and its specialized districts.
+- **A first-session gameplay loop** built around exploration, biotech lead discovery, hunt resolution, and recovery.
+- **Expansion-ready system shells** for careers, professions, arena combat, guild progression, faction HQs, and gate travel.
+
+## Current gameplay foundation
+
+The prototype currently supports or scaffolds these systems:
+- global player state and persistence,
+- mission queue and timed operations,
+- condition and recovery flow,
+- hunt-result progression,
+- rank, mastery, and influence growth,
+- district screens for Bio, Mecha, Spirit, Arena, Guild, Crafting, and Travel.
+
+## Expansion planning
+
+A new world and expansion roadmap is available here:
+- [`docs/world-expansion-plan.md`](docs/world-expansion-plan.md)
+
+That document converts the current repo's lore, mission data, district structure, and faction language into a practical multi-book expansion plan.
+
+## Development
+
+Install dependencies and run the app locally:
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Then open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Checks
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm run lint
+npm run build
+```
