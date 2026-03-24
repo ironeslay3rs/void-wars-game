@@ -10,5 +10,6 @@ export const phase1ExplorationReward: MissionReward = {
   resources: {
     credits: 35,
     ironOre: 2,
+    fieldRations: 1,
   },
 };

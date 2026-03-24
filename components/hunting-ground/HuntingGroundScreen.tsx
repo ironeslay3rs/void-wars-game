@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import ScreenHeader from "@/components/shared/ScreenHeader";
 import SectionCard from "@/components/shared/SectionCard";
 import PlaceholderPanel from "@/components/shared/PlaceholderPanel";
+import { MISSION_FIELD_RATION_COST } from "@/config/survival";
 import { useGame } from "@/features/game/gameContext";
 import { huntingGroundScreenData } from "@/features/hunting-ground/huntingGroundScreenData";
 import type {
@@ -71,6 +72,8 @@ function formatRewardLabel(key: string) {
       return "Ember Core";
     case "bioSamples":
       return "Bio Samples";
+    case "fieldRations":
+      return "Field Rations";
     default:
       return key;
   }
@@ -422,22 +425,32 @@ export default function HuntingGroundScreen() {
                             }
                             disabled={
                               isQueued ||
-                              queue.length >= state.player.maxMissionQueueSlots
+                              queue.length >= state.player.maxMissionQueueSlots ||
+                              state.player.resources.fieldRations <
+                                MISSION_FIELD_RATION_COST
                             }
                             className={[
                               "w-full rounded-2xl border px-4 py-3 text-sm font-semibold uppercase tracking-[0.12em] transition",
                               isQueued ||
-                              queue.length >= state.player.maxMissionQueueSlots
+                              queue.length >= state.player.maxMissionQueueSlots ||
+                              state.player.resources.fieldRations <
+                                MISSION_FIELD_RATION_COST
                                 ? "cursor-not-allowed border-white/10 bg-white/5 text-white/35"
                                 : "border-amber-500/30 bg-amber-500/10 text-amber-100 hover:border-amber-400/45 hover:bg-amber-500/15",
                             ].join(" ")}
                           >
                             {isQueued
                               ? "Deployed"
+                              : state.player.resources.fieldRations <
+                                  MISSION_FIELD_RATION_COST
+                                ? "Need Rations"
                               : queue.length >= state.player.maxMissionQueueSlots
                                 ? "Queue Full"
                                 : "Deploy"}
                           </button>
+                          <div className="mt-2 text-xs text-white/45">
+                            Deploy cost: {MISSION_FIELD_RATION_COST} field ration.
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -522,6 +535,18 @@ export default function HuntingGroundScreen() {
                   </div>
                   <div className="mt-1 text-sm text-white/55">
                     Hunting Ground contracts feed the same shared resource pool used by inventory and future crafting.
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-amber-500/20 bg-amber-500/8 p-4">
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-amber-200/70">
+                    Field Provisions
+                  </div>
+                  <div className="mt-2 text-sm font-semibold text-white">
+                    {state.player.resources.fieldRations} ration packs ready
+                  </div>
+                  <div className="mt-1 text-sm text-white/55">
+                    Guild deployments now draw from the same ration stock used by other district operations.
                   </div>
                 </div>
 

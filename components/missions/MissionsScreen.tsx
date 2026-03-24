@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import ScreenHeader from "@/components/shared/ScreenHeader";
 import SectionCard from "@/components/shared/SectionCard";
+import { MISSION_FIELD_RATION_COST } from "@/config/survival";
 import { useGame } from "@/features/game/gameContext";
 import { missionsScreenData } from "@/features/missions/missionsScreenData";
 import type {
@@ -84,6 +85,8 @@ function formatRewardLabel(key: string) {
       return "Ember Core";
     case "bioSamples":
       return "Bio Samples";
+    case "fieldRations":
+      return "Field Rations";
     default:
       return key;
   }
@@ -468,20 +471,34 @@ export default function MissionsScreen() {
                               payload: { missionId: mission.id },
                             })
                           }
-                          disabled={!isAccessible || isQueued}
+                          disabled={
+                            !isAccessible ||
+                            isQueued ||
+                            state.player.resources.fieldRations <
+                              MISSION_FIELD_RATION_COST
+                          }
                           className={[
                             "w-full rounded-2xl border px-4 py-3 text-sm font-semibold uppercase tracking-[0.12em] transition",
-                            !isAccessible || isQueued
+                            !isAccessible ||
+                            isQueued ||
+                            state.player.resources.fieldRations <
+                              MISSION_FIELD_RATION_COST
                               ? "cursor-not-allowed border-white/10 bg-white/5 text-white/35"
                               : "border-cyan-400/30 bg-cyan-500/10 text-cyan-100 hover:border-cyan-300/50 hover:bg-cyan-500/15",
                           ].join(" ")}
                         >
                           {isQueued
                             ? "Queued"
+                            : state.player.resources.fieldRations <
+                                MISSION_FIELD_RATION_COST
+                              ? "No Rations"
                             : isAccessible
                               ? "Queue Mission"
                               : "Locked"}
                         </button>
+                        <div className="mt-2 text-xs text-white/45">
+                          Deploy cost: {MISSION_FIELD_RATION_COST} field ration.
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -594,6 +611,18 @@ export default function MissionsScreen() {
                     </div>
                     <div className="mt-1 text-sm text-white/55">
                       Completed missions now reward automatically when timers end.
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-amber-500/20 bg-amber-500/8 p-4">
+                    <div className="text-[10px] uppercase tracking-[0.18em] text-amber-200/70">
+                      Provisions
+                    </div>
+                    <div className="mt-2 text-sm font-semibold text-white">
+                      {state.player.resources.fieldRations} Field Rations
+                    </div>
+                    <div className="mt-1 text-sm text-white/55">
+                      Each queued operation consumes {MISSION_FIELD_RATION_COST} ration before the team leaves the district.
                     </div>
                   </div>
 

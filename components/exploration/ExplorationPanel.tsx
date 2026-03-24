@@ -1,6 +1,7 @@
 "use client";
 
 import SectionCard from "@/components/shared/SectionCard";
+import { EXPLORATION_FIELD_RATION_COST } from "@/config/survival";
 import { useGame } from "@/features/game/gameContext";
 import {
   PHASE1_EXPLORATION_DURATION_MS,
@@ -18,6 +19,8 @@ const PHASE1_EXPLORATION_TITLE = "Outer Wastes Exploration";
 export default function ExplorationPanel() {
   const { state, dispatch } = useGame();
   const activeProcess = state.player.activeProcess;
+  const hasRequiredRations =
+    state.player.resources.fieldRations >= EXPLORATION_FIELD_RATION_COST;
   const guidance = getFirstSessionGuidance(state);
   const { remainingSeconds, isRunning, isComplete } =
     useActiveProcessTimer(activeProcess);
@@ -27,8 +30,10 @@ export default function ExplorationPanel() {
     phase1ExplorationReward.resources ?? {},
   );
   const idleActionMessage =
-    guidance.nextAction === "explore"
-      ? "Ready. This control starts the next exploration sweep."
+    !hasRequiredRations
+      ? `Blocked. Exploration requires ${EXPLORATION_FIELD_RATION_COST} field ration from the Crafting District or scavenged stock.`
+      : guidance.nextAction === "explore"
+        ? "Ready. This control starts the next exploration sweep."
       : guidance.nextAction === "hunt"
         ? "Available. Exploration can start here, but an active biotech lead should be resolved first."
         : "Available. Exploration can start here, but recovery should come first.";
@@ -71,16 +76,23 @@ export default function ExplorationPanel() {
             <button
               type="button"
               onClick={handleStartExploration}
+              disabled={!hasRequiredRations}
               className={[
                 "w-full rounded-xl px-4 py-3 text-sm font-semibold transition",
-                shouldHighlightStartAction
+                !hasRequiredRations
+                  ? "cursor-not-allowed border border-white/10 bg-white/[0.04] text-white/35"
+                  : shouldHighlightStartAction
                   ? "border border-cyan-300/60 bg-cyan-400/16 text-cyan-50 shadow-[0_0_0_1px_rgba(103,232,249,0.2),0_0_28px_rgba(34,211,238,0.2)] hover:border-cyan-200/80 hover:bg-cyan-400/20"
                   : "border border-cyan-400/25 bg-cyan-400/10 text-cyan-100 hover:border-cyan-300/40 hover:bg-cyan-400/15",
               ].join(" ")}
             >
               <span className="flex items-center justify-between gap-3">
-                <span>Start Exploration</span>
-                {shouldHighlightStartAction ? (
+                <span>
+                  {hasRequiredRations
+                    ? "Start Exploration"
+                    : "Need Field Rations"}
+                </span>
+                {hasRequiredRations && shouldHighlightStartAction ? (
                   <span className="rounded-full border border-cyan-300/40 bg-cyan-300/14 px-2 py-1 text-[10px] uppercase tracking-[0.16em] text-cyan-50">
                     First Step
                   </span>
@@ -90,6 +102,10 @@ export default function ExplorationPanel() {
 
             <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-3 text-sm text-white/60">
               {idleActionMessage}
+            </div>
+
+            <div className="rounded-xl border border-amber-500/20 bg-amber-500/8 px-3 py-3 text-sm text-amber-50/90">
+              Survival Cost: {EXPLORATION_FIELD_RATION_COST} field ration per sweep. Current stock: {state.player.resources.fieldRations}.
             </div>
           </>
         ) : (

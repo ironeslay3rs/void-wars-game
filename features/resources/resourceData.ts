@@ -4,7 +4,8 @@ export type ResourceKey =
   | "scrapAlloy"
   | "runeDust"
   | "emberCore"
-  | "bioSamples";
+  | "bioSamples"
+  | "fieldRations";
 
 export type ResourceMeta = {
   id: ResourceKey;
@@ -49,5 +50,11 @@ export const resourceData: ResourceMeta[] = [
     label: "Bio Samples",
     icon: "/icons/resources/resource-credits.png",
     iconAlt: "Bio Samples",
+  },
+  {
+    id: "fieldRations",
+    label: "Field Rations",
+    icon: "/icons/resources/resource-credits.png",
+    iconAlt: "Field Rations",
   },
 ];

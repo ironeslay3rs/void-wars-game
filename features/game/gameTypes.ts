@@ -16,7 +16,8 @@ export type ResourceKey =
   | "scrapAlloy"
   | "runeDust"
   | "emberCore"
-  | "bioSamples";
+  | "bioSamples"
+  | "fieldRations";
 
 export type ResourcesState = Record<ResourceKey, number>;
 
