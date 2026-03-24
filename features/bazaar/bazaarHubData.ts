@@ -27,8 +27,8 @@ export const bazaarHubData: BazaarHub[] = [
   {
     id: "black-market",
     title: "Black Market",
-    subtitle: "Smugglers Den",
-    badge: "Shady Dealers",
+    subtitle: "Neutral Survivor Citadel",
+    badge: "Feast Hall Now Open",
     route: "/bazaar/black-market",
     themeKey: "blackMarket",
     positionClass: "left-1/2 top-[78%] -translate-x-1/2 -translate-y-1/2",
