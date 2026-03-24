@@ -68,7 +68,7 @@ export const navigationItems: NavigationItem[] = [
   {
     id: "black-market",
     label: "Black Market",
-    href: "/bazaar",
+    href: "/bazaar/black-market",
     icon: Store,
     placement: ["bottom"],
     accent: "green",
