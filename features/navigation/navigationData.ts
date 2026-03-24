@@ -10,7 +10,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
   {
     id: "bazaar",
     label: canonBazaar.routeLabel,
-    description: "Trade, contracts, and faction-side exchanges.",
+    description: "Trade, contracts, and survivor exchanges inside the neutral Black Market citadel.",
   },
   {
     id: "forge",
@@ -38,8 +38,8 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
   },
   {
     id: "spirit-sanctum",
-    label: "Spirit Enclave",
-    description: "Attunement, resonance, and spirit-aligned rites.",
+    label: "Ember Vault",
+    description: "Attunement, resonance, and ember-aligned Pure rites.",
     requirement: {
       requiredRankLevel: 2,
     },

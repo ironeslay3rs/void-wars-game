@@ -73,7 +73,7 @@ export function getFactionStarterLoadout(
     ];
   }
 
-  if (faction === "spirit") {
+  if (faction === "pure") {
     return [
       {
         name: "Emberglass Pike",

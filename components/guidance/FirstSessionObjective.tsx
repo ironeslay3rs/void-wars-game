@@ -26,12 +26,18 @@ export default function FirstSessionObjective() {
           <div className="text-[10px] font-semibold uppercase tracking-[0.28em] text-white/45">
             Primary Objective
           </div>
+          <div className="mt-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/50">
+            {guidance.stateLabel}
+          </div>
           <div className="mt-2 text-base font-semibold text-white md:text-lg">
             {guidance.objective}
           </div>
           <p className="mt-2 text-sm leading-6 text-white/65">
             {guidance.detail}
           </p>
+          <div className="mt-3 text-sm font-medium text-cyan-100/90">
+            Next: {guidance.nextStepLabel}
+          </div>
         </div>
 
         <div

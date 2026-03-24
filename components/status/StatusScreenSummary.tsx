@@ -12,6 +12,10 @@ import {
   hasStabilizationSigil,
   STATUS_RECOVERY_COST,
 } from "@/features/status/statusRecovery";
+import {
+  HUNGER_PRESSURE_THRESHOLD,
+  MOSS_RATION_RECIPE_COST,
+} from "@/features/status/survival";
 
 export default function StatusScreenSummary() {
   const { state } = useGame();
@@ -25,6 +29,27 @@ export default function StatusScreenSummary() {
     player.condition,
   );
   const canAffordRecovery = player.resources.credits >= STATUS_RECOVERY_COST;
+  const canCraftRation =
+    player.resources.bioSamples >= MOSS_RATION_RECIPE_COST.bioSamples &&
+    player.resources.runeDust >= MOSS_RATION_RECIPE_COST.runeDust;
+
+  if (player.hunger < HUNGER_PRESSURE_THRESHOLD) {
+    return (
+      <ScreenStateSummary
+        eyebrow="Survival State"
+        title="Hungry"
+        consequence="Hunger is feeding extra condition pressure. Stabilize before stretching the loop."
+        nextStep={
+          player.resources.mossRations > 0
+            ? "Recommended. Use a Moss Ration to restore stores and ease survival pressure."
+            : canCraftRation
+              ? "Recommended. Bind a Moss Ration in the Crafting District, then return here to stabilize."
+              : "Recommended. Run a short hunt or resolve an active biotech lead for fresh biomass, then bind a Moss Ration in the Crafting District."
+        }
+        tone="warning"
+      />
+    );
+  }
 
   if (player.condition < 40) {
     return (

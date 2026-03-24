@@ -1,7 +1,7 @@
 export type BazaarNodeType =
   | "bio"
   | "mecha"
-  | "spirit"
+  | "pure"
   | "market"
   | "combat"
   | "travel";
@@ -15,11 +15,11 @@ export type BazaarNodeData = {
 };
 
 export const bazaarMapNodes: BazaarNodeData[] = [
-  { id: "void-market", label: "Void Market", x: 50, y: 45, type: "market" },
+  { id: "void-market", label: "War Exchange", x: 50, y: 45, type: "market" },
   { id: "black-market", label: "Black Market", x: 50, y: 65, type: "market" },
 
   { id: "biotech-labs", label: "Biotech Labs", x: 20, y: 35, type: "bio" },
-  { id: "spirit-enclave", label: "Spirit Enclave", x: 20, y: 55, type: "spirit" },
+  { id: "spirit-enclave", label: "Ember Vault Enclave", x: 20, y: 55, type: "pure" },
   { id: "crafting-district", label: "Crafting District", x: 25, y: 70, type: "market" },
 
   { id: "arena", label: "Arena", x: 80, y: 30, type: "combat" },

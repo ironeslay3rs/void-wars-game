@@ -9,6 +9,7 @@ type OpportunityTone = "neutral" | "ready" | "warning";
 type OpportunityState = {
   label: string;
   title: string;
+  change: string;
   detail: string;
   tone: OpportunityTone;
 };
@@ -38,6 +39,7 @@ const toneClassMap = {
 };
 
 function getCurrentOpportunity(params: {
+  hasLastHuntResult: boolean;
   hasBiotechSpecimenLead: boolean;
   hasMissionQueue: boolean;
   isExplorationRunning: boolean;
@@ -45,6 +47,7 @@ function getCurrentOpportunity(params: {
   nextAction: "explore" | "hunt" | "recover";
 }): OpportunityState {
   const {
+    hasLastHuntResult,
     hasBiotechSpecimenLead,
     hasMissionQueue,
     isExplorationRunning,
@@ -55,8 +58,15 @@ function getCurrentOpportunity(params: {
   if (nextAction === "recover") {
     return {
       label: "Current Opportunity",
-      title: "Stabilize before extending the loop.",
-      detail: "Condition is strained. Recover in Status, then return to the field with a safer margin.",
+      title: hasLastHuntResult
+        ? "Stabilize before spending the haul."
+        : "Stabilize before extending the loop.",
+      change: hasLastHuntResult
+        ? "The payout is banked, but field wear is now the main blocker."
+        : "Field pressure is now the main blocker.",
+      detail: hasLastHuntResult
+        ? "The last specimen run paid out, but condition came back strained. Recover in Status, then reopen the loop from a safer position."
+        : "Condition is strained. Recover in Status, then return to the field with a safer margin.",
       tone: "warning",
     };
   }
@@ -65,6 +75,7 @@ function getCurrentOpportunity(params: {
     return {
       label: "Current Opportunity",
       title: "Claim the exploration result.",
+      change: "The sweep finished and the lead is ready to secure.",
       detail: "The sweep is finished. Securing the reward will convert it into your next biotech lead.",
       tone: "ready",
     };
@@ -74,7 +85,18 @@ function getCurrentOpportunity(params: {
     return {
       label: "Current Opportunity",
       title: "Resolve the active specimen trace.",
+      change: "A live lead is already in hand.",
       detail: "A biotech lead is live. Open Biotech Labs to turn that lead into rewards and progression.",
+      tone: "ready",
+    };
+  }
+
+  if (hasLastHuntResult) {
+    return {
+      label: "Current Opportunity",
+      title: "Open the next sweep.",
+      change: "The last hunt paid out and the loop is ready to move again.",
+      detail: "Your latest specimen haul is already secured. Start another exploration sweep to convert that momentum into the next lead.",
       tone: "ready",
     };
   }
@@ -83,6 +105,7 @@ function getCurrentOpportunity(params: {
     return {
       label: "Current Opportunity",
       title: "Open the next sweep.",
+      change: "No lead is active and the loop is waiting on exploration.",
       detail: "Exploration is the clearest way to push the main loop forward and surface your next biotech signal.",
       tone: "ready",
     };
@@ -92,6 +115,7 @@ function getCurrentOpportunity(params: {
     return {
       label: "Current Opportunity",
       title: "Put the shared queue to work.",
+      change: "Your main loop is occupied, but background work is still open.",
       detail: "Missions or Hunting Ground contracts can keep background progress moving while your current sweep runs.",
       tone: "neutral",
     };
@@ -100,6 +124,7 @@ function getCurrentOpportunity(params: {
   return {
     label: "Current Opportunity",
     title: "Let the active timers work.",
+    change: "Your current loop state is already in motion.",
     detail: "Your loop is already in motion. Check progress, watch the queue, and collect the next completed result.",
     tone: "neutral",
   };
@@ -111,6 +136,7 @@ export default function CurrentOpportunityCard() {
   const activeProcess = state.player.activeProcess;
   const { isRunning, isComplete } = useActiveProcessTimer(activeProcess);
   const opportunity = getCurrentOpportunity({
+    hasLastHuntResult: state.player.lastHuntResult !== null,
     hasBiotechSpecimenLead: state.player.hasBiotechSpecimenLead,
     hasMissionQueue: state.player.missionQueue.length > 0,
     isExplorationRunning: isRunning,
@@ -141,6 +167,10 @@ export default function CurrentOpportunityCard() {
       <div className={["mt-3 text-sm font-semibold", toneClasses.title].join(" ")}>
         {opportunity.title}
       </div>
+
+      <p className={["mt-2 text-xs uppercase tracking-[0.14em]", toneClasses.detail].join(" ")}>
+        {opportunity.change}
+      </p>
 
       <p className={["mt-2 text-sm leading-6", toneClasses.detail].join(" ")}>
         {opportunity.detail}

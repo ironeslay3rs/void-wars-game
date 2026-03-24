@@ -5,8 +5,10 @@ export type FirstSessionGuidanceAction = "explore" | "hunt" | "recover";
 const RECOVERY_GUIDANCE_THRESHOLD = 60;
 
 export type FirstSessionGuidance = {
+  stateLabel: string;
   objective: string;
   detail: string;
+  nextStepLabel: string;
   nextAction: FirstSessionGuidanceAction;
   isFirstTimePlayer: boolean;
 };
@@ -35,18 +37,22 @@ export function getFirstSessionGuidance(
   if (player.lastHuntResult) {
     if (player.condition < RECOVERY_GUIDANCE_THRESHOLD) {
       return {
-        objective: "Stabilize condition before the next sweep.",
+        stateLabel: "Hunt Resolved / Survival Pressure",
+        objective: "Bank the haul. Stabilize before the next sweep.",
         detail:
-          "Your condition is running low. Open Status, recover, then return home to begin the next exploration sweep.",
+          "The specimen payout is already secured, but the body came back strained. Recover first so the next sweep does not start from a deficit.",
+        nextStepLabel: "Open Status and stabilize",
         nextAction: "recover",
         isFirstTimePlayer,
       };
     }
 
     return {
-      objective: "Condition stable. Continue exploration.",
+      stateLabel: "Hunt Resolved",
+      objective: "Haul secured. Open the next exploration sweep.",
       detail:
-        "Your last hunt is resolved and condition is holding. Return home and begin another exploration sweep for a fresh biotech lead.",
+        "The last specimen run paid out cleanly and your field state is still stable enough to keep pressure on the loop.",
+      nextStepLabel: "Return home and start the next sweep",
       nextAction: "explore",
       isFirstTimePlayer,
     };
@@ -54,19 +60,23 @@ export function getFirstSessionGuidance(
 
   if (player.hasBiotechSpecimenLead) {
     return {
+      stateLabel: "Specimen Lead Active",
       objective: "Biotech signal detected. Initiate hunt.",
       detail:
-        "A viable specimen trace is active. Open Biotech Labs and resolve the hunt to convert the lead into rewards.",
+        "A viable specimen trace is locked. Biotech Labs can convert it into rewards right now.",
+      nextStepLabel: "Open Biotech Labs and run the hunt",
       nextAction: "hunt",
       isFirstTimePlayer,
     };
   }
 
   return {
+    stateLabel: "Exploration Ready",
     objective: "Explore the wasteland to locate a biotech signal.",
     detail: isFirstTimePlayer
-      ? "Start your first exploration sweep to uncover a specimen lead."
-      : "Begin another exploration sweep to recover a fresh specimen lead.",
+      ? "Start your first sweep to uncover a specimen lead and open the biotech hunt."
+      : "Begin another sweep to recover a fresh specimen lead.",
+    nextStepLabel: "Start exploration",
     nextAction: "explore",
     isFirstTimePlayer,
   };

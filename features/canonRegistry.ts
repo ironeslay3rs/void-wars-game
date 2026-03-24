@@ -2,20 +2,20 @@ import type { FactionAlignment } from "@/features/game/gameTypes";
 
 export const canonBazaar = {
   id: "bazaar",
-  navLabel: "Bazaar",
-  routeLabel: "Nexus Bazaar",
-  headingLabel: "The Nexus Bazaar",
+  navLabel: "Black Market",
+  routeLabel: "Black Market",
+  headingLabel: "The Black Market",
   districtPrefix: "Bazaar",
 } as const;
 
 export const canonFactionHqs = {
   id: "faction-hqs",
-  label: "Faction HQs",
-  eyebrow: `${canonBazaar.districtPrefix} / Faction HQs`,
-  title: "Faction HQs",
+  label: "Affiliation Concourse",
+  eyebrow: `${canonBazaar.districtPrefix} / Affiliation Concourse`,
+  title: "Affiliation Concourse",
 } as const;
 
-export const canonFactionOrder = ["bio", "mecha", "spirit"] as const;
+export const canonFactionOrder = ["bio", "mecha", "pure"] as const;
 
 export type CanonFactionId = FactionAlignment;
 export type CanonPathFactionId = (typeof canonFactionOrder)[number];
@@ -45,9 +45,9 @@ export const canonFactions: Record<CanonFactionId, CanonFactionEntry> = {
     id: "mecha",
     label: "Mecha",
   },
-  spirit: {
-    id: "spirit",
-    label: "Spirit",
+  pure: {
+    id: "pure",
+    label: "Pure",
   },
 };
 
@@ -57,24 +57,27 @@ export const canonPathFactions: Record<
 > = {
   bio: {
     ...canonFactions.bio,
-    wingLabel: "Bio Wing",
-    description: "Predator growth and adaptation",
-    tagline: "Adaptive dominance",
+    wingLabel: "Verdant Coil Wing",
+    description:
+      "Verdant Coil body doctrine of adaptation, mutation, and survival hunts.",
+    tagline: "Verdant Coil",
     themeKey: "bio",
   },
   mecha: {
     ...canonFactions.mecha,
-    wingLabel: "Mecha Wing",
-    description: "Precision, armor, and frame control",
-    tagline: "Engineered supremacy",
+    wingLabel: "Chrome Synod Wing",
+    description:
+      "Chrome Synod mind doctrine of precision, hierarchy, and machine perfection.",
+    tagline: "Chrome Synod",
     themeKey: "mecha",
   },
-  spirit: {
-    ...canonFactions.spirit,
-    wingLabel: "Spirit Wing",
-    description: "Soul force and ritual resonance",
-    tagline: "Ritual ascension",
-    themeKey: "spirit",
+  pure: {
+    ...canonFactions.pure,
+    wingLabel: "Ember Vault Wing",
+    description:
+      "Ember Vault soul doctrine of fire, memory, saintcraft, and rune discipline.",
+    tagline: "Ember Vault",
+    themeKey: "pure",
   },
 };
 
@@ -110,7 +113,7 @@ export const canonNavigationItems = {
   },
   factions: {
     id: "factions",
-    label: "Factions",
+    label: "Affiliations",
     href: "/factions",
   },
   bazaar: {

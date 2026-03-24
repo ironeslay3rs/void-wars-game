@@ -32,7 +32,7 @@ function formatFactionLabel(faction: string) {
   if (faction === "unbound") return "Unbound";
   if (faction === "bio") return "Bio";
   if (faction === "mecha") return "Mecha";
-  if (faction === "spirit") return "Spirit";
+  if (faction === "pure") return "Pure";
   return faction;
 }
 
@@ -55,7 +55,7 @@ function getFactionAccent(faction: string) {
     };
   }
 
-  if (faction === "spirit") {
+  if (faction === "pure") {
     return {
       chip: "border-violet-500/30 bg-violet-500/10 text-violet-100",
       playerBar: "from-violet-300 to-violet-700",
@@ -102,7 +102,7 @@ function getPlayerCombatProfile(
     };
   }
 
-  if (faction === "spirit") {
+  if (faction === "pure") {
     return {
       maxHp: Math.round((320 + levelBonus * 2.1) * conditionScale),
       minDamage: Math.round((30 + rankLevel * 4) * conditionScale),
@@ -191,7 +191,7 @@ function getMatchRewards(
     };
   }
 
-  if (faction === "spirit") {
+  if (faction === "pure") {
     return {
       credits: baseCredits - 5,
       rankXp: baseXp + 5,

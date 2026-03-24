@@ -8,7 +8,7 @@ function formatFactionLabel(faction: string) {
   if (faction === "unbound") return "Unbound";
   if (faction === "bio") return "Bio";
   if (faction === "mecha") return "Mecha";
-  if (faction === "spirit") return "Spirit";
+  if (faction === "pure") return "Pure";
   return faction;
 }
 
@@ -52,7 +52,7 @@ function getFactionAccent(faction: string) {
     };
   }
 
-  if (faction === "spirit") {
+  if (faction === "pure") {
     return {
       ring: "border-violet-500/35",
       glow: "shadow-[0_0_40px_rgba(168,85,247,0.18)]",
@@ -85,6 +85,7 @@ export default function StatusPage() {
     { label: "Rune Dust", value: player.resources.runeDust },
     { label: "Ember Core", value: player.resources.emberCore },
     { label: "Bio Samples", value: player.resources.bioSamples },
+    { label: "Moss Rations", value: player.resources.mossRations },
   ];
 
   const systemStates = [

@@ -6,16 +6,45 @@ import ScreenStateSummary from "@/components/shared/ScreenStateSummary";
 
 export default function ExplorationScreenSummary() {
   const { state } = useGame();
-  const activeProcess = state.player.activeProcess;
+  const { player } = state;
+  const activeProcess = player.activeProcess;
   const { isRunning, isComplete } = useActiveProcessTimer(activeProcess);
 
   if (!activeProcess) {
+    if (player.hasBiotechSpecimenLead) {
+      return (
+        <ScreenStateSummary
+          eyebrow="Loop State"
+          title="Specimen Lead Active"
+          consequence="Exploration is clear for now. The last claimed sweep has already produced a live biotech lead."
+          nextStep="Open Biotech Labs and resolve the specimen hunt."
+          tone="ready"
+        />
+      );
+    }
+
+    if (player.lastHuntResult) {
+      return (
+        <ScreenStateSummary
+          eyebrow="Loop State"
+          title="Hunt Aftermath"
+          consequence="The last biotech hunt is already resolved. Rewards are applied and the field loop is waiting on your next decision."
+          nextStep={
+            player.condition < 60
+              ? "Stabilize in Status before opening another sweep."
+              : "Begin the next exploration sweep when ready."
+          }
+          tone={player.condition < 60 ? "warning" : "ready"}
+        />
+      );
+    }
+
     return (
       <ScreenStateSummary
-        eyebrow="Exploration State"
-        title="Idle"
-        consequence="No exploration run is active, and no lead or reward is pending on this screen."
-        nextStep="Review the current objective, then begin the next sweep."
+        eyebrow="Loop State"
+        title="Exploration Ready"
+        consequence="No sweep is running and no specimen lead is waiting. The loop is idle at its starting point."
+        nextStep="Begin the next exploration sweep."
         tone="neutral"
       />
     );
@@ -24,10 +53,10 @@ export default function ExplorationScreenSummary() {
   if (isRunning) {
     return (
       <ScreenStateSummary
-        eyebrow="Exploration State"
-        title="In Progress"
-        consequence="The current sweep is underway. This screen will shift to Claim Ready when the timer completes."
-        nextStep="Monitor the run here until the process resolves."
+        eyebrow="Loop State"
+        title="Exploring"
+        consequence="The current sweep is underway. No new lead can be claimed until this run finishes."
+        nextStep="Hold here until the timer resolves, then claim the result."
         tone="warning"
       />
     );
@@ -36,10 +65,10 @@ export default function ExplorationScreenSummary() {
   if (isComplete) {
     return (
       <ScreenStateSummary
-        eyebrow="Exploration State"
+        eyebrow="Loop State"
         title="Claim Ready"
-        consequence="This exploration run has resolved. The result is ready to be claimed from this screen."
-        nextStep="Claim the result to advance the loop."
+        consequence="This sweep is complete. Claiming it converts the run into the next active specimen lead."
+        nextStep="Claim the result, then move to Biotech Labs."
         tone="ready"
       />
     );

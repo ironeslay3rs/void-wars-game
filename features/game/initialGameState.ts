@@ -7,6 +7,7 @@ export const initialGameState: GameState = {
     factionAlignment: "unbound",
 
     condition: 100,
+    hunger: 100,
     conditionRecoveryAvailableAt: 0,
     lastConditionTickAt: Date.now(),
 
@@ -26,6 +27,7 @@ export const initialGameState: GameState = {
       runeDust: 10,
       emberCore: 2,
       bioSamples: 0,
+      mossRations: 2,
     },
 
     knownRecipes: [],
@@ -109,12 +111,12 @@ export const initialGameState: GameState = {
       },
     },
     {
-      id: "spirit-ember-trial",
+      id: "pure-ember-trial",
       category: "operation",
       title: "Complete an Ember Trial",
       description:
         "Enter a guided memory rite to sharpen attunement and gather refined rune residue.",
-      path: "spirit",
+      path: "pure",
       durationHours: 0.0028,
       reward: {
         rankXp: 38,

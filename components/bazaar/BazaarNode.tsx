@@ -3,7 +3,7 @@ import type { BazaarDistrict } from "@/features/bazaar/bazaarDistrictData";
 
 const themeStyles: Record<BazaarDistrict["themeKey"], string> = {
   bio: "border-emerald-400/25 bg-emerald-500/10 hover:border-emerald-300/45",
-  spirit: "border-violet-400/25 bg-violet-500/10 hover:border-violet-300/45",
+  pure: "border-violet-400/25 bg-violet-500/10 hover:border-violet-300/45",
   forge: "border-orange-400/25 bg-orange-500/10 hover:border-orange-300/45",
   arena: "border-red-400/25 bg-red-500/10 hover:border-red-300/45",
   mecha: "border-cyan-400/25 bg-cyan-500/10 hover:border-cyan-300/45",

@@ -7,6 +7,7 @@ import type { FactionAlignment } from "@/features/game/gameTypes";
 import ConditionWidget from "@/components/home/ConditionWidget";
 import FactionPathPanel from "@/components/home/FactionPathPanel";
 import MissionPanel from "@/components/home/MissionPanel";
+import { getFirstSessionGuidance } from "@/features/guidance/firstSessionGuidance";
 
 function getSelectedPath(alignment: FactionAlignment) {
   return alignment === "unbound" ? null : alignment;
@@ -14,6 +15,7 @@ function getSelectedPath(alignment: FactionAlignment) {
 
 export default function HomeHudClient() {
   const { state, selectPath } = useGame();
+  const guidance = getFirstSessionGuidance(state);
 
   return (
     <>
@@ -39,7 +41,10 @@ export default function HomeHudClient() {
           rankXp={state.player.rankXp}
           rankXpToNext={state.player.rankXpToNext}
           condition={state.player.condition}
+          hunger={state.player.hunger}
           masteryProgress={state.player.masteryProgress}
+          loopStateLabel={guidance.stateLabel}
+          nextStepLabel={guidance.nextStepLabel}
         />
       </section>
 

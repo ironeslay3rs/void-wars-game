@@ -12,6 +12,7 @@ import {
   getNonZeroResourceEntries,
 } from "@/features/game/gameFeedback";
 import { getFirstSessionGuidance } from "@/features/guidance/firstSessionGuidance";
+import { getActivityHungerCost } from "@/features/status/survival";
 
 const PHASE1_EXPLORATION_TITLE = "Outer Wastes Exploration";
 
@@ -23,6 +24,7 @@ export default function ExplorationPanel() {
     useActiveProcessTimer(activeProcess);
   const shouldHighlightStartAction =
     !activeProcess && guidance.nextAction === "explore";
+  const explorationHungerCost = getActivityHungerCost("exploration");
   const rewardResourceEntries = getNonZeroResourceEntries(
     phase1ExplorationReward.resources ?? {},
   );
@@ -59,13 +61,37 @@ export default function ExplorationPanel() {
   return (
     <SectionCard
       title="Exploration"
-      description="Main loop starting point: run a sweep, wait for completion, then claim the lead that opens Biotech Labs."
+      description="Run a sweep, secure the result, and turn it into the next biotech lead."
     >
       <div className="space-y-4">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+            <div className="text-[10px] uppercase tracking-[0.16em] text-white/45">
+              State
+            </div>
+            <div className="mt-2 text-sm font-semibold text-white">
+              {activeProcess
+                ? isComplete
+                  ? "Claim Ready"
+                  : "Exploring"
+                : "Ready to Sweep"}
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+            <div className="text-[10px] uppercase tracking-[0.16em] text-white/45">
+              Survival Cost
+            </div>
+            <div className="mt-2 text-sm font-semibold text-white">
+              -{explorationHungerCost}% hunger on claim
+            </div>
+          </div>
+        </div>
+
         {!activeProcess ? (
           <>
             <p className="text-sm text-white/60">
-              Exploration is where the main loop begins. Start a sweep to search the wastes for the next biotech signal.
+              Start a sweep to search the wastes for a fresh biotech signal. Once the run finishes, claim it here to activate the next specimen lead.
             </p>
 
             <button
@@ -103,8 +129,8 @@ export default function ExplorationPanel() {
               </div>
               <div className="mt-2 text-sm text-white/60">
                 {isRunning
-                  ? `Exploration in progress. ${remainingSeconds}s remaining.`
-                  : "Exploration complete. Reward ready to claim."}
+                  ? `Exploration is underway. ${remainingSeconds}s remain before the result can be secured.`
+                  : "Exploration is complete. The result is ready to claim and convert into a specimen lead."}
               </div>
             </div>
 
@@ -119,7 +145,7 @@ export default function ExplorationPanel() {
                       Wasteland sweep complete.
                     </div>
                     <p className="mt-2 text-sm leading-6 text-white/65">
-                      Claiming this result secures recovered supplies and converts the sweep into a fresh biotech lead.
+                      Claiming this result secures recovered supplies, spends the exploration hunger cost, and converts the sweep into a fresh biotech lead.
                     </p>
                   </div>
 
@@ -174,7 +200,7 @@ export default function ExplorationPanel() {
                 </div>
 
                 <div className="mt-4 rounded-xl border border-cyan-400/20 bg-cyan-400/8 px-3 py-3 text-sm text-cyan-50/90">
-                  Next Step: claim the reward to secure the biotech lead, then open Biotech Labs to initiate the hunt.
+                  Next Step: claim the result to secure the lead, then move to Biotech Labs to initiate the hunt.
                 </div>
               </div>
             ) : null}
@@ -190,7 +216,7 @@ export default function ExplorationPanel() {
                 </button>
 
                 <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-3 text-sm text-white/60">
-                  Local Status: claim stays locked until this process finishes.
+                  Local Status: the lead is not active yet. Claim stays locked until this sweep finishes.
                 </div>
               </>
             ) : null}
@@ -206,7 +232,7 @@ export default function ExplorationPanel() {
                 </button>
 
                 <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/8 px-3 py-3 text-sm text-emerald-50/90">
-                  Local Status: claim is ready. Securing this result activates the biotech lead.
+                  Local Status: claim is ready. Securing this result activates the biotech lead and advances the loop.
                 </div>
               </>
             ) : null}

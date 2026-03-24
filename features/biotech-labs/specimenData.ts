@@ -1,4 +1,5 @@
 import type { LatestHuntResult } from "@/features/game/gameTypes";
+import { assets } from "@/lib/assets";
 
 export type BiotechSpecimenDefinition = {
   missionId: string;
@@ -6,6 +7,8 @@ export type BiotechSpecimenDefinition = {
   category: string;
   threatLabel: string;
   description: string;
+  creatureAsset: string;
+  bossAsset: string;
 };
 
 const biotechSpecimenDefinitions: Record<string, BiotechSpecimenDefinition> = {
@@ -16,6 +19,8 @@ const biotechSpecimenDefinitions: Record<string, BiotechSpecimenDefinition> = {
     threatLabel: "Threat Tier Gamma",
     description:
       "A sinew-wrapped wasteland hunter that nests in broken biotech ruins and reacts violently to active signal sweeps.",
+    creatureAsset: assets.creatures.shadowWolf,
+    bossAsset: assets.bosses.voidMaw,
   },
 };
 

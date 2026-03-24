@@ -1,6 +1,8 @@
 import { initialGameState } from "@/features/game/initialGameState";
+import { getFeastHallOfferById } from "@/features/black-market/feastHallData";
 import { phase1ExplorationReward } from "@/features/exploration/explorationData";
 import {
+  applyActivityHungerCost,
   applyMissionReward,
   applyRankXp,
   buildMissionQueueEntry,
@@ -22,6 +24,15 @@ import {
   STATUS_RECOVERY_COOLDOWN_MS,
   STATUS_RECOVERY_COST,
 } from "@/features/status/statusRecovery";
+import {
+  HUNGER_CONDITION_PRESSURE_PER_TICK,
+  HUNGER_DECAY_PER_TICK,
+  HUNGER_PRESSURE_THRESHOLD,
+  MOSS_RATION_CONDITION_RESTORE,
+  MOSS_RATION_HUNGER_RESTORE,
+  MOSS_RATION_RECIPE_COST,
+  SURVIVAL_TICK_INTERVAL_MS,
+} from "@/features/status/survival";
 import type {
   GameAction,
   GameState,
@@ -41,20 +52,49 @@ function updateSingleResource(
   };
 }
 
-const CONDITION_DECAY_INTERVAL_MS = 60000;
-
-function applyConditionDecay(player: PlayerState, now: number): PlayerState {
+function applySurvivalDecay(player: PlayerState, now: number): PlayerState {
   if (now <= player.lastConditionTickAt) {
     return player;
   }
 
   const elapsedMs = now - player.lastConditionTickAt;
-  const decay = Math.floor(elapsedMs / CONDITION_DECAY_INTERVAL_MS);
+  const ticks = Math.floor(elapsedMs / SURVIVAL_TICK_INTERVAL_MS);
+
+  if (ticks <= 0) {
+    return player;
+  }
+
+  const nextHunger = clamp(
+    player.hunger - ticks * HUNGER_DECAY_PER_TICK,
+    0,
+    100,
+  );
+  const conditionPressurePerTick =
+    nextHunger < HUNGER_PRESSURE_THRESHOLD
+      ? HUNGER_CONDITION_PRESSURE_PER_TICK
+      : 0;
 
   return {
     ...player,
-    condition: Math.max(0, player.condition - decay),
+    hunger: nextHunger,
+    condition: Math.max(0, player.condition - ticks * conditionPressurePerTick),
     lastConditionTickAt: now,
+  };
+}
+
+function hydratePlayerState(player: GameState["player"]): PlayerState {
+  return {
+    ...initialGameState.player,
+    ...player,
+    hunger: player.hunger ?? initialGameState.player.hunger,
+    resources: {
+      ...initialGameState.player.resources,
+      ...player.resources,
+    },
+    knownRecipes: player.knownRecipes ?? initialGameState.player.knownRecipes,
+    unlockedRoutes:
+      player.unlockedRoutes ?? initialGameState.player.unlockedRoutes,
+    missionQueue: player.missionQueue ?? initialGameState.player.missionQueue,
   };
 }
 
@@ -62,10 +102,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
     case "HYDRATE_STATE": {
       const now = Date.now();
+      const hydratedPlayer = hydratePlayerState(action.payload.player);
 
       return {
         ...action.payload,
-        player: applyConditionDecay(action.payload.player, now),
+        player: applySurvivalDecay(hydratedPlayer, now),
       };
     }
 
@@ -171,26 +212,42 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         },
       };
 
+    case "ADJUST_HUNGER":
+      return {
+        ...state,
+        player: {
+          ...state.player,
+          hunger: clamp(state.player.hunger + action.payload, 0, 100),
+        },
+      };
+
     case "RECOVER_CONDITION": {
       const now = Date.now();
-      const recoveryAmount = getStatusRecoveryAmount(state.player.knownRecipes);
+      const player = applySurvivalDecay(state.player, now);
+      const recoveryAmount = getStatusRecoveryAmount(player.knownRecipes);
 
-      if (state.player.conditionRecoveryAvailableAt > now) {
-        return state;
+      if (player.conditionRecoveryAvailableAt > now) {
+        return {
+          ...state,
+          player,
+        };
       }
 
-      if (state.player.resources.credits < STATUS_RECOVERY_COST) {
-        return state;
+      if (player.resources.credits < STATUS_RECOVERY_COST) {
+        return {
+          ...state,
+          player,
+        };
       }
 
       return {
         ...state,
         player: {
-          ...state.player,
-          condition: clamp(state.player.condition + recoveryAmount, 0, 100),
+          ...player,
+          condition: clamp(player.condition + recoveryAmount, 0, 100),
           conditionRecoveryAvailableAt: now + STATUS_RECOVERY_COOLDOWN_MS,
           resources: updateSingleResource(
-            state.player.resources,
+            player.resources,
             "credits",
             -STATUS_RECOVERY_COST,
           ),
@@ -198,9 +255,117 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       };
     }
 
+    case "CRAFT_MOSS_RATION": {
+      const player = state.player;
+
+      if (
+        player.resources.bioSamples < MOSS_RATION_RECIPE_COST.bioSamples ||
+        player.resources.runeDust < MOSS_RATION_RECIPE_COST.runeDust
+      ) {
+        return state;
+      }
+
+      const spentSamples = updateSingleResource(
+        player.resources,
+        "bioSamples",
+        -MOSS_RATION_RECIPE_COST.bioSamples,
+      );
+      const spentDust = updateSingleResource(
+        spentSamples,
+        "runeDust",
+        -MOSS_RATION_RECIPE_COST.runeDust,
+      );
+
+      return {
+        ...state,
+        player: {
+          ...player,
+          resources: updateSingleResource(spentDust, "mossRations", 1),
+        },
+      };
+    }
+
+    case "CONSUME_MOSS_RATION": {
+      const now = Date.now();
+      const player = applySurvivalDecay(state.player, now);
+
+      if (player.resources.mossRations < 1) {
+        return {
+          ...state,
+          player,
+        };
+      }
+
+      return {
+        ...state,
+        player: {
+          ...player,
+          hunger: clamp(player.hunger + MOSS_RATION_HUNGER_RESTORE, 0, 100),
+          condition: clamp(
+            player.condition + MOSS_RATION_CONDITION_RESTORE,
+            0,
+            100,
+          ),
+          resources: updateSingleResource(player.resources, "mossRations", -1),
+        },
+      };
+    }
+
+    case "USE_FEAST_HALL_OFFER": {
+      const now = Date.now();
+      const player = applySurvivalDecay(state.player, now);
+      const offer = getFeastHallOfferById(action.payload.offerId);
+
+      if (!offer) {
+        return {
+          ...state,
+          player,
+        };
+      }
+
+      if (player.condition >= 100 || player.conditionRecoveryAvailableAt > now) {
+        return {
+          ...state,
+          player,
+        };
+      }
+
+      const offerCostEntries = Object.entries(offer.cost).filter(
+        (entry): entry is [ResourceKey, number] => typeof entry[1] === "number",
+      );
+
+      const canAffordOffer = offerCostEntries.every(
+        ([resourceKey, amount]) => player.resources[resourceKey] >= amount,
+      );
+
+      if (!canAffordOffer) {
+        return {
+          ...state,
+          player,
+        };
+      }
+
+      let nextResources = player.resources;
+
+      offerCostEntries.forEach(([resourceKey, amount]) => {
+        nextResources = updateSingleResource(nextResources, resourceKey, -amount);
+      });
+
+      return {
+        ...state,
+        player: {
+          ...player,
+          condition: clamp(player.condition + offer.conditionGain, 0, 100),
+          hunger: clamp(player.hunger + offer.hungerDelta, 0, 100),
+          conditionRecoveryAvailableAt: now + offer.cooldownMs,
+          resources: nextResources,
+        },
+      };
+    }
+
     case "RESOLVE_HUNT": {
       const now = action.payload.resolvedAt ?? Date.now();
-      const player = applyConditionDecay(state.player, now);
+      const player = applySurvivalDecay(state.player, now);
       const mission = getMissionById(state.missions, action.payload.missionId);
 
       if (!mission) {
@@ -237,7 +402,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         player,
         mission.reward,
       );
-      const nextPlayer = applyMissionReward(player, mission.reward);
+      const nextPlayer = applyActivityHungerCost(
+        applyMissionReward(player, mission.reward),
+        "hunt",
+      );
 
       return {
         ...state,
@@ -292,7 +460,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
     case "RESOLVE_ACTIVE_PROCESS": {
       const now = action.payload?.now ?? Date.now();
-      const player = applyConditionDecay(state.player, now);
+      const player = applySurvivalDecay(state.player, now);
       const activeProcess = player.activeProcess;
 
       if (!activeProcess || activeProcess.status === "complete") {
@@ -323,7 +491,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
     case "CLAIM_EXPLORATION_REWARD": {
       const now = Date.now();
-      const player = applyConditionDecay(state.player, now);
+      const player = applySurvivalDecay(state.player, now);
       const activeProcess = player.activeProcess;
 
       if (
@@ -337,7 +505,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         };
       }
 
-      const nextPlayer = applyMissionReward(player, phase1ExplorationReward);
+      const nextPlayer = applyActivityHungerCost(
+        applyMissionReward(player, phase1ExplorationReward),
+        "exploration",
+      );
 
       return {
         ...state,
@@ -478,7 +649,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         };
       }
 
-      const nextPlayer = applyMissionReward(state.player, mission.reward);
+      const nextPlayer = applyActivityHungerCost(
+        applyMissionReward(state.player, mission.reward),
+        mission.category === "hunting-ground" ? "hunt" : "mission",
+      );
       const nextQueue = missionQueue.filter(
         (queueEntry) => queueEntry.queueId !== entry.queueId,
       );

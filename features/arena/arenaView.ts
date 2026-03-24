@@ -4,7 +4,7 @@ export function formatFactionLabel(faction: string) {
   if (faction === "unbound") return "Unbound";
   if (faction === "bio") return "Bio";
   if (faction === "mecha") return "Mecha";
-  if (faction === "spirit") return "Spirit";
+  if (faction === "pure") return "Pure";
   return faction;
 }
 
@@ -39,7 +39,7 @@ export function getFactionAccent(faction: string): ArenaAccent {
     };
   }
 
-  if (faction === "spirit") {
+  if (faction === "pure") {
     return {
       ring: "border-violet-500/30",
       glow: "shadow-[0_0_35px_rgba(168,85,247,0.16)]",

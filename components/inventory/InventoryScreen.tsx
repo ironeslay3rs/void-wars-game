@@ -15,7 +15,7 @@ function formatFactionLabel(faction: string) {
   if (faction === "unbound") return "Unbound";
   if (faction === "bio") return "Bio";
   if (faction === "mecha") return "Mecha";
-  if (faction === "spirit") return "Spirit";
+  if (faction === "pure") return "Pure";
   return faction;
 }
 
@@ -35,7 +35,7 @@ export default function InventoryScreen() {
 
   const liveCards = [
     {
-      label: "Faction Sync",
+      label: "Affiliation",
       value: formatFactionLabel(player.factionAlignment),
       hint: "Inventory visuals and future sorting rules can react to active path alignment.",
     },
@@ -92,7 +92,7 @@ export default function InventoryScreen() {
 
             <SectionCard
               title="Equipment Reserve"
-              description="Faction-specific starter gear, utility items, and open reserve slots for future loot drops."
+              description="Affiliation-specific starter gear, utility items, and open reserve slots for future loot drops."
             >
               <div className="space-y-5">
                 <InventoryLoadoutCard />

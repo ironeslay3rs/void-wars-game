@@ -44,6 +44,10 @@ function normalizeResources(value: unknown): ResourcesState {
       typeof raw.bioSamples === "number"
         ? raw.bioSamples
         : initialGameState.player.resources.bioSamples,
+    mossRations:
+      typeof raw.mossRations === "number"
+        ? raw.mossRations
+        : initialGameState.player.resources.mossRations,
   };
 }
 
@@ -63,6 +67,9 @@ function normalizePartialResources(
   if (typeof value.emberCore === "number") result.emberCore = value.emberCore;
   if (typeof value.bioSamples === "number") {
     result.bioSamples = value.bioSamples;
+  }
+  if (typeof value.mossRations === "number") {
+    result.mossRations = value.mossRations;
   }
 
   return result;
@@ -158,7 +165,7 @@ function normalizeMissions(value: unknown): MissionDefinition[] {
   if (!Array.isArray(value)) return initialGameState.missions;
 
   const valid = value
-    .filter((mission): mission is MissionDefinition => {
+    .filter((mission) => {
       if (!isRecord(mission)) return false;
       if (!isRecord(mission.reward)) return false;
 
@@ -169,6 +176,7 @@ function normalizeMissions(value: unknown): MissionDefinition[] {
         (mission.path === "neutral" ||
           mission.path === "bio" ||
           mission.path === "mecha" ||
+          mission.path === "pure" ||
           mission.path === "spirit") &&
         typeof mission.durationHours === "number" &&
         typeof mission.reward.rankXp === "number" &&
@@ -177,14 +185,21 @@ function normalizeMissions(value: unknown): MissionDefinition[] {
       );
     })
     .map((mission) => {
+      if (!isRecord(mission) || !isRecord(mission.reward)) {
+        return null;
+      }
+
       const category: MissionCategory =
         mission.category === "hunting-ground" ? "hunting-ground" : "operation";
+      const path = mission.path === "spirit" ? "pure" : mission.path;
 
       return {
         ...mission,
+        path,
         category,
       };
-    });
+    })
+    .filter((mission): mission is MissionDefinition => mission !== null);
 
   return valid.length > 0 ? valid : initialGameState.missions;
 }
@@ -205,14 +220,21 @@ function normalizePlayer(value: unknown): PlayerState {
       raw.factionAlignment === "unbound" ||
       raw.factionAlignment === "bio" ||
       raw.factionAlignment === "mecha" ||
-      raw.factionAlignment === "spirit"
+      raw.factionAlignment === "pure"
         ? raw.factionAlignment
+        : raw.factionAlignment === "spirit"
+          ? "pure"
         : initialGameState.player.factionAlignment,
 
     condition:
       typeof raw.condition === "number"
         ? raw.condition
         : initialGameState.player.condition,
+
+    hunger:
+      typeof raw.hunger === "number"
+        ? raw.hunger
+        : initialGameState.player.hunger,
 
     conditionRecoveryAvailableAt:
       typeof raw.conditionRecoveryAvailableAt === "number"

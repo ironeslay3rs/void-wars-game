@@ -48,7 +48,7 @@ export default function FactionHqsPage() {
 
         <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           <SectionCard
-            title="Faction Wings"
+            title="Doctrine Wings"
             description="Choose an alignment and begin building influence inside the Bazaar."
           >
             <div className="space-y-3">
@@ -75,12 +75,12 @@ export default function FactionHqsPage() {
           </SectionCard>
 
           <SectionCard
-            title="Faction Console"
+            title="Affiliation Console"
             description="Live alignment and influence controls for the shared game state."
           >
             <div className="space-y-3">
               <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-white/75">
-                Current faction: {getFactionLabel(currentAlignment)}
+                Current affiliation: {getFactionLabel(currentAlignment)}
               </div>
 
               <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-white/75">

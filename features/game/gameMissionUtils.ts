@@ -1,5 +1,6 @@
 import { buildNavigationState } from "@/features/navigation/navigationUtils";
 import { getPressureAdjustedConditionDelta } from "@/features/status/statusRecovery";
+import { getActivityHungerCost } from "@/features/status/survival";
 import type {
   GameState,
   MissionDefinition,
@@ -69,6 +70,7 @@ export function addPartialResources(
     runeDust: current.runeDust + (incoming.runeDust ?? 0),
     emberCore: current.emberCore + (incoming.emberCore ?? 0),
     bioSamples: current.bioSamples + (incoming.bioSamples ?? 0),
+    mossRations: current.mossRations + (incoming.mossRations ?? 0),
   };
 }
 
@@ -105,6 +107,16 @@ export function applyMissionReward(
       player.unlockedRoutes,
       player.navigation.currentRoute,
     ),
+  };
+}
+
+export function applyActivityHungerCost(
+  player: PlayerState,
+  activity: "exploration" | "mission" | "hunt",
+): PlayerState {
+  return {
+    ...player,
+    hunger: clamp(player.hunger - getActivityHungerCost(activity), 0, 100),
   };
 }
 
@@ -242,7 +254,10 @@ export function processMissionQueue(state: GameState, now: number): GameState {
       continue;
     }
 
-    nextPlayer = applyMissionReward(nextPlayer, mission.reward);
+    nextPlayer = applyActivityHungerCost(
+      applyMissionReward(nextPlayer, mission.reward),
+      mission.category === "hunting-ground" ? "hunt" : "mission",
+    );
     playerChanged = true;
   }
 

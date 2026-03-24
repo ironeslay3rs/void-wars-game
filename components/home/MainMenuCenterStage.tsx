@@ -9,19 +9,19 @@ type MainMenuCenterStageProps = {
 const pathGlowMap: Record<PathSelection, string> = {
   bio: "from-emerald-500/18 via-emerald-400/6 to-transparent",
   mecha: "from-cyan-500/18 via-blue-400/6 to-transparent",
-  spirit: "from-fuchsia-500/18 via-violet-400/6 to-transparent",
+  pure: "from-fuchsia-500/18 via-violet-400/6 to-transparent",
 };
 
 const pathLabelMap: Record<PathSelection, string> = {
   bio: "Bio Path Engaged",
   mecha: "Mecha Path Engaged",
-  spirit: "Spirit Path Engaged",
+  pure: "Pure Path Engaged",
 };
 
 const pathDescriptionMap: Record<PathSelection, string> = {
   bio: "Adaptive growth, predator instinct, and biological escalation.",
   mecha: "Precision systems, engineered dominance, and machine discipline.",
-  spirit: "Soul-fire mastery, memory awakening, and rune-bound ascent.",
+  pure: "Soul-fire mastery, memory awakening, and rune-bound ascent.",
 };
 
 export default function MainMenuCenterStage({
@@ -34,7 +34,7 @@ export default function MainMenuCenterStage({
   const title = selectedPath ? pathLabelMap[selectedPath] : "Central Crest";
   const description = selectedPath
     ? pathDescriptionMap[selectedPath]
-    : "Core faction focus, progression identity, and world entry nexus.";
+    : "Core affiliation focus, progression identity, and world entry nexus.";
 
   return (
     <div className="relative flex h-full flex-col items-center justify-between px-8 pb-2 pt-2">

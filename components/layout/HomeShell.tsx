@@ -2,7 +2,7 @@ import GameShell from "@/components/layout/GameShell";
 import FrameOverlay from "@/components/chrome/FrameOverlay";
 import ScreenLines from "@/components/chrome/ScreenLines";
 import CornerBrackets from "@/components/chrome/CornerBrackets";
-import BackgroundScene from "@/components/home/BackgroundScene";
+import MainBackgroundScene from "@/components/home/MainBackgroundScene";
 import CenterHeroScene from "@/components/home/CenterHeroScene";
 import TopBar from "@/components/layout/TopBar";
 import LeftCommandMenu from "@/components/layout/LeftCommandMenu";
@@ -11,7 +11,7 @@ import HomeHudClient from "@/components/layout/HomeHudClient";
 export default function HomeShell() {
   return (
     <GameShell backgroundImage="/main-menu-bg.png.png">
-      <BackgroundScene />
+      <MainBackgroundScene />
 
       <div className="absolute inset-0 z-10 bg-gradient-to-b from-black/30 via-transparent to-black/80" />
       <div className="absolute inset-0 z-10 bg-gradient-to-r from-black/55 via-transparent to-black/50" />

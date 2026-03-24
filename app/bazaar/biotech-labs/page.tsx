@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import BiotechLabsStateSummary from "@/components/biotech-labs/BiotechLabsStateSummary";
 import ScreenHeader from "@/components/shared/ScreenHeader";
@@ -9,6 +10,7 @@ import { getActiveBiotechSpecimen } from "@/features/biotech-labs/specimenData";
 import { biotechLabsScreenData } from "@/features/biotech-labs/biotechLabsScreenData";
 import { useGame } from "@/features/game/gameContext";
 import { getFirstSessionGuidance } from "@/features/guidance/firstSessionGuidance";
+import { getActivityHungerCost } from "@/features/status/survival";
 
 export default function BiotechLabsPage() {
   const router = useRouter();
@@ -17,12 +19,14 @@ export default function BiotechLabsPage() {
   const guidance = getFirstSessionGuidance(state);
   const shouldHighlightHuntAction =
     hasBiotechSpecimenLead && guidance.nextAction === "hunt";
+  const huntHungerCost = getActivityHungerCost("hunt");
   const activeSpecimen = getActiveBiotechSpecimen(hasBiotechSpecimenLead);
+  const activeSpecimenAsset = activeSpecimen?.creatureAsset ?? null;
   const huntActionMessage = hasBiotechSpecimenLead
     ? guidance.nextAction === "hunt"
-      ? "Ready. A viable specimen lead is active and can be resolved immediately."
-      : "Ready, but not recommended. Recovery is the safer next step before pushing deeper into the wastes."
-    : "Blocked. No biotech lead is active. Return home, finish exploration, and claim the result first.";
+      ? "Live trace confirmed. Commit now and carry the hunger burn into the aftermath."
+      : "Live trace confirmed, but the body is not ready. Recovery is the safer call before commitment."
+    : "No live trace on record. Return home, finish exploration, and claim a lead first.";
 
   function handleResolveFirstHunt() {
     if (!hasBiotechSpecimenLead) {
@@ -61,39 +65,95 @@ export default function BiotechLabsPage() {
         <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           <SectionCard
             title="Mutation Bays"
-            description="Current biotech hunt surface: confirm the active specimen lead, then resolve the hunt from here."
+            description="Confirm the active specimen lead, then resolve the hunt from here."
           >
             <div className="space-y-3">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                  <div className="text-[10px] uppercase tracking-[0.16em] text-white/45">
+                    Lead Status
+                  </div>
+                  <div className="mt-2 text-sm font-semibold text-white">
+                    {hasBiotechSpecimenLead ? "Lead Active" : "Lead Required"}
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                  <div className="text-[10px] uppercase tracking-[0.16em] text-white/45">
+                    Field Cost
+                  </div>
+                  <div className="mt-2 text-sm font-semibold text-white">
+                    -{huntHungerCost}% hunger on resolution
+                  </div>
+                </div>
+              </div>
+
               <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-white/70">
                 {hasBiotechSpecimenLead
-                  ? "A fresh specimen trace was recovered from the wastes. Biotech labs can deploy a tracking team now."
-                  : "No viable specimen trace is on record. Sweep the wastes through exploration to recover and claim a fresh lead."}
+                  ? "A live trace is pinned to the board. Biotech Labs can commit the hunt now."
+                  : "No viable trace is pinned. Sweep the wastes, then claim a fresh lead."}
               </div>
 
               {activeSpecimen ? (
                 <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/8 p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="text-[10px] uppercase tracking-[0.18em] text-emerald-200/70">
-                        Active Specimen
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <div className="text-[10px] uppercase tracking-[0.18em] text-emerald-200/70">
+                            Active Specimen
+                          </div>
+                          <div className="mt-2 text-lg font-semibold text-white">
+                            {activeSpecimen.name}
+                          </div>
+                        </div>
+
+                        <div className="rounded-full border border-emerald-300/30 bg-emerald-300/12 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-100">
+                          {activeSpecimen.threatLabel}
+                        </div>
                       </div>
-                      <div className="mt-2 text-lg font-semibold text-white">
-                        {activeSpecimen.name}
+
+                      <div className="mt-3 text-sm font-medium uppercase tracking-[0.08em] text-white/70">
+                        {activeSpecimen.category}
+                      </div>
+
+                      <p className="mt-2 text-sm leading-6 text-white/65">
+                        {activeSpecimen.description}
+                      </p>
+
+                      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                        <div className="rounded-xl border border-red-300/20 bg-black/20 px-3 py-3">
+                          <div className="text-[10px] uppercase tracking-[0.18em] text-red-200/70">
+                            Threat
+                          </div>
+                          <div className="mt-2 text-sm font-semibold text-white">
+                            {activeSpecimen.threatLabel}
+                          </div>
+                        </div>
+
+                        <div className="rounded-xl border border-amber-300/20 bg-black/20 px-3 py-3">
+                          <div className="text-[10px] uppercase tracking-[0.18em] text-amber-200/70">
+                            Hunger Burn
+                          </div>
+                          <div className="mt-2 text-sm font-semibold text-white">
+                            -{huntHungerCost}% on resolution
+                          </div>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="rounded-full border border-emerald-300/30 bg-emerald-300/12 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-100">
-                      {activeSpecimen.threatLabel}
-                    </div>
+                    {activeSpecimenAsset ? (
+                      <div className="mx-auto w-full max-w-[220px] shrink-0 overflow-hidden rounded-xl border border-emerald-400/20 bg-black/20 p-3">
+                        <Image
+                          src={activeSpecimenAsset}
+                          alt={activeSpecimen.name}
+                          width={220}
+                          height={220}
+                          className="h-auto w-full object-contain drop-shadow-[0_18px_24px_rgba(0,0,0,0.45)]"
+                        />
+                      </div>
+                    ) : null}
                   </div>
-
-                  <div className="mt-3 text-sm font-medium uppercase tracking-[0.08em] text-white/70">
-                    {activeSpecimen.category}
-                  </div>
-
-                  <p className="mt-2 text-sm leading-6 text-white/65">
-                    {activeSpecimen.description}
-                  </p>
                 </div>
               ) : null}
 
@@ -110,12 +170,19 @@ export default function BiotechLabsPage() {
                     : "cursor-not-allowed border border-white/10 bg-white/[0.03] text-white/35",
                 ].join(" ")}
               >
-                <div className="flex items-center justify-between gap-3">
-                  <span>
-                    {hasBiotechSpecimenLead
-                      ? "Run Specimen Hunt"
-                      : "No Active Specimen Lead"}
-                  </span>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div>
+                      {hasBiotechSpecimenLead
+                        ? "Commit to Specimen Hunt"
+                        : "No Active Specimen Lead"}
+                    </div>
+                    <div className="mt-2 text-xs font-medium uppercase tracking-[0.14em] text-white/60">
+                      {hasBiotechSpecimenLead
+                        ? `Threat ${activeSpecimen?.threatLabel ?? "confirmed"} · hunger burn on contact`
+                        : "Secure a live trace before commitment"}
+                    </div>
+                  </div>
                   {shouldHighlightHuntAction ? (
                     <span className="rounded-full border border-emerald-300/40 bg-emerald-300/14 px-2 py-1 text-[10px] uppercase tracking-[0.16em] text-emerald-50">
                       Recommended
@@ -133,6 +200,15 @@ export default function BiotechLabsPage() {
                 ].join(" ")}
               >
                 {huntActionMessage}
+              </div>
+
+              <div className="rounded-xl border border-cyan-400/20 bg-cyan-400/8 px-3 py-3 text-sm text-cyan-50/90">
+                Next Step:{" "}
+                {hasBiotechSpecimenLead
+                  ? guidance.nextAction === "hunt"
+                    ? "commit to the hunt, log the kill, then check survival pressure."
+                    : "recover first, then return here and commit to the live lead."
+                  : "return home, complete exploration, and claim a lead before coming back here."}
               </div>
 
               {["Gene Extraction", "Mutation Trials", "Tissue Refinement"].map(
@@ -164,7 +240,7 @@ export default function BiotechLabsPage() {
                   {activeSpecimen.category} / {activeSpecimen.threatLabel}
                 </div>
                 <p className="mt-3 text-sm leading-6 text-white/60">
-                  Genetic trace is stable enough for deployment. Run the hunt while the current biotech signal remains viable.
+                  Genetic trace is stable enough for deployment. Run the hunt while the current biotech signal remains viable, then review the aftermath before beginning the next sweep.
                 </p>
               </div>
             ) : (

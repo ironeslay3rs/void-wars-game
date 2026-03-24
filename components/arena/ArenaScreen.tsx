@@ -31,22 +31,28 @@ export default function ArenaScreen() {
   const factionAccent = getFactionAccent(player.factionAlignment);
   const conditionLabel = getConditionLabel(player.condition);
   const arenaEligibility = getArenaEligibility(player.condition);
-  const { queueState, selectedMode, handleCancelQueue, handleQueue, handleSelectMode, resetQueue } =
-    useArenaQueue({
-      battleModes,
-      arenaEligibility,
-    });
+  const {
+    queueState,
+    selectedMode,
+    handleCancelQueue,
+    handleQueue,
+    handleSelectMode,
+    resetQueue,
+  } = useArenaQueue({
+    battleModes,
+    arenaEligibility,
+  });
 
   const liveCards = [
     {
-      label: "Faction Alignment",
+      label: "Affiliation",
       value: formatFactionLabel(player.factionAlignment),
       hint: "Arena modifiers can later react to your active path.",
     },
     {
       label: "Condition",
       value: `${player.condition}%`,
-      hint: `${conditionLabel} — live shared player state.`,
+      hint: `${conditionLabel} - live shared player state.`,
     },
     {
       label: "Arena Access",
