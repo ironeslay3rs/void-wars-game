@@ -4,16 +4,26 @@ import ScreenStateSummary from "@/components/shared/ScreenStateSummary";
 import { useGame } from "@/features/game/gameContext";
 import { getFirstSessionGuidance } from "@/features/guidance/firstSessionGuidance";
 import { useRecoveryCooldown } from "@/features/status/useRecoveryCooldown";
-import { STATUS_RECOVERY_COST } from "@/features/status/statusRecovery";
+import {
+  CONDITION_PRESSURE_PENALTY,
+  CONDITION_PRESSURE_THRESHOLD,
+  getConditionPressurePenalty,
+  getStatusRecoveryAmount,
+  hasStabilizationSigil,
+  STATUS_RECOVERY_COST,
+} from "@/features/status/statusRecovery";
 
 export default function StatusScreenSummary() {
   const { state } = useGame();
   const { player } = state;
   const guidance = getFirstSessionGuidance(state);
-  const {
-    recoveryCooldownRemainingSeconds,
-    isRecoveryOnCooldown,
-  } = useRecoveryCooldown(player.conditionRecoveryAvailableAt);
+  const { recoveryCooldownRemainingSeconds, isRecoveryOnCooldown } =
+    useRecoveryCooldown(player.conditionRecoveryAvailableAt);
+  const stabilizationSigilActive = hasStabilizationSigil(player.knownRecipes);
+  const recoveryAmount = getStatusRecoveryAmount(player.knownRecipes);
+  const conditionPressurePenalty = getConditionPressurePenalty(
+    player.condition,
+  );
   const canAffordRecovery = player.resources.credits >= STATUS_RECOVERY_COST;
 
   if (player.condition < 40) {
@@ -21,12 +31,14 @@ export default function StatusScreenSummary() {
       <ScreenStateSummary
         eyebrow="Condition State"
         title="Critical"
-        consequence="Condition is critically low and is now the main blocker before another safe loop push."
+        consequence={`Condition is critically low and now adds ${CONDITION_PRESSURE_PENALTY} extra condition loss to the next exploration or mission claim while you remain under ${CONDITION_PRESSURE_THRESHOLD}%.`}
         nextStep={
           isRecoveryOnCooldown
             ? `Blocked. Recovery is cooling down for ${recoveryCooldownRemainingSeconds}s.`
             : canAffordRecovery
-              ? "Recommended. Recover condition before returning to exploration or hunt."
+              ? stabilizationSigilActive
+                ? `Recommended. Recover condition before returning to exploration or hunt. The sigil now restores ${recoveryAmount} condition safely.`
+                : "Recommended. Recover condition before returning to exploration or hunt."
               : `Blocked. Secure ${STATUS_RECOVERY_COST} credits, then recover condition.`
         }
         tone="critical"
@@ -39,12 +51,18 @@ export default function StatusScreenSummary() {
       <ScreenStateSummary
         eyebrow="Condition State"
         title="Strained"
-        consequence="Condition is under pressure and recovery should be considered before extending the current loop."
+        consequence={
+          conditionPressurePenalty > 0
+            ? `Condition is under pressure and the next exploration or mission claim will lose an extra ${CONDITION_PRESSURE_PENALTY} condition until you recover above ${CONDITION_PRESSURE_THRESHOLD}%.`
+            : "Condition is under pressure and recovery should be considered before extending the current loop."
+        }
         nextStep={
           isRecoveryOnCooldown
             ? `Blocked. Recovery is cooling down for ${recoveryCooldownRemainingSeconds}s.`
             : canAffordRecovery
-              ? "Recommended. Recover condition now to stabilize the next loop step."
+              ? stabilizationSigilActive
+                ? `Recommended. Recover condition now to stabilize the next loop step. The sigil raises the next recovery to ${recoveryAmount}.`
+                : "Recommended. Recover condition now to stabilize the next loop step."
               : `Blocked. Recovery needs ${STATUS_RECOVERY_COST} credits.`
         }
         tone="warning"
