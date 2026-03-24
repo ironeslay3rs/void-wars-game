@@ -14,7 +14,7 @@ export default function InventoryEquipmentReserveCard() {
     { label: "Gauntlets", value: null },
     { label: "Boots", value: null },
     { label: "Rune Container", value: null },
-    { label: "Relic Slot", value: null },
+    { label: "Focus Slot", value: null },
     { label: "Crafting Tools", value: null },
     { label: "Consumable Pouch", value: null },
   ];

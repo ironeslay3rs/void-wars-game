@@ -2,7 +2,7 @@ export default function InventoryOperationsCard() {
   const storagePanels = [
     {
       title: "Quick Slots",
-      body: "Reserved for consumables, combat tools, and hotbar-linked utility items.",
+      body: "Reserved for consumables, combat tools, and ready-use utility items.",
     },
     {
       title: "Vault Access",
