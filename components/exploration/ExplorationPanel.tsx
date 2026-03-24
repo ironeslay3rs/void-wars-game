@@ -11,9 +11,14 @@ import {
   formatResourceLabel,
   getNonZeroResourceEntries,
 } from "@/features/game/gameFeedback";
+import {
+  formatFieldRationCost,
+  getFieldRationCost,
+} from "@/features/game/rationRules";
 import { getFirstSessionGuidance } from "@/features/guidance/firstSessionGuidance";
 
 const PHASE1_EXPLORATION_TITLE = "Outer Wastes Exploration";
+const explorationRationCost = getFieldRationCost("exploration");
 
 export default function ExplorationPanel() {
   const { state, dispatch } = useGame();
@@ -28,10 +33,10 @@ export default function ExplorationPanel() {
   );
   const idleActionMessage =
     guidance.nextAction === "explore"
-      ? "Ready. This control starts the next exploration sweep."
+      ? "Ready. This sweep stays close to home and does not spend Field Rations."
       : guidance.nextAction === "hunt"
-        ? "Available. Exploration can start here, but an active biotech lead should be resolved first."
-        : "Available. Exploration can start here, but recovery should come first.";
+        ? "Available. This sweep costs no rations, but the current biotech lead should be resolved first."
+        : "Available. This sweep costs no rations, but recovery should come first.";
 
   function handleStartExploration() {
     const startedAt = Date.now();
@@ -80,16 +85,22 @@ export default function ExplorationPanel() {
             >
               <span className="flex items-center justify-between gap-3">
                 <span>Start Exploration</span>
-                {shouldHighlightStartAction ? (
+                <span className="flex items-center gap-2">
                   <span className="rounded-full border border-cyan-300/40 bg-cyan-300/14 px-2 py-1 text-[10px] uppercase tracking-[0.16em] text-cyan-50">
-                    First Step
+                    {formatFieldRationCost(explorationRationCost)}
                   </span>
-                ) : null}
+                  {shouldHighlightStartAction ? (
+                    <span className="rounded-full border border-cyan-300/40 bg-cyan-300/14 px-2 py-1 text-[10px] uppercase tracking-[0.16em] text-cyan-50">
+                      First Step
+                    </span>
+                  ) : null}
+                </span>
               </span>
             </button>
 
             <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-3 text-sm text-white/60">
-              {idleActionMessage}
+              {idleActionMessage} Stock on hand: {state.player.resources.fieldRations}{" "}
+              Field Rations.
             </div>
           </>
         ) : (

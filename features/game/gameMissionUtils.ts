@@ -62,6 +62,7 @@ export function addPartialResources(
   if (!incoming) return current;
 
   return {
+    fieldRations: current.fieldRations + (incoming.fieldRations ?? 0),
     credits: current.credits + (incoming.credits ?? 0),
     ironOre: current.ironOre + (incoming.ironOre ?? 0),
     scrapAlloy: current.scrapAlloy + (incoming.scrapAlloy ?? 0),

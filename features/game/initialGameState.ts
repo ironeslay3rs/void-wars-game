@@ -20,6 +20,7 @@ export const initialGameState: GameState = {
     hasBiotechSpecimenLead: false,
 
     resources: {
+      fieldRations: 4,
       credits: 250,
       ironOre: 20,
       scrapAlloy: 15,

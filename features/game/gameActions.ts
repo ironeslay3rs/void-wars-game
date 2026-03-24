@@ -16,6 +16,12 @@ import {
   buildNavigationState,
   getAvailableRoutes,
 } from "@/features/navigation/navigationUtils";
+import {
+  getFieldRationCost,
+  getMissionFieldRationCost,
+  hasEnoughFieldRations,
+  hasEnoughFieldRationsForMission,
+} from "@/features/game/rationRules";
 import type {
   GameAction,
   GameState,
@@ -229,8 +235,23 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         };
       }
 
+      if (!hasEnoughFieldRations(player.resources.fieldRations, "hunt")) {
+        return {
+          ...state,
+          player,
+        };
+      }
+
       const resolvedAt = action.payload.resolvedAt ?? now;
-      const nextPlayer = applyMissionReward(player, mission.reward);
+      const rewardedPlayer = applyMissionReward(player, mission.reward);
+      const nextPlayer = {
+        ...rewardedPlayer,
+        resources: updateSingleResource(
+          rewardedPlayer.resources,
+          "fieldRations",
+          -getFieldRationCost("hunt"),
+        ),
+      };
 
       return {
         ...state,
@@ -257,6 +278,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
     case "START_EXPLORATION_PROCESS": {
       if (state.player.activeProcess !== null) {
+        return state;
+      }
+
+      if (!hasEnoughFieldRations(state.player.resources.fieldRations, "exploration")) {
         return state;
       }
 
@@ -385,6 +410,15 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         return state;
       }
 
+      if (
+        !hasEnoughFieldRationsForMission(
+          state.player.resources.fieldRations,
+          mission.category,
+        )
+      ) {
+        return state;
+      }
+
       const queuedAt = action.payload.queuedAt ?? Date.now();
       const lastEntry = missionQueue[missionQueue.length - 1] ?? null;
       const anchorTime = lastEntry
@@ -401,6 +435,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         ...state,
         player: {
           ...state.player,
+          resources: updateSingleResource(
+            state.player.resources,
+            "fieldRations",
+            -getMissionFieldRationCost(mission.category),
+          ),
           missionQueue: [...missionQueue, nextEntry],
         },
       };

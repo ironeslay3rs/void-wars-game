@@ -1,4 +1,5 @@
 export type ResourceKey =
+  | "fieldRations"
   | "credits"
   | "ironOre"
   | "scrapAlloy"
@@ -14,6 +15,12 @@ export type ResourceMeta = {
 };
 
 export const resourceData: ResourceMeta[] = [
+  {
+    id: "fieldRations",
+    label: "Field Rations",
+    icon: "/icons/resources/resource-credits.png",
+    iconAlt: "Field Rations",
+  },
   {
     id: "credits",
     label: "Credits",

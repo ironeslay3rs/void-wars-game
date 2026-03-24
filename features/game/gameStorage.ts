@@ -20,6 +20,10 @@ function normalizeResources(value: unknown): ResourcesState {
   const raw = isRecord(value) ? value : {};
 
   return {
+    fieldRations:
+      typeof raw.fieldRations === "number"
+        ? raw.fieldRations
+        : initialGameState.player.resources.fieldRations,
     credits:
       typeof raw.credits === "number"
         ? raw.credits
@@ -54,6 +58,9 @@ function normalizePartialResources(
 
   const result: Partial<ResourcesState> = {};
 
+  if (typeof value.fieldRations === "number") {
+    result.fieldRations = value.fieldRations;
+  }
   if (typeof value.credits === "number") result.credits = value.credits;
   if (typeof value.ironOre === "number") result.ironOre = value.ironOre;
   if (typeof value.scrapAlloy === "number") {

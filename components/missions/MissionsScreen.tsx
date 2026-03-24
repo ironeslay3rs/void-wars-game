@@ -5,6 +5,11 @@ import ScreenHeader from "@/components/shared/ScreenHeader";
 import SectionCard from "@/components/shared/SectionCard";
 import { useGame } from "@/features/game/gameContext";
 import { missionsScreenData } from "@/features/missions/missionsScreenData";
+import {
+  formatFieldRationCost,
+  getMissionFieldRationCost,
+  hasEnoughFieldRationsForMission,
+} from "@/features/game/rationRules";
 import type {
   MissionDefinition,
   MissionQueueEntry,
@@ -72,6 +77,8 @@ function getPathBadgeClasses(path: "neutral" | "bio" | "mecha" | "spirit") {
 
 function formatRewardLabel(key: string) {
   switch (key) {
+    case "fieldRations":
+      return "Field Rations";
     case "credits":
       return "Credits";
     case "ironOre":
@@ -320,13 +327,9 @@ export default function MissionsScreen() {
             valueClassName="text-emerald-300"
           />
           <StatCard
-            label="Current Path"
-            value={
-              state.player.factionAlignment === "unbound"
-                ? "Unbound"
-                : formatPathLabel(state.player.factionAlignment)
-            }
-            hint="Path-specific missions unlock after alignment."
+            label="Field Rations"
+            value={`${state.player.resources.fieldRations}`}
+            hint="Each queued operation spends 1 ration before deployment."
           />
         </div>
 
@@ -377,8 +380,13 @@ export default function MissionsScreen() {
                 const isAccessible =
                   mission.path === "neutral" ||
                   state.player.factionAlignment === mission.path;
-
                 const isQueued = queuedMissionIds.has(mission.id);
+                const rationCost = getMissionFieldRationCost(mission.category);
+                const canAffordRations = hasEnoughFieldRationsForMission(
+                  state.player.resources.fieldRations,
+                  mission.category,
+                );
+                const isUnavailable = !isAccessible || isQueued || !canAffordRations;
 
                 const resourceRewards = Object.entries(
                   mission.reward.resources ?? {},
@@ -414,11 +422,21 @@ export default function MissionsScreen() {
                             {formatDuration(mission.durationHours)}
                           </span>
 
+                          <span className="rounded-full border border-amber-500/20 bg-amber-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-100">
+                            Cost: {formatFieldRationCost(rationCost)}
+                          </span>
+
                           {!isAccessible && (
                             <span className="rounded-full border border-red-500/25 bg-red-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-red-200">
                               Locked
                             </span>
                           )}
+
+                          {isAccessible && !canAffordRations ? (
+                            <span className="rounded-full border border-red-500/25 bg-red-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-red-200">
+                              Need Rations
+                            </span>
+                          ) : null}
 
                           {isQueued && (
                             <span className="rounded-full border border-cyan-500/25 bg-cyan-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-cyan-200">
@@ -468,19 +486,21 @@ export default function MissionsScreen() {
                               payload: { missionId: mission.id },
                             })
                           }
-                          disabled={!isAccessible || isQueued}
+                          disabled={isUnavailable}
                           className={[
                             "w-full rounded-2xl border px-4 py-3 text-sm font-semibold uppercase tracking-[0.12em] transition",
-                            !isAccessible || isQueued
+                            isUnavailable
                               ? "cursor-not-allowed border-white/10 bg-white/5 text-white/35"
                               : "border-cyan-400/30 bg-cyan-500/10 text-cyan-100 hover:border-cyan-300/50 hover:bg-cyan-500/15",
                           ].join(" ")}
                         >
                           {isQueued
                             ? "Queued"
-                            : isAccessible
-                              ? "Queue Mission"
-                              : "Locked"}
+                            : !canAffordRations
+                              ? `Need ${formatFieldRationCost(rationCost)}`
+                              : isAccessible
+                                ? `Queue Mission · ${formatFieldRationCost(rationCost)}`
+                                : "Locked"}
                         </button>
                       </div>
                     </div>

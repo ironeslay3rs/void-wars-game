@@ -8,6 +8,7 @@ export const phase1ExplorationReward: MissionReward = {
   conditionDelta: 0,
   influence: 1,
   resources: {
+    fieldRations: 1,
     credits: 35,
     ironOre: 2,
   },

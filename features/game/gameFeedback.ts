@@ -2,6 +2,8 @@ import type { ResourceKey, ResourcesState } from "@/features/game/gameTypes";
 
 export function formatResourceLabel(key: string) {
   switch (key) {
+    case "fieldRations":
+      return "Field Rations";
     case "credits":
       return "Credits";
     case "ironOre":

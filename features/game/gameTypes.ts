@@ -11,6 +11,7 @@ export type PathType = Exclude<FactionAlignment, "unbound">;
 ========================= */
 
 export type ResourceKey =
+  | "fieldRations"
   | "credits"
   | "ironOre"
   | "scrapAlloy"

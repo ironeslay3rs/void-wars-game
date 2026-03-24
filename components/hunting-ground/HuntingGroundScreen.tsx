@@ -6,6 +6,11 @@ import SectionCard from "@/components/shared/SectionCard";
 import PlaceholderPanel from "@/components/shared/PlaceholderPanel";
 import { useGame } from "@/features/game/gameContext";
 import { huntingGroundScreenData } from "@/features/hunting-ground/huntingGroundScreenData";
+import {
+  formatFieldRationCost,
+  getMissionFieldRationCost,
+  hasEnoughFieldRationsForMission,
+} from "@/features/game/rationRules";
 import type {
   MissionDefinition,
   MissionQueueEntry,
@@ -59,6 +64,8 @@ function formatDuration(durationHours: number) {
 
 function formatRewardLabel(key: string) {
   switch (key) {
+    case "fieldRations":
+      return "Field Rations";
     case "credits":
       return "Credits";
     case "ironOre":
@@ -237,9 +244,9 @@ export default function HuntingGroundScreen() {
       hint: "Hunting Ground contracts consume slots from the shared global mission queue.",
     },
     {
-      label: "Condition",
-      value: `${state.player.condition}/100`,
-      hint: "Queued hunts still trade condition for progression and material yield.",
+      label: "Field Rations",
+      value: `${state.player.resources.fieldRations}`,
+      hint: "Each deployed contract spends 1 ration before it leaves the wall.",
     },
   ];
 
@@ -347,6 +354,11 @@ export default function HuntingGroundScreen() {
               ) : (
                 huntingGroundMissions.map((mission) => {
                   const isQueued = queuedMissionIds.has(mission.id);
+                  const rationCost = getMissionFieldRationCost(mission.category);
+                  const canAffordRations = hasEnoughFieldRationsForMission(
+                    state.player.resources.fieldRations,
+                    mission.category,
+                  );
                   const resourceRewards = Object.entries(
                     mission.reward.resources ?? {},
                   ).filter(([, value]) => typeof value === "number" && value !== 0);
@@ -375,9 +387,19 @@ export default function HuntingGroundScreen() {
                               {formatDuration(mission.durationHours)}
                             </span>
 
+                            <span className="rounded-full border border-amber-500/20 bg-amber-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-100">
+                              Cost: {formatFieldRationCost(rationCost)}
+                            </span>
+
                             {isQueued ? (
                               <span className="rounded-full border border-cyan-500/25 bg-cyan-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-cyan-200">
                                 In Queue
+                              </span>
+                            ) : null}
+
+                            {!canAffordRations ? (
+                              <span className="rounded-full border border-red-500/25 bg-red-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-red-200">
+                                Need Rations
                               </span>
                             ) : null}
                           </div>
@@ -422,21 +444,25 @@ export default function HuntingGroundScreen() {
                             }
                             disabled={
                               isQueued ||
-                              queue.length >= state.player.maxMissionQueueSlots
+                              queue.length >= state.player.maxMissionQueueSlots ||
+                              !canAffordRations
                             }
                             className={[
                               "w-full rounded-2xl border px-4 py-3 text-sm font-semibold uppercase tracking-[0.12em] transition",
                               isQueued ||
-                              queue.length >= state.player.maxMissionQueueSlots
+                              queue.length >= state.player.maxMissionQueueSlots ||
+                              !canAffordRations
                                 ? "cursor-not-allowed border-white/10 bg-white/5 text-white/35"
                                 : "border-amber-500/30 bg-amber-500/10 text-amber-100 hover:border-amber-400/45 hover:bg-amber-500/15",
                             ].join(" ")}
                           >
                             {isQueued
                               ? "Deployed"
-                              : queue.length >= state.player.maxMissionQueueSlots
-                                ? "Queue Full"
-                                : "Deploy"}
+                              : !canAffordRations
+                                ? `Need ${formatFieldRationCost(rationCost)}`
+                                : queue.length >= state.player.maxMissionQueueSlots
+                                  ? "Queue Full"
+                                  : `Deploy · ${formatFieldRationCost(rationCost)}`}
                           </button>
                         </div>
                       </div>
