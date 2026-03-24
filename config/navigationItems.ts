@@ -46,9 +46,9 @@ export const navigationItems: NavigationItem[] = [
     requiredRank: 3,
   },
   {
-    id: "blackmarket",
+    id: "black-market",
     label: "Black Market",
-    route: "/blackmarket",
+    route: "/bazaar/black-market",
     unlocked: false,
     requiredRank: 5,
   },
