@@ -85,6 +85,7 @@ export default function StatusPage() {
     { label: "Rune Dust", value: player.resources.runeDust },
     { label: "Ember Core", value: player.resources.emberCore },
     { label: "Bio Samples", value: player.resources.bioSamples },
+    { label: "Moss Rations", value: player.resources.mossRations },
   ];
 
   const systemStates = [

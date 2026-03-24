@@ -39,6 +39,7 @@ export default function HomeHudClient() {
           rankXp={state.player.rankXp}
           rankXpToNext={state.player.rankXpToNext}
           condition={state.player.condition}
+          hunger={state.player.hunger}
           masteryProgress={state.player.masteryProgress}
         />
       </section>

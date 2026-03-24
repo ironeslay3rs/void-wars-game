@@ -15,12 +15,17 @@ export function getCraftingDistrictScreenData(state: GameState) {
       {
         label: "Known Recipes",
         value: String(state.player.knownRecipes.length),
-        hint: "Unlocked recipes now come from shared state.",
+        hint: "Shared recipes include a new ration craft for survival stabilization.",
+      },
+      {
+        label: "Ration Stock",
+        value: String(state.player.resources.mossRations),
+        hint: "Crafted survival item that restores hunger and a small amount of condition.",
       },
       {
         label: "Material Stock",
-        value: `${state.player.resources.ironOre + state.player.resources.scrapAlloy + state.player.resources.runeDust + state.player.resources.emberCore}`,
-        hint: "Combined tracked crafting materials.",
+        value: `${state.player.resources.ironOre + state.player.resources.scrapAlloy + state.player.resources.runeDust + state.player.resources.emberCore + state.player.resources.bioSamples}`,
+        hint: "Combined tracked crafting inputs, including ration ingredients.",
       },
     ],
   };

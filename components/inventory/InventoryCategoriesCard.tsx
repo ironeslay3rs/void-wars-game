@@ -22,6 +22,7 @@ export default function InventoryCategoriesCard() {
       entries: [
         { label: "Rune Dust", value: player.resources.runeDust },
         { label: "Ember Core", value: player.resources.emberCore },
+        { label: "Moss Rations", value: player.resources.mossRations },
       ],
     },
     {

@@ -68,6 +68,7 @@ export function addPartialResources(
     runeDust: current.runeDust + (incoming.runeDust ?? 0),
     emberCore: current.emberCore + (incoming.emberCore ?? 0),
     bioSamples: current.bioSamples + (incoming.bioSamples ?? 0),
+    mossRations: current.mossRations + (incoming.mossRations ?? 0),
   };
 }
 

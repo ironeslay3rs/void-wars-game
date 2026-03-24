@@ -84,6 +84,8 @@ function formatRewardLabel(key: string) {
       return "Ember Core";
     case "bioSamples":
       return "Bio Samples";
+    case "mossRations":
+      return "Moss Rations";
     default:
       return key;
   }

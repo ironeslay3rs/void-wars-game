@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useGame } from "@/features/game/gameContext";
 import { getCraftingDistrictScreenData } from "@/features/crafting-district/craftingDistrictScreenData";
+import { MOSS_RATION_RECIPE_COST } from "@/features/status/survival";
 
 const craftingStations = [
   {
@@ -45,9 +46,14 @@ export default function CraftingDistrictPage() {
   const { state, dispatch } = useGame();
   const screenData = getCraftingDistrictScreenData(state);
   const [refineResult, setRefineResult] = useState<string | null>(null);
+  const [rationResult, setRationResult] = useState<string | null>(null);
 
-  const { ironOre, scrapAlloy, runeDust, emberCore } = state.player.resources;
+  const { ironOre, scrapAlloy, runeDust, emberCore, bioSamples, mossRations } =
+    state.player.resources;
   const canRefineScrapAlloy = ironOre >= 3;
+  const canCraftMossRation =
+    bioSamples >= MOSS_RATION_RECIPE_COST.bioSamples &&
+    runeDust >= MOSS_RATION_RECIPE_COST.runeDust;
 
   function refineScrapAlloy() {
     if (!canRefineScrapAlloy) {
@@ -64,6 +70,16 @@ export default function CraftingDistrictPage() {
       payload: { key: "scrapAlloy", amount: 1 },
     });
     setRefineResult("Refinement complete. 3 Iron Ore became 1 Scrap Alloy.");
+  }
+
+  function craftMossRation() {
+    if (!canCraftMossRation) {
+      setRationResult("Need 2 Bio Samples and 1 Rune Dust to bind 1 Moss Ration.");
+      return;
+    }
+
+    dispatch({ type: "CRAFT_MOSS_RATION" });
+    setRationResult("Binding complete. 1 Moss Ration sealed for survival use.");
   }
 
   return (
@@ -138,35 +154,70 @@ export default function CraftingDistrictPage() {
         </section>
 
         <section className="grid gap-4 xl:grid-cols-[1.3fr_0.7fr]">
-          <div className="rounded-2xl border border-white/10 bg-black/25 p-6">
-            <div className="text-[11px] uppercase tracking-[0.22em] text-orange-300/70">
-              Material Refining
-            </div>
-            <h2 className="mt-2 text-xl font-black uppercase">Refinery Bay</h2>
+          <div className="grid gap-4">
+            <div className="rounded-2xl border border-white/10 bg-black/25 p-6">
+              <div className="text-[11px] uppercase tracking-[0.22em] text-orange-300/70">
+                Material Refining
+              </div>
+              <h2 className="mt-2 text-xl font-black uppercase">Refinery Bay</h2>
 
-            <div className="mt-4 grid gap-3">
-              <div className="rounded-xl border border-orange-400/20 bg-orange-500/8 p-4">
-                <div className="mt-2 text-sm font-semibold text-white">
-                  Convert raw ore into usable alloy plating.
+              <div className="mt-4 grid gap-3">
+                <div className="rounded-xl border border-orange-400/20 bg-orange-500/8 p-4">
+                  <div className="mt-2 text-sm font-semibold text-white">
+                    Convert raw ore into usable alloy plating.
+                  </div>
+                  <div className="mt-2 text-sm text-white/65">
+                    Immediate district function for M1: refine 3 Iron Ore into 1 Scrap Alloy.
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={refineScrapAlloy}
+                    disabled={!canRefineScrapAlloy}
+                    className="mt-4 w-full rounded-xl border border-orange-400/30 bg-orange-500/10 px-4 py-3 text-left text-sm font-semibold text-orange-100 transition hover:bg-orange-500/20 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Refine Scrap Alloy
+                    <div className="mt-1 text-xs text-white/60">
+                      Costs 3 Iron Ore / Produces 1 Scrap Alloy
+                    </div>
+                  </button>
+
+                  <div className="mt-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/75">
+                    {refineResult ??
+                      "Refinery idle. Process raw ore whenever you need alloy."}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-black/25 p-6">
+              <div className="text-[11px] uppercase tracking-[0.22em] text-emerald-300/70">
+                Survival Crafting
+              </div>
+              <h2 className="mt-2 text-xl font-black uppercase">Moss Binder</h2>
+
+              <div className="mt-4 rounded-xl border border-emerald-400/20 bg-emerald-500/8 p-4">
+                <div className="text-sm font-semibold text-white">
+                  Press scavenged biomass into ration slabs for field survival.
                 </div>
                 <div className="mt-2 text-sm text-white/65">
-                  Immediate district function for M1: refine 3 Iron Ore into 1 Scrap Alloy.
+                  Immediate survival function: bind 2 Bio Samples and 1 Rune Dust into 1 Moss Ration.
                 </div>
 
                 <button
                   type="button"
-                  onClick={refineScrapAlloy}
-                  disabled={!canRefineScrapAlloy}
-                  className="mt-4 w-full rounded-xl border border-orange-400/30 bg-orange-500/10 px-4 py-3 text-left text-sm font-semibold text-orange-100 transition hover:bg-orange-500/20 disabled:cursor-not-allowed disabled:opacity-40"
+                  onClick={craftMossRation}
+                  disabled={!canCraftMossRation}
+                  className="mt-4 w-full rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-left text-sm font-semibold text-emerald-100 transition hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  Refine Scrap Alloy
+                  Craft Moss Ration
                   <div className="mt-1 text-xs text-white/60">
-                    Costs 3 Iron Ore / Produces 1 Scrap Alloy
+                    Costs 2 Bio Samples + 1 Rune Dust / Produces 1 Moss Ration
                   </div>
                 </button>
 
                 <div className="mt-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/75">
-                  {refineResult ?? "Refinery idle. Process raw ore whenever you need alloy."}
+                  {rationResult ?? "Binder idle. Stock rations before long operations strain condition."}
                 </div>
               </div>
             </div>
@@ -193,6 +244,14 @@ export default function CraftingDistrictPage() {
               <div className="flex justify-between rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2">
                 <span>Ember Core</span>
                 <span>{emberCore}</span>
+              </div>
+              <div className="flex justify-between rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2">
+                <span>Bio Samples</span>
+                <span>{bioSamples}</span>
+              </div>
+              <div className="flex justify-between rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2">
+                <span>Moss Rations</span>
+                <span>{mossRations}</span>
               </div>
             </div>
           </div>

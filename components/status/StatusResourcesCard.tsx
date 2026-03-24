@@ -13,6 +13,7 @@ export default function StatusResourcesCard() {
     { label: "Rune Dust", value: resources.runeDust },
     { label: "Ember Core", value: resources.emberCore },
     { label: "Bio Samples", value: resources.bioSamples },
+    { label: "Moss Rations", value: resources.mossRations },
   ];
 
   return (
