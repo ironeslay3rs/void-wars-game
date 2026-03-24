@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { ArrowLeft, Flame, Soup, TriangleAlert, UtensilsCrossed } from "lucide-react";
-import ScreenHeader from "@/components/shared/ScreenHeader";
 import SectionCard from "@/components/shared/SectionCard";
 import { feastHallOffers } from "@/features/black-market/feastHallData";
 import { useGame } from "@/features/game/gameContext";
@@ -41,7 +40,13 @@ function getConditionMessage(condition: number) {
   return "Primed. You can save salvage for later unless you want a deliberate Gluttony spike before a run.";
 }
 
-export default function FeastHallScreen() {
+type FeastHallScreenProps = {
+  embedded?: boolean;
+};
+
+export default function FeastHallScreen({
+  embedded = false,
+}: FeastHallScreenProps) {
   const { state, dispatch } = useGame();
   const { player } = state;
   const { isRecoveryOnCooldown, recoveryCooldownRemainingSeconds } =
@@ -63,25 +68,8 @@ export default function FeastHallScreen() {
     dispatch({ type: "USE_FEAST_HALL_OFFER", payload: { offerId } });
   }
 
-  return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(180,110,30,0.24),_rgba(5,8,20,1)_58%)] px-6 py-10 text-white md:px-10">
-      <div className="mx-auto flex max-w-7xl flex-col gap-8">
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-          <ScreenHeader
-            eyebrow="Black Market / Gluttony Lane"
-            title="Feast Hall"
-            subtitle="The neutral citadel's Gluttony lane turns salvage into readiness. Buy one meal, recover condition, and walk back into the Void with a fuller body than pride."
-          />
-
-          <Link
-            href="/bazaar"
-            className="inline-flex items-center gap-2 self-start rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:border-amber-300/40 hover:bg-white/10"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Bazaar
-          </Link>
-        </div>
-
+  const content = (
+    <>
         <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
           <SectionCard
             title="Lane Brief"
@@ -260,6 +248,27 @@ export default function FeastHallScreen() {
             );
           })}
         </section>
+    </>
+  );
+
+  if (embedded) {
+    return content;
+  }
+
+  return (
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(180,110,30,0.24),_rgba(5,8,20,1)_58%)] px-6 py-10 text-white md:px-10">
+      <div className="mx-auto flex max-w-7xl flex-col gap-8">
+        <div className="flex justify-end">
+          <Link
+            href="/bazaar"
+            className="inline-flex items-center gap-2 self-start rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:border-amber-300/40 hover:bg-white/10"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Bazaar
+          </Link>
+        </div>
+
+        {content}
       </div>
     </main>
   );
