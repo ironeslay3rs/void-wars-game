@@ -56,7 +56,7 @@ export default function ArenaPage() {
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-white/70">
               The prestige engine of the Bazaar. Ranked combat, wagers,
-              spectators, and faction pride all collide here.
+              spectators, and doctrine pride all collide here.
             </p>
           </div>
 

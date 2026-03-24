@@ -4,7 +4,7 @@ export const bazaarDistrictThemes = {
     glow: "shadow-[0_0_34px_rgba(16,185,129,0.16)]",
     overlay: "from-emerald-500/55 to-cyan-500/20",
   },
-  spirit: {
+  pure: {
     border: "border-cyan-400/35",
     glow: "shadow-[0_0_34px_rgba(34,211,238,0.16)]",
     overlay: "from-cyan-500/50 to-blue-600/20",

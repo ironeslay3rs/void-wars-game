@@ -109,12 +109,12 @@ export const initialGameState: GameState = {
       },
     },
     {
-      id: "spirit-ember-trial",
+      id: "pure-ember-trial",
       category: "operation",
       title: "Complete an Ember Trial",
       description:
         "Enter a guided memory rite to sharpen attunement and gather refined rune residue.",
-      path: "spirit",
+      path: "pure",
       durationHours: 0.0028,
       reward: {
         rankXp: 38,

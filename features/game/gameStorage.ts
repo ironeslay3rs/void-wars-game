@@ -169,6 +169,7 @@ function normalizeMissions(value: unknown): MissionDefinition[] {
         (mission.path === "neutral" ||
           mission.path === "bio" ||
           mission.path === "mecha" ||
+          mission.path === "pure" ||
           mission.path === "spirit") &&
         typeof mission.durationHours === "number" &&
         typeof mission.reward.rankXp === "number" &&
@@ -182,6 +183,7 @@ function normalizeMissions(value: unknown): MissionDefinition[] {
 
       return {
         ...mission,
+        path: mission.path === "spirit" ? "pure" : mission.path,
         category,
       };
     });
@@ -205,8 +207,10 @@ function normalizePlayer(value: unknown): PlayerState {
       raw.factionAlignment === "unbound" ||
       raw.factionAlignment === "bio" ||
       raw.factionAlignment === "mecha" ||
-      raw.factionAlignment === "spirit"
+      raw.factionAlignment === "pure"
         ? raw.factionAlignment
+        : raw.factionAlignment === "spirit"
+          ? "pure"
         : initialGameState.player.factionAlignment,
 
     condition:

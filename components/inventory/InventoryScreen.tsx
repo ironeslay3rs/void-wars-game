@@ -14,7 +14,7 @@ function formatFactionLabel(faction: string) {
   if (faction === "unbound") return "Unbound";
   if (faction === "bio") return "Bio";
   if (faction === "mecha") return "Mecha";
-  if (faction === "spirit") return "Spirit";
+  if (faction === "pure") return "Pure";
   return faction;
 }
 

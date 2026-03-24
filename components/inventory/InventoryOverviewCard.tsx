@@ -6,7 +6,7 @@ function formatFactionLabel(faction: string) {
   if (faction === "unbound") return "Unbound";
   if (faction === "bio") return "Bio";
   if (faction === "mecha") return "Mecha";
-  if (faction === "spirit") return "Spirit";
+  if (faction === "pure") return "Pure";
   return faction;
 }
 
@@ -27,7 +27,7 @@ function getFactionAccent(faction: string) {
     };
   }
 
-  if (faction === "spirit") {
+  if (faction === "pure") {
     return {
       chip: "border-violet-500/30 bg-violet-500/10 text-violet-100",
       glow: "shadow-[0_0_35px_rgba(168,85,247,0.14)]",

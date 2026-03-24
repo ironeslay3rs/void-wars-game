@@ -16,8 +16,8 @@ export type BazaarHub = {
 export const bazaarHubData: BazaarHub[] = [
   {
     id: "void-market",
-    title: "Void Market",
-    subtitle: "Trade Hub",
+    title: "War Exchange",
+    subtitle: "War Exchange",
     badge: "Exchange & Auctions",
     route: "/bazaar/void-market",
     themeKey: "market",
@@ -27,8 +27,8 @@ export const bazaarHubData: BazaarHub[] = [
   {
     id: "black-market",
     title: "Black Market",
-    subtitle: "Smugglers Den",
-    badge: "Shady Dealers",
+    subtitle: "Neutral Survivor Citadel",
+    badge: "Deals Are Sacred",
     route: "/bazaar/black-market",
     themeKey: "blackMarket",
     positionClass: "left-1/2 top-[78%] -translate-x-1/2 -translate-y-1/2",

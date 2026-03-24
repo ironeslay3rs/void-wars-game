@@ -17,6 +17,7 @@ import {
 } from "@/features/characters/charactersData";
 
 type CharacterFilter = "all" | CharacterFaction;
+const FACTION_ORDER: CharacterFaction[] = ["ember", "bio", "mecha", "rune"];
 
 export default function FactionsScreen() {
   const { state } = useGame();
@@ -26,14 +27,12 @@ export default function FactionsScreen() {
   const [selectedCharacter, setSelectedCharacter] =
     useState<CharacterRecord | null>(null);
 
-  const factionOrder: CharacterFaction[] = ["ember", "bio", "mecha", "rune"];
-
   const visibleFactions = useMemo(() => {
     if (activeFilter === "all") {
-      return factionOrder;
+      return FACTION_ORDER;
     }
 
-    return factionOrder.filter((faction) => faction === activeFilter);
+    return FACTION_ORDER.filter((faction) => faction === activeFilter);
   }, [activeFilter]);
 
   const totalVisibleUnits = useMemo(() => {
@@ -155,7 +154,7 @@ export default function FactionsScreen() {
                     Active Unit Roster
                   </h2>
                   <p className="mt-1 text-sm text-white/55">
-                    Filter the current unit set by faction.
+                    Filter the current unit set by affiliation.
                   </p>
                 </div>
 
@@ -165,7 +164,7 @@ export default function FactionsScreen() {
               </div>
 
               <div className="flex flex-wrap gap-3">
-                {(["all", ...factionOrder] as CharacterFilter[]).map((filter) => (
+                {(["all", ...FACTION_ORDER] as CharacterFilter[]).map((filter) => (
                   <button
                     key={filter}
                     type="button"
@@ -196,7 +195,7 @@ export default function FactionsScreen() {
                         {factionLabels[faction]}
                       </h2>
                       <p className="mt-1 text-sm text-white/55">
-                        Active combat units aligned with this faction.
+                        Active combat units aligned with this doctrine.
                       </p>
                     </div>
 

@@ -1,8 +1,8 @@
-export const spiritEnclaveScreenData = {
-  eyebrow: "Bazaar / Spirit Enclave",
-  title: "Spirit Enclave",
+export const pureEnclaveScreenData = {
+  eyebrow: "Bazaar / Ember Vault Enclave",
+  title: "Ember Vault Enclave",
   subtitle:
-    "Attune the soul, recover rune memory, and deepen spirit-based progression systems.",
+    "Attune the soul, recover rune memory, and deepen Pure-side Ember Vault progression.",
   cards: [
     {
       label: "Attunement State",
@@ -12,7 +12,7 @@ export const spiritEnclaveScreenData = {
     {
       label: "Soul Capacity",
       value: "0",
-      hint: "Spiritual capacity systems will populate later.",
+      hint: "Pure-path capacity systems will populate later.",
     },
     {
       label: "Rune Memory",

@@ -44,26 +44,26 @@ function formatDuration(durationHours: number) {
   return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
 }
 
-function formatPathLabel(path: "neutral" | "bio" | "mecha" | "spirit") {
+function formatPathLabel(path: "neutral" | "bio" | "mecha" | "pure") {
   switch (path) {
     case "bio":
       return "Bio";
     case "mecha":
       return "Mecha";
-    case "spirit":
-      return "Spirit";
+    case "pure":
+      return "Pure";
     default:
       return "Neutral";
   }
 }
 
-function getPathBadgeClasses(path: "neutral" | "bio" | "mecha" | "spirit") {
+function getPathBadgeClasses(path: "neutral" | "bio" | "mecha" | "pure") {
   switch (path) {
     case "bio":
       return "border-emerald-500/30 bg-emerald-500/10 text-emerald-200";
     case "mecha":
       return "border-cyan-500/30 bg-cyan-500/10 text-cyan-200";
-    case "spirit":
+    case "pure":
       return "border-amber-500/30 bg-amber-500/10 text-amber-200";
     default:
       return "border-white/15 bg-white/5 text-white/70";

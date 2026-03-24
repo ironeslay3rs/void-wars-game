@@ -7,7 +7,7 @@ export const assets = {
   factions: {
     bio: "/icons/factions/faction-bio-core.png",
     mecha: "/icons/factions/faction-mecha-core.png",
-    spirit: "/icons/factions/faction-spirit-core.png",
+    pure: "/icons/factions/faction-spirit-core.png",
   },
 
   ui: {

@@ -24,7 +24,7 @@ function formatFactionLabel(faction: string) {
   if (faction === "unbound") return "Unbound";
   if (faction === "bio") return "Bio";
   if (faction === "mecha") return "Mecha";
-  if (faction === "spirit") return "Spirit";
+  if (faction === "pure") return "Pure";
   return faction;
 }
 
@@ -59,7 +59,7 @@ function getFactionAccent(faction: string) {
     };
   }
 
-  if (faction === "spirit") {
+  if (faction === "pure") {
     return {
       ring: "border-violet-500/30",
       glow: "shadow-[0_0_35px_rgba(168,85,247,0.16)]",
@@ -80,7 +80,7 @@ const battleModes: ArenaMode[] = [
   {
     title: "Ranked",
     subtitle: "Primary ladder combat",
-    body: "High-risk competitive queue with rank pressure, rewards, and faction visibility.",
+    body: "High-risk competitive queue with rank pressure, rewards, and affiliation visibility.",
   },
   {
     title: "Practice",
@@ -109,7 +109,7 @@ export default function ArenaPage() {
 
   const liveCards = [
     {
-      label: "Faction Alignment",
+      label: "Affiliation",
       value: formatFactionLabel(player.factionAlignment),
       hint: "Arena modifiers can later react to your active path.",
     },

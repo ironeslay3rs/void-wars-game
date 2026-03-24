@@ -8,7 +8,7 @@ function formatFactionLabel(faction: string) {
   if (faction === "unbound") return "Unbound";
   if (faction === "bio") return "Bio";
   if (faction === "mecha") return "Mecha";
-  if (faction === "spirit") return "Spirit";
+  if (faction === "pure") return "Pure";
   return faction;
 }
 
@@ -52,7 +52,7 @@ function getFactionAccent(faction: string) {
     };
   }
 
-  if (faction === "spirit") {
+  if (faction === "pure") {
     return {
       ring: "border-violet-500/35",
       glow: "shadow-[0_0_40px_rgba(168,85,247,0.18)]",
@@ -108,7 +108,7 @@ export default function StatusPage() {
         <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
           <SectionCard
             title="Operative Profile"
-            description="Primary identity panel for faction alignment, rank status, and mission readiness."
+            description="Primary identity panel for affiliation, rank status, and mission readiness."
           >
             <div className="grid gap-6 lg:grid-cols-[300px_1fr]">
               <div

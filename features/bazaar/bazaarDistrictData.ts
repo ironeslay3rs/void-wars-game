@@ -10,7 +10,7 @@ export type BazaarDistrictId =
 
 export type BazaarDistrictThemeKey =
   | "bio"
-  | "spirit"
+  | "pure"
   | "forge"
   | "arena"
   | "mecha"
@@ -43,12 +43,12 @@ export const bazaarDistrictData: BazaarDistrict[] = [
   },
   {
     id: "spirit-enclave",
-    title: "Spirit Enclave",
+    title: "Ember Vault Enclave",
     subtitle: "Ritual Sanctum",
     description:
-      "Soul rites, resonance chambers, and spirit-oriented progression paths.",
+      "Pure-path soul rites, resonance chambers, and Ember Vault progression.",
     route: "/bazaar/spirit-enclave",
-    themeKey: "spirit",
+    themeKey: "pure",
     positionClass: "left-[8%] top-[40%]",
     widthClass: "w-[280px]",
   },
@@ -98,10 +98,10 @@ export const bazaarDistrictData: BazaarDistrict[] = [
   },
   {
     id: "faction-hqs",
-    title: "Faction HQs",
-    subtitle: "Bio | Mecha | Spirit",
+    title: "Affiliation Concourse",
+    subtitle: "Bio | Mecha | Pure",
     description:
-      "Enter your aligned power center and deepen faction identity.",
+      "Enter your aligned power center and deepen doctrine affiliation across Verdant Coil, Chrome Synod, and Ember Vault.",
     route: "/bazaar/faction-hqs",
     themeKey: "faction",
     positionClass: "left-[16%] bottom-[6%]",

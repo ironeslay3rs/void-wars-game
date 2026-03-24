@@ -3,7 +3,7 @@ import type {
   RouteNodeId,
 } from "@/features/navigation/navigationTypes";
 
-export type FactionAlignment = "unbound" | "bio" | "mecha" | "spirit";
+export type FactionAlignment = "unbound" | "bio" | "mecha" | "pure";
 export type PathType = Exclude<FactionAlignment, "unbound">;
 
 /* =========================

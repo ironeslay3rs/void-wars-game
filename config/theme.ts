@@ -15,7 +15,7 @@ export const factionThemes = {
     accentText: "text-cyan-200",
   },
 
-  spirit: {
+  pure: {
     border: "border-violet-400/30",
     background:
       "bg-[linear-gradient(135deg,rgba(40,10,58,0.90),rgba(16,8,26,0.88))]",

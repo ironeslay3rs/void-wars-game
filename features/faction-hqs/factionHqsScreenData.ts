@@ -6,8 +6,8 @@ function formatFactionLabel(alignment: GameState["player"]["factionAlignment"]) 
       return "Bio";
     case "mecha":
       return "Mecha";
-    case "spirit":
-      return "Spirit";
+    case "pure":
+      return "Pure";
     default:
       return "Unbound";
   }
@@ -15,15 +15,15 @@ function formatFactionLabel(alignment: GameState["player"]["factionAlignment"]) 
 
 export function getFactionHqsScreenData(state: GameState) {
   return {
-    eyebrow: "Bazaar / Faction HQs",
-    title: "Faction HQs",
+    eyebrow: "Bazaar / Affiliation Concourse",
+    title: "Affiliation Concourse",
     subtitle:
-      "Enter aligned power centers, build allegiance, and deepen faction-based progression systems.",
+      "Enter aligned power centers, build allegiance, and deepen affiliation-based progression systems.",
     cards: [
       {
-        label: "Faction Alignment",
+        label: "Affiliation",
         value: formatFactionLabel(state.player.factionAlignment),
-        hint: "Live shared faction state from the global game store.",
+        hint: "Live shared affiliation state from the global game store.",
       },
       {
         label: "Influence",
@@ -31,9 +31,9 @@ export function getFactionHqsScreenData(state: GameState) {
         hint: "Influence now comes from shared state.",
       },
       {
-        label: "Faction Reward Tier",
+        label: "Affiliation Reward Tier",
         value: state.player.factionAlignment === "unbound" ? "Locked" : "Tier 1",
-        hint: "Reward availability now reacts to faction alignment.",
+        hint: "Reward availability now reacts to affiliation.",
       },
     ],
   };

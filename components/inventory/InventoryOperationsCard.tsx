@@ -10,7 +10,7 @@ export default function InventoryOperationsCard() {
     },
     {
       title: "Sorting Rules",
-      body: "Later this panel can control filtering by rarity, faction path, profession type, and crafting relevance.",
+      body: "Later this panel can control filtering by rarity, path alignment, profession type, and crafting relevance.",
     },
   ];
 
