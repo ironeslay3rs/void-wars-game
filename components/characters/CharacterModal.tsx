@@ -43,37 +43,37 @@ export default function CharacterModal({
 
   return (
     <div
-      className="fixed inset-0 z-[120] flex items-center justify-center bg-black/70 px-4 py-6 backdrop-blur-sm"
+      className="fixed inset-0 z-[120] flex items-center justify-center bg-black/70 px-4 py-6 pt-safe-top pb-safe-bottom backdrop-blur-sm sm:px-5"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-label={`${character.name} details`}
     >
       <div
-        className="relative w-full max-w-4xl overflow-hidden rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(18,20,34,0.96),rgba(10,12,22,0.98))] shadow-[0_30px_90px_rgba(0,0,0,0.45)]"
+        className="relative flex max-h-[calc(100dvh-var(--safe-area-inset-top)-var(--safe-area-inset-bottom)-1.5rem)] w-full max-w-4xl flex-col overflow-hidden rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(18,20,34,0.96),rgba(10,12,22,0.98))] shadow-[0_30px_90px_rgba(0,0,0,0.45)]"
         onClick={(event) => event.stopPropagation()}
       >
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-4 top-4 z-10 rounded-full border border-white/10 bg-black/30 px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-white/70 transition hover:border-white/20 hover:bg-white/10 hover:text-white"
+          className="absolute right-4 top-4 z-20 min-h-11 rounded-full border border-white/10 bg-black/30 px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-white/70 transition hover:border-white/20 hover:bg-white/10 hover:text-white"
         >
           Close
         </button>
 
-        <div className="grid gap-0 lg:grid-cols-[1.05fr_0.95fr]">
-          <div className="relative flex min-h-[360px] items-center justify-center overflow-hidden border-b border-white/10 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.10),_rgba(0,0,0,0)_62%)] p-8 lg:min-h-[560px] lg:border-b-0 lg:border-r">
+        <div className="grid min-h-0 flex-1 gap-0 overflow-hidden lg:grid-cols-[1.05fr_0.95fr]">
+          <div className="relative flex min-h-[260px] items-center justify-center overflow-hidden border-b border-white/10 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.10),_rgba(0,0,0,0)_62%)] p-6 sm:min-h-[320px] sm:p-8 lg:min-h-[560px] lg:border-b-0 lg:border-r">
             <Image
               src={character.image}
               alt={character.name}
               width={540}
               height={540}
-              className="max-h-[520px] w-auto object-contain"
+              className="max-h-[240px] w-auto object-contain sm:max-h-[320px] lg:max-h-[520px]"
               priority
             />
           </div>
 
-          <div className="flex flex-col gap-6 p-6 lg:p-8">
+          <div className="flex min-h-0 flex-col gap-5 overflow-y-auto p-5 pr-4 sm:gap-6 sm:p-6 sm:pr-5 lg:p-8 lg:pr-6">
             <div className="flex flex-wrap items-center gap-3">
               <span
                 className={[
@@ -90,10 +90,10 @@ export default function CharacterModal({
             </div>
 
             <div>
-              <h2 className="text-3xl font-semibold text-white">
+              <h2 className="text-2xl font-semibold text-white sm:text-3xl">
                 {character.name}
               </h2>
-              <p className="mt-2 text-sm uppercase tracking-[0.16em] text-white/50">
+              <p className="mt-2 text-[15px] uppercase tracking-[0.14em] text-white/50 sm:text-sm sm:tracking-[0.16em]">
                 {character.role}
               </p>
             </div>
@@ -102,7 +102,7 @@ export default function CharacterModal({
               <div className="text-xs uppercase tracking-[0.18em] text-white/45">
                 Lore Summary
               </div>
-              <p className="mt-3 text-sm leading-7 text-white/75">
+              <p className="mt-3 text-[15px] leading-6 text-white/75 sm:text-sm sm:leading-7">
                 {character.description}
               </p>
             </div>

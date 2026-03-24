@@ -40,8 +40,8 @@ export default function BottomNav() {
   const items = getNavigationItemsByPlacement("bottom");
 
   return (
-    <nav className="relative w-full">
-      <div className="grid grid-cols-5 gap-3">
+    <nav className="relative w-full px-safe pb-safe-bottom">
+      <div className="grid grid-cols-5 gap-2 sm:gap-3">
         {items.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
@@ -52,7 +52,7 @@ export default function BottomNav() {
               href={item.href}
               aria-current={isActive ? "page" : undefined}
               className={[
-                "group relative flex min-h-[92px] flex-col items-center justify-center gap-2 overflow-hidden rounded-[18px] border px-3 py-3",
+                "group relative flex min-h-[98px] flex-col items-center justify-center gap-2 overflow-hidden rounded-[18px] border px-2.5 py-3.5 sm:min-h-[92px] sm:px-3 sm:py-3",
                 "transition duration-200",
                 "backdrop-blur-sm",
                 getAccentClasses(item.accent, isActive),
@@ -69,14 +69,14 @@ export default function BottomNav() {
 
               <Icon
                 className={[
-                  "relative z-10 h-6 w-6 transition duration-200",
+                  "relative z-10 h-6 w-6 transition duration-200 sm:h-5 sm:w-5",
                   isActive ? "scale-110" : "group-hover:scale-105",
                 ].join(" ")}
               />
 
               <span
                 className={[
-                  "relative z-10 text-center text-[13px] font-extrabold uppercase tracking-[0.08em]",
+                  "relative z-10 text-center text-[14px] font-extrabold uppercase leading-tight tracking-[0.06em] sm:text-[13px] sm:tracking-[0.08em]",
                   isActive ? "text-white" : "",
                 ].join(" ")}
               >
