@@ -27,6 +27,10 @@ export const initialGameState: GameState = {
       emberCore: 2,
       bioSamples: 0,
     },
+    survival: {
+      hunger: 100,
+      fieldRations: 1,
+    },
 
     knownRecipes: [],
     unlockedRoutes: ["home", "bazaar"],

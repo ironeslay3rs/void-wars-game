@@ -16,10 +16,16 @@ import {
   buildNavigationState,
   getAvailableRoutes,
 } from "@/features/navigation/navigationUtils";
+import {
+  FIELD_RATIONS_CRAFT_BIO_SAMPLES_COST,
+  FIELD_RATIONS_CRAFT_CREDITS_COST,
+  FIELD_RATIONS_RESTORE,
+  MAX_HUNGER,
+  applySurvivalActivity,
+} from "@/features/status/survival";
 import type {
   GameAction,
   GameState,
-  PlayerState,
   ResourceKey,
   ResourcesState,
 } from "@/features/game/gameTypes";
@@ -38,33 +44,11 @@ function updateSingleResource(
 const CONDITION_RECOVERY_COST = 10;
 const CONDITION_RECOVERY_AMOUNT = 20;
 const CONDITION_RECOVERY_COOLDOWN_MS = 60000;
-const CONDITION_DECAY_INTERVAL_MS = 60000;
-
-function applyConditionDecay(player: PlayerState, now: number): PlayerState {
-  if (now <= player.lastConditionTickAt) {
-    return player;
-  }
-
-  const elapsedMs = now - player.lastConditionTickAt;
-  const decay = Math.floor(elapsedMs / CONDITION_DECAY_INTERVAL_MS);
-
-  return {
-    ...player,
-    condition: Math.max(0, player.condition - decay),
-    lastConditionTickAt: now,
-  };
-}
 
 export function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
-    case "HYDRATE_STATE": {
-      const now = Date.now();
-
-      return {
-        ...action.payload,
-        player: applyConditionDecay(action.payload.player, now),
-      };
-    }
+    case "HYDRATE_STATE":
+      return action.payload;
 
     case "SET_PLAYER_NAME":
       return {
@@ -198,39 +182,83 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       };
     }
 
+    case "CONSUME_FIELD_RATION":
+      if (state.player.survival.fieldRations <= 0) {
+        return state;
+      }
+
+      if (state.player.survival.hunger >= MAX_HUNGER) {
+        return state;
+      }
+
+      return {
+        ...state,
+        player: {
+          ...state.player,
+          survival: {
+            hunger: clamp(
+              state.player.survival.hunger + FIELD_RATIONS_RESTORE,
+              0,
+              MAX_HUNGER,
+            ),
+            fieldRations: state.player.survival.fieldRations - 1,
+          },
+        },
+      };
+
+    case "CRAFT_FIELD_RATION":
+      if (
+        state.player.resources.credits < FIELD_RATIONS_CRAFT_CREDITS_COST ||
+        state.player.resources.bioSamples < FIELD_RATIONS_CRAFT_BIO_SAMPLES_COST
+      ) {
+        return state;
+      }
+
+      return {
+        ...state,
+        player: {
+          ...state.player,
+          resources: {
+            ...state.player.resources,
+            credits:
+              state.player.resources.credits - FIELD_RATIONS_CRAFT_CREDITS_COST,
+            bioSamples:
+              state.player.resources.bioSamples -
+              FIELD_RATIONS_CRAFT_BIO_SAMPLES_COST,
+          },
+          survival: {
+            ...state.player.survival,
+            fieldRations: state.player.survival.fieldRations + 1,
+          },
+        },
+      };
+
     case "RESOLVE_HUNT": {
-      const now = action.payload.resolvedAt ?? Date.now();
-      const player = applyConditionDecay(state.player, now);
       const mission = getMissionById(state.missions, action.payload.missionId);
 
       if (!mission) {
-        return {
-          ...state,
-          player,
-        };
+        return state;
       }
 
       const selectedPath =
-        player.factionAlignment === "unbound"
+        state.player.factionAlignment === "unbound"
           ? "unbound"
-          : player.factionAlignment;
+          : state.player.factionAlignment;
 
       if (!canAccessMission(mission, selectedPath)) {
-        return {
-          ...state,
-          player,
-        };
+        return state;
       }
 
-      if (mission.id === "bio-hunt-specimen" && !player.hasBiotechSpecimenLead) {
-        return {
-          ...state,
-          player,
-        };
+      if (
+        mission.id === "bio-hunt-specimen" &&
+        !state.player.hasBiotechSpecimenLead
+      ) {
+        return state;
       }
 
-      const resolvedAt = action.payload.resolvedAt ?? now;
-      const nextPlayer = applyMissionReward(player, mission.reward);
+      const resolvedAt = action.payload.resolvedAt ?? Date.now();
+      const rewardedPlayer = applyMissionReward(state.player, mission.reward);
+      const nextPlayer = applySurvivalActivity(rewardedPlayer, "hunt");
 
       return {
         ...state,
@@ -239,7 +267,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           hasBiotechSpecimenLead:
             mission.id === "bio-hunt-specimen"
               ? false
-              : player.hasBiotechSpecimenLead,
+              : state.player.hasBiotechSpecimenLead,
           lastHuntResult: {
             missionId: mission.id,
             huntTitle: mission.title,
@@ -285,27 +313,20 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
     case "RESOLVE_ACTIVE_PROCESS": {
       const now = action.payload?.now ?? Date.now();
-      const player = applyConditionDecay(state.player, now);
-      const activeProcess = player.activeProcess;
+      const activeProcess = state.player.activeProcess;
 
       if (!activeProcess || activeProcess.status === "complete") {
-        return {
-          ...state,
-          player,
-        };
+        return state;
       }
 
       if (now < activeProcess.endsAt) {
-        return {
-          ...state,
-          player,
-        };
+        return state;
       }
 
       return {
         ...state,
         player: {
-          ...player,
+          ...state.player,
           activeProcess: {
             ...activeProcess,
             status: "complete",
@@ -315,22 +336,21 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     }
 
     case "CLAIM_EXPLORATION_REWARD": {
-      const now = Date.now();
-      const player = applyConditionDecay(state.player, now);
-      const activeProcess = player.activeProcess;
+      const activeProcess = state.player.activeProcess;
 
       if (
         !activeProcess ||
         activeProcess.kind !== "exploration" ||
         activeProcess.status !== "complete"
       ) {
-        return {
-          ...state,
-          player,
-        };
+        return state;
       }
 
-      const nextPlayer = applyMissionReward(player, phase1ExplorationReward);
+      const rewardedPlayer = applyMissionReward(
+        state.player,
+        phase1ExplorationReward,
+      );
+      const nextPlayer = applySurvivalActivity(rewardedPlayer, "exploration");
 
       return {
         ...state,
@@ -471,7 +491,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         };
       }
 
-      const nextPlayer = applyMissionReward(state.player, mission.reward);
+      const rewardedPlayer = applyMissionReward(state.player, mission.reward);
+      const nextPlayer = applySurvivalActivity(rewardedPlayer, "mission");
       const nextQueue = missionQueue.filter(
         (queueEntry) => queueEntry.queueId !== entry.queueId,
       );

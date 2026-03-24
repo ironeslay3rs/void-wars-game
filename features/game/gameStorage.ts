@@ -8,6 +8,7 @@ import type {
   MissionQueueEntry,
   PlayerState,
   ResourcesState,
+  SurvivalState,
 } from "@/features/game/gameTypes";
 
 const STORAGE_KEY_PREFIX = "void-wars-oblivion-game-state";
@@ -44,6 +45,21 @@ function normalizeResources(value: unknown): ResourcesState {
       typeof raw.bioSamples === "number"
         ? raw.bioSamples
         : initialGameState.player.resources.bioSamples,
+  };
+}
+
+function normalizeSurvival(value: unknown): SurvivalState {
+  const raw = isRecord(value) ? value : {};
+
+  return {
+    hunger:
+      typeof raw.hunger === "number"
+        ? Math.max(0, Math.min(100, raw.hunger))
+        : initialGameState.player.survival.hunger,
+    fieldRations:
+      typeof raw.fieldRations === "number"
+        ? Math.max(0, Math.floor(raw.fieldRations))
+        : initialGameState.player.survival.fieldRations,
   };
 }
 
@@ -258,6 +274,7 @@ function normalizePlayer(value: unknown): PlayerState {
         : initialGameState.player.hasBiotechSpecimenLead,
 
     resources: normalizeResources(raw.resources),
+    survival: normalizeSurvival(raw.survival),
 
     knownRecipes: Array.isArray(raw.knownRecipes)
       ? raw.knownRecipes.filter(

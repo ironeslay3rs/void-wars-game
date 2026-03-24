@@ -12,6 +12,10 @@ import {
 } from "lucide-react";
 import { useGame } from "@/features/game/gameContext";
 import { getCraftingDistrictScreenData } from "@/features/crafting-district/craftingDistrictScreenData";
+import {
+  FIELD_RATIONS_CRAFT_BIO_SAMPLES_COST,
+  FIELD_RATIONS_CRAFT_CREDITS_COST,
+} from "@/features/status/survival";
 
 const craftingStations = [
   {
@@ -44,26 +48,27 @@ const craftingStations = [
 export default function CraftingDistrictPage() {
   const { state, dispatch } = useGame();
   const screenData = getCraftingDistrictScreenData(state);
-  const [refineResult, setRefineResult] = useState<string | null>(null);
+  const [craftResult, setCraftResult] = useState<string | null>(null);
 
-  const { ironOre, scrapAlloy, runeDust, emberCore } = state.player.resources;
-  const canRefineScrapAlloy = ironOre >= 3;
+  const { credits, bioSamples, ironOre, scrapAlloy, runeDust, emberCore } =
+    state.player.resources;
+  const { fieldRations, hunger } = state.player.survival;
+  const canCraftFieldRations =
+    credits >= FIELD_RATIONS_CRAFT_CREDITS_COST &&
+    bioSamples >= FIELD_RATIONS_CRAFT_BIO_SAMPLES_COST;
 
-  function refineScrapAlloy() {
-    if (!canRefineScrapAlloy) {
-      setRefineResult("Need 3 Iron Ore to refine 1 Scrap Alloy.");
+  function craftFieldRations() {
+    if (!canCraftFieldRations) {
+      setCraftResult(
+        `Need ${FIELD_RATIONS_CRAFT_CREDITS_COST} Credits and ${FIELD_RATIONS_CRAFT_BIO_SAMPLES_COST} Bio Sample to pack 1 Field Ration.`,
+      );
       return;
     }
 
-    dispatch({
-      type: "SPEND_RESOURCE",
-      payload: { key: "ironOre", amount: 3 },
-    });
-    dispatch({
-      type: "ADD_RESOURCE",
-      payload: { key: "scrapAlloy", amount: 1 },
-    });
-    setRefineResult("Refinement complete. 3 Iron Ore became 1 Scrap Alloy.");
+    dispatch({ type: "CRAFT_FIELD_RATION" });
+    setCraftResult(
+      "Pack sealed. The district quartermaster prepared 1 Field Ration for your next run.",
+    );
   }
 
   return (
@@ -78,8 +83,9 @@ export default function CraftingDistrictPage() {
               Crafting District
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-white/70">
-              The industrial core of the Bazaar. Here players forge equipment,
-              repair items, socket runes, and prepare for deeper progression.
+              The industrial core of the Bazaar. This first survival pass keeps
+              the district focused on one grounded provisioning lane instead of
+              a full-system overhaul.
             </p>
           </div>
 
@@ -140,33 +146,35 @@ export default function CraftingDistrictPage() {
         <section className="grid gap-4 xl:grid-cols-[1.3fr_0.7fr]">
           <div className="rounded-2xl border border-white/10 bg-black/25 p-6">
             <div className="text-[11px] uppercase tracking-[0.22em] text-orange-300/70">
-              Material Refining
+              Provisioning
             </div>
-            <h2 className="mt-2 text-xl font-black uppercase">Refinery Bay</h2>
+            <h2 className="mt-2 text-xl font-black uppercase">Quartermaster Prep</h2>
 
             <div className="mt-4 grid gap-3">
               <div className="rounded-xl border border-orange-400/20 bg-orange-500/8 p-4">
-                <div className="mt-2 text-sm font-semibold text-white">
-                  Convert raw ore into usable alloy plating.
-                </div>
+                <div className="text-sm font-semibold text-white">Field Rations</div>
                 <div className="mt-2 text-sm text-white/65">
-                  Immediate district function for M1: refine 3 Iron Ore into 1 Scrap Alloy.
+                  Compact travel packs assembled from market staples and usable
+                  biomass. This is the only survival crafting path in the
+                  foundation pass.
                 </div>
 
                 <button
                   type="button"
-                  onClick={refineScrapAlloy}
-                  disabled={!canRefineScrapAlloy}
+                  onClick={craftFieldRations}
+                  disabled={!canCraftFieldRations}
                   className="mt-4 w-full rounded-xl border border-orange-400/30 bg-orange-500/10 px-4 py-3 text-left text-sm font-semibold text-orange-100 transition hover:bg-orange-500/20 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  Refine Scrap Alloy
+                  Craft 1 Field Ration
                   <div className="mt-1 text-xs text-white/60">
-                    Costs 3 Iron Ore / Produces 1 Scrap Alloy
+                    Costs {FIELD_RATIONS_CRAFT_CREDITS_COST} Credits / {" "}
+                    {FIELD_RATIONS_CRAFT_BIO_SAMPLES_COST} Bio Sample
                   </div>
                 </button>
 
                 <div className="mt-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/75">
-                  {refineResult ?? "Refinery idle. Process raw ore whenever you need alloy."}
+                  {craftResult ??
+                    "Quartermaster ready. Pack rations only when you need hunger coverage for another run."}
                 </div>
               </div>
             </div>
@@ -176,8 +184,24 @@ export default function CraftingDistrictPage() {
             <div className="text-[11px] uppercase tracking-[0.22em] text-orange-300/70">
               Resources
             </div>
-            <h2 className="mt-2 text-xl font-black uppercase">Material Stock</h2>
+            <h2 className="mt-2 text-xl font-black uppercase">Current Stock</h2>
             <div className="mt-4 space-y-3 text-sm text-white/75">
+              <div className="flex justify-between rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2">
+                <span>Credits</span>
+                <span>{credits}</span>
+              </div>
+              <div className="flex justify-between rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2">
+                <span>Bio Samples</span>
+                <span>{bioSamples}</span>
+              </div>
+              <div className="flex justify-between rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2">
+                <span>Field Rations</span>
+                <span>{fieldRations}</span>
+              </div>
+              <div className="flex justify-between rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2">
+                <span>Hunger</span>
+                <span>{hunger}%</span>
+              </div>
               <div className="flex justify-between rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2">
                 <span>Iron Ore</span>
                 <span>{ironOre}</span>

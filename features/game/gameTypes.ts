@@ -42,6 +42,13 @@ export type ActiveProcess = {
   endsAt: number;
 };
 
+export type SurvivalActivityType = "exploration" | "mission" | "hunt";
+
+export type SurvivalState = {
+  hunger: number;
+  fieldRations: number;
+};
+
 /* =========================
    DISTRICT STATES
 ========================= */
@@ -137,6 +144,7 @@ export type PlayerState = {
   hasBiotechSpecimenLead: boolean;
 
   resources: ResourcesState;
+  survival: SurvivalState;
 
   knownRecipes: string[];
   unlockedRoutes: string[];
@@ -173,6 +181,8 @@ export type GameAction =
   | { type: "SET_RANK_NAME"; payload: string }
   | { type: "ADJUST_CONDITION"; payload: number }
   | { type: "RECOVER_CONDITION" }
+  | { type: "CONSUME_FIELD_RATION" }
+  | { type: "CRAFT_FIELD_RATION" }
   | { type: "RESOLVE_HUNT"; payload: { missionId: string; resolvedAt?: number } }
   | {
       type: "START_EXPLORATION_PROCESS";
