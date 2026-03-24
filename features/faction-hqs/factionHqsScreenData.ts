@@ -3,11 +3,11 @@ import type { GameState } from "@/features/game/gameTypes";
 function formatFactionLabel(alignment: GameState["player"]["factionAlignment"]) {
   switch (alignment) {
     case "bio":
-      return "Bio";
+      return "Bio / Verdant Coil";
     case "mecha":
-      return "Mecha";
+      return "Mecha / Chrome Synod";
     case "spirit":
-      return "Spirit";
+      return "Pure / Ember Vault";
     default:
       return "Unbound";
   }
@@ -15,25 +15,25 @@ function formatFactionLabel(alignment: GameState["player"]["factionAlignment"]) 
 
 export function getFactionHqsScreenData(state: GameState) {
   return {
-    eyebrow: "Bazaar / Faction HQs",
+    eyebrow: "Bazaar / School Thrones",
     title: "Faction HQs",
     subtitle:
-      "Enter aligned power centers, build allegiance, and deepen faction-based progression systems.",
+      "Claim one of the three surviving schools, build influence, and prepare a fragment of the final fusion doctrine.",
     cards: [
       {
         label: "Faction Alignment",
         value: formatFactionLabel(state.player.factionAlignment),
-        hint: "Live shared faction state from the global game store.",
+        hint: "Live shared faction state expressed through the archive's school names.",
       },
       {
         label: "Influence",
         value: String(state.player.influence),
-        hint: "Influence now comes from shared state.",
+        hint: "Influence tracks standing within the chosen school network.",
       },
       {
         label: "Faction Reward Tier",
         value: state.player.factionAlignment === "unbound" ? "Locked" : "Tier 1",
-        hint: "Reward availability now reacts to faction alignment.",
+        hint: "Rewards remain path-bound for now, even though final transcendence requires fusion later.",
       },
     ],
   };

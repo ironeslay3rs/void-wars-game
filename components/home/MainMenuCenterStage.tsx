@@ -13,15 +13,15 @@ const pathGlowMap: Record<PathSelection, string> = {
 };
 
 const pathLabelMap: Record<PathSelection, string> = {
-  bio: "Bio Path Engaged",
-  mecha: "Mecha Path Engaged",
-  spirit: "Spirit Path Engaged",
+  bio: "Verdant Coil Engaged",
+  mecha: "Chrome Synod Engaged",
+  spirit: "Ember Vault Engaged",
 };
 
 const pathDescriptionMap: Record<PathSelection, string> = {
-  bio: "Adaptive growth, predator instinct, and biological escalation.",
-  mecha: "Precision systems, engineered dominance, and machine discipline.",
-  spirit: "Soul-fire mastery, memory awakening, and rune-bound ascent.",
+  bio: "Body-first evolution, predator instinct, and wrath-forged adaptation.",
+  mecha: "Mind-first precision, Ironheart order, and pride-bound machine rule.",
+  spirit: "Soul-fire memory, rune saintcraft, and the Pure path toward fusion.",
 };
 
 export default function MainMenuCenterStage({
@@ -34,7 +34,7 @@ export default function MainMenuCenterStage({
   const title = selectedPath ? pathLabelMap[selectedPath] : "Central Crest";
   const description = selectedPath
     ? pathDescriptionMap[selectedPath]
-    : "Core faction focus, progression identity, and world entry nexus.";
+    : "Humanity is trapped inside the Void. Body, mind, and soul must reunite to break it.";
 
   return (
     <div className="relative flex h-full flex-col items-center justify-between px-8 pb-2 pt-2">
@@ -62,7 +62,7 @@ export default function MainMenuCenterStage({
           </div>
 
           <div className="mt-8 text-[12px] font-semibold uppercase tracking-[0.42em] text-white/55">
-            Central Interface
+            Core Rule Interface
           </div>
 
           <div className="mt-4 text-[30px] font-black uppercase tracking-[0.12em] text-white">

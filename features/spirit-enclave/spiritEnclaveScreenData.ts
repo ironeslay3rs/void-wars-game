@@ -1,23 +1,23 @@
 export const spiritEnclaveScreenData = {
-  eyebrow: "Bazaar / Spirit Enclave",
-  title: "Spirit Enclave",
+  eyebrow: "Bazaar / Ember Vault",
+  title: "Pure School / Ember Vault",
   subtitle:
-    "Attune the soul, recover rune memory, and deepen spirit-based progression systems.",
+    "Recover memory through fire and runes, pursue saintcraft, and prepare the soul-side of the fusion doctrine.",
   cards: [
     {
       label: "Attunement State",
-      value: "Dormant",
-      hint: "No resonance process is active yet.",
+      value: "Dormant Ember",
+      hint: "No active soulcraft rite is running yet.",
     },
     {
-      label: "Soul Capacity",
-      value: "0",
-      hint: "Spiritual capacity systems will populate later.",
+      label: "Saintcraft Tier",
+      value: "Level 0",
+      hint: "Level 5 marks Saint Rune Crafter status inside the archive doctrine.",
     },
     {
       label: "Rune Memory",
-      value: "Locked",
-      hint: "Recovered memory paths will appear here in future builds.",
+      value: "Sealed",
+      hint: "Recovered memory paths and set resonance unlock here in later builds.",
     },
   ],
 };

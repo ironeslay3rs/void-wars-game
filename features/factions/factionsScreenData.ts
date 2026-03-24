@@ -3,11 +3,11 @@ import type { GameState } from "@/features/game/gameTypes";
 function formatFactionLabel(alignment: GameState["player"]["factionAlignment"]) {
   switch (alignment) {
     case "bio":
-      return "Bio";
+      return "Bio / Verdant Coil";
     case "mecha":
-      return "Mecha";
+      return "Mecha / Chrome Synod";
     case "spirit":
-      return "Spirit";
+      return "Pure / Ember Vault";
     default:
       return "Unbound";
   }
@@ -18,40 +18,40 @@ export function getFactionHqsScreenData(state: GameState) {
   const isAligned = state.player.factionAlignment !== "unbound";
 
   return {
-    eyebrow: "Bazaar / Faction HQs",
-    title: "Faction HQs",
+    eyebrow: "Archive / Core Rule",
+    title: "Seven-Sin World Doctrine",
     subtitle:
-      "Enter aligned power centers, build allegiance, and deepen faction-based progression systems.",
+      "Humanity is the shadow of a higher form, exiled into the 3D Void. Bio, Mecha, and Pure must eventually fuse to break the prison.",
     cards: [
       {
-        label: "Faction Alignment",
+        label: "Core Premise",
+        value: "Break the Void",
+        hint: "Evolution of body, mind, and soul is the only route to reclaim what humanity lost.",
+      },
+      {
+        label: "Live Alignment",
         value: factionAlignment,
-        hint: "Live shared faction state from the global game store.",
+        hint: "The current player path mapped against the archive's three schools.",
       },
       {
-        label: "Influence",
-        value: String(state.player.influence),
-        hint: "Influence now comes from shared state.",
-      },
-      {
-        label: "Faction Reward Tier",
-        value: isAligned ? "Tier 1" : "Locked",
-        hint: "Reward availability now reacts to faction alignment.",
+        label: "Final Law",
+        value: isAligned ? "Fusion Required" : "Path Not Chosen",
+        hint: "Body + mind + soul is the divine trinity needed to transcend the Void.",
       },
     ],
     sections: [
       {
-        title: "Aligned Power Centers",
+        title: "Archive Doctrine",
         description:
-          "Review the known faction networks, identities, and ideological branches currently shaping the bazaar sphere.",
+          "Review the three schools, their world empires, and the sin-bound myth structure driving the long arc.",
       },
       {
-        title: "Faction Operations",
+        title: "Alignment Consequence",
         description:
-          "Reserved for faction reputation tracks, allegiance perks, contracts, and unlockable command options.",
+          "Current path pressure, future progression stakes, and why no single school is sufficient alone.",
         body: isAligned
-          ? `Current alignment detected: ${factionAlignment}. Future faction operations can now branch from this live shared state.`
-          : "No faction alignment detected yet. Choose a path to unlock faction operations, contracts, and deeper progression.",
+          ? `${factionAlignment} is active. The archive frames this as a partial path only: mastery of one school grants leverage, but transcendence still requires fusion of Bio, Mecha, and Pure.`
+          : "No path has been claimed. The archive's law is clear: each school grants only a fragment of humanity's lost shape, and fusion remains the end-state.",
       },
     ],
   };
