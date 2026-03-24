@@ -1,4 +1,3 @@
-import FeastHallScreen from "@/components/black-market/FeastHallScreen";
 import PlaceholderPanel from "@/components/shared/PlaceholderPanel";
 import ScreenHeader from "@/components/shared/ScreenHeader";
 import SectionCard from "@/components/shared/SectionCard";
@@ -157,13 +156,6 @@ export default function BlackMarketPage() {
               </li>
             ))}
           </ol>
-        </SectionCard>
-
-        <SectionCard
-          title="First Playable Lane / Feast Hall"
-          description="The Gluttony lane is the active Book 1 slice. It is embedded here so the Black Market page keeps its broader context while still offering a working service immediately."
-        >
-          <FeastHallScreen embedded />
         </SectionCard>
 
         <SectionCard

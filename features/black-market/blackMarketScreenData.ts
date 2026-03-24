@@ -1,5 +1,14 @@
-export type BlackMarketLaneSummary = {
-  id: string;
+export type BlackMarketLaneId =
+  | "pride"
+  | "greed"
+  | "lust"
+  | "wrath"
+  | "gluttony"
+  | "envy"
+  | "sloth";
+
+export type BlackMarketLane = {
+  id: BlackMarketLaneId;
   sin: string;
   district: string;
   purpose: string;
@@ -11,143 +20,182 @@ export type BlackMarketLaneSummary = {
 
 export const blackMarketRoleSummary = {
   eyebrow: "Bazaar / Black Market",
-  title: "Black Market",
+  title: "Black Market Neutral Citadel",
   subtitle:
-    "A neutral survivor citadel between Bio, Mecha, and Pure power blocs. Deals are sacred here, and each sin-lane exists to turn desperation into a usable advantage.",
+    "A neutral citadel lodged between Bio, Mecha, and Pure/Rune interests, where risky services sit between survival upkeep, crafting acceleration, and contract acquisition instead of replacing the current core loops.",
   cards: [
     {
-      label: "Canon Role",
-      value: "Neutral Citadel",
-      hint: "Not a faction capital. The Black Market survives by keeping Bio, Mecha, and Pure business flowing without open allegiance.",
+      label: "Citadel Role",
+      value: "Neutral Hub",
+      hint:
+        "Used as a broker space where all three faction paths can trade, recover, and take on dangerous side services without forcing a faction swap.",
     },
     {
-      label: "First Lane",
-      value: "Gluttony / Feast Hall",
-      hint: "Book 1's first playable slice is a survival and recovery service that turns current resources into expedition readiness.",
+      label: "Current Fit",
+      value: "Mid-loop Utility",
+      hint:
+        "Each lane is framed as a district-sized business identity that feeds current survival, crafting, and mission systems instead of adding a separate meta-game.",
     },
     {
-      label: "Law",
-      value: "Deals Are Sacred",
-      hint: "Every lane should feel transactional, dangerous, and more binding than ordinary Bazaar commerce.",
+      label: "Implementation Bias",
+      value: "Small Slices",
+      hint:
+        "Start with lanes that can plug into existing resources, timed contracts, and district statuses before building bespoke economies.",
     },
   ],
-};
+} as const;
 
-export const blackMarketLanes: BlackMarketLaneSummary[] = [
+export const blackMarketLanes: BlackMarketLane[] = [
   {
-    id: "wrath-arena-of-blood",
-    sin: "Wrath",
-    district: "Arena of Blood",
-    purpose: "Violence-for-profit proving ground.",
-    service: "Risk duels, sanctioned slaughter contracts, and prestige payouts.",
-    risk: "Direct loss pressure, public humiliation, and permanent grudges.",
-    playerUse: "Cash in combat confidence when you can afford real danger.",
-    archetype: "A debt-duelist who treats every challenge as collateral.",
-  },
-  {
-    id: "gluttony-feast-hall",
-    sin: "Gluttony",
-    district: "Feast Hall",
-    purpose: "Recovery and provision lane for the next push into the Void.",
-    service: "Meals, feast contracts, and salvage-to-readiness conversion.",
-    risk: "Overindulgence trades short-term power for future lockout or higher cost.",
-    playerUse: "Stabilize condition before another expedition or hunt.",
-    archetype: "A contract-chef of Inti who measures hunger like strategy.",
-  },
-  {
-    id: "envy-mirror-house",
-    sin: "Envy",
-    district: "Mirror House",
-    purpose: "Information, imitation, and rival-reading lane.",
-    service: "Intel extracts, target profiles, and stolen tactical previews.",
-    risk: "Bad intel, manipulated expectations, and paranoia spirals.",
-    playerUse: "Scout threats or prepare counters before committing scarce resources.",
-    archetype: "A broker who sells reflections before truths.",
-  },
-  {
-    id: "lust-velvet-den",
-    sin: "Lust",
-    district: "Velvet Den",
-    purpose: "Influence, leverage, and compromise market.",
-    service: "Favor trades, access brokering, and social infiltration work.",
-    risk: "Strings attached to every advantage you buy here.",
-    playerUse: "Force access when direct strength is too expensive.",
-    archetype: "A host who never asks twice because the first agreement already owns you.",
-  },
-  {
-    id: "greed-golden-bazaar",
-    sin: "Greed",
-    district: "Golden Bazaar",
-    purpose: "Hard-value exchange and premium scarcity lane.",
-    service: "Markup trade, rare stock, and aggressive salvage arbitrage.",
-    risk: "High prices, exploitative terms, and buyer-side traps.",
-    playerUse: "Turn a rich haul into exactly the one thing you still lack.",
-    archetype: "A smiling merchant who inventories your desperation first.",
-  },
-  {
-    id: "pride-ivory-tower",
+    id: "pride",
     sin: "Pride",
-    district: "Ivory Tower",
-    purpose: "Status, recognition, and elite certification lane.",
-    service: "Prestige trials, sponsorships, and curated access to higher circles.",
-    risk: "Failure becomes public and expensive.",
-    playerUse: "Cash in legitimacy when social standing matters as much as power.",
-    archetype: "A registrar who records success like scripture and failure like sport.",
+    district: "Frame Ateliers / Relic Luxury Dealers",
+    purpose:
+      "Curates elite Bio grafts, Mecha shells, and Pure/Rune relic housings as prestige tuning shops for endgame-leaning builds.",
+    service:
+      "High-tier frame tuning, relic polishing, and visual prestige packages that can convert normal gear into aspirational upgrade targets.",
+    risk:
+      "Luxury pricing and vanity trap: players sink scarce materials and credits into premium upgrades before their survival base is stable.",
+    playerUse:
+      "Best for players who already have a dependable loop and want focused quality upgrades, faction expression, or a gold sink for rare drops.",
+    archetype:
+      "Curator-Matriarch who sells perfection as a doctrine and duels over defects.",
   },
   {
-    id: "sloth-silent-garden",
+    id: "greed",
+    sin: "Greed",
+    district: "Vaults / Auctions / Loan Houses",
+    purpose:
+      "Acts as the Black Market treasury lane: convert loot into liquidity, front-load scarce supplies, and move high-value salvage between factions.",
+    service:
+      "Credit advances, salvage auctions, collateral loans, and buyback contracts for rare mission rewards or crafted items.",
+    risk:
+      "Debt pressure and asset lockups: missed payback windows can tie up resources, reduce profit, or force players to liquidate gear.",
+    playerUse:
+      "Best for players bridging short-term shortages, funding crafting bursts, or monetizing rare drops from hunts and expeditions.",
+    archetype:
+      "Ledger-Lord banker running a silent auction floor guarded by debt collectors.",
+  },
+  {
+    id: "lust",
+    sin: "Lust",
+    district: "Oath Parlors / Pact Brokers",
+    purpose:
+      "Packages power as binding agreements, letting players trade future obligations for short-lived buffs, access, or faction-neutral favors.",
+    service:
+      "Temporary pacts, oath seals, and favor contracts that boost a mission lane or unlock conditional access to otherwise gated encounters.",
+    risk:
+      "Compounding obligations: players gain strong tempo now but inherit cooldowns, future penalties, or required follow-up tasks.",
+    playerUse:
+      "Best for players preparing for a difficult mission push, a timed hunt window, or a one-session progression spike.",
+    archetype:
+      "Velvet-voiced pact broker who weaponizes fine print and memory-bound vows.",
+  },
+  {
+    id: "wrath",
+    sin: "Wrath",
+    district: "Pits / Mercenary Yards / Bounty Exchange",
+    purpose:
+      "Feeds the combat economy with high-risk contracts, sanctioned pit fights, and bounty routing that escalates mission intensity.",
+    service:
+      "Bounty boards, elite hunt contracts, combat wagers, and mercenary rerolls for stronger but more volatile rewards.",
+    risk:
+      "Condition loss and volatility: players take on harder encounters, attrition, and unstable payout ranges.",
+    playerUse:
+      "Best for combat-forward players who want to translate strength into faster resource gains and rarer contract targets.",
+    archetype:
+      "Scarred pit master who recruits champions and sells grudges as repeatable work.",
+  },
+  {
+    id: "gluttony",
+    sin: "Gluttony",
+    district: "Ration Halls / Butcher Vaults / Feast Markets",
+    purpose:
+      "Stabilizes the survival layer by turning harvested biomass and hunt drops into recovery stock, ration buffs, and preserved field supplies.",
+    service:
+      "Rations, cooked recovery packs, butchered biomass conversion, and feast buffs that support expedition uptime.",
+    risk:
+      "Spoilage and overconsumption: players can waste raw materials on short-duration comfort effects instead of durable progression.",
+    playerUse:
+      "Best for players who need reliable healing, condition recovery, or prep items before long mission chains.",
+    archetype:
+      "Cannery sovereign overseeing cold vaults, ration lines, and ceremonial banquets.",
+  },
+  {
+    id: "envy",
+    sin: "Envy",
+    district: "Mimic Clinics / Counterfeit Dens / Stolen-Tech Traders",
+    purpose:
+      "Produces imitation solutions by copying enemy traits, cloning rival tech patterns, and repackaging faction specialties into unstable shortcuts.",
+    service:
+      "Counterfeit modules, mimic grafts, copied schematics, and stolen-tech swaps that let players prototype gear paths early.",
+    risk:
+      "Instability and trace risk: fake parts can fail, mutate, or trigger faction suspicion if pushed too hard.",
+    playerUse:
+      "Best for experimental players who want preview access to future build paths before investing in permanent crafting.",
+    archetype:
+      "Chameleon surgeon who wears borrowed identities and sells unauthorized replicas.",
+  },
+  {
+    id: "sloth",
     sin: "Sloth",
-    district: "Silent Garden",
-    purpose: "Low-friction waiting, hiding, and deferred-action lane.",
-    service: "Safe pause, passive work, and delay-as-survival arrangements.",
-    risk: "Comfort becomes stagnation and missed timing windows.",
-    playerUse: "Stall intelligently when pushing forward would break the loop.",
-    archetype: "A keeper who survives by never moving first.",
+    district: "Stasis Storage / Automation Shops / Idle Servitors",
+    purpose:
+      "Supports low-attention progression by warehousing loot, automating simple processing, and smoothing downtime between active sessions.",
+    service:
+      "Timed storage, passive refining, queue extensions, and idle servitors that keep routine tasks moving while the player is away.",
+    risk:
+      "Throughput loss and dependency: automated jobs are slower or taxed, making convenience weaker than active play.",
+    playerUse:
+      "Best for players converting overflow materials, protecting perishables, or maintaining progress during offline windows.",
+    archetype:
+      "Sleep-blind overseer who manages a silent workforce of clockwork attendants.",
   },
 ];
 
 export const blackMarketFirstThree = [
   {
-    lane: "Gluttony / Feast Hall",
+    lane: "Gluttony",
     reason:
-      "Best first fit because the repo already tracks condition, cooldown, credits, and salvage. It immediately reinforces the Book 1 survival loop.",
+      "It plugs straight into the current survival framing: hunt materials become ration items, recovery stock, and expedition prep without needing new currencies.",
   },
   {
-    lane: "Greed / Golden Bazaar",
+    lane: "Wrath",
     reason:
-      "Natural second step once a small exchange surface is needed for salvage pressure, but it should follow after the recovery lane proves demand.",
+      "It extends the existing mission and hunting-ground loop with higher-risk contract variants and better reward brackets, which fits the current queue and reward model.",
   },
   {
-    lane: "Wrath / Arena of Blood",
+    lane: "Sloth",
     reason:
-      "Strong later lane because combat identity already exists, but it needs more progression and reward scaffolding than Feast Hall does.",
+      "It fits the project's timed-loop direction by offering passive storage and simple automation hooks that can reuse district statuses and async progression patterns.",
   },
-];
+] as const;
 
 export const blackMarketConnections = [
   {
     title: "Survival",
     detail:
-      "Feast Hall anchors the Black Market to condition pressure, making the citadel part of expedition readiness instead of a lore-only stop.",
+      "Gluttony becomes the recovery and ration district, Sloth preserves perishables and handles low-value processing, and Wrath creates the pressure that makes recovery planning matter.",
   },
   {
     title: "Crafting",
     detail:
-      "Golden Bazaar can later become the narrow bridge between raw salvage and targeted crafting inputs without forcing a full economy rewrite now.",
+      "Greed funds burst crafting, Envy offers unstable prototype parts, and Pride becomes the premium finishing pass once the standard crafting district has produced a solid item base.",
   },
   {
     title: "Missions",
     detail:
-      "Arena of Blood, Mirror House, and Velvet Den can eventually hang mission modifiers, rival prep, or contract hooks off the existing mission flow.",
+      "Wrath injects elite contracts, Lust provides temporary pact-based mission boosts with future costs, and Greed buys back or auctions rare drops gathered from dangerous routes.",
   },
-];
+] as const;
 
 export const blackMarketImplementationSlice = [
-  "Expose the Black Market as a real Bazaar destination with canon framing and sin-lane identity.",
-  "Make Gluttony / Feast Hall the first playable lane because it uses current condition and resource state with minimal code risk.",
-  "Keep the implementation to one route, one data module, one action, and a small number of lane offers.",
-  "Leave the remaining six lanes as structured roadmap context so later expansion has a stable canon frame without forcing system work now.",
-];
+  "Make the Black Market a clickable neutral citadel destination in the Bazaar map and define all seven lanes as canon district identities.",
+  "Implement Gluttony first as a ration-and-recovery panel that consumes existing hunt outputs and updates survival-facing status messaging.",
+  "Implement Wrath second as a Black Market contract variant layered onto missions and the mercenary/hunting flow, using higher risk with clearer reward spikes.",
+  "Implement Sloth third as passive storage and simple timed processing using existing queue/state patterns rather than a new subsystem.",
+  "Keep Pride, Greed, Lust, and Envy in the design layer for now so their future hooks are already aligned with resources, missions, and crafting.",
+] as const;
 
 export const blackMarketFinalResult =
-  "The Black Market stops feeling like an empty map node and starts acting like a survival institution inside Book 1: one real lane, one real service, and a clear framework for the other six lanes when the project is ready.";
+  "The Black Market stops being just a shady label and becomes a neutral mid-loop citadel: seven sins define seven business districts, each with a clear gameplay role, a cost profile, and a natural connection to the current survival, crafting, and mission structure.";
