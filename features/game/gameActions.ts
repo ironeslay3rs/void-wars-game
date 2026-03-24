@@ -16,6 +16,12 @@ import {
   buildNavigationState,
   getAvailableRoutes,
 } from "@/features/navigation/navigationUtils";
+import {
+  STATUS_CONDITION_DECAY_INTERVAL_MS,
+  STATUS_RECOVERY_AMOUNT,
+  STATUS_RECOVERY_COOLDOWN_MS,
+  STATUS_RECOVERY_COST,
+} from "@/features/status/statusRecovery";
 import type {
   GameAction,
   GameState,
@@ -35,18 +41,13 @@ function updateSingleResource(
   };
 }
 
-const CONDITION_RECOVERY_COST = 10;
-const CONDITION_RECOVERY_AMOUNT = 20;
-const CONDITION_RECOVERY_COOLDOWN_MS = 60000;
-const CONDITION_DECAY_INTERVAL_MS = 60000;
-
 function applyConditionDecay(player: PlayerState, now: number): PlayerState {
   if (now <= player.lastConditionTickAt) {
     return player;
   }
 
   const elapsedMs = now - player.lastConditionTickAt;
-  const decay = Math.floor(elapsedMs / CONDITION_DECAY_INTERVAL_MS);
+  const decay = Math.floor(elapsedMs / STATUS_CONDITION_DECAY_INTERVAL_MS);
 
   return {
     ...player,
@@ -175,7 +176,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         return state;
       }
 
-      if (state.player.resources.credits < CONDITION_RECOVERY_COST) {
+      if (state.player.resources.credits < STATUS_RECOVERY_COST) {
         return state;
       }
 
@@ -184,15 +185,15 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         player: {
           ...state.player,
           condition: clamp(
-            state.player.condition + CONDITION_RECOVERY_AMOUNT,
+            state.player.condition + STATUS_RECOVERY_AMOUNT,
             0,
             100,
           ),
-          conditionRecoveryAvailableAt: now + CONDITION_RECOVERY_COOLDOWN_MS,
+          conditionRecoveryAvailableAt: now + STATUS_RECOVERY_COOLDOWN_MS,
           resources: updateSingleResource(
             state.player.resources,
             "credits",
-            -CONDITION_RECOVERY_COST,
+            -STATUS_RECOVERY_COST,
           ),
         },
       };
