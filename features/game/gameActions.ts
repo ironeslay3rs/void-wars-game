@@ -7,6 +7,7 @@ import {
   canAccessMission,
   clamp,
   getMissionById,
+  getResolvedConditionDelta,
   getRankName,
   getXpToNext,
   processMissionQueue,
@@ -16,6 +17,11 @@ import {
   buildNavigationState,
   getAvailableRoutes,
 } from "@/features/navigation/navigationUtils";
+import {
+  getStatusRecoveryAmount,
+  STATUS_RECOVERY_COOLDOWN_MS,
+  STATUS_RECOVERY_COST,
+} from "@/features/status/statusRecovery";
 import type {
   GameAction,
   GameState,
@@ -35,9 +41,6 @@ function updateSingleResource(
   };
 }
 
-const CONDITION_RECOVERY_COST = 10;
-const CONDITION_RECOVERY_AMOUNT = 20;
-const CONDITION_RECOVERY_COOLDOWN_MS = 60000;
 const CONDITION_DECAY_INTERVAL_MS = 60000;
 
 function applyConditionDecay(player: PlayerState, now: number): PlayerState {
@@ -170,12 +173,13 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
     case "RECOVER_CONDITION": {
       const now = Date.now();
+      const recoveryAmount = getStatusRecoveryAmount(state.player.knownRecipes);
 
       if (state.player.conditionRecoveryAvailableAt > now) {
         return state;
       }
 
-      if (state.player.resources.credits < CONDITION_RECOVERY_COST) {
+      if (state.player.resources.credits < STATUS_RECOVERY_COST) {
         return state;
       }
 
@@ -183,16 +187,12 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         ...state,
         player: {
           ...state.player,
-          condition: clamp(
-            state.player.condition + CONDITION_RECOVERY_AMOUNT,
-            0,
-            100,
-          ),
-          conditionRecoveryAvailableAt: now + CONDITION_RECOVERY_COOLDOWN_MS,
+          condition: clamp(state.player.condition + recoveryAmount, 0, 100),
+          conditionRecoveryAvailableAt: now + STATUS_RECOVERY_COOLDOWN_MS,
           resources: updateSingleResource(
             state.player.resources,
             "credits",
-            -CONDITION_RECOVERY_COST,
+            -STATUS_RECOVERY_COST,
           ),
         },
       };
@@ -222,7 +222,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         };
       }
 
-      if (mission.id === "bio-hunt-specimen" && !player.hasBiotechSpecimenLead) {
+      if (
+        mission.id === "bio-hunt-specimen" &&
+        !player.hasBiotechSpecimenLead
+      ) {
         return {
           ...state,
           player,
@@ -230,6 +233,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       }
 
       const resolvedAt = action.payload.resolvedAt ?? now;
+      const resolvedConditionDelta = getResolvedConditionDelta(
+        player,
+        mission.reward,
+      );
       const nextPlayer = applyMissionReward(player, mission.reward);
 
       return {
@@ -244,7 +251,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             missionId: mission.id,
             huntTitle: mission.title,
             resolvedAt,
-            conditionDelta: mission.reward.conditionDelta,
+            conditionDelta: resolvedConditionDelta,
             conditionAfter: nextPlayer.condition,
             rankXpGained: mission.reward.rankXp,
             masteryProgressGained: mission.reward.masteryProgress,
@@ -499,7 +506,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     case "UNLOCK_ROUTE": {
       if (state.player.unlockedRoutes.includes(action.payload)) return state;
 
-      const nextUnlockedRoutes = [...state.player.unlockedRoutes, action.payload];
+      const nextUnlockedRoutes = [
+        ...state.player.unlockedRoutes,
+        action.payload,
+      ];
 
       return {
         ...state,

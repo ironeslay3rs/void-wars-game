@@ -3,7 +3,14 @@
 import { useGame } from "@/features/game/gameContext";
 import { getFirstSessionGuidance } from "@/features/guidance/firstSessionGuidance";
 import { useRecoveryCooldown } from "@/features/status/useRecoveryCooldown";
-import { STATUS_RECOVERY_COST } from "@/features/status/statusRecovery";
+import {
+  CONDITION_PRESSURE_PENALTY,
+  CONDITION_PRESSURE_THRESHOLD,
+  getConditionPressurePenalty,
+  getStatusRecoveryAmount,
+  hasStabilizationSigil,
+  STATUS_RECOVERY_COST,
+} from "@/features/status/statusRecovery";
 
 function formatFactionLabel(faction: string) {
   if (faction === "unbound") return "Unbound";
@@ -29,10 +36,13 @@ export default function StatusHeroCard() {
   const { state, dispatch } = useGame();
   const { player } = state;
   const guidance = getFirstSessionGuidance(state);
-  const {
-    recoveryCooldownRemainingSeconds,
-    isRecoveryOnCooldown,
-  } = useRecoveryCooldown(player.conditionRecoveryAvailableAt);
+  const { recoveryCooldownRemainingSeconds, isRecoveryOnCooldown } =
+    useRecoveryCooldown(player.conditionRecoveryAvailableAt);
+  const recoveryAmount = getStatusRecoveryAmount(player.knownRecipes);
+  const stabilizationSigilActive = hasStabilizationSigil(player.knownRecipes);
+  const conditionPressurePenalty = getConditionPressurePenalty(
+    player.condition,
+  );
   const canAffordRecovery = player.resources.credits >= STATUS_RECOVERY_COST;
   const canRecoverCondition = canAffordRecovery && !isRecoveryOnCooldown;
   const recoveryActionMessage = isRecoveryOnCooldown
@@ -43,10 +53,7 @@ export default function StatusHeroCard() {
         ? "Recommended. Low condition is the main blocker before the next loop step."
         : "Ready. Condition is stable enough to continue, but recovery remains available if needed.";
 
-  const rankProgress = getProgressPercent(
-    player.rankXp,
-    player.rankXpToNext,
-  );
+  const rankProgress = getProgressPercent(player.rankXp, player.rankXpToNext);
 
   function handleRecoverCondition() {
     if (!canRecoverCondition) return;
@@ -62,27 +69,19 @@ export default function StatusHeroCard() {
           {formatFactionLabel(player.factionAlignment)}
         </div>
 
-        <div className="mt-4 text-2xl font-black">
-          {player.playerName}
-        </div>
+        <div className="mt-4 text-2xl font-black">{player.playerName}</div>
 
-        <div className="text-sm text-white/60">
-          {player.rank}
-        </div>
+        <div className="text-sm text-white/60">{player.rank}</div>
 
         <div className="mt-4 grid grid-cols-2 gap-3">
           <div>
             <div className="text-xs text-white/40">Level</div>
-            <div className="text-xl font-bold">
-              {player.rankLevel}
-            </div>
+            <div className="text-xl font-bold">{player.rankLevel}</div>
           </div>
 
           <div>
             <div className="text-xs text-white/40">Influence</div>
-            <div className="text-xl font-bold">
-              {player.influence}
-            </div>
+            <div className="text-xl font-bold">{player.influence}</div>
           </div>
         </div>
       </div>
@@ -126,6 +125,18 @@ export default function StatusHeroCard() {
 
           <div className="mt-2 text-xs text-white/45">
             Recovery Cost: {STATUS_RECOVERY_COST} Credits
+          </div>
+
+          <div className="mt-1 text-xs text-white/45">
+            Recovery Yield: +{recoveryAmount} Condition
+            {stabilizationSigilActive ? " (Sigil boosted)" : ""}
+          </div>
+
+          <div className="mt-1 text-xs text-white/45">
+            Pressure Penalty:{" "}
+            {conditionPressurePenalty > 0
+              ? `-${CONDITION_PRESSURE_PENALTY} extra condition on the next exploration or mission reward claim while below ${CONDITION_PRESSURE_THRESHOLD}%`
+              : `Inactive until condition drops below ${CONDITION_PRESSURE_THRESHOLD}%`}
           </div>
 
           <div className="mt-1 text-xs text-white/45">
