@@ -8,6 +8,7 @@ import HomeHudClient from "@/components/layout/HomeHudClient";
 export default function GameHudShell() {
   return (
     <main className="safe-min-h-screen relative overflow-hidden bg-black text-white">
+      {/* City/home shell must keep its own scene component; do not swap this to main background scene by visual similarity alone. */}
       <CityHomeScene />
 
       <div className="absolute inset-0 z-10 bg-gradient-to-b from-black/35 via-transparent to-black/80" />
