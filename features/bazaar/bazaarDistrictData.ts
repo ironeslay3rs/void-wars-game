@@ -1,4 +1,5 @@
 export type BazaarDistrictId =
+  | "black-market"
   | "biotech-labs"
   | "spirit-enclave"
   | "crafting-district"
@@ -9,6 +10,7 @@ export type BazaarDistrictId =
   | "teleport-gate";
 
 export type BazaarDistrictThemeKey =
+  | "black"
   | "bio"
   | "spirit"
   | "forge"
@@ -30,6 +32,17 @@ export type BazaarDistrict = {
 };
 
 export const bazaarDistrictData: BazaarDistrict[] = [
+  {
+    id: "black-market",
+    title: "Black Market",
+    subtitle: "Feast Hall Lane",
+    description:
+      "Run one illicit feast lane to trade cash and samples for fast recovery.",
+    route: "/bazaar/black-market",
+    themeKey: "black",
+    positionClass: "left-1/2 bottom-[5%] -translate-x-1/2",
+    widthClass: "w-[300px]",
+  },
   {
     id: "biotech-labs",
     title: "Biotech Labs",

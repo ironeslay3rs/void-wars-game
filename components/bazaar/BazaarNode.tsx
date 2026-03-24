@@ -2,6 +2,8 @@ import Link from "next/link";
 import type { BazaarDistrict } from "@/features/bazaar/bazaarDistrictData";
 
 const themeStyles: Record<BazaarDistrict["themeKey"], string> = {
+  black:
+    "border-rose-400/25 bg-rose-500/10 hover:border-rose-300/45",
   bio: "border-emerald-400/25 bg-emerald-500/10 hover:border-emerald-300/45",
   spirit: "border-violet-400/25 bg-violet-500/10 hover:border-violet-300/45",
   forge: "border-orange-400/25 bg-orange-500/10 hover:border-orange-300/45",
