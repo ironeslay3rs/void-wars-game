@@ -1,28 +1,19 @@
+import {
+  canonFactionHqs,
+  getFactionLabel,
+} from "@/features/canonRegistry";
 import type { GameState } from "@/features/game/gameTypes";
-
-function formatFactionLabel(alignment: GameState["player"]["factionAlignment"]) {
-  switch (alignment) {
-    case "bio":
-      return "Bio";
-    case "mecha":
-      return "Mecha";
-    case "spirit":
-      return "Spirit";
-    default:
-      return "Unbound";
-  }
-}
 
 export function getFactionHqsScreenData(state: GameState) {
   return {
-    eyebrow: "Bazaar / Faction HQs",
-    title: "Faction HQs",
+    eyebrow: canonFactionHqs.eyebrow,
+    title: canonFactionHqs.title,
     subtitle:
       "Enter aligned power centers, build allegiance, and deepen faction-based progression systems.",
     cards: [
       {
         label: "Faction Alignment",
-        value: formatFactionLabel(state.player.factionAlignment),
+        value: getFactionLabel(state.player.factionAlignment),
         hint: "Live shared faction state from the global game store.",
       },
       {

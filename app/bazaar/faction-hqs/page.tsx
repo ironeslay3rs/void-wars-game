@@ -3,6 +3,11 @@
 import ScreenHeader from "@/components/shared/ScreenHeader";
 import SectionCard from "@/components/shared/SectionCard";
 import PlaceholderPanel from "@/components/shared/PlaceholderPanel";
+import {
+  canonFactionOrder,
+  getFactionLabel,
+  getFactionWingLabel,
+} from "@/features/canonRegistry";
 import { useGame } from "@/features/game/gameContext";
 import { getFactionHqsScreenData } from "@/features/faction-hqs/factionHqsScreenData";
 
@@ -13,7 +18,7 @@ export default function FactionHqsPage() {
   const currentAlignment = state.player.factionAlignment;
   const influence = state.player.influence;
 
-  function joinFaction(faction: "bio" | "mecha" | "spirit") {
+  function joinFaction(faction: (typeof canonFactionOrder)[number]) {
     dispatch({ type: "SET_FACTION_ALIGNMENT", payload: faction });
   }
 
@@ -47,29 +52,25 @@ export default function FactionHqsPage() {
             description="Choose an alignment and begin building influence inside the Bazaar."
           >
             <div className="space-y-3">
-              <button
-                type="button"
-                onClick={() => joinFaction("bio")}
-                className="block w-full rounded-xl border border-emerald-400/20 bg-emerald-500/10 p-4 text-left text-sm text-white transition hover:bg-emerald-500/20"
-              >
-                Bio Wing
-              </button>
+              {canonFactionOrder.map((faction) => {
+                const accentClass =
+                  faction === "bio"
+                    ? "border-emerald-400/20 bg-emerald-500/10 hover:bg-emerald-500/20"
+                    : faction === "mecha"
+                      ? "border-cyan-400/20 bg-cyan-500/10 hover:bg-cyan-500/20"
+                      : "border-violet-400/20 bg-violet-500/10 hover:bg-violet-500/20";
 
-              <button
-                type="button"
-                onClick={() => joinFaction("mecha")}
-                className="block w-full rounded-xl border border-cyan-400/20 bg-cyan-500/10 p-4 text-left text-sm text-white transition hover:bg-cyan-500/20"
-              >
-                Mecha Wing
-              </button>
-
-              <button
-                type="button"
-                onClick={() => joinFaction("spirit")}
-                className="block w-full rounded-xl border border-violet-400/20 bg-violet-500/10 p-4 text-left text-sm text-white transition hover:bg-violet-500/20"
-              >
-                Spirit Wing
-              </button>
+                return (
+                  <button
+                    key={faction}
+                    type="button"
+                    onClick={() => joinFaction(faction)}
+                    className={`block w-full rounded-xl border p-4 text-left text-sm text-white transition ${accentClass}`}
+                  >
+                    {getFactionWingLabel(faction)}
+                  </button>
+                );
+              })}
             </div>
           </SectionCard>
 
@@ -79,7 +80,7 @@ export default function FactionHqsPage() {
           >
             <div className="space-y-3">
               <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-white/75">
-                Current faction: {currentAlignment}
+                Current faction: {getFactionLabel(currentAlignment)}
               </div>
 
               <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-white/75">

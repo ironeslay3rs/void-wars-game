@@ -1,3 +1,5 @@
+import { canonBazaar } from "@/features/canonRegistry";
+
 export default function BazaarTopHeader() {
   return (
     <div className="pointer-events-none mx-auto mb-8 max-w-[980px] text-center">
@@ -17,7 +19,7 @@ export default function BazaarTopHeader() {
 
       <div className="mt-4 inline-flex items-center rounded-[16px] border border-amber-300/20 bg-black/45 px-8 py-3 shadow-[0_14px_40px_rgba(0,0,0,0.35)]">
         <span className="text-[16px] font-black uppercase tracking-[0.12em] text-amber-100 md:text-[22px]">
-          The Nexus Bazaar
+          {canonBazaar.headingLabel}
         </span>
       </div>
     </div>
