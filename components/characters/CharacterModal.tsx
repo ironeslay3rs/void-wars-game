@@ -120,7 +120,7 @@ export default function CharacterModal({
                     </span>
                   </div>
                   <div className="flex items-center justify-between gap-4">
-                    <span>Faction</span>
+                    <span>Affiliation</span>
                     <span className="font-medium text-white">
                       {factionLabels[character.faction]}
                     </span>
