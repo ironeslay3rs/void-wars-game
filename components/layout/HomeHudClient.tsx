@@ -1,55 +1,57 @@
 "use client";
 
-import BottomNav from "@/components/layout/BottomNav";
+import MainMenuLeftRail from "@/components/home/MainMenuLeftRail";
+import MainMenuCenterStage from "@/components/home/MainMenuCenterStage";
+import MainMenuRightRail from "@/components/home/MainMenuRightRail";
 import ResourceBar from "@/components/layout/ResourceBar";
+import BottomNav from "@/components/layout/BottomNav";
 import { useGame } from "@/features/game/gameContext";
 import type { FactionAlignment } from "@/features/game/gameTypes";
-import ConditionWidget from "@/components/home/ConditionWidget";
-import FactionPathPanel from "@/components/home/FactionPathPanel";
-import MissionPanel from "@/components/home/MissionPanel";
 
-function getSelectedPath(alignment: FactionAlignment) {
+type PathSelection = Exclude<FactionAlignment, "unbound">;
+
+function getSelectedPath(alignment: FactionAlignment): PathSelection | null {
   return alignment === "unbound" ? null : alignment;
 }
 
 export default function HomeHudClient() {
   const { state, selectPath } = useGame();
+  const selectedPath = getSelectedPath(state.player.factionAlignment);
 
   return (
     <>
-      {/* LEFT SIDE */}
-      <section className="absolute left-8 top-16 z-30 w-[320px]">
-        <MissionPanel />
-      </section>
-
-      {/* RIGHT SIDE */}
-      <section className="absolute right-8 top-16 z-30 w-[320px] xl:w-[360px]">
-        <FactionPathPanel
-          selectedPath={getSelectedPath(state.player.factionAlignment)}
+      <div className="relative z-20 flex flex-col gap-4 px-4 pb-4 pt-20 sm:px-6 xl:hidden">
+        <MainMenuCenterStage selectedPath={selectedPath} />
+        <MainMenuLeftRail />
+        <MainMenuRightRail
+          selectedPath={selectedPath}
           onSelectPath={selectPath}
+          state={state}
+        />
+        <ResourceBar values={state.player.resources} />
+      </div>
+
+      <section className="absolute left-5 top-6 z-30 hidden w-[270px] xl:left-7 xl:block xl:w-[290px]">
+        <MainMenuLeftRail />
+      </section>
+
+      <section className="absolute inset-x-[300px] top-5 z-20 hidden h-[78vh] xl:block">
+        <MainMenuCenterStage selectedPath={selectedPath} />
+      </section>
+
+      <section className="absolute right-5 top-6 z-30 hidden w-[300px] xl:right-7 xl:block xl:w-[340px]">
+        <MainMenuRightRail
+          selectedPath={selectedPath}
+          onSelectPath={selectPath}
+          state={state}
         />
       </section>
 
-      {/* CONDITION / STATUS */}
-      <section className="absolute right-8 top-[420px] z-30 w-[320px] xl:w-[360px]">
-        <ConditionWidget
-          path={getSelectedPath(state.player.factionAlignment)}
-          rank={state.player.rank}
-          rankLevel={state.player.rankLevel}
-          rankXp={state.player.rankXp}
-          rankXpToNext={state.player.rankXpToNext}
-          condition={state.player.condition}
-          masteryProgress={state.player.masteryProgress}
-        />
-      </section>
-
-      {/* RESOURCE BAR */}
-      <section className="absolute inset-x-8 bottom-20 z-30">
+      <section className="absolute inset-x-[300px] bottom-[92px] z-30 hidden xl:block">
         <ResourceBar values={state.player.resources} />
       </section>
 
-      {/* BOTTOM NAV */}
-      <section className="absolute inset-x-8 bottom-4 z-30">
+      <section className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-[linear-gradient(180deg,rgba(8,10,16,0.2),rgba(6,8,14,0.94))] px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-3 backdrop-blur-md xl:absolute xl:inset-x-5 xl:bottom-3 xl:border-t-0 xl:bg-transparent xl:px-0 xl:pb-0 xl:pt-0 xl:backdrop-blur-none xl:inset-x-7">
         <BottomNav />
       </section>
     </>

@@ -6,28 +6,24 @@ import CurrentOpportunityCard from "@/components/guidance/CurrentOpportunityCard
 
 export default function HomePage() {
   return (
-    <div className="relative min-h-screen">
-      <GameHudShell />
-
-      <section className="pointer-events-none fixed inset-x-0 top-20 z-40 px-6">
-        <div className="mx-auto flex w-full max-w-xl flex-col gap-4">
-          <div className="pointer-events-auto">
-            <ExplorationScreenSummary />
-          </div>
-
-          <div className="pointer-events-auto">
-            <FirstSessionObjective />
-          </div>
-
-          <div className="pointer-events-auto">
-            <CurrentOpportunityCard />
-          </div>
-
-          <div className="pointer-events-auto mx-auto w-full max-w-md">
-            <ExplorationPanel />
-          </div>
+    <GameHudShell>
+      <div className="mx-auto flex w-full max-w-xl flex-col gap-4 xl:max-w-md 2xl:max-w-xl">
+        <div>
+          <ExplorationScreenSummary />
         </div>
-      </section>
-    </div>
+
+        <div>
+          <FirstSessionObjective />
+        </div>
+
+        <div>
+          <CurrentOpportunityCard />
+        </div>
+
+        <div className="mx-auto w-full max-w-md xl:max-w-none">
+          <ExplorationPanel />
+        </div>
+      </div>
+    </GameHudShell>
   );
 }
