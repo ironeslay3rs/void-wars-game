@@ -24,7 +24,7 @@ function formatFactionLabel(faction: string) {
   if (faction === "unbound") return "Unbound";
   if (faction === "bio") return "Bio";
   if (faction === "mecha") return "Mecha";
-  if (faction === "spirit") return "Spirit";
+  if (faction === "spirit") return "Pure";
   return faction;
 }
 
@@ -109,9 +109,9 @@ export default function ArenaPage() {
 
   const liveCards = [
     {
-      label: "Faction Alignment",
+      label: "Doctrine Alignment",
       value: formatFactionLabel(player.factionAlignment),
-      hint: "Arena modifiers can later react to your active path.",
+      hint: "Arena modifiers can later react to your active doctrine.",
     },
     {
       label: "Condition",
@@ -128,7 +128,7 @@ export default function ArenaPage() {
   const rules = [
     "Condition below 40% restricts ranked participation.",
     "Arena tuning will later apply PvP-specific combat modifiers.",
-    "Faction flavor remains visible, but combat balance overrides raw path advantage.",
+    "Doctrine flavor remains visible, but combat balance overrides raw doctrine advantage.",
     "Ranked rewards will scale with performance tier, not only participation.",
   ];
 

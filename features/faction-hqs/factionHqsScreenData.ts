@@ -7,7 +7,7 @@ function formatFactionLabel(alignment: GameState["player"]["factionAlignment"]) 
     case "mecha":
       return "Mecha";
     case "spirit":
-      return "Spirit";
+      return "Pure";
     default:
       return "Unbound";
   }
@@ -21,9 +21,9 @@ export function getFactionHqsScreenData(state: GameState) {
       "Enter aligned power centers, build allegiance, and deepen faction-based progression systems.",
     cards: [
       {
-        label: "Faction Alignment",
+        label: "Doctrine Alignment",
         value: formatFactionLabel(state.player.factionAlignment),
-        hint: "Live shared faction state from the global game store.",
+        hint: "Live shared doctrine state from the global game store.",
       },
       {
         label: "Influence",
@@ -33,7 +33,7 @@ export function getFactionHqsScreenData(state: GameState) {
       {
         label: "Faction Reward Tier",
         value: state.player.factionAlignment === "unbound" ? "Locked" : "Tier 1",
-        hint: "Reward availability now reacts to faction alignment.",
+        hint: "Reward availability now reacts to doctrine alignment.",
       },
     ],
   };

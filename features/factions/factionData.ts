@@ -19,10 +19,10 @@ export const factionData = [
   },
   {
     id: "spirit",
-    name: "Spirit",
-    description: "Soul force and ritual resonance",
+    name: "Pure",
+    description: "Attunement and ritual resonance",
     icon: assets.factions.spirit,
     themeKey: "spirit",
-    tagline: "Ritual ascension",
+    tagline: "Pure ascension",
   },
 ] as const;

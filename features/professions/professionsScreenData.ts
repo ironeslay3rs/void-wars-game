@@ -23,7 +23,7 @@ export const professionsScreenData: ProfessionsScreenData = {
   eyebrow: "Void Wars / Professions Protocol",
   title: "Profession Systems",
   subtitle:
-    "Define combat, crafting, and gathering roles across Bio, Mecha, and Spirit-aligned development paths.",
+    "Define combat, crafting, and gathering roles across Bio, Mecha, and Pure-aligned development doctrines.",
 
   cards: [
     {

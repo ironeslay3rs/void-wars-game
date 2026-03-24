@@ -18,7 +18,7 @@ export default function FactionPathPanel({
   return (
     <PanelFrame className="bg-black/45">
       <div className="mb-4">
-        <SectionTitle title="Choose Your Path" />
+        <SectionTitle title="Choose Your Doctrine" />
       </div>
 
       <div className="space-y-3">

@@ -8,7 +8,7 @@ function formatFactionLabel(faction: string) {
   if (faction === "unbound") return "Unbound";
   if (faction === "bio") return "Bio";
   if (faction === "mecha") return "Mecha";
-  if (faction === "spirit") return "Spirit";
+  if (faction === "spirit") return "Pure";
   return faction;
 }
 
@@ -108,7 +108,7 @@ export default function StatusPage() {
         <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
           <SectionCard
             title="Operative Profile"
-            description="Primary identity panel for faction alignment, rank status, and mission readiness."
+            description="Primary identity panel for doctrine alignment, rank status, and mission readiness."
           >
             <div className="grid gap-6 lg:grid-cols-[300px_1fr]">
               <div
@@ -248,7 +248,7 @@ export default function StatusPage() {
                     </div>
 
                     <div className="mt-3 text-sm text-white/65">
-                      Soul-path integration and combat identity refinement.
+                      Doctrine integration and combat identity refinement.
                     </div>
                   </div>
                 </div>

@@ -7,7 +7,7 @@ function formatFactionLabel(alignment: GameState["player"]["factionAlignment"]) 
     case "mecha":
       return "Mecha";
     case "spirit":
-      return "Spirit";
+      return "Pure";
     default:
       return "Unbound";
   }
@@ -24,9 +24,9 @@ export function getFactionHqsScreenData(state: GameState) {
       "Enter aligned power centers, build allegiance, and deepen faction-based progression systems.",
     cards: [
       {
-        label: "Faction Alignment",
+        label: "Doctrine Alignment",
         value: factionAlignment,
-        hint: "Live shared faction state from the global game store.",
+        hint: "Live shared doctrine state from the global game store.",
       },
       {
         label: "Influence",
@@ -36,7 +36,7 @@ export function getFactionHqsScreenData(state: GameState) {
       {
         label: "Faction Reward Tier",
         value: isAligned ? "Tier 1" : "Locked",
-        hint: "Reward availability now reacts to faction alignment.",
+        hint: "Reward availability now reacts to doctrine alignment.",
       },
     ],
     sections: [
@@ -50,8 +50,8 @@ export function getFactionHqsScreenData(state: GameState) {
         description:
           "Reserved for faction reputation tracks, allegiance perks, contracts, and unlockable command options.",
         body: isAligned
-          ? `Current alignment detected: ${factionAlignment}. Future faction operations can now branch from this live shared state.`
-          : "No faction alignment detected yet. Choose a path to unlock faction operations, contracts, and deeper progression.",
+          ? `Current doctrine detected: ${factionAlignment}. Future faction operations can now branch from this live shared state.`
+          : "No doctrine alignment detected yet. Choose a doctrine to unlock faction operations, contracts, and deeper progression.",
       },
     ],
   };

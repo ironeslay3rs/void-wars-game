@@ -27,7 +27,7 @@ export default function SpiritEnclavePage() {
         <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           <SectionCard
             title="Resonance Chambers"
-            description="Reserved for soul attunement, rune memory, and spiritual progression systems."
+            description="Reserved for soul attunement, rune memory, and Pure progression systems."
           >
             <div className="space-y-3">
               {["Soul Alignment", "Rune Memory", "Resonance Trial"].map(
@@ -44,7 +44,7 @@ export default function SpiritEnclavePage() {
           </SectionCard>
 
           <SectionCard
-            title="Spirit Console"
+            title="Pure Console"
             description="Future attunement state, soul capacity, and resonance tracking."
           >
             <div className="rounded-xl border border-dashed border-white/10 p-6 text-sm text-white/50">

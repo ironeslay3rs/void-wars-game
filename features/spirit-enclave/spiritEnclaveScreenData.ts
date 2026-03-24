@@ -1,8 +1,8 @@
 export const spiritEnclaveScreenData = {
-  eyebrow: "Bazaar / Spirit Enclave",
-  title: "Spirit Enclave",
+  eyebrow: "Bazaar / Pure Enclave",
+  title: "Pure Enclave",
   subtitle:
-    "Attune the soul, recover rune memory, and deepen spirit-based progression systems.",
+    "Attune the soul, recover rune memory, and deepen Pure-based progression systems.",
   cards: [
     {
       label: "Attunement State",

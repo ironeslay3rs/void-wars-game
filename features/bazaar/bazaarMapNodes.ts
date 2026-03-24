@@ -19,7 +19,7 @@ export const bazaarMapNodes: BazaarNodeData[] = [
   { id: "black-market", label: "Black Market", x: 50, y: 65, type: "market" },
 
   { id: "biotech-labs", label: "Biotech Labs", x: 20, y: 35, type: "bio" },
-  { id: "spirit-enclave", label: "Spirit Enclave", x: 20, y: 55, type: "spirit" },
+  { id: "spirit-enclave", label: "Pure Enclave", x: 20, y: 55, type: "spirit" },
   { id: "crafting-district", label: "Crafting District", x: 25, y: 70, type: "market" },
 
   { id: "arena", label: "Arena", x: 80, y: 30, type: "combat" },

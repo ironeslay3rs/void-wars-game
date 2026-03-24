@@ -51,7 +51,7 @@ function formatPathLabel(path: "neutral" | "bio" | "mecha" | "spirit") {
     case "mecha":
       return "Mecha";
     case "spirit":
-      return "Spirit";
+      return "Pure";
     default:
       return "Neutral";
   }
@@ -306,7 +306,7 @@ export default function MissionsScreen() {
           <StatCard
             label="Available"
             value={`${availableMissions.length}`}
-            hint="Missions currently accessible to your path."
+            hint="Missions currently accessible to your doctrine."
           />
           <StatCard
             label="Queue"
@@ -320,13 +320,13 @@ export default function MissionsScreen() {
             valueClassName="text-emerald-300"
           />
           <StatCard
-            label="Current Path"
+            label="Current Doctrine"
             value={
               state.player.factionAlignment === "unbound"
                 ? "Unbound"
                 : formatPathLabel(state.player.factionAlignment)
             }
-            hint="Path-specific missions unlock after alignment."
+            hint="Doctrine-specific missions unlock after alignment."
           />
         </div>
 

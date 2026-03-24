@@ -13,9 +13,9 @@ const pathGlowMap: Record<PathSelection, string> = {
 };
 
 const pathLabelMap: Record<PathSelection, string> = {
-  bio: "Bio Path Engaged",
-  mecha: "Mecha Path Engaged",
-  spirit: "Spirit Path Engaged",
+  bio: "Bio Doctrine Engaged",
+  mecha: "Mecha Doctrine Engaged",
+  spirit: "Pure Doctrine Engaged",
 };
 
 const pathDescriptionMap: Record<PathSelection, string> = {
@@ -34,7 +34,7 @@ export default function MainMenuCenterStage({
   const title = selectedPath ? pathLabelMap[selectedPath] : "Central Crest";
   const description = selectedPath
     ? pathDescriptionMap[selectedPath]
-    : "Core faction focus, progression identity, and world entry nexus.";
+    : "Core doctrine focus, progression identity, and world entry nexus.";
 
   return (
     <div className="relative flex h-full flex-col items-center justify-between px-8 pb-2 pt-2">

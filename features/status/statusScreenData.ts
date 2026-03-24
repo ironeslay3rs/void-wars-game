@@ -7,7 +7,7 @@ export const statusScreenData = {
     {
       label: "Condition",
       value: "72%",
-      hint: "Current body-state compatibility with active path systems.",
+      hint: "Current body-state compatibility with active doctrine systems.",
     },
     {
       label: "Rank",
@@ -15,9 +15,9 @@ export const statusScreenData = {
       hint: "Base progression title for this skeleton phase.",
     },
     {
-      label: "Path",
-      value: "Spirit",
-      hint: "Current aligned path selection from the home screen.",
+      label: "Doctrine",
+      value: "Pure",
+      hint: "Current aligned doctrine selection from the home screen.",
     },
   ],
 };

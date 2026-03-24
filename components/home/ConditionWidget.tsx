@@ -34,7 +34,7 @@ export default function ConditionWidget({
 
   const masteryPercent = Math.min(100, Math.max(0, masteryProgress));
 
-  const pathLabel = path ? path.toUpperCase() : "UNBOUND";
+  const pathLabel = path === "spirit" ? "PURE" : path ? path.toUpperCase() : "UNBOUND";
 
   return (
     <PanelFrame className="space-y-4">
@@ -53,7 +53,7 @@ export default function ConditionWidget({
       <div className="grid gap-3">
         <div className="rounded-xl border border-white/10 bg-white/5 p-3">
           <div className="text-[10px] uppercase tracking-[0.18em] text-white/45">
-            Alignment
+            Doctrine
           </div>
           <div className="mt-1 text-sm font-semibold text-white">
             {pathLabel}
