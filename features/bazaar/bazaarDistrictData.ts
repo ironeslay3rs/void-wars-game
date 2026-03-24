@@ -1,3 +1,8 @@
+import {
+  canonFactionHqs,
+  getFactionLabelList,
+} from "@/features/canonRegistry";
+
 export type BazaarDistrictId =
   | "biotech-labs"
   | "spirit-enclave"
@@ -97,9 +102,9 @@ export const bazaarDistrictData: BazaarDistrict[] = [
     widthClass: "w-[320px]",
   },
   {
-    id: "faction-hqs",
-    title: "Faction HQs",
-    subtitle: "Bio | Mecha | Spirit",
+    id: canonFactionHqs.id,
+    title: canonFactionHqs.title,
+    subtitle: getFactionLabelList(),
     description:
       "Enter your aligned power center and deepen faction identity.",
     route: "/bazaar/faction-hqs",

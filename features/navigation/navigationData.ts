@@ -1,3 +1,4 @@
+import { canonBazaar } from "@/features/canonRegistry";
 import type { RouteDefinition } from "@/features/navigation/navigationTypes";
 
 export const ROUTE_DEFINITIONS: RouteDefinition[] = [
@@ -8,7 +9,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
   },
   {
     id: "bazaar",
-    label: "Black Bazaar",
+    label: canonBazaar.routeLabel,
     description: "Trade, contracts, and faction-side exchanges.",
   },
   {

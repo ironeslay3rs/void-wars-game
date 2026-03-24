@@ -9,16 +9,9 @@ import {
   Gem,
   type LucideIcon,
 } from "lucide-react";
+import { canonNavigationItems } from "@/features/canonRegistry";
 
-export type NavigationItemId =
-  | "inventory"
-  | "status"
-  | "missions"
-  | "factions"
-  | "black-market"
-  | "arena"
-  | "guild"
-  | "settings";
+export type NavigationItemId = keyof typeof canonNavigationItems;
 
 export type NavigationPlacement = "bottom" | "side";
 
@@ -34,65 +27,49 @@ export type NavigationItem = {
 
 export const navigationItems: NavigationItem[] = [
   {
-    id: "inventory",
-    label: "Inventory",
-    href: "/inventory",
+    ...canonNavigationItems.inventory,
     icon: Briefcase,
     placement: ["bottom"],
     accent: "gold",
   },
   {
-    id: "status",
-    label: "Status",
-    href: "/status",
+    ...canonNavigationItems.status,
     icon: Shield,
     placement: ["bottom"],
     accent: "blue",
   },
   {
-    id: "missions",
-    label: "Missions",
-    href: "/missions",
+    ...canonNavigationItems.missions,
     icon: ScrollText,
     placement: ["bottom"],
     accent: "red",
   },
   {
-    id: "factions",
-    label: "Factions",
-    href: "/factions",
+    ...canonNavigationItems.factions,
     icon: Users,
     placement: ["bottom"],
     accent: "purple",
   },
   {
-    id: "black-market",
-    label: "Black Market",
-    href: "/bazaar",
+    ...canonNavigationItems.bazaar,
     icon: Store,
     placement: ["bottom"],
     accent: "green",
   },
   {
-    id: "arena",
-    label: "Arena",
-    href: "/arena",
+    ...canonNavigationItems.arena,
     icon: Swords,
     placement: ["side"],
     accent: "red",
   },
   {
-    id: "guild",
-    label: "Guild",
-    href: "/guild",
+    ...canonNavigationItems.guild,
     icon: Gem,
     placement: ["side"],
     accent: "purple",
   },
   {
-    id: "settings",
-    label: "Settings",
-    href: "/settings",
+    ...canonNavigationItems.settings,
     icon: Settings,
     placement: ["side"],
     accent: "neutral",
