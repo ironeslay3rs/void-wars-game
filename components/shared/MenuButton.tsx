@@ -27,7 +27,7 @@ export default function MenuButton({
 
   const className = [
     "group relative flex w-full items-center overflow-hidden rounded-[14px]",
-    "border px-4 py-4 text-left text-[15px] font-extrabold uppercase tracking-[0.04em]",
+    "min-h-12 border px-4 py-4 text-left text-[15px] font-extrabold uppercase tracking-[0.04em]",
     "transition duration-200",
     isPrimary
       ? [
@@ -69,7 +69,7 @@ export default function MenuButton({
 
       <span
         className={[
-          "ml-auto relative z-10 text-[11px] tracking-[0.2em] transition duration-200",
+          "ml-auto relative z-10 text-xs tracking-[0.18em] transition duration-200 sm:text-[11px] sm:tracking-[0.2em]",
           isActive
             ? "text-white/70"
             : "text-white/25 group-hover:text-white/45",

@@ -40,8 +40,8 @@ export default function BottomNav() {
   const items = getNavigationItemsByPlacement("bottom");
 
   return (
-    <nav className="relative w-full">
-      <div className="grid grid-cols-5 gap-3">
+    <nav className="safe-area-bottom relative w-full">
+      <div className="grid grid-cols-5 gap-2 sm:gap-3">
         {items.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
@@ -52,7 +52,7 @@ export default function BottomNav() {
               href={item.href}
               aria-current={isActive ? "page" : undefined}
               className={[
-                "group relative flex min-h-[92px] flex-col items-center justify-center gap-2 overflow-hidden rounded-[18px] border px-3 py-3",
+                "group relative flex min-h-[96px] flex-col items-center justify-center gap-2 overflow-hidden rounded-[18px] border px-2 py-3 sm:min-h-[92px] sm:px-3",
                 "transition duration-200",
                 "backdrop-blur-sm",
                 getAccentClasses(item.accent, isActive),
@@ -76,7 +76,7 @@ export default function BottomNav() {
 
               <span
                 className={[
-                  "relative z-10 text-center text-[13px] font-extrabold uppercase tracking-[0.08em]",
+                  "relative z-10 text-center text-xs leading-tight font-extrabold uppercase tracking-[0.08em] sm:text-[13px]",
                   isActive ? "text-white" : "",
                 ].join(" ")}
               >
