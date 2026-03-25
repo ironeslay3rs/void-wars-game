@@ -12,13 +12,14 @@ import {
   getResourceLoopMeaning,
   getNonZeroResourceEntries,
 } from "@/features/game/gameFeedback";
+import { getResourceIcon } from "@/features/game/resourceIconMap";
 import { getFirstSessionGuidance } from "@/features/guidance/firstSessionGuidance";
 import ScreenStateSummary from "@/components/shared/ScreenStateSummary";
 import {
   getHungerLabel,
   HUNGER_PRESSURE_THRESHOLD,
 } from "@/features/status/survival";
-import { assets } from "@/lib/assets";
+import { buildAfkFieldRunFeedback } from "@/features/hunting-ground/afkRunFeedback";
 
 function formatResolvedAt(timestamp: number) {
   return new Date(timestamp).toLocaleString();
@@ -68,27 +69,6 @@ function getAftermathTakeaways(params: {
   return takeaways;
 }
 
-function getRewardIcon(resourceKey: string) {
-  switch (resourceKey) {
-    case "credits":
-      return assets.icons.voidOrb;
-    case "ironOre":
-      return assets.icons.shatteredPlate;
-    case "scrapAlloy":
-      return assets.icons.shatteredSkull;
-    case "runeDust":
-      return assets.icons.voidCluster;
-    case "emberCore":
-      return assets.icons.emberCoreDevice;
-    case "bioSamples":
-      return assets.icons.bioVial;
-    case "mossRations":
-      return assets.icons.alchemyFlask;
-    default:
-      return null;
-  }
-}
-
 export default function BiotechLabsResultPage() {
   const { state } = useGame();
   const latestHuntResult = state.player.lastHuntResult;
@@ -96,14 +76,54 @@ export default function BiotechLabsResultPage() {
   const specimen = getLatestBiotechSpecimen(latestHuntResult);
   const specimenBossAsset = specimen?.bossAsset ?? null;
 
+  const resultMission = latestHuntResult
+    ? (state.missions.find((m) => m.id === latestHuntResult.missionId) ?? null)
+    : null;
+  const isFieldContractResult =
+    resultMission?.category === "hunting-ground";
+
+  const fieldRunFeedback =
+    latestHuntResult && resultMission && isFieldContractResult
+      ? buildAfkFieldRunFeedback(latestHuntResult, resultMission, {
+          rankLevel: state.player.rankLevel,
+          masteryProgress: state.player.masteryProgress,
+        })
+      : null;
+
   const resourceEntries = getNonZeroResourceEntries(
     latestHuntResult?.resourcesGained ?? {},
   );
-  const nextStepHref = guidance.nextAction === "recover" ? "/status" : "/home";
-  const nextStepLabel =
-    guidance.nextAction === "recover"
-      ? "Open Status and Recover"
-      : "Return Home and Explore";
+  const shouldRouteToFeastHall =
+    guidance.nextAction === "recover" ||
+    state.player.hunger < HUNGER_PRESSURE_THRESHOLD;
+
+  let nextStepHref = shouldRouteToFeastHall
+    ? "/bazaar/black-market/feast-hall"
+    : "/home";
+  let nextStepLabel = shouldRouteToFeastHall
+    ? "Open Feast Hall and Stabilize"
+    : "Return Home and Explore";
+
+  let secondaryFieldStep: { href: string; label: string } | null = null;
+
+  if (isFieldContractResult) {
+    if (shouldRouteToFeastHall) {
+      nextStepHref = "/bazaar/black-market/feast-hall";
+      nextStepLabel = "Open Feast Hall and Stabilize";
+      secondaryFieldStep = {
+        href: "/bazaar/mercenary-guild",
+        label: "Return to Hunting Ground",
+      };
+    } else {
+      nextStepHref = "/bazaar/mercenary-guild";
+      nextStepLabel = "Return to Hunting Ground";
+      secondaryFieldStep = {
+        href: "/home",
+        label: "Command Deck (Home)",
+      };
+    }
+  }
+
   const hungerLabel = getHungerLabel(state.player.hunger);
   const aftermathTakeaways = latestHuntResult
     ? getAftermathTakeaways({
@@ -122,29 +142,69 @@ export default function BiotechLabsResultPage() {
         <BazaarSubpageNav accentClassName="hover:border-emerald-300/40" />
 
         <ScreenHeader
-          eyebrow="Biotech Labs / Hunt Result"
-          title="Specimen Hunt Result"
-          subtitle="Payout, field cost, and next move."
+          eyebrow={
+            isFieldContractResult
+              ? "Field Ops / Hunt Result"
+              : "Biotech Labs / Hunt Result"
+          }
+          title={
+            isFieldContractResult ? "Contract Payout" : "Specimen Hunt Result"
+          }
+          subtitle={
+            isFieldContractResult
+              ? fieldRunFeedback
+                ? `${fieldRunFeedback.contractStrideLabel} · ${fieldRunFeedback.extractionLabel} · ${fieldRunFeedback.intensityLabel}`
+                : "AFK hunting-ground contract settled through the shared mission timer."
+              : "Payout, field cost, and next move."
+          }
         />
+
+        {fieldRunFeedback ? (
+          <div className="flex flex-wrap gap-2">
+            <span className="rounded-full border border-amber-400/30 bg-amber-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-amber-100">
+              {fieldRunFeedback.contractStrideLabel}
+            </span>
+            <span className="rounded-full border border-cyan-400/25 bg-cyan-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-cyan-100">
+              {fieldRunFeedback.intensityLabel}
+            </span>
+            <span className="rounded-full border border-emerald-400/25 bg-emerald-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-100">
+              {fieldRunFeedback.extractionLabel}
+            </span>
+          </div>
+        ) : null}
 
         {latestHuntResult ? (
           <ScreenStateSummary
             eyebrow="Loop State"
             title="Payout Applied"
-            consequence="Specimen down. Haul banked. Choose: recover or keep pressure on the loop."
-            nextStep={guidance.nextStepLabel}
-            tone={guidance.nextAction === "recover" ? "warning" : "ready"}
+            consequence={
+              isFieldContractResult
+                ? fieldRunFeedback?.consequenceLine ??
+                  "Contract is closed. Haul and wear are logged. Recover or queue another deploy based on condition and stores."
+                : "Specimen down. Haul banked. The next question is whether the body should recover, refeed, or reopen the loop."
+            }
+            nextStep={
+              isFieldContractResult
+                ? shouldRouteToFeastHall
+                  ? "Feast Hall if pressure is flashing; otherwise the Hunting Ground contract board for another deploy."
+                  : "Hunting Ground for another deploy, or Home to shift the wider loop."
+                : shouldRouteToFeastHall
+                  ? "Open Feast Hall to spend the haul on stabilization before the next run."
+                  : guidance.nextStepLabel
+            }
+            tone={shouldRouteToFeastHall ? "warning" : "ready"}
           />
         ) : null}
 
         {!latestHuntResult ? (
           <SectionCard
             title="No Hunt Result"
-            description="Resolve a biotech specimen hunt to generate a result summary here."
+            description="Resolve a hunt from the field or Biotech Labs to generate a payout summary here."
           >
             <div className="rounded-xl border border-dashed border-white/10 p-6 text-sm text-white/50">
-              No hunt result is available yet. Resolve a specimen hunt from Biotech
-              Labs to populate this screen.
+              No hunt result on record yet. Finish an AFK contract from the
+              Hunting Ground, use Deploy Into the Void on Home, or resolve a specimen hunt
+              from Biotech Labs.
             </div>
           </SectionCard>
         ) : (
@@ -199,13 +259,18 @@ export default function BiotechLabsResultPage() {
 
                 <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/8 p-4">
                   <div className="text-[10px] uppercase tracking-[0.22em] text-emerald-200/75">
-                    Kill Confirmed
+                    {isFieldContractResult ? "Contract Closed" : "Kill Confirmed"}
                   </div>
                   <div className="mt-3 text-2xl font-black uppercase tracking-[0.04em] text-white md:text-[30px]">
-                    Specimen Down
+                    {isFieldContractResult
+                      ? fieldRunFeedback?.outcomeTitle ?? "Payout Logged"
+                      : "Specimen Down"}
                   </div>
                   <p className="mt-2 text-sm font-medium uppercase tracking-[0.08em] text-emerald-50/85">
-                    Haul banked. Cost logged.
+                    {isFieldContractResult
+                      ? fieldRunFeedback?.heroTagline ??
+                        "Field team returned. Haul banked; field cost applied."
+                      : "Haul banked. Cost logged."}
                   </p>
                   <div className="mt-4 grid gap-3 sm:grid-cols-2">
                     <div className="rounded-xl border border-emerald-300/20 bg-black/20 px-3 py-3">
@@ -213,7 +278,9 @@ export default function BiotechLabsResultPage() {
                         Gain
                       </div>
                       <div className="mt-2 text-sm font-semibold text-white">
-                        Secure payout and bank salvage.
+                        {isFieldContractResult
+                          ? "Contract payout and salvage are in your stock."
+                          : "Secure payout and bank salvage."}
                       </div>
                     </div>
                     <div className="rounded-xl border border-red-300/20 bg-black/20 px-3 py-3">
@@ -221,12 +288,17 @@ export default function BiotechLabsResultPage() {
                         Cost
                       </div>
                       <div className="mt-2 text-sm font-semibold text-white">
-                        Take the field wear into the next decision.
+                        {isFieldContractResult
+                          ? "Contract wear hits condition like any timed mission."
+                          : "Take the field wear into the next decision."}
                       </div>
                     </div>
                   </div>
                   <p className="mt-4 text-sm text-white/65">
-                    The hunt is over. The next decision is not.
+                    {isFieldContractResult
+                      ? fieldRunFeedback?.footerLine ??
+                        "Timer cleared. Decide recovery or redeploy while the body can still hold."
+                      : "The hunt is over. The next decision is not."}
                   </p>
                 </div>
 
@@ -241,7 +313,9 @@ export default function BiotechLabsResultPage() {
                         : latestHuntResult.conditionDelta}
                     </div>
                     <div className="mt-2 text-sm text-white/60">
-                      Condition spent on the kill and extraction.
+                      {isFieldContractResult
+                        ? "Condition spent on the contract run."
+                        : "Condition spent on the kill and extraction."}
                     </div>
                   </div>
 
@@ -298,7 +372,11 @@ export default function BiotechLabsResultPage() {
 
             <SectionCard
               title="Salvage and Aftermath"
-              description="The haul is yours. Decide what the body can survive next."
+              description={
+                isFieldContractResult
+                  ? "Contract haul is banked. Feed recovery or queue another deploy."
+                  : "The haul is yours. Decide what the body can survive next."
+              }
             >
               <div className="space-y-4">
                 <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/8 p-4">
@@ -329,10 +407,10 @@ export default function BiotechLabsResultPage() {
                         >
                           <div className="flex items-center justify-between gap-4">
                             <div className="flex min-w-0 items-center gap-3">
-                              {getRewardIcon(key) ? (
+                              {getResourceIcon(key) ? (
                                 <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-emerald-300/20 bg-black/20 p-2">
                                   <Image
-                                    src={getRewardIcon(key) as string}
+                                    src={getResourceIcon(key)}
                                     alt={formatResourceLabel(key)}
                                     width={32}
                                     height={32}
@@ -360,10 +438,10 @@ export default function BiotechLabsResultPage() {
                         >
                           <div className="flex items-center justify-between gap-4">
                             <div className="flex min-w-0 items-center gap-3">
-                              {getRewardIcon(key) ? (
+                              {getResourceIcon(key) ? (
                                 <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-black/20 p-2">
                                   <Image
-                                    src={getRewardIcon(key) as string}
+                                    src={getResourceIcon(key)}
                                     alt={formatResourceLabel(key)}
                                     width={28}
                                     height={28}
@@ -409,19 +487,39 @@ export default function BiotechLabsResultPage() {
                     Decide Now
                   </div>
                   <div className="mt-2 text-lg font-semibold text-white">
-                    {guidance.nextAction === "recover"
-                      ? "Recover before the loop breaks."
-                      : "Field pressure is still yours to spend."}
+                    {isFieldContractResult
+                      ? shouldRouteToFeastHall
+                        ? "Stabilize first, then reopen the contract board."
+                        : "Redeploy from the Hunting Ground or step back to Home."
+                      : shouldRouteToFeastHall
+                        ? "Take the haul to Feast Hall before the loop frays."
+                        : "Field pressure is still yours to spend."}
                   </div>
                   <p className="mt-2 text-sm text-white/65">
-                    {guidance.detail}
+                    {isFieldContractResult
+                      ? shouldRouteToFeastHall
+                        ? "Pressure says Black Market recovery. After that, the Hunting Ground uses the same timer queue for the next AFK contract."
+                        : "Hunting Ground contracts share the live mission queue with other ops. Deploy Into the Void on Home still queues a short hunt and can route here when it finishes."
+                      : shouldRouteToFeastHall
+                        ? "Condition or hunger says the safer next stop is Black Market recovery. Stabilize there, then decide whether to craft utility or reopen exploration."
+                        : guidance.detail}
                   </p>
-                  <Link
-                    href={nextStepHref}
-                    className="mt-4 inline-flex rounded-xl border border-cyan-300/30 bg-cyan-300/12 px-4 py-2 text-sm font-semibold text-cyan-50 transition hover:border-cyan-200/45 hover:bg-cyan-300/18"
-                  >
-                    {nextStepLabel}
-                  </Link>
+                  <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                    <Link
+                      href={nextStepHref}
+                      className="inline-flex rounded-xl border border-cyan-300/30 bg-cyan-300/12 px-4 py-2 text-sm font-semibold text-cyan-50 transition hover:border-cyan-200/45 hover:bg-cyan-300/18"
+                    >
+                      {nextStepLabel}
+                    </Link>
+                    {secondaryFieldStep ? (
+                      <Link
+                        href={secondaryFieldStep.href}
+                        className="inline-flex rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white/88 transition hover:border-white/28 hover:bg-white/10"
+                      >
+                        {secondaryFieldStep.label}
+                      </Link>
+                    ) : null}
+                  </div>
                 </div>
 
                 <div className="rounded-xl border border-white/10 bg-white/5 p-4">
@@ -449,8 +547,8 @@ export default function BiotechLabsResultPage() {
                   </div>
 
                   <p className="mt-3 text-sm text-white/60">
-                    {guidance.nextAction === "recover"
-                      ? "Condition and stores are dictating the call. Recover first."
+                    {shouldRouteToFeastHall
+                      ? "Condition and stores are dictating the call. Feast Hall is the clearest recovery handoff from this result screen."
                       : state.player.hunger < HUNGER_PRESSURE_THRESHOLD
                         ? "Stores are slipping. You can push, but the next run gets harsher."
                         : "The body is still holding. Continue only if you want the pressure."}

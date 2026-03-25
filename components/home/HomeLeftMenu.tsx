@@ -10,7 +10,7 @@ const menuItems = [
   { label: "Professions", href: "#" },
   { label: "Market", href: "#" },
   { label: "Arena", href: "#" },
-  { label: "Guild", href: "#" },
+  { label: "Missions", href: "#" },
   { label: "Settings", href: "#" },
 ];
 
@@ -19,9 +19,12 @@ export default function HomeLeftMenu() {
     <div className="flex w-[240px] flex-col gap-2 rounded-2xl border border-white/10 bg-black/40 p-4 backdrop-blur-xl">
       
       {/* CTA */}
-      <button className="mb-2 rounded-xl border border-red-500/40 bg-red-600/20 px-4 py-4 text-left text-sm font-bold uppercase tracking-[0.12em] text-red-200 transition hover:bg-red-600/30">
+      <Link
+        href="/bazaar/mercenary-guild"
+        className="mb-2 block rounded-xl border border-red-500/40 bg-red-600/20 px-4 py-4 text-left text-sm font-bold uppercase tracking-[0.12em] text-red-200 transition hover:bg-red-600/30"
+      >
         Enter the Void
-      </button>
+      </Link>
 
       {/* MENU */}
       {menuItems.map((item) => (

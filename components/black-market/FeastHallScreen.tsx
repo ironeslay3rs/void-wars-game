@@ -64,6 +64,34 @@ function formatHungerEffect(hungerDelta: number) {
   return hungerDelta > 0 ? `+${hungerDelta} hunger` : `${hungerDelta} hunger`;
 }
 
+function getFeastHallNextStep(params: {
+  condition: number;
+  hunger: number;
+  isRecoveryOnCooldown: boolean;
+  credits: number;
+  bioSamples: number;
+}) {
+  const { condition, hunger, isRecoveryOnCooldown, credits, bioSamples } = params;
+
+  if (isRecoveryOnCooldown) {
+    return "Kitchen lockout is active. Use the cooldown window to check Contract Board progress, visit Crafting District utility, or hold until service opens again.";
+  }
+
+  if (condition < 60) {
+    return "Condition is still the main blocker. Take a plate now if you can afford it, then decide whether to reopen the next run or bind utility in the Crafting District.";
+  }
+
+  if (hunger < 35 && bioSamples > 0) {
+    return "Condition is steadier, but stores are running thin. Feast Hall can stabilize now, then Crafting District can turn salvage into Moss Rations before the next run.";
+  }
+
+  if (credits <= 0 && bioSamples <= 0) {
+    return "No payment means no plate. Return to contracts or hunting for more salvage, then come back when recovery is worth buying.";
+  }
+
+  return "Readiness is holding. If you do not need another plate, leave here and either reopen a contract or start the next field run.";
+}
+
 type FeastHallScreenProps = {
   embedded?: boolean;
 };
@@ -212,6 +240,15 @@ export default function FeastHallScreen({
                 {isRecoveryOnCooldown
                   ? `Next contract can begin in ${recoveryCooldownRemainingSeconds}s.`
                   : "No recovery lockout is active. Feast Hall plates restore condition, but richer contracts burn more hunger and make the next decision sharper."}
+              </div>
+              <div className="mt-4 rounded-xl border border-cyan-400/20 bg-cyan-400/8 px-4 py-3 text-sm text-cyan-50/88">
+                {getFeastHallNextStep({
+                  condition: player.condition,
+                  hunger: player.hunger,
+                  isRecoveryOnCooldown,
+                  credits: player.resources.credits,
+                  bioSamples: player.resources.bioSamples,
+                })}
               </div>
               <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
                 <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-3">

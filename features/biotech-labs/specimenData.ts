@@ -12,6 +12,16 @@ export type BiotechSpecimenDefinition = {
 };
 
 const biotechSpecimenDefinitions: Record<string, BiotechSpecimenDefinition> = {
+  "voidfield-prowl": {
+    missionId: "voidfield-prowl",
+    name: "Voidfield Prowler",
+    category: "Neutral Predator",
+    threatLabel: "Threat Tier Beta",
+    description:
+      "A perimeter scavenger that hunts the dead edges around the citadel and leaves behind salvageable residue, shard dust, and torn tissue.",
+    creatureAsset: assets.creatures.shadowWolf,
+    bossAsset: assets.bosses.voidMaw,
+  },
   "bio-hunt-specimen": {
     missionId: "bio-hunt-specimen",
     name: "Thornmaw Stalker",

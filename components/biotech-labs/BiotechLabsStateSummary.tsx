@@ -14,8 +14,8 @@ export default function BiotechLabsStateSummary() {
       <ScreenStateSummary
         eyebrow="Loop State"
         title="No specimen leads available."
-        consequence="Exploration generates specimen leads."
-        nextStep="Return to exploration, finish a run, and claim the result."
+        consequence="Biotech Labs only matters once the field produces a live specimen lead."
+        nextStep="Return to exploration, finish a sweep, and claim the result."
         tone="neutral"
       />
     );
@@ -26,7 +26,7 @@ export default function BiotechLabsStateSummary() {
       <ScreenStateSummary
         eyebrow="Loop State"
         title="Lead Active / Recovery Advised"
-        consequence="A viable specimen lead is active, but survival pressure is high enough that recovery is the safer next move before the hunt."
+        consequence="A viable specimen lead is active, but survival pressure is high enough that recovery is the safer next move before commitment."
         nextStep="Recover condition first, then return here to resolve the hunt."
         tone="warning"
       />
@@ -37,8 +37,8 @@ export default function BiotechLabsStateSummary() {
     <ScreenStateSummary
       eyebrow="Loop State"
       title="Lead Active"
-      consequence="A viable specimen trace is locked and the hunt can be resolved immediately from this screen."
-      nextStep="Run the specimen hunt to convert the lead into rewards."
+      consequence="A viable specimen trace is locked and this screen can convert it into a resolved hunt right now."
+      nextStep="Commit to the specimen hunt, then review the payout and survival cost."
       tone="ready"
     />
   );

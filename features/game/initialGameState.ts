@@ -51,6 +51,26 @@ export const initialGameState: GameState = {
 
   missions: [
     {
+      id: "voidfield-prowl",
+      category: "operation",
+      title: "Prowl the Voidfield",
+      description:
+        "Send a short-range hunt beyond the citadel perimeter and return with salvage, residue, and whatever survived the pass.",
+      path: "neutral",
+      durationHours: 0.0125,
+      reward: {
+        rankXp: 30,
+        masteryProgress: 6,
+        conditionDelta: -7,
+        influence: 1,
+        resources: {
+          credits: 55,
+          bioSamples: 2,
+          runeDust: 3,
+        },
+      },
+    },
+    {
       id: "outer-wastes-scavenge",
       category: "operation",
       title: "Scavenge the Outer Wastes",
@@ -135,7 +155,7 @@ export const initialGameState: GameState = {
       category: "hunting-ground",
       title: "Cull a Rustfang Pack",
       description:
-        "Deploy a guild hunting team into the outer trenchline to bring back alloy scrap, credits, and stripped ore.",
+        "Deploy a mercenary field team into the outer trenchline to bring back alloy scrap, credits, and stripped ore.",
       path: "neutral",
       durationHours: 0.0042,
       reward: {

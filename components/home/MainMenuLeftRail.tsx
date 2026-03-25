@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useRef } from "react";
 import {
   Briefcase,
   BrainCircuit,
@@ -13,11 +15,14 @@ import {
   Wrench,
   type LucideIcon,
 } from "lucide-react";
+import { useGame } from "@/features/game/gameContext";
 import {
   mainMenuItems,
   type MainMenuIconKey,
   type MainMenuItem,
 } from "@/features/home/mainMenuData";
+import { DEFAULT_HOME_DEPLOY_ZONE_ID, voidZones } from "@/features/void-maps/zoneData";
+import { useActiveProcessTimer } from "@/features/exploration/useActiveProcessTimer";
 
 const iconMap: Record<MainMenuIconKey, LucideIcon> = {
   play: Play,
@@ -31,20 +36,180 @@ const iconMap: Record<MainMenuIconKey, LucideIcon> = {
   settings: Settings,
 };
 
+/** Shortest neutral Hunting Ground contract — used for one-tap home deploy. */
+const DEFAULT_DEPLOY_HG_MISSION_ID = "hg-rustfang-prowl";
+
 export default function MainMenuLeftRail() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const { state, dispatch } = useGame();
+  const isFieldActive = pathname === "/home";
+  const missionQueue = Array.isArray(state.player.missionQueue)
+    ? state.player.missionQueue
+    : [];
+  const isQueueFull =
+    missionQueue.length >= state.player.maxMissionQueueSlots;
+  const defaultDeployMission = state.missions.find(
+    (m) => m.id === DEFAULT_DEPLOY_HG_MISSION_ID,
+  );
+  const activeHuntProcess =
+    state.player.activeProcess?.kind === "hunt"
+      ? state.player.activeProcess
+      : null;
+  /** Informational only: button is always clickable in alpha. */
+  const huntBlocksDeploy =
+    activeHuntProcess !== null && activeHuntProcess.status === "running";
+  const { remainingSeconds, isRunning } =
+    useActiveProcessTimer(activeHuntProcess);
+  const pendingHomeResultNavRef = useRef(false);
+  const pendingRealtimeBonusNavTimeoutRef = useRef<
+    ReturnType<typeof setTimeout> | null
+  >(null);
+  const lastHandledHuntResultAtRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!pendingHomeResultNavRef.current) {
+      return;
+    }
+
+    const result = state.player.lastHuntResult;
+    if (!result) {
+      return;
+    }
+
+    const mission = state.missions.find((m) => m.id === result.missionId);
+    if (mission?.category !== "hunting-ground") {
+      return;
+    }
+
+    if (lastHandledHuntResultAtRef.current === result.resolvedAt) {
+      return;
+    }
+
+    const realtimeApplied =
+      result.realtimeContributionAppliedForResolvedAt === result.resolvedAt;
+
+    // Realtime contribution bonus arrives from the ws server shortly after
+    // `lastHuntResult` is first written. Delay navigation so the result screen
+    // shows the final adjusted payout.
+    if (!realtimeApplied) {
+      // Clear and re-schedule fallback navigation for this resolvedAt.
+      if (pendingRealtimeBonusNavTimeoutRef.current) {
+        clearTimeout(pendingRealtimeBonusNavTimeoutRef.current);
+      }
+
+      pendingRealtimeBonusNavTimeoutRef.current = setTimeout(() => {
+        if (lastHandledHuntResultAtRef.current === result.resolvedAt) {
+          return;
+        }
+
+        lastHandledHuntResultAtRef.current = result.resolvedAt;
+        pendingHomeResultNavRef.current = false;
+        router.push("/bazaar/biotech-labs/result");
+      }, 1600);
+      return;
+    }
+
+    if (pendingRealtimeBonusNavTimeoutRef.current) {
+      clearTimeout(pendingRealtimeBonusNavTimeoutRef.current);
+      pendingRealtimeBonusNavTimeoutRef.current = null;
+    }
+
+    lastHandledHuntResultAtRef.current = result.resolvedAt;
+    pendingHomeResultNavRef.current = false;
+    router.push("/bazaar/biotech-labs/result");
+  }, [state.player.lastHuntResult, state.missions, router]);
+
+  function handleStartVoidHunt() {
+    pendingHomeResultNavRef.current = true;
+    dispatch({
+      type: "QUEUE_MISSION",
+      payload: { missionId: DEFAULT_DEPLOY_HG_MISSION_ID },
+    });
+
+    const SESSION_BUCKET_MS = 2 * 60 * 1000;
+    const sessionBucketId = Math.floor(Date.now() / SESSION_BUCKET_MS);
+    // Deterministic zone allocation so multiple players deploying around the same time
+    // land in the same shared realtime shard.
+    const hashed = Math.imul(sessionBucketId ^ (sessionBucketId >>> 16), 0x45d9f3b);
+    const zoneIndex = Math.abs(hashed) % voidZones.length;
+    const allocatedZoneId =
+      voidZones[zoneIndex]?.id ?? DEFAULT_HOME_DEPLOY_ZONE_ID;
+
+    router.push(
+      `/bazaar/void-map?zone=${allocatedZoneId}&bucket=${sessionBucketId}`,
+    );
+  }
+
+  const deployStatusLine = activeHuntProcess
+    ? huntBlocksDeploy
+      ? "Hunt active"
+      : "Ready"
+    : isQueueFull
+      ? "Queue full"
+      : "Ready";
+
   return (
     <div className="rounded-[28px] border border-white/10 bg-black/45 p-3 shadow-[0_18px_60px_rgba(0,0,0,0.45)] backdrop-blur-md">
-      <div className="mb-3 rounded-[22px] border border-red-500/30 bg-[linear-gradient(135deg,rgba(130,18,18,0.88),rgba(45,8,8,0.92))] px-4 py-4 shadow-[0_0_30px_rgba(255,50,50,0.12)]">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-red-200/80">
-          Primary Access
+      <button
+        type="button"
+        onClick={handleStartVoidHunt}
+        disabled={false}
+        className={[
+          "group mb-3 block w-full rounded-[22px] border px-4 py-4 text-left shadow-[0_0_30px_rgba(255,50,50,0.12)] transition",
+          "border-red-500/30 bg-[linear-gradient(135deg,rgba(130,18,18,0.88),rgba(45,8,8,0.92))] hover:border-red-400/45 hover:brightness-110",
+        ].join(" ")}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-red-200/80">
+            Deployment
+          </div>
+          <div
+            className={[
+              "rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em]",
+              activeHuntProcess
+                ? "border-amber-300/40 bg-amber-300/14 text-amber-50"
+                : isFieldActive
+                  ? "border-cyan-300/40 bg-cyan-300/14 text-cyan-50"
+                  : "border-white/10 bg-black/20 text-white/55",
+            ].join(" ")}
+          >
+            {activeHuntProcess
+              ? isRunning
+                ? `Hunt ${remainingSeconds}s`
+                : "Resolving"
+              : isQueueFull
+                ? "Queue Full"
+                : isFieldActive
+                  ? "Field Active"
+                  : "Ready"}
+          </div>
         </div>
 
         <div className="mt-2 text-[34px] font-black uppercase leading-[0.92] text-white">
-          Enter
+          Deploy
           <br />
-          The Void
+          Into the Void
         </div>
-      </div>
+
+        <p className="mt-2 text-xs font-semibold uppercase tracking-[0.14em] text-white/70">
+          {deployStatusLine}
+        </p>
+
+        <p className="mt-1.5 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/42">
+          Hunting Ground · contract board · shared mission queue
+        </p>
+
+        <p className="mt-3 max-w-[260px] text-sm leading-6 text-white/72">
+          {activeHuntProcess && isRunning
+            ? "AFK hunt is live on the mission timer. If you deployed from here, the Hunt Result screen opens when the contract resolves."
+            : activeHuntProcess && !isRunning
+              ? "Contract is finishing payout resolution."
+              : isQueueFull
+                ? "Mission queue is full. Clear or wait for a hunting contract slot before deploying again."
+                : `Queues ${defaultDeployMission?.title ?? "a short hunting-ground contract"} and opens the Void map shell with zone spawn simulation while the timer runs.`}
+        </p>
+      </button>
 
       <nav className="space-y-2">
         {mainMenuItems.map((item: MainMenuItem) => {

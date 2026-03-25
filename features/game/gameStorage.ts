@@ -91,7 +91,7 @@ function normalizeLatestHuntResult(value: unknown): LatestHuntResult | null {
     return null;
   }
 
-  return {
+  const result: LatestHuntResult = {
     missionId: value.missionId,
     huntTitle: value.huntTitle,
     resolvedAt: value.resolvedAt,
@@ -102,6 +102,48 @@ function normalizeLatestHuntResult(value: unknown): LatestHuntResult | null {
     influenceGained: value.influenceGained,
     resourcesGained: normalizePartialResources(value.resourcesGained),
   };
+
+  if (typeof value.baseRankXpGained === "number") {
+    result.baseRankXpGained = value.baseRankXpGained;
+  }
+  if (typeof value.baseMasteryProgressGained === "number") {
+    result.baseMasteryProgressGained = value.baseMasteryProgressGained;
+  }
+  if (typeof value.baseInfluenceGained === "number") {
+    result.baseInfluenceGained = value.baseInfluenceGained;
+  }
+  if (value.baseResourcesGained !== undefined) {
+    result.baseResourcesGained = normalizePartialResources(value.baseResourcesGained);
+  }
+
+  if (value.realtimeContributionBonusMultiplier === null) {
+    result.realtimeContributionBonusMultiplier = null;
+  } else if (typeof value.realtimeContributionBonusMultiplier === "number") {
+    result.realtimeContributionBonusMultiplier = value.realtimeContributionBonusMultiplier;
+  }
+
+  if (value.realtimeContributionAppliedForResolvedAt === null) {
+    result.realtimeContributionAppliedForResolvedAt = null;
+  } else if (typeof value.realtimeContributionAppliedForResolvedAt === "number") {
+    result.realtimeContributionAppliedForResolvedAt = value.realtimeContributionAppliedForResolvedAt;
+  }
+
+  if (typeof value.realtimeRankXpBonusGained === "number") {
+    result.realtimeRankXpBonusGained = value.realtimeRankXpBonusGained;
+  }
+  if (typeof value.realtimeMasteryProgressBonusGained === "number") {
+    result.realtimeMasteryProgressBonusGained = value.realtimeMasteryProgressBonusGained;
+  }
+  if (typeof value.realtimeInfluenceBonusGained === "number") {
+    result.realtimeInfluenceBonusGained = value.realtimeInfluenceBonusGained;
+  }
+  if (value.realtimeResourcesBonusGained !== undefined) {
+    result.realtimeResourcesBonusGained = normalizePartialResources(
+      value.realtimeResourcesBonusGained,
+    );
+  }
+
+  return result;
 }
 
 function normalizeActiveProcess(value: unknown): ActiveProcess | null {
@@ -109,7 +151,7 @@ function normalizeActiveProcess(value: unknown): ActiveProcess | null {
 
   if (
     typeof value.id !== "string" ||
-    value.kind !== "exploration" ||
+    (value.kind !== "exploration" && value.kind !== "hunt") ||
     (value.status !== "running" && value.status !== "complete") ||
     typeof value.title !== "string" ||
     (value.sourceId !== null && typeof value.sourceId !== "string") ||

@@ -19,11 +19,11 @@ export type MainMenuItem = {
 export const mainMenuItems: MainMenuItem[] = [
   { label: "Continue", href: "/", icon: "folder", isPrimary: true },
   { label: "New Game", href: "/", icon: "play" },
-  { label: "Career", href: "/status", icon: "briefcase" },
+  { label: "Career", href: "/career", icon: "briefcase" },
   { label: "Mastery", href: "/factions", icon: "brain" },
-  { label: "Professions", href: "/status", icon: "wrench" },
+  { label: "Professions", href: "/professions", icon: "wrench" },
   { label: "Market", href: "/bazaar", icon: "store" },
   { label: "Arena", href: "/arena", icon: "trophy" },
-  { label: "Guild", href: "/missions", icon: "users" },
+  { label: "Missions", href: "/missions", icon: "users" },
   { label: "Settings", href: "/status", icon: "settings" },
 ];

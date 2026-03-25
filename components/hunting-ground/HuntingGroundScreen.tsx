@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import BazaarSubpageNav from "@/components/bazaar/BazaarSubpageNav";
 import ScreenHeader from "@/components/shared/ScreenHeader";
@@ -7,10 +8,24 @@ import SectionCard from "@/components/shared/SectionCard";
 import PlaceholderPanel from "@/components/shared/PlaceholderPanel";
 import { useGame } from "@/features/game/gameContext";
 import { huntingGroundScreenData } from "@/features/hunting-ground/huntingGroundScreenData";
+import {
+  buildAfkFieldRunFeedback,
+  formatAfkTrendLabel,
+  getAfkFieldRiskRead,
+  getAfkRunTrend,
+  getExtractionQualityLabelForCondition,
+  getLiveFieldIntensityLabel,
+} from "@/features/hunting-ground/afkRunFeedback";
 import type {
   MissionDefinition,
   MissionQueueEntry,
 } from "@/features/game/gameTypes";
+
+type HuntingGroundScreenHeader = {
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+};
 
 type QueuedMissionView = MissionQueueEntry & {
   mission: MissionDefinition;
@@ -173,11 +188,20 @@ function buildCompletionFeedback(completedMissions: MissionDefinition[]): Comple
   };
 }
 
-export default function HuntingGroundScreen() {
+type HuntingGroundScreenProps = {
+  header?: HuntingGroundScreenHeader;
+};
+
+export default function HuntingGroundScreen({
+  header = huntingGroundScreenData,
+}: HuntingGroundScreenProps) {
   const { state, dispatch } = useGame();
   const [now, setNow] = useState(() => Date.now());
   const [completionFeedback, setCompletionFeedback] =
     useState<CompletionFeedback | null>(null);
+  const [afkTrendHint, setAfkTrendHint] = useState<string | null>(null);
+  const lastHgResolvedRef = useRef<number | null>(null);
+  const prevAfkQualityRef = useRef<number | null>(null);
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -225,24 +249,69 @@ export default function HuntingGroundScreen() {
     (entry) => now >= entry.startsAt && now < entry.endsAt,
   );
   const pendingEntries = queuedEntries.filter((entry) => now < entry.startsAt);
+  const activeHgEntry = activeEntries[0] ?? null;
+  const activeRunRiskRead = activeHgEntry
+    ? getAfkFieldRiskRead({
+        condition: state.player.condition,
+        hunger: state.player.hunger,
+      })
+    : null;
+  const activeRunExtractionPreview = activeHgEntry
+    ? getExtractionQualityLabelForCondition(state.player.condition)
+    : null;
   const hasStarterContracts = huntingGroundMissions.length > 0;
   const previousQueuedEntriesRef = useRef<QueuedMissionView[]>(queuedEntries);
+
+  useEffect(() => {
+    const result = state.player.lastHuntResult;
+    if (!result) {
+      return;
+    }
+
+    const mission = state.missions.find((m) => m.id === result.missionId);
+    if (mission?.category !== "hunting-ground") {
+      return;
+    }
+
+    if (lastHgResolvedRef.current === result.resolvedAt) {
+      return;
+    }
+
+    lastHgResolvedRef.current = result.resolvedAt;
+
+    const feedback = buildAfkFieldRunFeedback(result, mission, {
+      rankLevel: state.player.rankLevel,
+      masteryProgress: state.player.masteryProgress,
+    });
+    const trend = getAfkRunTrend(
+      prevAfkQualityRef.current,
+      feedback.qualityScore,
+    );
+    prevAfkQualityRef.current = feedback.qualityScore;
+    setAfkTrendHint(formatAfkTrendLabel(trend));
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- trend runs on new hunt only; rank/mastery match that commit
+  }, [state.player.lastHuntResult, state.missions]);
+
+  const lastHgResult = state.player.lastHuntResult;
+  const lastHgIsField =
+    !!lastHgResult &&
+    huntingGroundMissionIds.has(lastHgResult.missionId);
 
   const cards = [
     {
       label: "Contracts",
       value: String(huntingGroundMissions.length),
-      hint: "Repeatable AFK hunt contracts currently available through the guild.",
+      hint: "Start here when you want background hunt progress without reopening the main field loop.",
     },
     {
       label: "Queue",
       value: `${queue.length}/${state.player.maxMissionQueueSlots}`,
-      hint: "Hunting Ground contracts consume slots from the shared global mission queue.",
+      hint: "Deploy a contract, let the queue run, then return here to read the payout and decide what comes next.",
     },
     {
       label: "Condition",
       value: `${state.player.condition}/100`,
-      hint: "Queued hunts still trade condition for progression and material yield.",
+      hint: "Contracts still spend condition, so the payout may push you toward Feast Hall before the next run.",
     },
   ];
 
@@ -282,10 +351,197 @@ export default function HuntingGroundScreen() {
         <BazaarSubpageNav accentClassName="hover:border-amber-300/40" />
 
         <ScreenHeader
-          eyebrow={huntingGroundScreenData.eyebrow}
-          title={huntingGroundScreenData.title}
-          subtitle={huntingGroundScreenData.subtitle}
+          eyebrow={header.eyebrow}
+          title={header.title}
+          subtitle={header.subtitle}
         />
+
+        <div className="flex flex-col gap-3 rounded-2xl border border-amber-500/20 bg-amber-500/[0.07] px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="text-sm text-amber-50/90">
+            <span className="font-semibold text-white">Field deploy:</span>{" "}
+            Quick deploy from{" "}
+            <Link
+              href="/home"
+              className="text-amber-200 underline decoration-amber-400/40 underline-offset-2 hover:text-white"
+            >
+              Command Deck (Home)
+            </Link>{" "}
+            queues a short contract and lands here. Full payout readout lives on{" "}
+            <Link
+              href="/bazaar/biotech-labs/result"
+              className="text-amber-200 underline decoration-amber-400/40 underline-offset-2 hover:text-white"
+            >
+              Hunt Result
+            </Link>
+            .
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4">
+          <div className="text-[10px] uppercase tracking-[0.2em] text-white/45">
+            Field rhythm (this session)
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <span className="rounded-full border border-violet-400/25 bg-violet-500/10 px-3 py-1 text-[11px] font-medium text-violet-100">
+              Tempo: {getLiveFieldIntensityLabel(state.player)}
+            </span>
+            {lastHgIsField ? (
+              <span className="rounded-full border border-emerald-400/25 bg-emerald-500/10 px-3 py-1 text-[11px] font-medium text-emerald-100">
+                Last payout:{" "}
+                {getExtractionQualityLabelForCondition(
+                  lastHgResult.conditionAfter,
+                )}
+              </span>
+            ) : (
+              <span className="rounded-full border border-white/10 bg-black/25 px-3 py-1 text-[11px] text-white/55">
+                No hunting-ground payout on record yet
+              </span>
+            )}
+            {afkTrendHint ? (
+              <span className="rounded-full border border-cyan-400/25 bg-cyan-500/10 px-3 py-1 text-[11px] font-medium text-cyan-100">
+                {afkTrendHint}
+              </span>
+            ) : null}
+          </div>
+        </div>
+
+        {activeHgEntry && activeRunRiskRead ? (
+          <SectionCard
+            title="Active field run"
+            description="Timer is live on the mission queue. Below is your in-run read: intensity, extraction posture before this payout finishes, and survival risk so you can prep the next move."
+          >
+            <div
+              className={[
+                "rounded-2xl border px-4 py-3",
+                activeRunRiskRead.band === "critical"
+                  ? "border-red-500/40 bg-red-500/12"
+                  : activeRunRiskRead.band === "pressured"
+                    ? "border-amber-400/35 bg-amber-500/12"
+                    : "border-emerald-400/30 bg-emerald-500/10",
+              ].join(" ")}
+            >
+              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/55">
+                In-run status
+              </div>
+              <div
+                className={[
+                  "mt-1 text-sm font-semibold",
+                  activeRunRiskRead.band === "critical"
+                    ? "text-red-100"
+                    : activeRunRiskRead.band === "pressured"
+                      ? "text-amber-50"
+                      : "text-emerald-50",
+                ].join(" ")}
+              >
+                {activeRunRiskRead.label}
+              </div>
+              <p className="mt-2 text-sm leading-6 text-white/72">
+                {activeRunRiskRead.detail}
+              </p>
+            </div>
+
+            <div className="mt-4 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div className="min-w-0">
+                <div className="text-lg font-semibold text-white">
+                  {activeHgEntry.mission.title}
+                </div>
+                <div className="mt-2 text-sm font-semibold text-amber-100/95">
+                  {getQueueStatusLabel(activeHgEntry, now)}
+                </div>
+                <p className="mt-2 text-sm text-white/60">
+                  Extraction read (now):{" "}
+                  <span className="font-semibold text-white/88">
+                    {activeRunExtractionPreview}
+                  </span>
+                  {" — "}
+                  based on current condition before contract wear from this board
+                  ({activeHgEntry.mission.reward.conditionDelta} condition on
+                  settle).
+                </p>
+                <Link
+                  href="/bazaar/biotech-labs/result"
+                  className="mt-3 inline-flex text-sm font-semibold text-cyan-200/95 underline decoration-cyan-400/35 underline-offset-2 hover:text-white"
+                >
+                  Open Hunt Result (after timer)
+                </Link>
+              </div>
+              <div className="flex flex-col gap-2 lg:items-end">
+                <div className="flex flex-wrap justify-end gap-2">
+                  <span className="rounded-full border border-violet-400/32 bg-violet-500/12 px-3 py-1 text-[11px] font-medium text-violet-100">
+                    Intensity: {getLiveFieldIntensityLabel(state.player)}
+                  </span>
+                  <span
+                    className={[
+                      "rounded-full border px-3 py-1 text-[11px] font-medium",
+                      activeRunExtractionPreview === "Clean extraction"
+                        ? "border-emerald-400/35 bg-emerald-500/12 text-emerald-50"
+                        : activeRunExtractionPreview === "Standard pull"
+                          ? "border-cyan-400/30 bg-cyan-500/12 text-cyan-50"
+                          : "border-orange-400/35 bg-orange-500/12 text-orange-50",
+                    ].join(" ")}
+                  >
+                    Extraction (current): {activeRunExtractionPreview}
+                  </span>
+                  <span
+                    className={[
+                      "rounded-full border px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em]",
+                      activeRunRiskRead.band === "critical"
+                        ? "border-red-400/40 bg-red-500/15 text-red-50"
+                        : activeRunRiskRead.band === "pressured"
+                          ? "border-amber-400/40 bg-amber-500/14 text-amber-50"
+                          : "border-emerald-400/40 bg-emerald-500/14 text-emerald-50",
+                    ].join(" ")}
+                  >
+                    {activeRunRiskRead.band === "safe"
+                      ? "Prep: safe"
+                      : activeRunRiskRead.band === "pressured"
+                        ? "Prep: plan recovery"
+                        : "Prep: urgent"}
+                  </span>
+                </div>
+                <div className="flex flex-wrap justify-end gap-2">
+                  <span className="rounded-full border border-white/12 bg-black/28 px-3 py-1 text-[11px] text-white/85">
+                    Expected: +{activeHgEntry.mission.reward.rankXp} XP · +{" "}
+                    {activeHgEntry.mission.reward.masteryProgress} Mastery
+                  </span>
+                  {Object.entries(
+                    activeHgEntry.mission.reward.resources ?? {},
+                  )
+                    .filter(([, value]) => typeof value === "number" && value !== 0)
+                    .map(([key, value]) => (
+                      <span
+                        key={key}
+                        className="rounded-full border border-emerald-500/22 bg-emerald-500/10 px-3 py-1 text-[11px] text-emerald-100"
+                      >
+                        +{value} {formatRewardLabel(key)}
+                      </span>
+                    ))}
+                </div>
+              </div>
+            </div>
+          </SectionCard>
+        ) : null}
+
+        {!activeEntries[0] && pendingEntries[0] ? (
+          <SectionCard
+            title="Contract queued"
+            description="The mission queue is holding your hunt until the prior window clears or the clock reaches start time."
+          >
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="text-base font-semibold text-white">
+                  {pendingEntries[0].mission.title}
+                </div>
+                <div className="mt-2 text-sm text-cyan-100/88">
+                  {getQueueStatusLabel(pendingEntries[0], now)}
+                </div>
+              </div>
+              <span className="shrink-0 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-100">
+                Waiting
+              </span>
+            </div>
+          </SectionCard>
+        ) : null}
 
         <div className="grid gap-6 md:grid-cols-3">
           {cards.map((card) => (
@@ -331,23 +587,50 @@ export default function HuntingGroundScreen() {
                   ))}
                 </div>
               </div>
+              <div className="rounded-2xl border border-cyan-400/20 bg-cyan-400/8 p-4 text-sm text-cyan-50/88">
+                <div>
+                  {state.player.condition < 60
+                    ? "Next Step: the contract paid out, but condition is strained. Open Feast Hall or Status before taking the next hunt."
+                    : "Next Step: the payout is banked. Open Feast Hall if you need stabilization, or redeploy another contract if the body is still holding."}
+                </div>
+                <div className="mt-2 text-xs text-cyan-100/75">
+                  Post-run read:{" "}
+                  {getExtractionQualityLabelForCondition(state.player.condition)}
+                  . Rank and mastery nudge how hard contracts feel even with the same
+                  timer rails.
+                </div>
+              </div>
+              <Link
+                href="/bazaar/biotech-labs/result"
+                className="inline-flex w-fit rounded-2xl border border-cyan-400/35 bg-cyan-500/12 px-4 py-2 text-sm font-semibold text-cyan-50 transition hover:border-cyan-300/50 hover:bg-cyan-500/18"
+              >
+                Open full Hunt Result readout
+              </Link>
             </div>
           </SectionCard>
         ) : null}
 
         <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
           <SectionCard
-            title="Hunt Contract Board"
-            description="Start here. Pick a starter contract, press Deploy, and the hunt will enter the shared timer queue. Short runs are the easiest first step."
+            title="Contract Board"
+            description="Start here. Pick a repeatable hunt contract, press Deploy, and the run will enter the shared timer queue. Short runs are the easiest first step."
           >
             <div className="space-y-3">
               <div className="rounded-2xl border border-amber-500/20 bg-amber-500/8 p-4 text-sm text-amber-50/90">
-                First Hunt: deploy any contract below to start background progress. Short Run contracts finish fastest if you want the quickest first result.
+                Contract Loop: deploy a hunt, let the field team run it through
+                the shared queue, claim the payout, then decide whether to
+                recover, trade, or redeploy.
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-sm text-white/68">
+                New-player rule: choose one contract, press Deploy, wait for the
+                queue to resolve, then come back here to read the payout before
+                spending it in Feast Hall or the Crafting District.
               </div>
 
               {!hasStarterContracts ? (
                 <div className="rounded-2xl border border-dashed border-white/10 p-4 text-sm text-white/50">
-                  No hunt contracts are available yet. Hunting Ground starter contracts will appear here once this screen has valid guild data.
+                  No hunt contracts are available yet. Contract postings will
+                  appear here once valid repeatable contract data is present.
                 </div>
               ) : (
                 huntingGroundMissions.map((mission) => {
@@ -369,7 +652,7 @@ export default function HuntingGroundScreen() {
                             </h3>
 
                             <span className="rounded-full border border-amber-500/25 bg-amber-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-200">
-                              Hunting Ground
+                              Contract
                             </span>
 
                             <span className="rounded-full border border-cyan-500/20 bg-cyan-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-cyan-100">
@@ -455,12 +738,18 @@ export default function HuntingGroundScreen() {
           <div className="grid gap-6">
             <SectionCard
               title="Deployment Queue"
-              description="These hunts occupy the shared live mission queue, so they compete for the same slots as standard Missions."
+              description="These contract hunts occupy the shared live mission queue, so they compete for the same slots as standard Missions."
             >
               <div className="space-y-3">
+                <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-sm text-white/65">
+                  Read this panel in order: queued means waiting, active means
+                  running, and once the payout lands you should check recovery
+                  pressure before deploying again.
+                </div>
                 {queuedEntries.length === 0 ? (
                   <div className="rounded-2xl border border-dashed border-white/10 p-4 text-sm text-white/50">
-                    No hunts are deployed yet. Choose a starter contract from the Hunt Contract Board and press Deploy to begin your first background run.
+                    No hunts are deployed yet. Choose a contract from the
+                    Contract Board and press Deploy to begin the next run.
                   </div>
                 ) : (
                   queuedEntries.map((entry) => {
@@ -501,7 +790,7 @@ export default function HuntingGroundScreen() {
 
             <SectionCard
               title="Ground Status"
-              description="Quick read on how repeatable hunt contracts are feeding progression and material stock."
+              description="Quick read on how repeatable contracts are feeding material stock and the next survival decision."
             >
               <div className="space-y-3">
                 <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
@@ -526,7 +815,8 @@ export default function HuntingGroundScreen() {
                     {state.player.resources.bioSamples} Bio Samples
                   </div>
                   <div className="mt-1 text-sm text-white/55">
-                    Hunting Ground contracts feed the same shared resource pool used by inventory and future crafting.
+                    Contract payouts feed the same shared resource pool that
+                    supports recovery, crafting, and the next Black Market call.
                   </div>
                 </div>
 

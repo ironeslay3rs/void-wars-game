@@ -18,7 +18,10 @@ const PHASE1_EXPLORATION_TITLE = "Outer Wastes Exploration";
 
 export default function ExplorationPanel() {
   const { state, dispatch } = useGame();
-  const activeProcess = state.player.activeProcess;
+  const activeProcess =
+    state.player.activeProcess?.kind === "exploration"
+      ? state.player.activeProcess
+      : null;
   const guidance = getFirstSessionGuidance(state);
   const { remainingSeconds, isRunning, isComplete } =
     useActiveProcessTimer(activeProcess);
@@ -30,10 +33,10 @@ export default function ExplorationPanel() {
   );
   const idleActionMessage =
     guidance.nextAction === "explore"
-      ? "Ready. This control starts the next exploration sweep."
+      ? "Ready. Press below to send the next field sweep out into the wastes."
       : guidance.nextAction === "hunt"
-        ? "Available. Exploration can start here, but an active biotech lead should be resolved first."
-        : "Available. Exploration can start here, but recovery should come first.";
+        ? "Available. You can start another sweep here, but the live biotech lead should be resolved first."
+        : "Available. You can start another sweep here, but recovery should come first.";
 
   function handleStartExploration() {
     const startedAt = Date.now();
@@ -61,7 +64,7 @@ export default function ExplorationPanel() {
   return (
     <SectionCard
       title="Exploration"
-      description="Run a sweep, secure the result, and turn it into the next biotech lead."
+      description="This is the field entry point. Run a sweep, secure the result, and turn it into the next biotech lead."
     >
       <div className="space-y-4">
         <div className="grid gap-3 sm:grid-cols-2">
@@ -91,7 +94,9 @@ export default function ExplorationPanel() {
         {!activeProcess ? (
           <>
             <p className="text-sm text-white/60">
-              Start a sweep to search the wastes for a fresh biotech signal. Once the run finishes, claim it here to activate the next specimen lead.
+              Start a sweep to search the wastes for a fresh biotech signal.
+              When the run finishes, claim it here to activate the next
+              specimen lead and move the loop into Biotech Labs.
             </p>
 
             <button
@@ -105,7 +110,7 @@ export default function ExplorationPanel() {
               ].join(" ")}
             >
               <span className="flex items-center justify-between gap-3">
-                <span>Start Exploration</span>
+                <span>Start Field Sweep</span>
                 {shouldHighlightStartAction ? (
                   <span className="rounded-full border border-cyan-300/40 bg-cyan-300/14 px-2 py-1 text-[10px] uppercase tracking-[0.16em] text-cyan-50">
                     First Step
@@ -130,7 +135,7 @@ export default function ExplorationPanel() {
               <div className="mt-2 text-sm text-white/60">
                 {isRunning
                   ? `Exploration is underway. ${remainingSeconds}s remain before the result can be secured.`
-                  : "Exploration is complete. The result is ready to claim and convert into a specimen lead."}
+                  : "Exploration is complete. The result is ready to claim, bank, and convert into a specimen lead."}
               </div>
             </div>
 
@@ -200,7 +205,7 @@ export default function ExplorationPanel() {
                 </div>
 
                 <div className="mt-4 rounded-xl border border-cyan-400/20 bg-cyan-400/8 px-3 py-3 text-sm text-cyan-50/90">
-                  Next Step: claim the result to secure the lead, then move to Biotech Labs to initiate the hunt.
+                  Next Step: claim the result, secure the lead, then leave this field surface and move to Biotech Labs to initiate the hunt.
                 </div>
               </div>
             ) : null}
@@ -216,7 +221,7 @@ export default function ExplorationPanel() {
                 </button>
 
                 <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-3 text-sm text-white/60">
-                  Local Status: the lead is not active yet. Claim stays locked until this sweep finishes.
+                  Field Status: the lead is not active yet. Claim stays locked until this sweep finishes.
                 </div>
               </>
             ) : null}
@@ -228,11 +233,11 @@ export default function ExplorationPanel() {
                   onClick={handleClaimReward}
                   className="w-full rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-4 py-3 text-sm font-semibold text-emerald-100 transition hover:border-emerald-400/40 hover:bg-emerald-500/15"
                 >
-                  Claim Reward and Secure Lead
+                  Claim Result and Secure Lead
                 </button>
 
                 <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/8 px-3 py-3 text-sm text-emerald-50/90">
-                  Local Status: claim is ready. Securing this result activates the biotech lead and advances the loop.
+                  Field Status: claim is ready. Securing this result activates the biotech lead and advances the loop into Biotech Labs.
                 </div>
               </>
             ) : null}

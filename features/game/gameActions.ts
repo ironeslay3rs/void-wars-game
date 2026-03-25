@@ -3,6 +3,7 @@ import { getFeastHallOfferById } from "@/features/black-market/feastHallData";
 import { phase1ExplorationReward } from "@/features/exploration/explorationData";
 import {
   applyActivityHungerCost,
+  addPartialResources,
   applyMissionReward,
   applyRankXp,
   buildMissionQueueEntry,
@@ -14,6 +15,7 @@ import {
   getXpToNext,
   processMissionQueue,
   rebuildMissionQueueSchedule,
+  syncMirroredHuntActiveProcess,
 } from "@/features/game/gameMissionUtils";
 import {
   buildNavigationState,
@@ -425,8 +427,121 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             masteryProgressGained: mission.reward.masteryProgress,
             influenceGained: mission.reward.influence ?? 0,
             resourcesGained: mission.reward.resources ?? {},
+
+            baseRankXpGained: mission.reward.rankXp,
+            baseMasteryProgressGained: mission.reward.masteryProgress,
+            baseInfluenceGained: mission.reward.influence ?? 0,
+            baseResourcesGained: mission.reward.resources ?? {},
+
+            realtimeContributionBonusMultiplier: null,
+            realtimeContributionAppliedForResolvedAt: null,
+            realtimeRankXpBonusGained: 0,
+            realtimeMasteryProgressBonusGained: 0,
+            realtimeInfluenceBonusGained: 0,
+            realtimeResourcesBonusGained: {},
           },
         },
+      };
+    }
+
+    case "APPLY_REALTIME_HUNT_BONUS": {
+      const { resolvedAt, bonusMultiplier } = action.payload;
+      const latest = state.player.lastHuntResult;
+      if (!latest) return state;
+
+      // Idempotency: never apply twice for the same resolvedAt.
+      if (latest.realtimeContributionAppliedForResolvedAt === resolvedAt) {
+        return state;
+      }
+
+      const mission = getMissionById(state.missions, latest.missionId);
+      if (!mission || mission.category !== "hunting-ground") return state;
+
+      if (latest.resolvedAt !== resolvedAt) return state;
+
+      const cappedMultiplier = clamp(bonusMultiplier, 0, 0.35);
+
+      const baseRankXpGained =
+        latest.baseRankXpGained ?? latest.rankXpGained ?? 0;
+      const baseMasteryProgressGained =
+        latest.baseMasteryProgressGained ?? latest.masteryProgressGained ?? 0;
+      const baseInfluenceGained =
+        latest.baseInfluenceGained ?? latest.influenceGained ?? 0;
+      const baseResourcesGained =
+        latest.baseResourcesGained ?? latest.resourcesGained ?? {};
+
+      const realtimeRankXpBonusGained = Math.round(
+        baseRankXpGained * cappedMultiplier,
+      );
+      const realtimeMasteryProgressBonusGained = Math.round(
+        baseMasteryProgressGained * cappedMultiplier,
+      );
+      const realtimeInfluenceBonusGained = Math.round(
+        baseInfluenceGained * cappedMultiplier,
+      );
+
+      const realtimeResourcesBonusGained: Partial<ResourcesState> = {};
+      const nextResourcesGained: Partial<ResourcesState> = {
+        ...latest.resourcesGained,
+      };
+
+      (Object.entries(baseResourcesGained) as Array<[ResourceKey, number]>).forEach(
+        ([key, baseAmount]) => {
+          if (!baseAmount || baseAmount <= 0) return;
+          const bonusAmount = Math.floor(baseAmount * cappedMultiplier);
+          if (bonusAmount <= 0) return;
+          realtimeResourcesBonusGained[key] = bonusAmount;
+          nextResourcesGained[key] = (nextResourcesGained[key] ?? 0) + bonusAmount;
+        },
+      );
+
+      const rankState = applyRankXp(
+        state.player.rankLevel,
+        state.player.rankXp,
+        realtimeRankXpBonusGained,
+      );
+
+      const nextPlayerAfterBonus = {
+        ...state.player,
+        ...rankState,
+        masteryProgress: clamp(
+          state.player.masteryProgress +
+            realtimeMasteryProgressBonusGained,
+          0,
+          100,
+        ),
+        influence: Math.max(
+          0,
+          state.player.influence + realtimeInfluenceBonusGained,
+        ),
+        resources: addPartialResources(
+          state.player.resources,
+          realtimeResourcesBonusGained,
+        ),
+        navigation: buildNavigationState(
+          rankState.rankLevel,
+          state.player.unlockedRoutes,
+          state.player.navigation.currentRoute,
+        ),
+        lastHuntResult: {
+          ...latest,
+          realtimeContributionBonusMultiplier: cappedMultiplier,
+          realtimeContributionAppliedForResolvedAt: resolvedAt,
+          realtimeRankXpBonusGained,
+          realtimeMasteryProgressBonusGained,
+          realtimeInfluenceBonusGained,
+          realtimeResourcesBonusGained,
+          rankXpGained: baseRankXpGained + realtimeRankXpBonusGained,
+          masteryProgressGained:
+            baseMasteryProgressGained + realtimeMasteryProgressBonusGained,
+          influenceGained: baseInfluenceGained + realtimeInfluenceBonusGained,
+          resourcesGained: nextResourcesGained,
+        },
+      };
+
+      return {
+        ...state,
+        player: nextPlayerAfterBonus,
       };
     }
 
@@ -447,7 +562,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           ...state.player,
           activeProcess: {
             id: action.payload.id,
-            kind: "exploration",
+            kind: action.payload.kind ?? "exploration",
             status: "running",
             title: action.payload.title,
             sourceId: action.payload.sourceId ?? null,
@@ -575,12 +690,19 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         anchorTime,
       });
 
+      const queuedPlayer: PlayerState = {
+        ...state.player,
+        missionQueue: [...missionQueue, nextEntry],
+      };
+
       return {
         ...state,
-        player: {
-          ...state.player,
-          missionQueue: [...missionQueue, nextEntry],
-        },
+        player: syncMirroredHuntActiveProcess(
+          queuedPlayer,
+          queuedPlayer.missionQueue,
+          state.missions,
+          queuedAt,
+        ),
       };
     }
 
@@ -605,12 +727,19 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         now: removedAt,
       });
 
+      const removedPlayer: PlayerState = {
+        ...state.player,
+        missionQueue: rebuiltQueue,
+      };
+
       return {
         ...state,
-        player: {
-          ...state.player,
-          missionQueue: rebuiltQueue,
-        },
+        player: syncMirroredHuntActiveProcess(
+          removedPlayer,
+          removedPlayer.missionQueue,
+          state.missions,
+          removedAt,
+        ),
       };
     }
 

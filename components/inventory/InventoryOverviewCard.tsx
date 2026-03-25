@@ -1,6 +1,18 @@
 "use client";
 
+import { formatResourceLabel } from "@/features/game/gameFeedback";
+import type { ResourceKey } from "@/features/game/gameTypes";
 import { useGame } from "@/features/game/gameContext";
+
+const RESOURCE_SLOT_ORDER: ResourceKey[] = [
+  "credits",
+  "ironOre",
+  "scrapAlloy",
+  "runeDust",
+  "emberCore",
+  "bioSamples",
+  "mossRations",
+];
 
 function formatFactionLabel(faction: string) {
   if (faction === "unbound") return "Unbound";
@@ -76,10 +88,11 @@ export default function InventoryOverviewCard() {
             Active Storage Profile
           </div>
           <div className="mt-3 text-2xl font-black uppercase tracking-[0.05em] text-white">
-            Inventory Grid
+            Your holdings
           </div>
           <div className="mt-2 text-sm text-white/65">
-            Resource-aware storage scaffold for Void Wars: Oblivion.
+            Counts read directly from current survival stock—every row is a tracked
+            resource slot.
           </div>
         </div>
 
@@ -111,7 +124,39 @@ export default function InventoryOverviewCard() {
         </div>
 
         <div className="mt-3 text-sm text-white/60">
-          This prototype currently counts tracked materials as stored inventory units.
+          Capacity sums salvage, biomass, and refined materials only. Credits and moss
+          rations are listed below but do not add to this bar.
+        </div>
+      </div>
+
+      <div className="mt-7 border-t border-white/10 pt-6">
+        <div className="text-[10px] uppercase tracking-[0.22em] text-white/40">
+          Resource slots
+        </div>
+        <div className="mt-4 flex flex-col gap-2">
+          {RESOURCE_SLOT_ORDER.map((key) => {
+            const amount = player.resources[key];
+            const hasStock = amount > 0;
+
+            return (
+              <div
+                key={key}
+                className="flex min-h-[48px] items-center justify-between gap-4 rounded-xl border border-white/12 bg-black/35 px-4 py-3"
+              >
+                <span className="text-sm font-semibold uppercase tracking-[0.08em] text-white/85">
+                  {formatResourceLabel(key)}
+                </span>
+                <span
+                  className={[
+                    "tabular-nums text-lg font-black tracking-tight",
+                    hasStock ? "text-white" : "text-white/40",
+                  ].join(" ")}
+                >
+                  {amount}
+                </span>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

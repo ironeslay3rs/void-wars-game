@@ -42,7 +42,7 @@ export default function InventoryScreen() {
     {
       label: "Used Capacity",
       value: `${capacityUsed}/${capacityMax}`,
-      hint: "Current prototype capacity is based on tracked resource storage only.",
+      hint: "Material storage load—salvage, biomass, and refined stock only (not credits or rations).",
     },
     {
       label: "Credits",
@@ -74,7 +74,7 @@ export default function InventoryScreen() {
         <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
           <SectionCard
             title="Storage Overview"
-            description="Current resource holdings, category totals, and future inventory lane ownership."
+            description="Slot list and grouped counts from live player resources—what you own right now."
           >
             <div className="space-y-5">
               <InventoryOverviewCard />

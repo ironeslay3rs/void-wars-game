@@ -24,7 +24,7 @@ export const bazaarMapNodes: BazaarNodeData[] = [
 
   { id: "arena", label: "Arena", x: 80, y: 30, type: "combat" },
   { id: "mecha-foundry", label: "Mecha Foundry", x: 75, y: 50, type: "mecha" },
-  { id: "mercenary-guild", label: "Mercenary Guild", x: 75, y: 70, type: "combat" },
+  { id: "mercenary-guild", label: "Hunting Ground", x: 75, y: 70, type: "combat" },
 
   { id: "teleport-gate", label: "Teleport Gate", x: 70, y: 85, type: "travel" },
 ];

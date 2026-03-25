@@ -25,9 +25,9 @@ export default function BiotechLabsPage() {
   const activeSpecimenAsset = activeSpecimen?.creatureAsset ?? null;
   const huntActionMessage = hasBiotechSpecimenLead
     ? guidance.nextAction === "hunt"
-      ? "Live trace confirmed. Commit now and carry the hunger burn into the aftermath."
+      ? "Live trace confirmed. This is the moment to commit, take the field cost, and turn the lead into a payout."
       : "Live trace confirmed, but the body is not ready. Recovery is the safer call before commitment."
-    : "No live trace on record. Return home, finish exploration, and claim a lead first.";
+    : "No live trace on record. Return to the field surface, finish exploration, and claim a lead first.";
 
   function handleResolveFirstHunt() {
     if (!hasBiotechSpecimenLead) {
@@ -68,7 +68,7 @@ export default function BiotechLabsPage() {
         <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           <SectionCard
             title="Mutation Bays"
-            description="Confirm the active specimen lead, then resolve the hunt from here."
+            description="This is where a live specimen lead becomes a resolved hunt. Confirm the target, commit, then carry the result forward."
           >
             <div className="space-y-3">
               <div className="grid gap-3 sm:grid-cols-2">
@@ -93,8 +93,8 @@ export default function BiotechLabsPage() {
 
               <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-white/70">
                 {hasBiotechSpecimenLead
-                  ? "A live trace is pinned to the board. Biotech Labs can commit the hunt now."
-                  : "No viable trace is pinned. Sweep the wastes, then claim a fresh lead."}
+                  ? "A live trace is pinned to the board. You can commit the hunt from here right now."
+                  : "No viable trace is pinned. Sweep the wastes, then claim a fresh lead before coming back here."}
               </div>
 
               {activeSpecimen ? (
@@ -182,7 +182,7 @@ export default function BiotechLabsPage() {
                     </div>
                     <div className="mt-2 text-xs font-medium uppercase tracking-[0.14em] text-white/60">
                       {hasBiotechSpecimenLead
-                        ? `Threat ${activeSpecimen?.threatLabel ?? "confirmed"} · hunger burn on contact`
+                        ? `Threat ${activeSpecimen?.threatLabel ?? "confirmed"} / hunger burn on contact`
                         : "Secure a live trace before commitment"}
                     </div>
                   </div>
@@ -209,9 +209,9 @@ export default function BiotechLabsPage() {
                 Next Step:{" "}
                 {hasBiotechSpecimenLead
                   ? guidance.nextAction === "hunt"
-                    ? "commit to the hunt, log the kill, then check survival pressure."
+                    ? "commit to the hunt, review the payout, then decide between Feast Hall recovery or the next run."
                     : "recover first, then return here and commit to the live lead."
-                  : "return home, complete exploration, and claim a lead before coming back here."}
+                  : "return to the field surface, complete exploration, and claim a lead before coming back here."}
               </div>
 
               {["Gene Extraction", "Mutation Trials", "Tissue Refinement"].map(
@@ -222,14 +222,14 @@ export default function BiotechLabsPage() {
                   >
                     {entry}
                   </div>
-                )
+                ),
               )}
             </div>
           </SectionCard>
 
           <SectionCard
             title="Bio Console"
-            description="Current specimen-readout surface for the active biotech lead."
+            description="Read the current target here before you commit to the hunt."
           >
             {activeSpecimen ? (
               <div className="rounded-xl border border-white/10 bg-white/5 p-6">
@@ -243,12 +243,15 @@ export default function BiotechLabsPage() {
                   {activeSpecimen.category} / {activeSpecimen.threatLabel}
                 </div>
                 <p className="mt-3 text-sm leading-6 text-white/60">
-                  Genetic trace is stable enough for deployment. Run the hunt while the current biotech signal remains viable, then review the aftermath before beginning the next sweep.
+                  Genetic trace is stable enough for deployment. Run the hunt
+                  while the signal is live, then review the aftermath before
+                  beginning the next sweep.
                 </p>
               </div>
             ) : (
               <div className="rounded-xl border border-dashed border-white/10 p-6 text-sm text-white/50">
-                No active specimen profile is available yet. Recover and claim a fresh exploration lead to populate the tracking console.
+                No active specimen profile is available yet. Finish exploration
+                and claim a fresh lead to populate this console.
               </div>
             )}
           </SectionCard>

@@ -156,8 +156,9 @@ export default function CraftingDistrictPage() {
               Crafting District
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-white/70">
-              The industrial core of the Bazaar. Here players forge equipment,
-              repair items, socket runes, and prepare for deeper progression.
+              A utility stop inside the current loop. Bring back salvage, bind
+              one practical survival item, then return to recovery pressure,
+              contracts, or the field.
             </p>
           </div>
         </div>
@@ -182,6 +183,37 @@ export default function CraftingDistrictPage() {
             </div>
           ))}
         </div>
+
+        <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+          <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/8 p-6">
+            <div className="text-[11px] uppercase tracking-[0.22em] text-emerald-300/70">
+              Active Utility
+            </div>
+            <h2 className="mt-2 text-xl font-black uppercase">Moss Binder</h2>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-white/72">
+              This is the one clear M1 action here: turn recovered Bio Samples
+              and Rune Dust into a Moss Ration so hunger pressure does not break
+              the next loop step.
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-white/10 bg-black/25 p-6">
+            <div className="text-[11px] uppercase tracking-[0.22em] text-orange-300/70">
+              Loop Fit
+            </div>
+            <div className="mt-3 space-y-3 text-sm text-white/72">
+              <div className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
+                Hunt or contract for salvage.
+              </div>
+              <div className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
+                Bind one ration when stores are slipping.
+              </div>
+              <div className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
+                Recover, stabilize, and return to the next run.
+              </div>
+            </div>
+          </div>
+        </section>
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {craftingStations.map((station) => {
@@ -211,6 +243,41 @@ export default function CraftingDistrictPage() {
 
         <section className="grid gap-4 xl:grid-cols-[1.3fr_0.7fr]">
           <div className="grid gap-4">
+            <div className="rounded-2xl border border-white/10 bg-black/25 p-6">
+              <div className="text-[11px] uppercase tracking-[0.22em] text-emerald-300/70">
+                Primary M1 Action
+              </div>
+              <h2 className="mt-2 text-xl font-black uppercase">Bind Moss Ration</h2>
+              <div className="mt-4 rounded-xl border border-emerald-400/20 bg-emerald-500/8 p-4">
+                <div className="text-sm font-semibold text-white">
+                  Convert recovered biomass into one immediate survival buffer.
+                </div>
+                <div className="mt-2 text-sm text-white/65">
+                  Current utility proof: bind {MOSS_RATION_RECIPE_COST.bioSamples} Bio Samples and {MOSS_RATION_RECIPE_COST.runeDust} Rune Dust into 1 Moss Ration.
+                </div>
+                <div className="mt-3 rounded-xl border border-cyan-400/20 bg-cyan-400/8 px-4 py-3 text-sm text-cyan-50/88">
+                  Next Step: bind a ration when hunger is becoming the next blocker, then return to Feast Hall, contracts, or the field.
+                </div>
+
+                <button
+                  type="button"
+                  onClick={craftMossRation}
+                  disabled={!canCraftMossRation}
+                  className="mt-4 w-full rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-left text-sm font-semibold text-emerald-100 transition hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Bind Moss Ration
+                  <div className="mt-1 text-xs text-white/60">
+                    Costs {MOSS_RATION_RECIPE_COST.bioSamples} Bio Samples + {MOSS_RATION_RECIPE_COST.runeDust} Rune Dust / Produces 1 Moss Ration
+                  </div>
+                </button>
+
+                <div className="mt-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/75">
+                  {rationResult ??
+                    "Binder idle. Use this when hunger pressure threatens to turn the next run into a bad trade."}
+                </div>
+              </div>
+            </div>
+
             <div className="rounded-2xl border border-white/10 bg-black/25 p-6">
               <div className="text-[11px] uppercase tracking-[0.22em] text-orange-300/70">
                 Material Refining
@@ -246,38 +313,6 @@ export default function CraftingDistrictPage() {
                 </div>
               </div>
             </div>
-
-            <div className="rounded-2xl border border-white/10 bg-black/25 p-6">
-              <div className="text-[11px] uppercase tracking-[0.22em] text-emerald-300/70">
-                Survival Crafting
-              </div>
-              <h2 className="mt-2 text-xl font-black uppercase">Moss Binder</h2>
-              <div className="mt-4 rounded-xl border border-emerald-400/20 bg-emerald-500/8 p-4">
-                <div className="text-sm font-semibold text-white">
-                  Press scavenged biomass into ration slabs for field survival.
-                </div>
-                <div className="mt-2 text-sm text-white/65">
-                  Immediate survival function: bind {MOSS_RATION_RECIPE_COST.bioSamples} recovered biomass samples and {MOSS_RATION_RECIPE_COST.runeDust} Rune Dust into 1 Moss Ration.
-                </div>
-
-                <button
-                  type="button"
-                  onClick={craftMossRation}
-                  disabled={!canCraftMossRation}
-                  className="mt-4 w-full rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-left text-sm font-semibold text-emerald-100 transition hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  Craft Moss Ration
-                  <div className="mt-1 text-xs text-white/60">
-                    Costs {MOSS_RATION_RECIPE_COST.bioSamples} biomass samples + {MOSS_RATION_RECIPE_COST.runeDust} Rune Dust / Produces 1 Moss Ration
-                  </div>
-                </button>
-
-                <div className="mt-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/75">
-                  {rationResult ??
-                    "Binder idle. Stock rations before long operations strain condition."}
-                </div>
-              </div>
-            </div>
           </div>
 
           <div className="grid gap-4">
@@ -296,6 +331,9 @@ export default function CraftingDistrictPage() {
                   This is the first live profession output: Rune Crafter work
                   that directly strengthens the recovery step after exploration
                   and missions drain condition.
+                </div>
+                <div className="mt-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/70">
+                  Use this after the basic loop already makes sense. Moss Binder is still the clearest first-session utility action.
                 </div>
 
                 <button

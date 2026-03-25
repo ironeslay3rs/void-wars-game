@@ -396,7 +396,7 @@ export default function MissionsScreen() {
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_360px]">
           <SectionCard
             title="Mission Board"
-            description="Queue standard operations here. Hunting Ground contracts run from the Mercenary Guild on the same shared timer stack."
+            description="Queue standard operations here. Hunting Ground contracts use this same shared timer stack."
           >
             <div className="mb-4 space-y-3">
               <div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-white/65">

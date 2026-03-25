@@ -36,11 +36,24 @@ export type LatestHuntResult = {
   masteryProgressGained: number;
   influenceGained: number;
   resourcesGained: Partial<ResourcesState>;
+  // Base AFK reward snapshot (source of truth before realtime contribution bonus)
+  baseRankXpGained?: number;
+  baseMasteryProgressGained?: number;
+  baseInfluenceGained?: number;
+  baseResourcesGained?: Partial<ResourcesState>;
+
+  // Realtime void-session contribution bonus applied on top of the base reward
+  realtimeContributionBonusMultiplier?: number | null;
+  realtimeContributionAppliedForResolvedAt?: number | null;
+  realtimeRankXpBonusGained?: number;
+  realtimeMasteryProgressBonusGained?: number;
+  realtimeInfluenceBonusGained?: number;
+  realtimeResourcesBonusGained?: Partial<ResourcesState>;
 };
 
 export type ActiveProcess = {
   id: string;
-  kind: "exploration";
+  kind: "exploration" | "hunt";
   status: "running" | "complete";
   title: string;
   sourceId: string | null;
@@ -186,9 +199,17 @@ export type GameAction =
   | { type: "USE_FEAST_HALL_OFFER"; payload: { offerId: FeastHallOfferId } }
   | { type: "RESOLVE_HUNT"; payload: { missionId: string; resolvedAt?: number } }
   | {
+      type: "APPLY_REALTIME_HUNT_BONUS";
+      payload: {
+        resolvedAt: number;
+        bonusMultiplier: number;
+      };
+    }
+  | {
       type: "START_EXPLORATION_PROCESS";
       payload: {
         id: string;
+        kind?: ActiveProcess["kind"];
         title: string;
         sourceId?: string | null;
         startedAt?: number;

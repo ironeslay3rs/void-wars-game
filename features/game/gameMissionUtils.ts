@@ -2,7 +2,9 @@ import { buildNavigationState } from "@/features/navigation/navigationUtils";
 import { getPressureAdjustedConditionDelta } from "@/features/status/statusRecovery";
 import { getActivityHungerCost } from "@/features/status/survival";
 import type {
+  ActiveProcess,
   GameState,
+  LatestHuntResult,
   MissionDefinition,
   MissionQueueEntry,
   MissionReward,
@@ -223,13 +225,96 @@ export function getCompletedMissionQueueEntry(
   );
 }
 
+/**
+ * Mirrors the in-progress Hunting Ground queue entry to `activeProcess` so AFK
+ * hunts surface in the same timer UI as field deploy. Skipped while exploration
+ * owns the active slot.
+ */
+export function syncMirroredHuntActiveProcess(
+  player: PlayerState,
+  missionQueue: MissionQueueEntry[],
+  missions: MissionDefinition[],
+  now: number,
+): PlayerState {
+  const explorationBlocking =
+    player.activeProcess !== null &&
+    player.activeProcess.kind === "exploration" &&
+    player.activeProcess.status === "running";
+
+  if (explorationBlocking) {
+    return player;
+  }
+
+  const safeQueue = Array.isArray(missionQueue) ? missionQueue : [];
+
+  const activeHgEntry =
+    safeQueue.find((entry) => {
+      if (now < entry.startsAt || now >= entry.endsAt) {
+        return false;
+      }
+
+      const mission = getMissionById(missions, entry.missionId);
+      return mission?.category === "hunting-ground";
+    }) ?? null;
+
+  if (activeHgEntry) {
+    const mission = getMissionById(missions, activeHgEntry.missionId);
+    if (!mission) {
+      return player;
+    }
+
+    const nextProcess: ActiveProcess = {
+      id: activeHgEntry.queueId,
+      kind: "hunt",
+      status: "running",
+      title: mission.title,
+      sourceId: mission.id,
+      startedAt: activeHgEntry.startsAt,
+      endsAt: activeHgEntry.endsAt,
+    };
+
+    const current = player.activeProcess;
+    if (
+      current &&
+      current.kind === "hunt" &&
+      current.id === nextProcess.id &&
+      current.endsAt === nextProcess.endsAt &&
+      current.status === nextProcess.status
+    ) {
+      return player;
+    }
+
+    return { ...player, activeProcess: nextProcess };
+  }
+
+  if (player.activeProcess?.kind === "hunt") {
+    return { ...player, activeProcess: null };
+  }
+
+  return player;
+}
+
 export function processMissionQueue(state: GameState, now: number): GameState {
   const safeQueue = Array.isArray(state.player.missionQueue)
     ? state.player.missionQueue
     : [];
 
   if (safeQueue.length === 0) {
-    return state;
+    const syncedPlayer = syncMirroredHuntActiveProcess(
+      state.player,
+      [],
+      state.missions,
+      now,
+    );
+
+    if (syncedPlayer === state.player) {
+      return state;
+    }
+
+    return {
+      ...state,
+      player: syncedPlayer,
+    };
   }
 
   let nextPlayer = state.player;
@@ -237,6 +322,7 @@ export function processMissionQueue(state: GameState, now: number): GameState {
   let queueChanged = false;
 
   const remainingQueue: MissionQueueEntry[] = [];
+  let latestHgHuntResult: LatestHuntResult | null = null;
 
   for (const entry of safeQueue) {
     const isFinished = entry.endsAt <= now;
@@ -254,22 +340,77 @@ export function processMissionQueue(state: GameState, now: number): GameState {
       continue;
     }
 
+    const resolvedConditionDelta = getResolvedConditionDelta(
+      nextPlayer,
+      mission.reward,
+    );
+
     nextPlayer = applyActivityHungerCost(
       applyMissionReward(nextPlayer, mission.reward),
       mission.category === "hunting-ground" ? "hunt" : "mission",
     );
     playerChanged = true;
+
+    if (mission.category === "hunting-ground") {
+      latestHgHuntResult = {
+        missionId: mission.id,
+        huntTitle: mission.title,
+        resolvedAt: entry.endsAt,
+        conditionDelta: resolvedConditionDelta,
+        conditionAfter: nextPlayer.condition,
+        rankXpGained: mission.reward.rankXp,
+        masteryProgressGained: mission.reward.masteryProgress,
+        influenceGained: mission.reward.influence ?? 0,
+        resourcesGained: mission.reward.resources ?? {},
+
+        baseRankXpGained: mission.reward.rankXp,
+        baseMasteryProgressGained: mission.reward.masteryProgress,
+        baseInfluenceGained: mission.reward.influence ?? 0,
+        baseResourcesGained: mission.reward.resources ?? {},
+
+        realtimeContributionBonusMultiplier: null,
+        realtimeContributionAppliedForResolvedAt: null,
+        realtimeRankXpBonusGained: 0,
+        realtimeMasteryProgressBonusGained: 0,
+        realtimeInfluenceBonusGained: 0,
+        realtimeResourcesBonusGained: {},
+      };
+    }
   }
 
   if (!queueChanged && !playerChanged) {
-    return state;
+    const syncedPlayer = syncMirroredHuntActiveProcess(
+      state.player,
+      safeQueue,
+      state.missions,
+      now,
+    );
+
+    if (syncedPlayer === state.player) {
+      return state;
+    }
+
+    return {
+      ...state,
+      player: syncedPlayer,
+    };
   }
+
+  let finalPlayer: PlayerState = {
+    ...nextPlayer,
+    missionQueue: remainingQueue,
+    ...(latestHgHuntResult ? { lastHuntResult: latestHgHuntResult } : {}),
+  };
+
+  finalPlayer = syncMirroredHuntActiveProcess(
+    finalPlayer,
+    remainingQueue,
+    state.missions,
+    now,
+  );
 
   return {
     ...state,
-    player: {
-      ...nextPlayer,
-      missionQueue: remainingQueue,
-    },
+    player: finalPlayer,
   };
 }

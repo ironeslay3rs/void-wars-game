@@ -25,7 +25,11 @@ export default function LeftCommandMenu() {
         <div className="pointer-events-none absolute inset-y-6 left-0 w-px bg-gradient-to-b from-transparent via-red-500/20 to-transparent" />
 
         <div className="space-y-2.5">
-          <MenuButton label="Enter the Void" isPrimary href="/" />
+          <MenuButton
+            label="Enter the Void"
+            isPrimary
+            href="/bazaar/mercenary-guild"
+          />
 
           {homeMenuData.map((item) => {
             if (item.label === "Continue") {

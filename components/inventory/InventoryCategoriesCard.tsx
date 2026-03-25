@@ -8,8 +8,16 @@ export default function InventoryCategoriesCard() {
 
   const inventoryCategories = [
     {
-      title: "Raw Materials",
-      subtitle: "Core extraction resources",
+      title: "Currency & rations",
+      subtitle: "Spendable balance and hunger relief",
+      entries: [
+        { label: "Credits", value: player.resources.credits },
+        { label: "Moss Rations", value: player.resources.mossRations },
+      ],
+    },
+    {
+      title: "Salvage & biomass",
+      subtitle: "Field extraction stock",
       entries: [
         { label: "Iron Ore", value: player.resources.ironOre },
         { label: "Scrap Alloy", value: player.resources.scrapAlloy },
@@ -17,21 +25,11 @@ export default function InventoryCategoriesCard() {
       ],
     },
     {
-      title: "Refined Components",
+      title: "Refined components",
       subtitle: "Higher-grade crafting stock",
       entries: [
         { label: "Rune Dust", value: player.resources.runeDust },
         { label: "Ember Core", value: player.resources.emberCore },
-        { label: "Moss Rations", value: player.resources.mossRations },
-      ],
-    },
-    {
-      title: "Combat Storage",
-      subtitle: "Reserved for future gear items",
-      entries: [
-        { label: "Weapons", value: 0 },
-        { label: "Armor Pieces", value: 0 },
-        { label: "Rune Sets", value: 0 },
       ],
     },
   ];
@@ -58,23 +56,37 @@ export default function InventoryCategoriesCard() {
             </div>
           </div>
 
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            {category.entries.map((entry) => (
-              <div
-                key={entry.label}
-                className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3"
-              >
-                <span className="text-sm uppercase tracking-[0.06em] text-white/70">
-                  {entry.label}
-                </span>
-                <span className="text-base font-black text-white">
-                  {entry.value}
-                </span>
-              </div>
-            ))}
+          <div className="mt-4 flex flex-col gap-2">
+            {category.entries.map((entry) => {
+              const hasStock = entry.value > 0;
+
+              return (
+                <div
+                  key={entry.label}
+                  className="flex min-h-[44px] items-center justify-between gap-3 rounded-xl border border-white/14 bg-black/30 px-4 py-3"
+                >
+                  <span className="text-sm font-medium uppercase tracking-[0.06em] text-white/80">
+                    {entry.label}
+                  </span>
+                  <span
+                    className={[
+                      "font-black tabular-nums",
+                      hasStock ? "text-white" : "text-white/40",
+                    ].join(" ")}
+                  >
+                    {entry.value}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
       ))}
+
+      <div className="rounded-[22px] border border-dashed border-white/15 bg-white/[0.02] px-4 py-3 text-center text-xs uppercase tracking-[0.12em] text-white/45">
+        Equipment and gear rows are reserved for a later build—this screen only
+        tracks resources in player stock.
+      </div>
     </div>
   );
 }

@@ -116,7 +116,8 @@ function getCurrentOpportunity(params: {
       label: "Current Opportunity",
       title: "Put the shared queue to work.",
       change: "Your main loop is occupied, but background work is still open.",
-      detail: "Missions or Hunting Ground contracts can keep background progress moving while your current sweep runs.",
+      detail:
+        "Missions or Contract Board hunts can keep background progress moving while your current sweep runs, then feed the next recovery or utility choice.",
       tone: "neutral",
     };
   }
@@ -133,7 +134,10 @@ function getCurrentOpportunity(params: {
 export default function CurrentOpportunityCard() {
   const { state } = useGame();
   const guidance = getFirstSessionGuidance(state);
-  const activeProcess = state.player.activeProcess;
+  const activeProcess =
+    state.player.activeProcess?.kind === "exploration"
+      ? state.player.activeProcess
+      : null;
   const { isRunning, isComplete } = useActiveProcessTimer(activeProcess);
   const opportunity = getCurrentOpportunity({
     hasLastHuntResult: state.player.lastHuntResult !== null,

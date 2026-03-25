@@ -1,3 +1,5 @@
+import { masteryFrameworkScaffold } from "@/features/mastery/masteryFramework";
+
 export type StatCard = {
   label: string;
   value: string;
@@ -20,40 +22,52 @@ export type MasteryScreenData = {
 
 export const masteryScreenData: MasteryScreenData = {
   eyebrow: "Void Wars / Mastery Protocol",
-  title: "Mastery Systems",
+  title: "School Mastery",
   subtitle:
-    "Track long-term growth, threshold unlocks, and path refinement across your evolution route.",
+    "Framework for Bio, Mecha, and Pure progression: sticky by default, limited respec only before lock, and future-safe hybrid hooks later.",
 
   cards: [
     {
-      label: "Trees",
-      value: "03",
-      hint: "Primary mastery structures",
+      label: "Schools",
+      value: String(masteryFrameworkScaffold.schoolTracks.length),
+      hint: "Bio, Mecha, and Pure are the only active mastery rails.",
     },
     {
-      label: "Milestones",
-      value: "12",
-      hint: "Major progression checkpoints",
+      label: "Permanence",
+      value: "Sticky",
+      hint: "School investment is treated as permanent by default.",
     },
     {
-      label: "Status",
-      value: "Alpha",
-      hint: "First-pass mastery shell",
+      label: "Hybrid Hooks",
+      value: "Reserved",
+      hint: "Future hybrid unlocks must sit after primary specialization.",
     },
   ],
 
   sections: [
     {
-      title: "Mastery Tree",
+      title: "Canon Rule",
       description:
-        "Future visual structure for growth branches, thresholds, and unlock paths.",
-      body: "Reserved for node trees, tier gates, and path refinement systems.",
+        "Mastery commitment should feel costly and specialization-first inside the current Book 1 direction.",
+      body: "Bio, Mecha, and Pure are the only school rails. School mastery is sticky by default, with permanence treated as the baseline rule rather than casual swapping.",
     },
     {
-      title: "Milestone Console",
+      title: "M1 Shape",
       description:
-        "Major progression checkpoints and reward state overview.",
-      body: "Reserved for milestone rewards, rank thresholds, and mastery state tracking.",
+        "The current safe implementation is framework scaffolding, not a full node tree or class system.",
+      body: "Use threshold ids, state hooks, and read-only guidance now. Do not build deep tree logic, class effects, or reset systems until later gameplay work begins.",
+    },
+    {
+      title: "Respec Window Hook",
+      description:
+        "Future respec should exist only as a narrow correction window before hard commitment.",
+      body: masteryFrameworkScaffold.respecWindowHook.implementationNote,
+    },
+    {
+      title: "Hybrid Unlock Hook",
+      description:
+        "Future hybrids should branch from an already committed school identity instead of replacing specialization-first progression.",
+      body: masteryFrameworkScaffold.hybridUnlockHooks.compatibilityNote,
     },
   ],
 };
