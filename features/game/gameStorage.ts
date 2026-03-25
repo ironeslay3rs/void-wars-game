@@ -7,6 +7,7 @@ import type {
   MissionDefinition,
   MissionQueueEntry,
   PlayerState,
+  RealtimeFieldRole,
   ResourcesState,
 } from "@/features/game/gameTypes";
 
@@ -143,7 +144,98 @@ function normalizeLatestHuntResult(value: unknown): LatestHuntResult | null {
     );
   }
 
+  if (typeof value.realtimeTotalDamageDealt === "number") {
+    result.realtimeTotalDamageDealt = value.realtimeTotalDamageDealt;
+  }
+  if (typeof value.realtimeTotalHitsLanded === "number") {
+    result.realtimeTotalHitsLanded = value.realtimeTotalHitsLanded;
+  }
+  if (typeof value.realtimeMobsContributedTo === "number") {
+    result.realtimeMobsContributedTo = value.realtimeMobsContributedTo;
+  }
+  if (typeof value.realtimeMobsKilled === "number") {
+    result.realtimeMobsKilled = value.realtimeMobsKilled;
+  }
+
+  const bossDefeatedCandidate = (value as Record<string, unknown>).bossDefeated;
+  if (typeof bossDefeatedCandidate === "boolean") {
+    result.bossDefeated = bossDefeatedCandidate;
+  }
+  const killsCandidate = (value as Record<string, unknown>).kills;
+  if (typeof killsCandidate === "number") {
+    result.kills = killsCandidate;
+  }
+  const damageCandidate = (value as Record<string, unknown>).damage;
+  if (typeof damageCandidate === "number") {
+    result.damage = damageCandidate;
+  }
+
   return result;
+}
+
+function normalizeBehaviorStats(value: unknown) {
+  const base = initialGameState.player.behaviorStats;
+
+  if (!isRecord(value)) return base;
+
+  const roleCountsRaw = isRecord(value.roleCounts) ? value.roleCounts : {};
+
+  const roleCounts = {
+    Executioner:
+      typeof roleCountsRaw.Executioner === "number"
+        ? roleCountsRaw.Executioner
+        : 0,
+    Artillery:
+      typeof roleCountsRaw.Artillery === "number"
+        ? roleCountsRaw.Artillery
+        : 0,
+    "Pressure Specialist":
+      typeof roleCountsRaw["Pressure Specialist"] === "number"
+        ? roleCountsRaw["Pressure Specialist"]
+        : 0,
+    Spotter:
+      typeof roleCountsRaw.Spotter === "number"
+        ? roleCountsRaw.Spotter
+        : 0,
+  };
+
+  const lastRealtimeRoleCandidate = (value as Record<string, unknown>)
+    .lastRealtimeRole;
+  const lastRealtimeRole: RealtimeFieldRole | null =
+    lastRealtimeRoleCandidate === "Executioner" ||
+    lastRealtimeRoleCandidate === "Artillery" ||
+    lastRealtimeRoleCandidate === "Pressure Specialist" ||
+    lastRealtimeRoleCandidate === "Spotter"
+      ? (lastRealtimeRoleCandidate as RealtimeFieldRole)
+      : null;
+
+  return {
+    totalRealtimeHuntsWithContribution:
+      typeof value.totalRealtimeHuntsWithContribution === "number"
+        ? value.totalRealtimeHuntsWithContribution
+        : 0,
+    roleCounts,
+    lastRealtimeRole,
+  };
+}
+
+function normalizeZoneMastery(value: unknown) {
+  const base = initialGameState.player.zoneMastery;
+
+  if (!isRecord(value)) return base;
+
+  const raw = value as Record<string, unknown>;
+  const next: Record<string, number> = { ...base };
+
+  for (const [key, baseValue] of Object.entries(base)) {
+    const candidate = raw[key];
+    next[key] =
+      typeof candidate === "number" && Number.isFinite(candidate)
+        ? candidate
+        : baseValue;
+  }
+
+  return next;
 }
 
 function normalizeActiveProcess(value: unknown): ActiveProcess | null {
@@ -392,6 +484,17 @@ function normalizePlayer(value: unknown): PlayerState {
 
     activeProcess: normalizeActiveProcess(raw.activeProcess),
     lastHuntResult: normalizeLatestHuntResult(raw.lastHuntResult),
+    behaviorStats: normalizeBehaviorStats(raw.behaviorStats),
+    zoneMastery: normalizeZoneMastery(raw.zoneMastery),
+    lastCompletedZoneId:
+      raw.lastCompletedZoneId === null ||
+      typeof raw.lastCompletedZoneId === "string"
+        ? raw.lastCompletedZoneId
+        : initialGameState.player.lastCompletedZoneId,
+    zoneRunStreak:
+      typeof raw.zoneRunStreak === "number" && Number.isFinite(raw.zoneRunStreak)
+        ? raw.zoneRunStreak
+        : initialGameState.player.zoneRunStreak,
     missionQueue: normalizeMissionQueue(raw.missionQueue),
 
     maxMissionQueueSlots:

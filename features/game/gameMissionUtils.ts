@@ -374,6 +374,11 @@ export function processMissionQueue(state: GameState, now: number): GameState {
         realtimeMasteryProgressBonusGained: 0,
         realtimeInfluenceBonusGained: 0,
         realtimeResourcesBonusGained: {},
+
+        realtimeTotalDamageDealt: 0,
+        realtimeTotalHitsLanded: 0,
+        realtimeMobsContributedTo: 0,
+        realtimeMobsKilled: 0,
       };
     }
   }

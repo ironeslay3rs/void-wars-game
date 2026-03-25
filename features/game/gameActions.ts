@@ -35,6 +35,8 @@ import {
   MOSS_RATION_RECIPE_COST,
   SURVIVAL_TICK_INTERVAL_MS,
 } from "@/features/status/survival";
+import { getContributionRole } from "@/features/void-maps/realtime/contributionScoring";
+import { getRoleSoftModifiers } from "@/features/player/playerIdentity";
 import type {
   GameAction,
   GameState,
@@ -439,13 +441,29 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             realtimeMasteryProgressBonusGained: 0,
             realtimeInfluenceBonusGained: 0,
             realtimeResourcesBonusGained: {},
+
+            realtimeTotalDamageDealt: 0,
+            realtimeTotalHitsLanded: 0,
+            realtimeMobsContributedTo: 0,
+            realtimeMobsKilled: 0,
           },
         },
       };
     }
 
     case "APPLY_REALTIME_HUNT_BONUS": {
-      const { resolvedAt, bonusMultiplier } = action.payload;
+      const {
+        resolvedAt,
+        bonusMultiplier,
+        zoneId,
+        totalDamageDealt,
+        totalHitsLanded,
+        mobsContributedTo,
+        mobsKilled,
+        bossDefeated,
+        bossDropResourcesBase,
+        zoneThreatLevel,
+      } = action.payload;
       const latest = state.player.lastHuntResult;
       if (!latest) return state;
 
@@ -459,7 +477,88 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
       if (latest.resolvedAt !== resolvedAt) return state;
 
-      const cappedMultiplier = clamp(bonusMultiplier, 0, 0.35);
+      const baseCappedMultiplier = clamp(bonusMultiplier, 0, 0.35);
+
+      // Zone streak: update on run completion and apply a small resource-only yield bonus.
+      const prevLastCompletedZoneId = state.player.lastCompletedZoneId;
+      const prevZoneRunStreak = state.player.zoneRunStreak ?? 0;
+
+      const nextZoneRunStreak =
+        prevLastCompletedZoneId !== null && prevLastCompletedZoneId === zoneId
+          ? prevZoneRunStreak + 1
+          : 1;
+      const nextLastCompletedZoneId = zoneId;
+
+      const streakBonusPct =
+        nextZoneRunStreak >= 5 ? 0.1 : nextZoneRunStreak >= 3 ? 0.05 : 0;
+      const streakYieldMultiplier = 1 + streakBonusPct;
+
+      // Identity memory: accumulate per-hunt role trend based on realtime contribution totals.
+      // Idempotency is already handled above by `realtimeContributionAppliedForResolvedAt`.
+      const totalDamageForIdentity =
+        totalDamageDealt ?? latest.realtimeTotalDamageDealt ?? 0;
+      const totalHitsForIdentity =
+        totalHitsLanded ?? latest.realtimeTotalHitsLanded ?? 0;
+      const mobsContributedToForIdentity =
+        mobsContributedTo ?? latest.realtimeMobsContributedTo ?? 0;
+      const mobsKilledForIdentity =
+        mobsKilled ?? latest.realtimeMobsKilled ?? 0;
+
+      const huntRole = getContributionRole({
+        totalDamage: totalDamageForIdentity,
+        totalHits: totalHitsForIdentity,
+        mobsContributedTo: mobsContributedToForIdentity,
+        mobsKilled: mobsKilledForIdentity,
+      });
+
+      const prevBehaviorStats = state.player.behaviorStats;
+      const nextRoleCounts = {
+        ...prevBehaviorStats.roleCounts,
+        [huntRole]:
+          (prevBehaviorStats.roleCounts[huntRole] ?? 0) + 1,
+      };
+
+      const nextBehaviorStats = {
+        ...prevBehaviorStats,
+        totalRealtimeHuntsWithContribution:
+          prevBehaviorStats.totalRealtimeHuntsWithContribution + 1,
+        roleCounts: nextRoleCounts,
+        lastRealtimeRole: huntRole,
+      };
+
+      const softModifiers = getRoleSoftModifiers(nextBehaviorStats);
+      const zoneThreatMultiplier =
+        typeof zoneThreatLevel === "number"
+          ? 1 + Math.max(0, zoneThreatLevel - 1) * 0.04
+          : 1;
+      const effectiveBonusMultiplier = clamp(
+        baseCappedMultiplier *
+          (1 + softModifiers.rewardBiasMultiplier) *
+          zoneThreatMultiplier,
+        0,
+        0.35,
+      );
+
+      // Zone mastery benefits:
+      // - resourceEfficiencyFactor scales realtime bonus resources (not XP)
+      // - bossDropMasteryFactor scales boss drop amounts (before realtime multiplier)
+      const prevZoneMastery = state.player.zoneMastery ?? {};
+      const zoneMasteryLevel =
+        zoneId in prevZoneMastery ? prevZoneMastery[zoneId] : 0;
+      const resourceEfficiencyFactor = clamp(
+        1 + zoneMasteryLevel * 0.01,
+        1,
+        1.2,
+      );
+      const bossDropMasteryFactor = clamp(
+        1 + zoneMasteryLevel * 0.03,
+        1,
+        1.25,
+      );
+      const nextZoneMastery = {
+        ...prevZoneMastery,
+        [zoneId]: (prevZoneMastery[zoneId] ?? 0) + 1,
+      };
 
       const baseRankXpGained =
         latest.baseRankXpGained ?? latest.rankXpGained ?? 0;
@@ -471,13 +570,13 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         latest.baseResourcesGained ?? latest.resourcesGained ?? {};
 
       const realtimeRankXpBonusGained = Math.round(
-        baseRankXpGained * cappedMultiplier,
+        baseRankXpGained * effectiveBonusMultiplier,
       );
       const realtimeMasteryProgressBonusGained = Math.round(
-        baseMasteryProgressGained * cappedMultiplier,
+        baseMasteryProgressGained * effectiveBonusMultiplier,
       );
       const realtimeInfluenceBonusGained = Math.round(
-        baseInfluenceGained * cappedMultiplier,
+        baseInfluenceGained * effectiveBonusMultiplier,
       );
 
       const realtimeResourcesBonusGained: Partial<ResourcesState> = {};
@@ -488,12 +587,33 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       (Object.entries(baseResourcesGained) as Array<[ResourceKey, number]>).forEach(
         ([key, baseAmount]) => {
           if (!baseAmount || baseAmount <= 0) return;
-          const bonusAmount = Math.floor(baseAmount * cappedMultiplier);
+          const bonusAmount = Math.floor(
+            baseAmount *
+              effectiveBonusMultiplier *
+              resourceEfficiencyFactor *
+              streakYieldMultiplier,
+          );
           if (bonusAmount <= 0) return;
-          realtimeResourcesBonusGained[key] = bonusAmount;
+          realtimeResourcesBonusGained[key] =
+            (realtimeResourcesBonusGained[key] ?? 0) + bonusAmount;
           nextResourcesGained[key] = (nextResourcesGained[key] ?? 0) + bonusAmount;
         },
       );
+
+      const bossBaseResourcesGained = bossDropResourcesBase ?? {};
+      (Object.entries(
+        bossBaseResourcesGained,
+      ) as Array<[ResourceKey, number]>).forEach(([key, baseAmount]) => {
+        if (!baseAmount || baseAmount <= 0) return;
+        const adjustedBaseAmount = Math.floor(baseAmount * bossDropMasteryFactor);
+        const bonusAmount = Math.floor(
+          adjustedBaseAmount * effectiveBonusMultiplier * streakYieldMultiplier,
+        );
+        if (bonusAmount <= 0) return;
+        realtimeResourcesBonusGained[key] =
+          (realtimeResourcesBonusGained[key] ?? 0) + bonusAmount;
+        nextResourcesGained[key] = (nextResourcesGained[key] ?? 0) + bonusAmount;
+      });
 
       const rankState = applyRankXp(
         state.player.rankLevel,
@@ -518,6 +638,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           state.player.resources,
           realtimeResourcesBonusGained,
         ),
+        behaviorStats: nextBehaviorStats,
+        zoneMastery: nextZoneMastery,
+        lastCompletedZoneId: nextLastCompletedZoneId,
+        zoneRunStreak: nextZoneRunStreak,
         navigation: buildNavigationState(
           rankState.rankLevel,
           state.player.unlockedRoutes,
@@ -525,12 +649,22 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         ),
         lastHuntResult: {
           ...latest,
-          realtimeContributionBonusMultiplier: cappedMultiplier,
+          bossDefeated: bossDefeated ?? latest.bossDefeated ?? false,
+          kills: mobsKilledForIdentity,
+          damage: totalDamageForIdentity,
+          realtimeContributionBonusMultiplier: effectiveBonusMultiplier,
           realtimeContributionAppliedForResolvedAt: resolvedAt,
           realtimeRankXpBonusGained,
           realtimeMasteryProgressBonusGained,
           realtimeInfluenceBonusGained,
           realtimeResourcesBonusGained,
+          realtimeTotalDamageDealt:
+            totalDamageDealt ?? latest.realtimeTotalDamageDealt ?? 0,
+          realtimeTotalHitsLanded:
+            totalHitsLanded ?? latest.realtimeTotalHitsLanded ?? 0,
+          realtimeMobsContributedTo:
+            mobsContributedTo ?? latest.realtimeMobsContributedTo ?? 0,
+          realtimeMobsKilled: mobsKilled ?? latest.realtimeMobsKilled ?? 0,
           rankXpGained: baseRankXpGained + realtimeRankXpBonusGained,
           masteryProgressGained:
             baseMasteryProgressGained + realtimeMasteryProgressBonusGained,

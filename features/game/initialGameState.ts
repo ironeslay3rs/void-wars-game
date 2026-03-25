@@ -45,6 +45,27 @@ export const initialGameState: GameState = {
 
     activeProcess: null,
     lastHuntResult: null,
+
+    behaviorStats: {
+      totalRealtimeHuntsWithContribution: 0,
+      roleCounts: {
+        Executioner: 0,
+        Artillery: 0,
+        "Pressure Specialist": 0,
+        Spotter: 0,
+      },
+      lastRealtimeRole: null,
+    },
+
+    zoneMastery: {
+      "howling-scar": 0,
+      "ash-relay": 0,
+      "echo-ruins": 0,
+      "rift-maw": 0,
+    },
+
+    lastCompletedZoneId: null,
+    zoneRunStreak: 0,
     missionQueue: [],
     maxMissionQueueSlots: 3,
   },

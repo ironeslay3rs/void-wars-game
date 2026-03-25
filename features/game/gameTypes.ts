@@ -6,6 +6,14 @@ import type {
 export type FactionAlignment = "unbound" | "bio" | "mecha" | "pure";
 export type PathType = Exclude<FactionAlignment, "unbound">;
 
+export type RealtimeFieldRole = "Executioner" | "Artillery" | "Pressure Specialist" | "Spotter";
+
+export type PlayerBehaviorStats = {
+  totalRealtimeHuntsWithContribution: number;
+  roleCounts: Record<RealtimeFieldRole, number>;
+  lastRealtimeRole: RealtimeFieldRole | null;
+};
+
 /* =========================
    RESOURCES
 ========================= */
@@ -49,6 +57,19 @@ export type LatestHuntResult = {
   realtimeMasteryProgressBonusGained?: number;
   realtimeInfluenceBonusGained?: number;
   realtimeResourcesBonusGained?: Partial<ResourcesState>;
+
+  // Realtime per-player contribution totals (used for roles/specialization later)
+  realtimeTotalDamageDealt?: number;
+  realtimeTotalHitsLanded?: number;
+  realtimeMobsContributedTo?: number;
+  realtimeMobsKilled?: number;
+
+  // Special-zone boss outcome (realtime event)
+  bossDefeated?: boolean;
+
+  // Aliases for run-complete UI readability
+  kills?: number;
+  damage?: number;
 };
 
 export type ActiveProcess = {
@@ -166,6 +187,17 @@ export type PlayerState = {
   activeProcess: ActiveProcess | null;
   lastHuntResult: LatestHuntResult | null;
 
+  // Long-term identity memory derived from realtime void sessions.
+  behaviorStats: PlayerBehaviorStats;
+
+  // Long-term zone specialization loop. Simple +1 per completed realtime run.
+  zoneMastery: Record<string, number>;
+
+  // Session retention: consecutive realtime runs completed in the same zone.
+  // Updated on run completion (AFK hunt resolved + realtime bonus applied).
+  lastCompletedZoneId: string | null;
+  zoneRunStreak: number;
+
   missionQueue: MissionQueueEntry[];
   maxMissionQueueSlots: number;
 };
@@ -203,6 +235,14 @@ export type GameAction =
       payload: {
         resolvedAt: number;
         bonusMultiplier: number;
+        zoneId: string;
+        totalDamageDealt?: number;
+        totalHitsLanded?: number;
+        mobsContributedTo?: number;
+        mobsKilled?: number;
+        bossDefeated?: boolean;
+        bossDropResourcesBase?: Partial<ResourcesState>;
+        zoneThreatLevel?: number;
       };
     }
   | {

@@ -1,7 +1,11 @@
 import { WebSocket, WebSocketServer } from "ws";
 import { buildSpawnEncounter } from "../../features/void-maps/spawnSim";
 import { voidZoneById, type VoidZoneId } from "../../features/void-maps/zoneData";
-import type { FactionAlignment } from "../../features/game/gameTypes";
+import type {
+  FactionAlignment,
+  ResourcesState,
+  ResourceKey,
+} from "../../features/game/gameTypes";
 import type {
   AttackMobMessage,
   ClientToServerMessage,
@@ -25,6 +29,8 @@ type PlayerContributionLedger = {
   mobsKilled: number;
   damagedMobs: Set<string>;
   killedMobs: Set<string>;
+  bossDefeated: boolean;
+  bossDropResourcesBase: Partial<ResourcesState>;
 };
 
 type MobContributionLedger = {
@@ -167,6 +173,10 @@ function makeMobPlacement(zoneId: VoidZoneId, mobId: string, waveIndex: number, 
   return { x, y };
 }
 
+function getZoneById(zoneId: VoidZoneId) {
+  return voidZoneById[zoneId];
+}
+
 function createSession(zoneId: VoidZoneId, sessionBucketId: number): VoidSession {
   const zone = voidZoneById[zoneId];
   const threatBand = zone.threatBand;
@@ -222,7 +232,47 @@ function createSession(zoneId: VoidZoneId, sessionBucketId: number): VoidSession
 
       session.lastSpawnAt = now2;
       session.waveIndex += 1;
-      const encounter = buildSpawnEncounter(session.zoneId, now2);
+      // Boss cadence: special zones spawn bosses periodically,
+      // danger zones spawn bosses later. Standard zones never spawn bosses.
+      const waveIndex = session.waveIndex;
+      const zone = getZoneById(session.zoneId);
+      const isSpecialZone = zone.category === "special";
+      const isDangerZone = zone.category === "danger";
+
+      const baseShouldSpawnBoss =
+        isSpecialZone
+          ? waveIndex % 4 === 0
+          : isDangerZone
+            ? waveIndex % 6 === 0
+            : false;
+
+      const playersArr = Array.from(session.players.values());
+      const avgZoneMastery =
+        playersArr.length > 0
+          ? playersArr.reduce(
+              (sum, p) => sum + (p.zoneMasteryForZone ?? 0),
+              0,
+            ) / playersArr.length
+          : 0;
+
+      // Minimal mastery-driven boss chance:
+      // if base cadence doesn't spawn a boss, mastery can "nudge" it forward.
+      const masteryExtraBossChance = clamp(avgZoneMastery * 0.01, 0, 0.2);
+      const shouldSpawnBossWithMastery =
+        baseShouldSpawnBoss ||
+        (!baseShouldSpawnBoss &&
+          (isSpecialZone || isDangerZone) &&
+          Math.random() < masteryExtraBossChance);
+
+      const encounter = shouldSpawnBossWithMastery
+        ? {
+            zoneId: session.zoneId,
+            mobId: `vb-${session.zoneId}-void-boss-${waveIndex}`,
+            mobLabel: "Void Boss",
+            packSize: 4,
+            spawnedAt: now2,
+          }
+        : buildSpawnEncounter(session.zoneId, now2);
       const { x, y } = makeMobPlacement(
         session.zoneId,
         encounter.mobId,
@@ -312,6 +362,8 @@ function broadcastHuntContributionResult(session: VoidSession, resolvedAt: numbe
         mobsContributedTo: ledger.mobsContributedTo,
         mobsKilled: ledger.mobsKilled,
         bonusMultiplier,
+        bossDefeated: ledger.bossDefeated,
+        bossDropResourcesBase: ledger.bossDropResourcesBase,
       };
     },
   );
@@ -386,6 +438,7 @@ wss.on("connection", (ws) => {
         lastMoveAt: Date.now(),
         rankLevel: join.rankLevel,
         condition: join.condition,
+        zoneMasteryForZone: join.zoneMasteryForZone,
       };
 
       session.players.set(join.clientId, next);
@@ -397,6 +450,8 @@ wss.on("connection", (ws) => {
           mobsKilled: 0,
           damagedMobs: new Set(),
           killedMobs: new Set(),
+          bossDefeated: false,
+          bossDropResourcesBase: {},
         });
       }
       session.sockets.set(join.clientId, ws);
@@ -506,6 +561,8 @@ wss.on("connection", (ws) => {
           mobsKilled: 0,
           damagedMobs: new Set(),
           killedMobs: new Set(),
+          bossDefeated: false,
+          bossDropResourcesBase: {},
         };
         joinedSession.playerContribByClientId.set(attack.clientId, playerLedger);
       }
@@ -562,6 +619,28 @@ wss.on("connection", (ws) => {
       if (mob.hp <= 0) {
         if (!mobLedger.finalized) {
           mobLedger.finalized = true;
+
+          const isBossMob = mob.mobLabel === "Void Boss";
+          const zone = getZoneById(mob.zoneId);
+          const rewards: Partial<ResourcesState> = {};
+
+          if (isBossMob) {
+            switch (zone.dropType) {
+              case "bio":
+                rewards.bioSamples =
+                  (rewards.bioSamples ?? 0) + getRandomInt(2, 6);
+                break;
+              case "mecha":
+                rewards.scrapAlloy =
+                  (rewards.scrapAlloy ?? 0) + getRandomInt(2, 6);
+                break;
+              case "spirit":
+                rewards.runeDust =
+                  (rewards.runeDust ?? 0) + getRandomInt(2, 6);
+                break;
+            }
+          }
+
           for (const [clientId, dealtDamage] of mobLedger.damageByClientId) {
             if (dealtDamage <= 0) continue;
             const p = joinedSession.playerContribByClientId.get(clientId);
@@ -569,6 +648,17 @@ wss.on("connection", (ws) => {
             if (!p.killedMobs.has(mob.mobEntityId)) {
               p.killedMobs.add(mob.mobEntityId);
               p.mobsKilled += 1;
+
+              if (isBossMob) {
+                p.bossDefeated = true;
+                (Object.entries(rewards) as Array<[ResourceKey, number]>).forEach(
+                  ([key, amount]) => {
+                    if (!amount || amount <= 0) return;
+                    p.bossDropResourcesBase[key] =
+                      (p.bossDropResourcesBase[key] ?? 0) + amount;
+                  },
+                );
+              }
             }
           }
         }

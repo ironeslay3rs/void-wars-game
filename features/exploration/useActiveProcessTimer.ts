@@ -7,7 +7,11 @@ export function useActiveProcessTimer(activeProcess: ActiveProcess | null) {
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
-    setNow(Date.now());
+    // Defer to avoid setting state synchronously inside an effect body.
+    const t = window.setTimeout(() => {
+      setNow(Date.now());
+    }, 0);
+    return () => window.clearTimeout(t);
   }, [activeProcess?.id, activeProcess?.status, activeProcess?.endsAt]);
 
   useEffect(() => {

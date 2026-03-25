@@ -20,6 +20,11 @@ import {
   HUNGER_PRESSURE_THRESHOLD,
 } from "@/features/status/survival";
 import { buildAfkFieldRunFeedback } from "@/features/hunting-ground/afkRunFeedback";
+import {
+  getContributionProfessionHint,
+  getContributionRole,
+} from "@/features/void-maps/realtime/contributionScoring";
+import { getEmergingRoleHint } from "@/features/player/playerIdentity";
 
 function formatResolvedAt(timestamp: number) {
   return new Date(timestamp).toLocaleString();
@@ -96,6 +101,90 @@ export default function BiotechLabsResultPage() {
   const shouldRouteToFeastHall =
     guidance.nextAction === "recover" ||
     state.player.hunger < HUNGER_PRESSURE_THRESHOLD;
+
+  const isRealtimeBonusApplied =
+    latestHuntResult &&
+    latestHuntResult.realtimeContributionAppliedForResolvedAt ===
+      latestHuntResult.resolvedAt &&
+    latestHuntResult.realtimeContributionBonusMultiplier !== null &&
+    typeof latestHuntResult.realtimeContributionBonusMultiplier === "number";
+
+  const roleTrendHint = isFieldContractResult
+    ? getEmergingRoleHint(state.player.behaviorStats)
+    : null;
+
+  const baseRankXp =
+    latestHuntResult?.baseRankXpGained ?? latestHuntResult?.rankXpGained ?? 0;
+  const baseMastery =
+    latestHuntResult?.baseMasteryProgressGained ??
+    latestHuntResult?.masteryProgressGained ??
+    0;
+  const baseInfluence =
+    latestHuntResult?.baseInfluenceGained ??
+    latestHuntResult?.influenceGained ??
+    0;
+  const baseCredits =
+    latestHuntResult?.baseResourcesGained?.credits ??
+    latestHuntResult?.resourcesGained?.credits ??
+    0;
+
+  const bonusMultiplier = isRealtimeBonusApplied
+    ? latestHuntResult!.realtimeContributionBonusMultiplier ?? 0
+    : 0;
+  const bonusRankXp = isRealtimeBonusApplied
+    ? latestHuntResult!.realtimeRankXpBonusGained ?? 0
+    : 0;
+  const bonusMastery = isRealtimeBonusApplied
+    ? latestHuntResult!.realtimeMasteryProgressBonusGained ?? 0
+    : 0;
+  const bonusInfluence = isRealtimeBonusApplied
+    ? latestHuntResult!.realtimeInfluenceBonusGained ?? 0
+    : 0;
+  const bonusCredits = isRealtimeBonusApplied
+    ? latestHuntResult!.realtimeResourcesBonusGained?.credits ?? 0
+    : 0;
+
+  const realtimeBonusResourceEntries = isRealtimeBonusApplied
+    ? getNonZeroResourceEntries(
+        latestHuntResult?.realtimeResourcesBonusGained ?? {},
+      )
+    : [];
+
+  const finalRankXp = latestHuntResult?.rankXpGained ?? baseRankXp;
+  const finalMastery = latestHuntResult?.masteryProgressGained ?? baseMastery;
+  const finalInfluence = latestHuntResult?.influenceGained ?? baseInfluence;
+  const finalCredits = latestHuntResult?.resourcesGained?.credits ?? baseCredits;
+
+  const realtimeTotalDamageDealt = isRealtimeBonusApplied
+    ? latestHuntResult!.realtimeTotalDamageDealt ?? 0
+    : 0;
+  const realtimeTotalHitsLanded = isRealtimeBonusApplied
+    ? latestHuntResult!.realtimeTotalHitsLanded ?? 0
+    : 0;
+  const realtimeMobsContributedTo = isRealtimeBonusApplied
+    ? latestHuntResult!.realtimeMobsContributedTo ?? 0
+    : 0;
+  const realtimeMobsKilled = isRealtimeBonusApplied
+    ? latestHuntResult!.realtimeMobsKilled ?? 0
+    : 0;
+
+  const contributionRole = !isFieldContractResult || !isRealtimeBonusApplied
+    ? null
+    : getContributionRole({
+        totalDamage: realtimeTotalDamageDealt,
+        totalHits: realtimeTotalHitsLanded,
+        mobsContributedTo: realtimeMobsContributedTo,
+        mobsKilled: realtimeMobsKilled,
+      });
+
+  const contributionProfessionHint = !isFieldContractResult || !isRealtimeBonusApplied
+    ? null
+    : getContributionProfessionHint({
+        totalDamage: realtimeTotalDamageDealt,
+        totalHits: realtimeTotalHitsLanded,
+        mobsContributedTo: realtimeMobsContributedTo,
+        mobsKilled: realtimeMobsKilled,
+      });
 
   let nextStepHref = shouldRouteToFeastHall
     ? "/bazaar/black-market/feast-hall"
@@ -331,12 +420,100 @@ export default function BiotechLabsResultPage() {
                     </div>
                   </div>
 
+                  {isFieldContractResult ? (
+                    <div className="rounded-xl border border-cyan-400/20 bg-cyan-400/8 p-4 sm:col-span-2">
+                      <div className="text-[10px] uppercase tracking-[0.18em] text-cyan-200/70">
+                        Realtime Contribution Bonus
+                      </div>
+                      {isRealtimeBonusApplied ? (
+                        <>
+                          <div className="mt-2 text-sm text-white/70">
+                            Multiplier: +{Math.round(bonusMultiplier * 100)}%
+                          </div>
+                          <div className="mt-3 space-y-1 text-sm text-white/75">
+                            <div>
+                              Rank XP: Base +{baseRankXp} · Bonus +{bonusRankXp} · Final +{finalRankXp}
+                            </div>
+                            <div>
+                              Mastery: Base +{baseMastery} · Bonus +{bonusMastery} · Final +{finalMastery}
+                            </div>
+                            <div>
+                              Influence: Base +{baseInfluence} · Bonus +{bonusInfluence} · Final +{finalInfluence}
+                            </div>
+                            <div>
+                              Credits: Base +{baseCredits} · Bonus +{bonusCredits} · Final +{finalCredits}
+                            </div>
+                          </div>
+                          {contributionRole ? (
+                            <div className="mt-3 rounded-xl border border-white/10 bg-white/5 p-3">
+                              <div className="text-[10px] uppercase tracking-[0.18em] text-white/45">
+                                Field Role (Realtime)
+                              </div>
+                              <div className="mt-2 text-sm font-semibold text-white/85">
+                                {contributionRole}
+                              </div>
+                              {contributionProfessionHint ? (
+                                <div className="mt-1 text-xs text-white/60">
+                                  Specialization Hint: {contributionProfessionHint}
+                                </div>
+                              ) : null}
+                              {roleTrendHint ? (
+                                <div className="mt-1 text-xs text-white/60">
+                                  {roleTrendHint.label}: {roleTrendHint.dominantRole} ({roleTrendHint.dominancePct}%)
+                                </div>
+                              ) : null}
+                              <div className="mt-2 space-y-1 text-sm text-white/70">
+                                <div>
+                                  Damage Dealt: +{realtimeTotalDamageDealt}
+                                </div>
+                                <div>Hits Landed: {realtimeTotalHitsLanded}</div>
+                                <div>
+                                  Mobs Contributed: {realtimeMobsContributedTo}
+                                </div>
+                                <div>Mobs Killed: {realtimeMobsKilled}</div>
+                              </div>
+                            </div>
+                          ) : null}
+                          {realtimeBonusResourceEntries.length > 0 ? (
+                            <div className="mt-3 space-y-2 rounded-xl border border-white/10 bg-white/5 p-3">
+                              <div className="text-[10px] uppercase tracking-[0.18em] text-white/45">
+                                Realtime Bonus Resources
+                              </div>
+                              <div className="mt-2 space-y-1 text-sm text-white/75">
+                                {realtimeBonusResourceEntries.map(([key, value]) => (
+                                  <div
+                                    key={key}
+                                    className="flex items-center justify-between gap-4"
+                                  >
+                                    <span className="text-sm uppercase tracking-[0.08em] text-white/78">
+                                      {formatResourceLabel(key)}
+                                    </span>
+                                    <span className="text-sm font-semibold text-emerald-100">
+                                      +{value}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ) : null}
+                          <div className="mt-3 text-xs text-white/55">
+                            This is an alpha-safe add-on: the AFK contract payout is the baseline, realtime contribution adds a capped bonus.
+                          </div>
+                        </>
+                      ) : (
+                        <div className="mt-2 text-sm text-white/60">
+                          Realtime bonus pending (settles a moment after contract resolution).
+                        </div>
+                      )}
+                    </div>
+                  ) : null}
+
                   <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
                     <div className="text-[10px] uppercase tracking-[0.18em] text-white/45">
                       Rank XP Recorded
                     </div>
                     <div className="mt-2 text-2xl font-bold text-white">
-                      +{latestHuntResult.rankXpGained}
+                      +{finalRankXp}
                     </div>
                     <div className="mt-2 text-sm text-white/55">
                       Rank progress.
@@ -348,7 +525,7 @@ export default function BiotechLabsResultPage() {
                       Mastery Recorded
                     </div>
                     <div className="mt-2 text-2xl font-bold text-white">
-                      +{latestHuntResult.masteryProgressGained}
+                      +{finalMastery}
                     </div>
                     <div className="mt-2 text-sm text-white/55">
                       Long-run growth.
@@ -360,7 +537,7 @@ export default function BiotechLabsResultPage() {
                       Influence Recorded
                     </div>
                     <div className="mt-2 text-2xl font-bold text-white">
-                      +{latestHuntResult.influenceGained}
+                      +{finalInfluence}
                     </div>
                     <div className="mt-2 text-sm text-white/55">
                       City standing.
@@ -429,6 +606,12 @@ export default function BiotechLabsResultPage() {
                           <p className="mt-2 text-sm text-white/60">
                             {getResourceLoopMeaning(key)}
                           </p>
+                          {isRealtimeBonusApplied ? (
+                            <p className="mt-1 text-xs text-white/55">
+                              Base +{latestHuntResult?.baseResourcesGained?.[key] ?? 0} ·
+                              Bonus +{latestHuntResult?.realtimeResourcesBonusGained?.[key] ?? 0}
+                            </p>
+                          ) : null}
                         </div>
                       ))}
                       {resourceEntries.slice(2).map(([key, value]) => (
@@ -460,6 +643,12 @@ export default function BiotechLabsResultPage() {
                           <p className="mt-2 text-sm text-white/55">
                             {getResourceLoopMeaning(key)}
                           </p>
+                          {isRealtimeBonusApplied ? (
+                            <p className="mt-1 text-xs text-white/50">
+                              Base +{latestHuntResult?.baseResourcesGained?.[key] ?? 0} ·
+                              Bonus +{latestHuntResult?.realtimeResourcesBonusGained?.[key] ?? 0}
+                            </p>
+                          ) : null}
                         </div>
                       ))}
                     </>
@@ -519,6 +708,12 @@ export default function BiotechLabsResultPage() {
                         {secondaryFieldStep.label}
                       </Link>
                     ) : null}
+                    <Link
+                      href="/bazaar/black-market"
+                      className="inline-flex rounded-xl border border-emerald-300/25 bg-emerald-300/10 px-4 py-2 text-sm font-semibold text-emerald-50 transition hover:border-emerald-200/40 hover:bg-emerald-300/16"
+                    >
+                      Black Market (Hub)
+                    </Link>
                   </div>
                 </div>
 

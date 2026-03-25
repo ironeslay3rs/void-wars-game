@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import ScreenHeader from "@/components/shared/ScreenHeader";
 import SectionCard from "@/components/shared/SectionCard";
 import { useGame } from "@/features/game/gameContext";
@@ -17,12 +17,23 @@ import {
   type VoidZoneId,
 } from "@/features/void-maps/zoneData";
 import { useVoidRealtimeSession } from "@/components/void-maps/useVoidRealtimeSession";
+import {
+  getContributionProfessionHint,
+  getContributionRole,
+} from "@/features/void-maps/realtime/contributionScoring";
+import {
+  hasStabilizationSigil,
+  RUNE_CRAFTER_STABILIZATION_SIGIL_COST,
+} from "@/features/status/statusRecovery";
+import { MOSS_RATION_RECIPE_COST } from "@/features/status/survival";
 import type {
   MobEntity,
   PlayerPresence,
 } from "@/features/void-maps/realtime/voidRealtimeProtocol";
 
 const SPAWN_HISTORY_LIMIT = 7;
+/** Same AFK hunting-ground contract as the home deploy button. */
+const DEFAULT_DEPLOY_HG_MISSION_ID = "hg-rustfang-prowl";
 
 function formatTime(timestamp: number): string {
   return new Date(timestamp).toLocaleTimeString();
@@ -66,7 +77,13 @@ function ZoneActivity({
   connected: boolean;
   realtimeMobs: MobEntity[];
   realtimePlayers: PlayerPresence[];
-  recentCombatEvents: Array<{ mobEntityId: string; attackerClientId: string; damage: number; isCrit: boolean; ts: number }>;
+  recentCombatEvents: Array<{
+    mobEntityId: string;
+    attackerClientId: string;
+    damage: number;
+    isCrit: boolean;
+    ts: number;
+  }>;
   selfClientId: string;
   sendMove: (x: number, y: number) => void;
   sendAttack: (mobEntityId: string) => void;
@@ -287,6 +304,11 @@ function ZoneActivity({
         Threat: {threatBand.toUpperCase()} · Cadence:{" "}
         {Math.round(spawnIntervalMs / 100) / 10}s
       </div>
+      {threatBand === "high" ? (
+        <div className="text-xs font-semibold text-red-100/80">
+          Special zone: boss encounters possible later
+        </div>
+      ) : null}
       {isRunning && (showMultiplayerUI ? realtimeLastWave : lastWave) ? (
         <div className="text-sm font-semibold text-cyan-100/90">
           Last wave:{" "}
@@ -358,12 +380,17 @@ function ZoneActivity({
                 {/* mobs */}
                 {realtimeMobs.slice(0, 6).map((mob) => {
                   const hpPct = mob.maxHp > 0 ? (mob.hp / mob.maxHp) * 100 : 0;
+                  const isBoss = mob.mobLabel === "Void Boss";
                   return (
                     <div
                       key={mob.mobEntityId}
                       role="button"
                       tabIndex={0}
-                      className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-full border ${markerClasses} ${mob.hp > 0 ? "opacity-100" : "opacity-40"}`}
+                      className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-full border ${
+                        isBoss
+                          ? "border-fuchsia-400/45 bg-fuchsia-500/15 text-fuchsia-100"
+                          : markerClasses
+                      } ${mob.hp > 0 ? "opacity-100" : "opacity-40"}`}
                       style={{ left: `${mob.x}%`, top: `${mob.y}%` }}
                       title={`${mob.mobLabel} (x${mob.packSize}) HP ${Math.round(hpPct)}%`}
                       onClick={() => {
@@ -426,6 +453,7 @@ function ZoneActivity({
             <div className="space-y-2">
               {realtimeMobs.map((mob) => {
                 const hpPct = mob.maxHp > 0 ? (mob.hp / mob.maxHp) * 100 : 0;
+                const isBoss = mob.mobLabel === "Void Boss";
                 return (
                   <div
                     key={mob.mobEntityId}
@@ -435,8 +463,13 @@ function ZoneActivity({
                       <div className="text-[10px] uppercase tracking-[0.16em] text-white/45">
                         Wave {mob.waveIndex}
                       </div>
-                      <div className="text-sm font-semibold text-white">
+                      <div className="flex items-center gap-2 text-sm font-semibold text-white">
                         {mob.mobLabel}
+                        {isBoss ? (
+                          <span className="rounded-full border border-fuchsia-300/25 bg-fuchsia-300/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-fuchsia-100">
+                            Boss
+                          </span>
+                        ) : null}
                       </div>
                       <div className="text-xs uppercase tracking-[0.14em] text-white/45">
                         Spawned {formatTime(mob.spawnedAt)}
@@ -490,7 +523,8 @@ function ZoneActivity({
                   const attackerName =
                     ev.attackerClientId === selfClientId
                       ? "You"
-                      : playerNameById.get(ev.attackerClientId) ?? "Operative";
+                      : (playerNameById.get(ev.attackerClientId) ??
+                        "Operative");
                   const mobLabel =
                     mobLabelById.get(ev.mobEntityId) ?? ev.mobEntityId;
                   return (
@@ -525,9 +559,11 @@ function ZoneActivity({
 
 export default function VoidMapShellScreen() {
   const { state, dispatch } = useGame();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const zoneQuery = searchParams.get("zone");
   const bucketQuery = searchParams.get("bucket");
+  const deployIntroFlag = searchParams.get("deployIntro");
   const initialZoneId: VoidZoneId =
     zoneQuery && Object.prototype.hasOwnProperty.call(voidZoneById, zoneQuery)
       ? (zoneQuery as VoidZoneId)
@@ -537,8 +573,28 @@ export default function VoidMapShellScreen() {
       ? Number(bucketQuery)
       : 0;
 
+  const [showDeployIntro, setShowDeployIntro] = useState(
+    deployIntroFlag === "1",
+  );
+
+  useEffect(() => {
+    if (deployIntroFlag !== "1") return;
+
+    const t = window.setTimeout(() => {
+      setShowDeployIntro(false);
+    }, 5200);
+
+    return () => window.clearTimeout(t);
+  }, [deployIntroFlag]);
+
   const [activeZoneId, setActiveZoneId] = useState<VoidZoneId>(initialZoneId);
   const allocatedZone = voidZoneById[initialZoneId];
+
+  // Keep the preview selection in sync with the URL when we redeploy.
+  useEffect(() => {
+    setActiveZoneId(initialZoneId);
+  }, [initialZoneId]);
+
   const missionQueue = Array.isArray(state.player.missionQueue)
     ? state.player.missionQueue
     : [];
@@ -558,6 +614,14 @@ export default function VoidMapShellScreen() {
     : activeZoneId;
   const zone = voidZoneById[effectiveZoneId];
   const multiplayerEnabled = effectiveZoneId === allocatedZone.id;
+  const playerCondition = state.player.condition;
+  const isRecommended = playerCondition >= zone.recommendedCondition;
+  const activePreviewZone = voidZoneById[activeZoneId];
+  const isSelectedZoneUnlocked =
+    state.player.rankLevel >= activePreviewZone.threatLevel;
+  const nextLockedZone = voidZones
+    .filter((z) => state.player.rankLevel < z.threatLevel)
+    .sort((a, b) => a.threatLevel - b.threatLevel)[0];
 
   const realtime = useVoidRealtimeSession({
     enabled: multiplayerEnabled,
@@ -568,10 +632,59 @@ export default function VoidMapShellScreen() {
       factionAlignment: state.player.factionAlignment,
       rankLevel: state.player.rankLevel,
       condition: state.player.condition,
+      zoneMasteryForZone: state.player.zoneMastery[allocatedZone.id] ?? 0,
     },
     huntStatus,
     huntEndsAt,
   });
+
+  const lastHuntResult = state.player.lastHuntResult;
+  const realtimeBonusAppliedForLastResolvedAt =
+    lastHuntResult !== null &&
+    lastHuntResult.realtimeContributionAppliedForResolvedAt ===
+      lastHuntResult.resolvedAt &&
+    lastHuntResult.realtimeContributionBonusMultiplier !== null;
+
+  const canCraftMossRation =
+    state.player.resources.bioSamples >= MOSS_RATION_RECIPE_COST.bioSamples &&
+    state.player.resources.runeDust >= MOSS_RATION_RECIPE_COST.runeDust;
+
+  const stabilizationSigilCrafted = hasStabilizationSigil(
+    state.player.knownRecipes,
+  );
+  const canCraftStabilizationSigil =
+    !stabilizationSigilCrafted &&
+    state.player.resources.credits >=
+      RUNE_CRAFTER_STABILIZATION_SIGIL_COST.credits &&
+    state.player.resources.runeDust >=
+      RUNE_CRAFTER_STABILIZATION_SIGIL_COST.runeDust &&
+    state.player.resources.emberCore >=
+      RUNE_CRAFTER_STABILIZATION_SIGIL_COST.emberCore;
+
+  const canRedeployToSelectedZone =
+    !isHuntRunning &&
+    isSelectedZoneUnlocked &&
+    (lastHuntResult === null || realtimeBonusAppliedForLastResolvedAt);
+
+  function handleRedeployIntoSelectedZone() {
+    // Safety: only allow redeploy when we are not currently running a realtime hunt
+    // and the previous hunt's realtime bonus has been fully applied.
+    if (!canRedeployToSelectedZone) return;
+
+    const targetZoneId = activeZoneId;
+
+    dispatch({
+      type: "QUEUE_MISSION",
+      payload: { missionId: DEFAULT_DEPLOY_HG_MISSION_ID },
+    });
+
+    const SESSION_BUCKET_MS = 2 * 60 * 1000;
+    const nextBucketId = Math.floor(Date.now() / SESSION_BUCKET_MS);
+
+    router.push(
+      `/bazaar/void-map?zone=${targetZoneId}&bucket=${nextBucketId}&deployIntro=1`,
+    );
+  }
 
   const selfHuntContribution = useMemo(() => {
     if (!realtime.huntContributionResult) return null;
@@ -579,13 +692,24 @@ export default function VoidMapShellScreen() {
     if (resolvedAt === null) return null;
     const self = perPlayer.find((p) => p.clientId === realtime.selfClientId);
     if (!self) return null;
-    return { resolvedAt, bonusMultiplier: self.bonusMultiplier };
+    return {
+      resolvedAt,
+      bonusMultiplier: self.bonusMultiplier,
+      totalDamageDealt: self.totalDamage,
+      totalHitsLanded: self.totalHits,
+      mobsContributedTo: self.mobsContributedTo,
+      mobsKilled: self.mobsKilled,
+      bossDefeated: self.bossDefeated,
+      bossDropResourcesBase: self.bossDropResourcesBase,
+    };
   }, [realtime.huntContributionResult, realtime.selfClientId]);
 
   useEffect(() => {
     if (!selfHuntContribution) return;
     if (!state.player.lastHuntResult) return;
-    if (state.player.lastHuntResult.resolvedAt !== selfHuntContribution.resolvedAt) {
+    if (
+      state.player.lastHuntResult.resolvedAt !== selfHuntContribution.resolvedAt
+    ) {
       return;
     }
 
@@ -594,12 +718,22 @@ export default function VoidMapShellScreen() {
       payload: {
         resolvedAt: selfHuntContribution.resolvedAt,
         bonusMultiplier: selfHuntContribution.bonusMultiplier,
+        zoneId: allocatedZone.id,
+        totalDamageDealt: selfHuntContribution.totalDamageDealt,
+        totalHitsLanded: selfHuntContribution.totalHitsLanded,
+        mobsContributedTo: selfHuntContribution.mobsContributedTo,
+        mobsKilled: selfHuntContribution.mobsKilled,
+        bossDefeated: selfHuntContribution.bossDefeated,
+        bossDropResourcesBase: selfHuntContribution.bossDropResourcesBase,
+        zoneThreatLevel: allocatedZone.threatLevel,
       },
     });
   }, [
     dispatch,
     selfHuntContribution,
     state.player.lastHuntResult,
+    allocatedZone.threatLevel,
+    allocatedZone.id,
   ]);
 
   const stateLine = useMemo(() => {
@@ -617,9 +751,52 @@ export default function VoidMapShellScreen() {
 
   return (
     <main
-      className={`min-h-screen px-6 py-10 text-white md:px-10 ${zone.backdropClassName}`}
+      className={`relative min-h-screen px-6 py-10 text-white md:px-10 ${zone.backdropClassName}`}
     >
       <div className="mx-auto flex max-w-6xl flex-col gap-8">
+        {showDeployIntro ? (
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-50 px-6 pt-6">
+            <div className="pointer-events-auto mx-auto w-full max-w-2xl rounded-xl border border-cyan-300/25 bg-black/55 p-4 backdrop-blur">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex min-w-0 items-start gap-3">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-cyan-300/30 bg-cyan-500/10 text-2xl">
+                    !
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-[10px] uppercase tracking-[0.22em] text-cyan-200/70">
+                      Void Entry
+                    </div>
+                    <div className="mt-1 text-lg font-black text-white">
+                      Deploy into the shared hunt
+                    </div>
+                    <div className="mt-2 text-sm text-white/70">
+                      Farm mobs in realtime with others. Your reward is still
+                      the AFK baseline, then improved by your shared combat
+                      contribution.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-3 space-y-2 text-sm text-white/75">
+                <div>
+                  Control tip: press{" "}
+                  <span className="font-semibold text-white">Space</span> to
+                  attack the nearest mob in range.
+                </div>
+                <div>
+                  Strategy: after this contract resolves, redeploy into a
+                  different zone shell to pursue new drops.
+                </div>
+                <div>
+                  Boss planning: higher-threat zones are where special
+                  encounters will land later. Keep an eye on the threat bands.
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
         <ScreenHeader
           eyebrow="Void Deployment / Map Shell"
           title={zone.label}
@@ -634,6 +811,61 @@ export default function VoidMapShellScreen() {
             {allocatedZone.label} · {allocatedZone.threatBand.toUpperCase()}{" "}
             threat
           </div>
+          <div className="mt-2 text-xs text-white/60">
+            Threat Level: {zone.threatLevel}
+          </div>
+          <div className="mt-1 text-xs">
+            {isRecommended ? (
+              <span className="text-green-400">Recommended</span>
+            ) : (
+              <span className="text-red-400">High Risk</span>
+            )}
+          </div>
+          {zone.category === "special" ? (
+            <div className="mt-1 text-xs text-fuchsia-400">Boss Zone</div>
+          ) : null}
+          <div className="mt-1 text-xs text-white/50">
+            Mastery: {state.player.zoneMastery[zone.id] ?? 0}
+          </div>
+          <div className="mt-1 text-xs text-white/50">
+            Current Streak: {state.player.zoneRunStreak}
+          </div>
+          {state.player.lastCompletedZoneId !== null ? (
+            state.player.lastCompletedZoneId === activeZoneId ? (
+              <div className="mt-1 text-xs text-green-400">
+                Stay here to build streak
+              </div>
+            ) : (
+              <div className="mt-1 text-xs text-red-400">
+                Switching zones resets streak
+              </div>
+            )
+          ) : null}
+          {(() => {
+            const mastery = state.player.zoneMastery[zone.id] ?? 0;
+            const masteryExtraBossChance = clamp(mastery * 0.01, 0, 0.2);
+            const tierStep = 5;
+            const nextTierTarget =
+              (Math.floor(mastery / tierStep) + 1) * tierStep;
+            const remainingToNextTier = Math.max(0, nextTierTarget - mastery);
+            return (
+              <div className="mt-1 text-xs text-white/45">
+                Boss Nudge (estimate):{" "}
+                {Math.round(masteryExtraBossChance * 100)}%
+                <div className="mt-1 text-white/40">
+                  Next Mastery Goal: {nextTierTarget} (+{remainingToNextTier})
+                </div>
+              </div>
+            );
+          })()}
+          {nextLockedZone ? (
+            <div className="mt-1 text-xs text-white/55">
+              Next unlock: {nextLockedZone.label} at Rank{" "}
+              {nextLockedZone.threatLevel}
+            </div>
+          ) : (
+            <div className="mt-1 text-xs text-white/55">All zones unlocked</div>
+          )}
           <div className="mt-2 text-sm text-white/60">
             {effectiveZoneId === allocatedZone.id
               ? "You are viewing the allocated zone."
@@ -645,7 +877,12 @@ export default function VoidMapShellScreen() {
           {voidZones.map((z) => {
             const isActive = z.id === effectiveZoneId;
             const isAllocated = z.id === allocatedZone.id;
-            const canSwitch = !isHuntRunning || isAllocated;
+            const isUnlockedByRank = state.player.rankLevel >= z.threatLevel;
+            const isLocked = !isUnlockedByRank && !isAllocated;
+            const zoneMasteryVal = state.player.zoneMastery[z.id] ?? 0;
+            const canSwitch =
+              (!isHuntRunning || isAllocated) &&
+              (isAllocated || isUnlockedByRank);
 
             return (
               <button
@@ -659,7 +896,9 @@ export default function VoidMapShellScreen() {
                     ? "border-cyan-300/40 bg-cyan-300/12 text-cyan-50"
                     : isAllocated
                       ? "border-amber-300/40 bg-amber-300/10 text-amber-50"
-                      : "border-white/12 bg-black/25 text-white/75 hover:border-white/20 hover:text-white",
+                      : isUnlockedByRank
+                        ? "border-white/12 bg-black/25 text-white/75 hover:border-white/20 hover:text-white"
+                        : "border-white/10 bg-black/25 text-white/45 hover:text-white/55",
                   !canSwitch ? "cursor-not-allowed opacity-60" : "",
                 ].join(" ")}
               >
@@ -671,6 +910,16 @@ export default function VoidMapShellScreen() {
                     Allocated
                   </span>
                 ) : null}
+                {isLocked ? (
+                  <span className="ml-2 rounded-full border border-white/15 bg-white/5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.18em] text-white/60">
+                    Locked
+                  </span>
+                ) : null}
+                {zoneMasteryVal > 0 ? (
+                  <span className="ml-2 text-[10px] font-bold uppercase tracking-[0.18em] text-white/55">
+                    Mastery {zoneMasteryVal}
+                  </span>
+                ) : null}
               </button>
             );
           })}
@@ -680,6 +929,32 @@ export default function VoidMapShellScreen() {
           <div className="mt-2 text-xs text-white/55">
             Zone preview is locked while the hunt runs; only the allocated zone
             stays live.
+          </div>
+        ) : null}
+
+        {!isHuntRunning ? (
+          <div className="mt-4 flex gap-2">
+            <button
+              type="button"
+              onClick={handleRedeployIntoSelectedZone}
+              disabled={!canRedeployToSelectedZone}
+              className={[
+                "rounded-xl border px-4 py-3 text-sm font-semibold transition",
+                canRedeployToSelectedZone
+                  ? "border-fuchsia-400/35 bg-fuchsia-400/10 text-fuchsia-100 hover:border-fuchsia-300/45 hover:bg-fuchsia-400/16"
+                  : "cursor-not-allowed border-white/12 bg-black/25 text-white/55",
+              ].join(" ")}
+            >
+              Redeploy
+            </button>
+
+            <button
+              type="button"
+              onClick={() => router.push("/home")}
+              className="rounded-xl border border-white/12 bg-black/25 px-4 py-3 text-sm font-semibold text-white/75 transition hover:border-white/25 hover:text-white"
+            >
+              Return to Hub
+            </button>
           </div>
         ) : null}
 
@@ -698,42 +973,262 @@ export default function VoidMapShellScreen() {
             Spawn waves: {spawnWavesLine}
           </div>
           {state.player.lastHuntResult &&
-          state.player.lastHuntResult.realtimeContributionAppliedForResolvedAt ===
+          state.player.lastHuntResult
+            .realtimeContributionAppliedForResolvedAt ===
             state.player.lastHuntResult.resolvedAt &&
           state.player.lastHuntResult.realtimeContributionBonusMultiplier !==
-            null ? (
-            (() => {
-              const latest = state.player.lastHuntResult!;
-              const baseRank = latest.baseRankXpGained ?? latest.rankXpGained;
-              const baseCredits = latest.baseResourcesGained?.credits ?? 0;
-              const bonusMultiplier =
-                latest.realtimeContributionBonusMultiplier ?? 0;
-              const bonusRank =
-                latest.realtimeRankXpBonusGained ?? 0;
-              const bonusCredits = latest.realtimeResourcesBonusGained?.credits ?? 0;
-              const finalRank = latest.rankXpGained ?? baseRank;
-              const finalCredits = latest.resourcesGained?.credits ?? baseCredits;
+            null
+            ? (() => {
+                const latest = state.player.lastHuntResult!;
+                const baseRank = latest.baseRankXpGained ?? latest.rankXpGained;
+                const baseCredits = latest.baseResourcesGained?.credits ?? 0;
+                const bonusMultiplier =
+                  latest.realtimeContributionBonusMultiplier ?? 0;
+                const bonusRank = latest.realtimeRankXpBonusGained ?? 0;
+                const bonusCredits =
+                  latest.realtimeResourcesBonusGained?.credits ?? 0;
+                const finalRank = latest.rankXpGained ?? baseRank;
+                const finalCredits =
+                  latest.resourcesGained?.credits ?? baseCredits;
+                const realtimeTotalDamageDealt =
+                  latest.realtimeTotalDamageDealt ?? 0;
+                const realtimeTotalHitsLanded =
+                  latest.realtimeTotalHitsLanded ?? 0;
+                const realtimeMobsContributedTo =
+                  latest.realtimeMobsContributedTo ?? 0;
+                const realtimeMobsKilled = latest.realtimeMobsKilled ?? 0;
 
-              return (
-                <div className="mt-3 rounded-xl border border-cyan-400/25 bg-cyan-400/8 px-4 py-3">
-                  <div className="text-[10px] uppercase tracking-[0.22em] text-cyan-200/70">
-                    Realtime contribution bonus
-                  </div>
-                  <div className="mt-2 space-y-1 text-sm text-white/75">
-                    <div>
-                      Rank XP: Base +{baseRank} · Bonus +{bonusRank} · Final +{finalRank}
+                const contributionRole = getContributionRole({
+                  totalDamage: realtimeTotalDamageDealt,
+                  totalHits: realtimeTotalHitsLanded,
+                  mobsContributedTo: realtimeMobsContributedTo,
+                  mobsKilled: realtimeMobsKilled,
+                });
+
+                const contributionProfessionHint =
+                  getContributionProfessionHint({
+                    totalDamage: realtimeTotalDamageDealt,
+                    totalHits: realtimeTotalHitsLanded,
+                    mobsContributedTo: realtimeMobsContributedTo,
+                    mobsKilled: realtimeMobsKilled,
+                  });
+
+                return (
+                  <div className="mt-3 rounded-xl border border-cyan-400/25 bg-cyan-400/8 px-4 py-3">
+                    <div className="text-[10px] uppercase tracking-[0.22em] text-cyan-200/70">
+                      Realtime contribution bonus
                     </div>
-                    <div>
-                      Credits: Base +{baseCredits} · Bonus +{bonusCredits} · Final +{finalCredits}
+                    <div className="mt-2 space-y-1 text-sm text-white/75">
+                      <div>
+                        Rank XP: Base +{baseRank} · Bonus +{bonusRank} · Final +
+                        {finalRank}
+                      </div>
+                      <div>
+                        Credits: Base +{baseCredits} · Bonus +{bonusCredits} ·
+                        Final +{finalCredits}
+                      </div>
+                    </div>
+                    <div className="mt-2 text-xs text-white/55">
+                      Multiplier: +{Math.round(bonusMultiplier * 100)}%
+                    </div>
+                    <div className="mt-3 space-y-1 text-sm text-white/75">
+                      <div className="text-xs uppercase tracking-[0.18em] text-cyan-200/60">
+                        Field Role (Realtime)
+                      </div>
+                      <div className="text-sm font-semibold text-white/85">
+                        {contributionRole}
+                      </div>
+                      <div className="mt-1 text-xs text-white/60">
+                        Specialization Hint: {contributionProfessionHint}
+                      </div>
+                      <div className="mt-1 text-xs text-white/60">
+                        Damage +{realtimeTotalDamageDealt} · Hits{" "}
+                        {realtimeTotalHitsLanded} · Contrib{" "}
+                        {realtimeMobsContributedTo} · Kills {realtimeMobsKilled}
+                      </div>
                     </div>
                   </div>
-                  <div className="mt-2 text-xs text-white/55">
-                    Multiplier: +{Math.round(bonusMultiplier * 100)}%
+                );
+              })()
+            : null}
+
+          {state.player.lastHuntResult &&
+          state.player.lastHuntResult
+            .realtimeContributionAppliedForResolvedAt ===
+            state.player.lastHuntResult.resolvedAt &&
+          state.player.lastHuntResult.realtimeContributionBonusMultiplier !==
+            null
+            ? (() => {
+                const latest = state.player.lastHuntResult!;
+                const lastHuntResult = latest;
+                const kills = lastHuntResult.kills ?? 0;
+                const damage = lastHuntResult.damage ?? 0;
+                const bossDefeated = lastHuntResult.bossDefeated ?? false;
+
+                const bio = lastHuntResult.resourcesGained?.bioSamples ?? 0;
+                const mecha = lastHuntResult.resourcesGained?.scrapAlloy ?? 0;
+                const spirit = lastHuntResult.resourcesGained?.runeDust ?? 0;
+
+                // Readable, non-linear run rating: encourages pushing damage while valuing boss presence.
+                const score =
+                  kills * 120 +
+                  Math.round(damage / 10) +
+                  (bossDefeated ? 600 : 0);
+
+                const rating =
+                  score >= 2400
+                    ? "S"
+                    : score >= 1600
+                      ? "A"
+                      : score >= 900
+                        ? "B"
+                        : "C";
+
+                const ratingTone =
+                  rating === "S"
+                    ? "border-fuchsia-300/30 bg-fuchsia-300/10 text-fuchsia-100"
+                    : rating === "A"
+                      ? "border-cyan-300/25 bg-cyan-300/10 text-cyan-100"
+                      : rating === "B"
+                        ? "border-emerald-300/25 bg-emerald-300/10 text-emerald-100"
+                        : "border-white/10 bg-white/5 text-white/70";
+
+                const bossImpactLine = bossDefeated
+                  ? "Void Boss impact: special-zone drop secured."
+                  : "No boss impact this run: focus on damage + contribution.";
+
+                return (
+                  <div className="mt-4 rounded-lg border border-white/10 bg-black/40 p-4">
+                    <div className="text-sm font-semibold text-white mb-2">
+                      Run Complete
+                    </div>
+
+                    <div
+                      className={[
+                        "mb-3 inline-flex items-center rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.14em]",
+                        ratingTone,
+                      ].join(" ")}
+                    >
+                      Run Rating: {rating}
+                    </div>
+
+                    <div className="text-xs text-white/60 mb-2">
+                      {bossImpactLine}
+                    </div>
+
+                    <div className="text-xs text-white/70 space-y-1">
+                      <div>
+                        Kills:{" "}
+                        <span className="text-white/85 font-semibold">
+                          {kills}
+                        </span>
+                      </div>
+                      <div>
+                        Damage:{" "}
+                        <span className="text-white/85 font-semibold">
+                          {Math.round(damage)}
+                        </span>
+                      </div>
+                      <div>
+                        Boss:{" "}
+                        <span className="text-white/85 font-semibold">
+                          {bossDefeated ? "Defeated" : "None"}
+                        </span>
+                      </div>
+
+                      <div className="mt-2 text-white/60">Resources:</div>
+                      <div>
+                        Bio:{" "}
+                        <span
+                          className={
+                            bio > 0
+                              ? "text-emerald-200 font-semibold"
+                              : "text-white/50"
+                          }
+                        >
+                          +{bio}
+                        </span>
+                      </div>
+                      <div>
+                        Mecha:{" "}
+                        <span
+                          className={
+                            mecha > 0
+                              ? "text-cyan-200 font-semibold"
+                              : "text-white/50"
+                          }
+                        >
+                          +{mecha}
+                        </span>
+                      </div>
+                      <div>
+                        Spirit:{" "}
+                        <span
+                          className={
+                            spirit > 0
+                              ? "text-fuchsia-200 font-semibold"
+                              : "text-white/50"
+                          }
+                        >
+                          +{spirit}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="mt-2 text-xs text-white/50">
+                      Zone Mastery (this zone):{" "}
+                      {state.player.zoneMastery[allocatedZone.id] ?? 0}
+                    </div>
+
+                    <div className="mt-1 text-xs text-white/50">
+                      Zone Streak: {state.player.zoneRunStreak}
+                    </div>
+                    {(() => {
+                      const streak = state.player.zoneRunStreak ?? 0;
+                      const streakBonusPct =
+                        streak >= 5 ? 0.1 : streak >= 3 ? 0.05 : 0;
+                      if (streakBonusPct <= 0) return null;
+                      return (
+                        <div className="mt-1 text-xs text-white/45">
+                          Streak Bonus: +{Math.round(streakBonusPct * 100)}%
+                          yield
+                        </div>
+                      );
+                    })()}
+
+                    <div className="mt-3 space-y-1">
+                      {canCraftMossRation ? (
+                        <Link
+                          href="/bazaar/crafting-district"
+                          className="inline-flex rounded-xl border border-emerald-300/25 bg-emerald-300/10 px-3 py-1.5 text-xs font-semibold text-emerald-100 transition hover:border-emerald-200/40 hover:bg-emerald-300/16"
+                        >
+                          Craft Moss Ration available
+                        </Link>
+                      ) : null}
+
+                      {canCraftStabilizationSigil ? (
+                        <Link
+                          href="/bazaar/crafting-district"
+                          className="inline-flex rounded-xl border border-cyan-300/25 bg-cyan-300/10 px-3 py-1.5 text-xs font-semibold text-cyan-100 transition hover:border-cyan-200/40 hover:bg-cyan-300/16"
+                        >
+                          Bind Rune Crafter Sigil available
+                        </Link>
+                      ) : null}
+                    </div>
+
+                    <div className="mt-3">
+                      <Link
+                        href="/inventory"
+                        className="inline-flex rounded-xl border border-white/12 bg-white/5 px-4 py-2 text-xs font-semibold text-white/80 transition hover:border-white/20 hover:bg-white/10"
+                      >
+                        Open Inventory
+                      </Link>
+                    </div>
                   </div>
-                </div>
-              );
-            })()
-          ) : null}
+                );
+              })()
+            : null}
+
           {isQueueFull && !isHuntRunning ? (
             <div className="mt-2 text-sm text-white/55">
               Queue full: deploy may not enqueue a new hunt yet.

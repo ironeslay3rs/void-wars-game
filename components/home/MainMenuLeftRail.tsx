@@ -62,9 +62,6 @@ export default function MainMenuLeftRail() {
   const { remainingSeconds, isRunning } =
     useActiveProcessTimer(activeHuntProcess);
   const pendingHomeResultNavRef = useRef(false);
-  const pendingRealtimeBonusNavTimeoutRef = useRef<
-    ReturnType<typeof setTimeout> | null
-  >(null);
   const lastHandledHuntResultAtRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -86,35 +83,6 @@ export default function MainMenuLeftRail() {
       return;
     }
 
-    const realtimeApplied =
-      result.realtimeContributionAppliedForResolvedAt === result.resolvedAt;
-
-    // Realtime contribution bonus arrives from the ws server shortly after
-    // `lastHuntResult` is first written. Delay navigation so the result screen
-    // shows the final adjusted payout.
-    if (!realtimeApplied) {
-      // Clear and re-schedule fallback navigation for this resolvedAt.
-      if (pendingRealtimeBonusNavTimeoutRef.current) {
-        clearTimeout(pendingRealtimeBonusNavTimeoutRef.current);
-      }
-
-      pendingRealtimeBonusNavTimeoutRef.current = setTimeout(() => {
-        if (lastHandledHuntResultAtRef.current === result.resolvedAt) {
-          return;
-        }
-
-        lastHandledHuntResultAtRef.current = result.resolvedAt;
-        pendingHomeResultNavRef.current = false;
-        router.push("/bazaar/biotech-labs/result");
-      }, 1600);
-      return;
-    }
-
-    if (pendingRealtimeBonusNavTimeoutRef.current) {
-      clearTimeout(pendingRealtimeBonusNavTimeoutRef.current);
-      pendingRealtimeBonusNavTimeoutRef.current = null;
-    }
-
     lastHandledHuntResultAtRef.current = result.resolvedAt;
     pendingHomeResultNavRef.current = false;
     router.push("/bazaar/biotech-labs/result");
@@ -132,12 +100,16 @@ export default function MainMenuLeftRail() {
     // Deterministic zone allocation so multiple players deploying around the same time
     // land in the same shared realtime shard.
     const hashed = Math.imul(sessionBucketId ^ (sessionBucketId >>> 16), 0x45d9f3b);
-    const zoneIndex = Math.abs(hashed) % voidZones.length;
+    const unlockedZones = voidZones.filter(
+      (z) => state.player.rankLevel >= z.threatLevel,
+    );
+    const candidates = unlockedZones.length > 0 ? unlockedZones : voidZones;
+    const zoneIndex = Math.abs(hashed) % candidates.length;
     const allocatedZoneId =
-      voidZones[zoneIndex]?.id ?? DEFAULT_HOME_DEPLOY_ZONE_ID;
+      candidates[zoneIndex]?.id ?? DEFAULT_HOME_DEPLOY_ZONE_ID;
 
     router.push(
-      `/bazaar/void-map?zone=${allocatedZoneId}&bucket=${sessionBucketId}`,
+      `/bazaar/void-map?zone=${allocatedZoneId}&bucket=${sessionBucketId}&deployIntro=1`,
     );
   }
 

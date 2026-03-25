@@ -21,6 +21,7 @@ type VoidRealtimePlayerProfile = {
   factionAlignment: FactionAlignment;
   rankLevel: number;
   condition: number;
+  zoneMasteryForZone: number;
 };
 
 type UseVoidRealtimeSessionArgs = {
@@ -82,6 +83,7 @@ export function useVoidRealtimeSession({
       factionAlignment: playerProfile.factionAlignment,
       rankLevel: playerProfile.rankLevel,
       condition: playerProfile.condition,
+      zoneMasteryForZone: playerProfile.zoneMasteryForZone,
     };
     send(join);
   }, [zoneId, sessionBucketId, clientId, playerProfile, send]);

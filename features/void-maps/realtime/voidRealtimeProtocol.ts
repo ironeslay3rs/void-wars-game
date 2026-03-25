@@ -1,4 +1,4 @@
-import type { FactionAlignment } from "@/features/game/gameTypes";
+import type { FactionAlignment, ResourcesState } from "@/features/game/gameTypes";
 import type { VoidZoneId } from "@/features/void-maps/zoneData";
 
 export type VoidRealtimeClientId = string;
@@ -12,6 +12,7 @@ export type PlayerPresence = {
   lastMoveAt: number;
   rankLevel: number;
   condition: number;
+  zoneMasteryForZone: number;
 };
 
 export type MobEntity = {
@@ -42,6 +43,7 @@ export type JoinSessionMessage = {
   factionAlignment: FactionAlignment;
   rankLevel: number;
   condition: number;
+  zoneMasteryForZone: number;
 };
 
 export type MoveInputMessage = {
@@ -128,6 +130,8 @@ export type HuntContributionPerPlayer = {
   mobsContributedTo: number;
   mobsKilled: number;
   bonusMultiplier: number;
+  bossDefeated: boolean;
+  bossDropResourcesBase: Partial<ResourcesState>;
 };
 
 export type HuntContributionResultMessage = {
