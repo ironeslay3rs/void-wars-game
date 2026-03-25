@@ -1,15 +1,14 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import {
   Hammer,
   Package,
   Shield,
   Wrench,
-  ArrowLeft,
   Flame,
 } from "lucide-react";
+import BazaarSubpageNav from "@/components/bazaar/BazaarSubpageNav";
 import { useGame } from "@/features/game/gameContext";
 import { getCraftingDistrictScreenData } from "@/features/crafting-district/craftingDistrictScreenData";
 import {
@@ -161,15 +160,9 @@ export default function CraftingDistrictPage() {
               repair items, socket runes, and prepare for deeper progression.
             </p>
           </div>
-
-          <Link
-            href="/bazaar"
-            className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:border-orange-400/40 hover:bg-white/10"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Bazaar
-          </Link>
         </div>
+
+        <BazaarSubpageNav accentClassName="hover:border-orange-400/40" />
 
         <div className="grid gap-6 md:grid-cols-3">
           {screenData.cards.map((card) => (

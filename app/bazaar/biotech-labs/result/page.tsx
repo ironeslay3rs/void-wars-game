@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import BazaarSubpageNav from "@/components/bazaar/BazaarSubpageNav";
 import ScreenHeader from "@/components/shared/ScreenHeader";
 import SectionCard from "@/components/shared/SectionCard";
 import { getLatestBiotechSpecimen } from "@/features/biotech-labs/specimenData";
@@ -118,6 +119,8 @@ export default function BiotechLabsResultPage() {
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(30,120,80,0.22),_rgba(5,8,20,1)_55%)] px-6 py-10 text-white md:px-10">
       <div className="mx-auto flex max-w-5xl flex-col gap-8">
+        <BazaarSubpageNav accentClassName="hover:border-emerald-300/40" />
+
         <ScreenHeader
           eyebrow="Biotech Labs / Hunt Result"
           title="Specimen Hunt Result"

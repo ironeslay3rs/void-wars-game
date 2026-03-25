@@ -1,3 +1,4 @@
+import BazaarSubpageNav from "@/components/bazaar/BazaarSubpageNav";
 import FeastHallScreen from "@/components/black-market/FeastHallScreen";
 import ScreenHeader from "@/components/shared/ScreenHeader";
 import SectionCard from "@/components/shared/SectionCard";
@@ -15,6 +16,8 @@ export default function BlackMarketPage() {
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(140,60,20,0.22),_rgba(5,8,20,1)_55%)] px-6 py-10 text-white md:px-10">
       <div className="mx-auto flex max-w-[1500px] flex-col gap-8">
+        <BazaarSubpageNav accentClassName="hover:border-orange-300/40" />
+
         <ScreenHeader
           eyebrow={blackMarketRoleSummary.eyebrow}
           title={blackMarketRoleSummary.title}

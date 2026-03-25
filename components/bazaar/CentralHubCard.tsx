@@ -27,7 +27,7 @@ export default function CentralHubCard({
   return (
     <Link
       href={route}
-      className={`absolute ${positionClass} ${widthClass} z-20 block text-left transition duration-200 hover:scale-[1.02] hover:-translate-y-0.5`}
+      className={`absolute ${positionClass} ${widthClass} z-40 block text-left transition duration-200 hover:scale-[1.02] hover:-translate-y-0.5`}
     >
       <div
         className={[

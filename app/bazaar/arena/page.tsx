@@ -1,6 +1,4 @@
-import Link from "next/link";
 import {
-  ArrowLeft,
   Swords,
   Trophy,
   Shield,
@@ -8,6 +6,7 @@ import {
   Coins,
   Users,
 } from "lucide-react";
+import BazaarSubpageNav from "@/components/bazaar/BazaarSubpageNav";
 
 const arenaPanels = [
   {
@@ -59,15 +58,9 @@ export default function ArenaPage() {
               spectators, and faction pride all collide here.
             </p>
           </div>
-
-          <Link
-            href="/bazaar"
-            className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:border-red-400/40 hover:bg-white/10"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Bazaar
-          </Link>
         </div>
+
+        <BazaarSubpageNav accentClassName="hover:border-red-400/40" />
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {arenaPanels.map((panel) => {

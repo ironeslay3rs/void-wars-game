@@ -17,6 +17,15 @@ export type ChatShellMessage = {
   timestamp: string;
 };
 
+export type FriendRequestShellEntry = {
+  id: string;
+  callsign: string;
+  title: string;
+  faction: "Bio" | "Mecha" | "Pure";
+  receivedAt: string;
+  note: string;
+};
+
 export type MailAttachment = {
   id: string;
   label: string;
@@ -133,6 +142,25 @@ export const friendChatShellMessages: Record<string, ChatShellMessage[]> = {
     },
   ],
 };
+
+export const friendRequestShellEntries: FriendRequestShellEntry[] = [
+  {
+    id: "request-ashen-braid",
+    callsign: "Ashen Braid",
+    title: "Relay Knife",
+    faction: "Pure",
+    receivedAt: "Today / 05:48",
+    note: "Recovered your trench tag from a relay ledger and is requesting a clean contact line.",
+  },
+  {
+    id: "request-iron-veil",
+    callsign: "Iron Veil",
+    title: "Wall Mechanist",
+    faction: "Mecha",
+    receivedAt: "Yesterday / 23:10",
+    note: "Claims to have a stable repair route and wants roster access before the next district push.",
+  },
+];
 
 export const mailEntries: MailEntry[] = [
   {

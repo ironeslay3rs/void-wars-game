@@ -24,6 +24,8 @@ type CompletionFeedback = {
   resources: Array<[string, number]>;
 };
 
+type MissionBlockReason = "path-locked" | "already-queued" | "queue-full" | null;
+
 function formatDuration(durationHours: number) {
   const totalSeconds = Math.max(1, Math.round(durationHours * 60 * 60));
 
@@ -89,6 +91,14 @@ function formatRewardLabel(key: string) {
     default:
       return key;
   }
+}
+
+function getPathRequirementLabel(path: "neutral" | "bio" | "mecha" | "pure") {
+  if (path === "neutral") {
+    return "Available to any operative";
+  }
+
+  return `Requires ${formatPathLabel(path)} alignment`;
 }
 
 function formatCountdown(targetTime: number, now: number, prefix: string) {
@@ -216,6 +226,7 @@ export default function MissionsScreen() {
   const [now, setNow] = useState(() => Date.now());
   const [completionFeedback, setCompletionFeedback] =
     useState<CompletionFeedback | null>(null);
+  const [boardFeedback, setBoardFeedback] = useState<string | null>(null);
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -230,6 +241,7 @@ export default function MissionsScreen() {
     : [];
 
   const queuedMissionIds = new Set(missionQueue.map((entry) => entry.missionId));
+  const isQueueFull = missionQueue.length >= state.player.maxMissionQueueSlots;
 
   const queuedEntries: QueuedMissionView[] = missionQueue.reduce<QueuedMissionView[]>(
     (acc, entry) => {
@@ -294,6 +306,18 @@ export default function MissionsScreen() {
 
     return () => window.clearTimeout(timeout);
   }, [completionFeedback]);
+
+  useEffect(() => {
+    if (!boardFeedback) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      setBoardFeedback(null);
+    }, 3500);
+
+    return () => window.clearTimeout(timeout);
+  }, [boardFeedback]);
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(70,90,120,0.18),_rgba(5,8,20,0.96)_55%)] px-4 py-6 text-white md:px-6 md:py-8 xl:px-8">
@@ -374,6 +398,26 @@ export default function MissionsScreen() {
             title="Mission Board"
             description="Queue standard operations here. Hunting Ground contracts run from the Mercenary Guild on the same shared timer stack."
           >
+            <div className="mb-4 space-y-3">
+              <div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-white/65">
+                {state.player.factionAlignment === "unbound"
+                  ? "You can deploy neutral operations right away. Bio, Mecha, and Pure missions stay locked until you align with a path."
+                  : `${formatPathLabel(state.player.factionAlignment)}-aligned operations are ready. Neutral missions remain available to everyone.`}
+              </div>
+
+              {isQueueFull ? (
+                <div className="rounded-2xl border border-amber-500/25 bg-amber-500/10 p-4 text-sm text-amber-100">
+                  Mission queue is full. Remove or finish an active operation before deploying another one.
+                </div>
+              ) : null}
+
+              {boardFeedback ? (
+                <div className="rounded-2xl border border-cyan-500/25 bg-cyan-500/10 p-4 text-sm text-cyan-100">
+                  {boardFeedback}
+                </div>
+              ) : null}
+            </div>
+
             <div className="space-y-3">
               {standardMissions.map((mission) => {
                 const isAccessible =
@@ -381,6 +425,13 @@ export default function MissionsScreen() {
                   state.player.factionAlignment === mission.path;
 
                 const isQueued = queuedMissionIds.has(mission.id);
+                const blockReason: MissionBlockReason = !isAccessible
+                  ? "path-locked"
+                  : isQueued
+                    ? "already-queued"
+                    : isQueueFull
+                      ? "queue-full"
+                      : null;
 
                 const resourceRewards = Object.entries(
                   mission.reward.resources ?? {},
@@ -433,6 +484,10 @@ export default function MissionsScreen() {
                           {mission.description}
                         </p>
 
+                        <p className="mt-2 text-xs uppercase tracking-[0.14em] text-white/40">
+                          {getPathRequirementLabel(mission.path)}
+                        </p>
+
                         <div className="mt-3 flex flex-wrap gap-2">
                           <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-xs text-white/85">
                             +{mission.reward.rankXp} XP
@@ -464,25 +519,51 @@ export default function MissionsScreen() {
                       <div className="w-full lg:w-[168px]">
                         <button
                           type="button"
-                          onClick={() =>
+                          onClick={() => {
+                            if (blockReason === "path-locked") {
+                              setBoardFeedback(
+                                `${mission.title} is locked until you align with ${formatPathLabel(mission.path)}.`,
+                              );
+                              return;
+                            }
+
+                            if (blockReason === "already-queued") {
+                              setBoardFeedback(
+                                `${mission.title} is already in the live queue.`,
+                              );
+                              return;
+                            }
+
+                            if (blockReason === "queue-full") {
+                              setBoardFeedback(
+                                "Mission queue is full. Clear a slot to deploy another operation.",
+                              );
+                              return;
+                            }
+
                             dispatch({
                               type: "QUEUE_MISSION",
                               payload: { missionId: mission.id },
-                            })
-                          }
-                          disabled={!isAccessible || isQueued}
+                            });
+                            setBoardFeedback(
+                              `${mission.title} entered the operations queue.`,
+                            );
+                          }}
+                          disabled={blockReason !== null}
                           className={[
                             "w-full rounded-2xl border px-4 py-3 text-sm font-semibold uppercase tracking-[0.12em] transition",
-                            !isAccessible || isQueued
+                            blockReason !== null
                               ? "cursor-not-allowed border-white/10 bg-white/5 text-white/35"
                               : "border-cyan-400/30 bg-cyan-500/10 text-cyan-100 hover:border-cyan-300/50 hover:bg-cyan-500/15",
                           ].join(" ")}
                         >
                           {isQueued
                             ? "Queued"
-                            : isAccessible
-                              ? "Queue Mission"
-                              : "Locked"}
+                            : isQueueFull
+                              ? "Queue Full"
+                              : !isAccessible
+                                ? "Locked"
+                                : "Queue Mission"}
                         </button>
                       </div>
                     </div>

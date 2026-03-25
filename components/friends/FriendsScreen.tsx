@@ -7,6 +7,7 @@ import ScreenHeader from "@/components/shared/ScreenHeader";
 import SectionCard from "@/components/shared/SectionCard";
 import {
   friendChatShellMessages,
+  friendRequestShellEntries,
   friendShellEntries,
   type FriendPresence,
   type FriendShellEntry,
@@ -180,6 +181,60 @@ export default function FriendsScreen({
                     );
                   })}
                 </div>
+              </div>
+            </SectionCard>
+
+            <SectionCard
+              title="Pending Requests"
+              description="Visible shell for incoming contact requests. These entries are review-only in the current slice."
+            >
+              <div className="space-y-3">
+                {friendRequestShellEntries.map((request) => (
+                  <div
+                    key={request.id}
+                    className="rounded-2xl border border-white/10 bg-white/[0.03] p-4"
+                  >
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-base font-black uppercase tracking-[0.06em] text-white">
+                        {request.callsign}
+                      </span>
+                      <span
+                        className={[
+                          "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em]",
+                          getFactionStyle(request.faction),
+                        ].join(" ")}
+                      >
+                        {request.faction}
+                      </span>
+                      <span className="rounded-full border border-white/10 bg-black/20 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/55">
+                        {request.receivedAt}
+                      </span>
+                    </div>
+
+                    <div className="mt-2 text-sm uppercase tracking-[0.14em] text-white/45">
+                      {request.title}
+                    </div>
+
+                    <p className="mt-2 text-sm leading-6 text-white/62">
+                      {request.note}
+                    </p>
+
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                      <button
+                        type="button"
+                        className="rounded-xl border border-emerald-400/25 bg-emerald-500/10 px-4 py-3 text-sm font-semibold uppercase tracking-[0.08em] text-emerald-50 transition hover:border-emerald-300/40 hover:bg-emerald-500/14"
+                      >
+                        Accept
+                      </button>
+                      <button
+                        type="button"
+                        className="rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm font-semibold uppercase tracking-[0.08em] text-white/68 transition hover:border-white/20 hover:bg-white/[0.05]"
+                      >
+                        Ignore
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             </SectionCard>
 

@@ -1,13 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import {
-  ArrowLeft,
-  Flame,
-  Soup,
-  TriangleAlert,
-  UtensilsCrossed,
-} from "lucide-react";
+import { Flame, Soup, TriangleAlert, UtensilsCrossed } from "lucide-react";
+import BazaarSubpageNav from "@/components/bazaar/BazaarSubpageNav";
 import SectionCard from "@/components/shared/SectionCard";
 import { feastHallOffers } from "@/features/black-market/feastHallData";
 import { useGame } from "@/features/game/gameContext";
@@ -103,9 +97,9 @@ export default function FeastHallScreen({
                 Neutral Law
               </div>
               <p className="mt-2 text-sm leading-6 text-white/72">
-                Deals are sacred in the Black Market. The Feast Hall honors
-                that law with fixed terms, clean payment, and no haggling after
-                the first bite.
+                Deals are sacred in the Black Market. The Feast Hall honors that
+                law with fixed terms, clean payment, and no haggling after the
+                first bite.
               </p>
             </div>
 
@@ -115,8 +109,8 @@ export default function FeastHallScreen({
               </div>
               <p className="mt-2 text-sm leading-6 text-white/72">
                 The lane draws from the Mouth of Inti and Pure ritual excess,
-                but sells survival first: eat now, endure longer, pay in
-                credits or salvage.
+                but sells survival first: eat now, endure longer, pay in credits
+                or salvage.
               </p>
             </div>
 
@@ -171,7 +165,9 @@ export default function FeastHallScreen({
               </div>
               <div className="mt-2 flex items-center gap-2 text-lg font-semibold text-white">
                 <UtensilsCrossed className="h-5 w-5 text-amber-300" />
-                {isRecoveryOnCooldown ? "Kitchen cooling down" : "Kitchen ready"}
+                {isRecoveryOnCooldown
+                  ? "Kitchen cooling down"
+                  : "Kitchen ready"}
               </div>
               <div className="mt-2 text-sm text-white/65">
                 {isRecoveryOnCooldown
@@ -275,9 +271,7 @@ export default function FeastHallScreen({
                     <TriangleAlert className="mt-0.5 h-4 w-4 text-amber-200" />
                     <div>
                       <div className="font-semibold text-white">Tradeoff</div>
-                      <div className="mt-1 text-white/65">
-                        {offer.riskNote}
-                      </div>
+                      <div className="mt-1 text-white/65">{offer.riskNote}</div>
                     </div>
                   </div>
                 </div>
@@ -320,15 +314,7 @@ export default function FeastHallScreen({
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(180,110,30,0.24),_rgba(5,8,20,1)_58%)] px-6 py-10 text-white md:px-10">
       <div className="mx-auto flex max-w-7xl flex-col gap-8">
-        <div className="flex justify-end">
-          <Link
-            href="/bazaar"
-            className="inline-flex items-center gap-2 self-start rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:border-amber-300/40 hover:bg-white/10"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Bazaar
-          </Link>
-        </div>
+        <BazaarSubpageNav accentClassName="hover:border-amber-300/40" />
 
         {content}
       </div>

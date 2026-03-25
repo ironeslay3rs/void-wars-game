@@ -49,7 +49,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const latestStateRef = useRef(state);
   const skipNextRemoteSaveRef = useRef(false);
 
-  latestStateRef.current = state;
+  useEffect(() => {
+    latestStateRef.current = state;
+  }, [state]);
 
   const clearPendingRemoteSave = useCallback(() => {
     if (pendingSaveTimeoutRef.current !== null) {
@@ -98,8 +100,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
     clearPendingRemoteSave();
 
     if (status !== "authenticated" || !user || !session) {
-      setHasHydratedForUser(false);
-      setHydratedUserId(null);
       return;
     }
 
@@ -215,6 +215,31 @@ export function GameProvider({ children }: { children: ReactNode }) {
     }, 1000);
 
     return () => window.clearInterval(interval);
+  }, [hasHydratedForUser]);
+
+  useEffect(() => {
+    if (!hasHydratedForUser) return;
+
+    const syncMissionQueue = () => {
+      dispatch({
+        type: "PROCESS_MISSION_QUEUE",
+        payload: { now: Date.now() },
+      });
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        syncMissionQueue();
+      }
+    };
+
+    window.addEventListener("focus", syncMissionQueue);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener("focus", syncMissionQueue);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, [hasHydratedForUser]);
 
   const selectPath = useCallback((path: PathSelection) => {
