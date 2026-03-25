@@ -1,4 +1,5 @@
 import FeastHallScreen from "@/components/black-market/FeastHallScreen";
+import Link from "next/link";
 import ScreenHeader from "@/components/shared/ScreenHeader";
 import SectionCard from "@/components/shared/SectionCard";
 import {
@@ -48,6 +49,12 @@ export default function BlackMarketPage() {
                 credits, salvage, hunger, and condition pressure into a hard
                 recovery choice before the next push.
               </div>
+              <Link
+                href="/bazaar/black-market/feast-hall"
+                className="inline-flex w-full items-center justify-center rounded-xl border border-amber-300/40 bg-amber-300/15 px-4 py-3 text-sm font-semibold uppercase tracking-[0.08em] text-amber-50 transition hover:border-amber-200/60 hover:bg-amber-300/20"
+              >
+                Enter Feast Hall Lane
+              </Link>
               <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
                 This keeps scope inside Book 1: one route, one lane, and one
                 real recovery location in the world instead of a broader hub
