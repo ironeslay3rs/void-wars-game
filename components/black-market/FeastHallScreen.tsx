@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import {
   ArrowLeft,
   Flame,
@@ -72,6 +73,7 @@ export default function FeastHallScreen({
 }: FeastHallScreenProps) {
   const { state, dispatch } = useGame();
   const { player } = state;
+  const [serviceFeedback, setServiceFeedback] = useState<string | null>(null);
   const { isRecoveryOnCooldown, recoveryCooldownRemainingSeconds } =
     useRecoveryCooldown(player.conditionRecoveryAvailableAt);
   const conditionTone = getConditionTone(player.condition);
@@ -87,7 +89,38 @@ export default function FeastHallScreen({
   }
 
   function handleUseOffer(offerId: FeastHallOfferId) {
+    const offer = feastHallOffers.find((entry) => entry.id === offerId);
+
+    if (!offer) {
+      setServiceFeedback("Service not recognized. The kitchen rejects the order.");
+      return;
+    }
+
+    if (player.condition >= 100) {
+      setServiceFeedback(
+        "Condition already full. Keep your salvage for the next extraction cycle.",
+      );
+      return;
+    }
+
+    if (isRecoveryOnCooldown) {
+      setServiceFeedback(
+        `Kitchen still cooling down. Next service opens in ${recoveryCooldownRemainingSeconds}s.`,
+      );
+      return;
+    }
+
+    if (!canAffordOffer(offer.cost)) {
+      setServiceFeedback(
+        `Insufficient payment for ${offer.title}. Secure more credits or salvage first.`,
+      );
+      return;
+    }
+
     dispatch({ type: "USE_FEAST_HALL_OFFER", payload: { offerId } });
+    setServiceFeedback(
+      `${offer.title} served: +${offer.conditionGain} condition, ${formatHungerEffect(offer.hungerDelta)}, and a ${Math.ceil(offer.cooldownMs / 1000)}s lockout.`,
+    );
   }
 
   const content = (
@@ -204,6 +237,11 @@ export default function FeastHallScreen({
                   </div>
                 </div>
               </div>
+              {serviceFeedback ? (
+                <div className="mt-4 rounded-xl border border-amber-300/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-50/90">
+                  {serviceFeedback}
+                </div>
+              ) : null}
             </div>
           </div>
         </SectionCard>
