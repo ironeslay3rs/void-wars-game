@@ -1,7 +1,14 @@
 "use client";
 
-import { Flame, Soup, TriangleAlert, UtensilsCrossed } from "lucide-react";
-import BazaarSubpageNav from "@/components/bazaar/BazaarSubpageNav";
+import Link from "next/link";
+import { useState } from "react";
+import {
+  ArrowLeft,
+  Flame,
+  Soup,
+  TriangleAlert,
+  UtensilsCrossed,
+} from "lucide-react";
 import SectionCard from "@/components/shared/SectionCard";
 import { feastHallOffers } from "@/features/black-market/feastHallData";
 import { useGame } from "@/features/game/gameContext";
@@ -66,6 +73,7 @@ export default function FeastHallScreen({
 }: FeastHallScreenProps) {
   const { state, dispatch } = useGame();
   const { player } = state;
+  const [serviceFeedback, setServiceFeedback] = useState<string | null>(null);
   const { isRecoveryOnCooldown, recoveryCooldownRemainingSeconds } =
     useRecoveryCooldown(player.conditionRecoveryAvailableAt);
   const conditionTone = getConditionTone(player.condition);
@@ -81,7 +89,38 @@ export default function FeastHallScreen({
   }
 
   function handleUseOffer(offerId: FeastHallOfferId) {
+    const offer = feastHallOffers.find((entry) => entry.id === offerId);
+
+    if (!offer) {
+      setServiceFeedback("Service not recognized. The kitchen rejects the order.");
+      return;
+    }
+
+    if (player.condition >= 100) {
+      setServiceFeedback(
+        "Condition already full. Keep your salvage for the next extraction cycle.",
+      );
+      return;
+    }
+
+    if (isRecoveryOnCooldown) {
+      setServiceFeedback(
+        `Kitchen still cooling down. Next service opens in ${recoveryCooldownRemainingSeconds}s.`,
+      );
+      return;
+    }
+
+    if (!canAffordOffer(offer.cost)) {
+      setServiceFeedback(
+        `Insufficient payment for ${offer.title}. Secure more credits or salvage first.`,
+      );
+      return;
+    }
+
     dispatch({ type: "USE_FEAST_HALL_OFFER", payload: { offerId } });
+    setServiceFeedback(
+      `${offer.title} served: +${offer.conditionGain} condition, ${formatHungerEffect(offer.hungerDelta)}, and a ${Math.ceil(offer.cooldownMs / 1000)}s lockout.`,
+    );
   }
 
   const content = (
@@ -200,6 +239,11 @@ export default function FeastHallScreen({
                   </div>
                 </div>
               </div>
+              {serviceFeedback ? (
+                <div className="mt-4 rounded-xl border border-amber-300/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-50/90">
+                  {serviceFeedback}
+                </div>
+              ) : null}
             </div>
           </div>
         </SectionCard>
@@ -314,7 +358,15 @@ export default function FeastHallScreen({
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(180,110,30,0.24),_rgba(5,8,20,1)_58%)] px-6 py-10 text-white md:px-10">
       <div className="mx-auto flex max-w-7xl flex-col gap-8">
-        <BazaarSubpageNav accentClassName="hover:border-amber-300/40" />
+        <div className="flex justify-end">
+          <Link
+            href="/bazaar/black-market"
+            className="inline-flex items-center gap-2 self-start rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:border-amber-300/40 hover:bg-white/10"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Black Market
+          </Link>
+        </div>
 
         {content}
       </div>

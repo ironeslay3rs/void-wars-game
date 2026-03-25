@@ -196,6 +196,17 @@ export async function signUpWithPassword(email: string, password: string) {
   return mapAuthSession(payload);
 }
 
+export async function requestPasswordRecovery(email: string) {
+  const response = await supabaseRequest("/auth/v1/recover", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response));
+  }
+}
+
 export async function signOutRemote(accessToken: string) {
   const response = await supabaseRequest(
     "/auth/v1/logout",
