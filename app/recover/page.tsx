@@ -2,27 +2,30 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useAuth } from "@/features/auth/useAuth";
+import { requestPasswordRecovery } from "@/features/auth/authClient";
 
-export default function LoginPage() {
-  const { signIn, status } = useAuth();
+export default function RecoverPage() {
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+    setMessage(null);
     setIsSubmitting(true);
 
     try {
-      await signIn(email, password);
+      await requestPasswordRecovery(email);
+      setMessage(
+        "Recovery instructions were sent. Check your inbox and spam folder for the reset link.",
+      );
     } catch (caughtError) {
       setError(
         caughtError instanceof Error
           ? caughtError.message
-          : "Unable to sign in.",
+          : "Unable to start password recovery.",
       );
     } finally {
       setIsSubmitting(false);
@@ -37,10 +40,10 @@ export default function LoginPage() {
             Void Wars: Oblivion
           </p>
           <h1 className="text-3xl font-semibold tracking-[0.08em] text-white">
-            Sign In
+            Recover Password
           </h1>
           <p className="text-sm text-white/60">
-            Access your wasteland record and continue from your own save.
+            Enter your account email to receive a secure recovery link.
           </p>
         </div>
 
@@ -59,46 +62,31 @@ export default function LoginPage() {
             />
           </label>
 
-          <label className="block space-y-2">
-            <span className="text-xs uppercase tracking-[0.18em] text-white/55">
-              Password
-            </span>
-            <input
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition focus:border-emerald-400/40"
-              autoComplete="current-password"
-              required
-            />
-          </label>
-
           {error ? (
             <div className="rounded-xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-sm text-red-100">
               {error}
             </div>
           ) : null}
 
+          {message ? (
+            <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+              {message}
+            </div>
+          ) : null}
+
           <button
             type="submit"
-            disabled={isSubmitting || status === "loading"}
+            disabled={isSubmitting}
             className="w-full rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-4 py-3 text-sm font-semibold text-emerald-100 transition hover:border-emerald-400/40 hover:bg-emerald-500/15 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/[0.03] disabled:text-white/35"
           >
-            {isSubmitting ? "Signing In..." : "Enter the Wasteland"}
+            {isSubmitting ? "Sending Recovery Link..." : "Send Recovery Link"}
           </button>
         </form>
 
         <p className="mt-6 text-sm text-white/55">
-          Need an account?{" "}
-          <Link className="text-emerald-200 hover:text-emerald-100" href="/register">
-            Register here
-          </Link>
-          .
-        </p>
-        <p className="mt-2 text-sm text-white/55">
-          Forgot password?{" "}
-          <Link className="text-emerald-200 hover:text-emerald-100" href="/recover">
-            Recover access
+          Remembered your password?{" "}
+          <Link className="text-emerald-200 hover:text-emerald-100" href="/login">
+            Back to sign in
           </Link>
           .
         </p>

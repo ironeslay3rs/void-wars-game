@@ -22,7 +22,7 @@ import {
 } from "@/features/auth/authClient";
 import type { AuthContextValue, AuthSession, AuthStatus } from "@/features/auth/authTypes";
 
-const PUBLIC_AUTH_ROUTES = new Set(["/login", "/register"]);
+const PUBLIC_AUTH_ROUTES = new Set(["/login", "/register", "/recover"]);
 
 export const AuthContext = createContext<AuthContextValue | null>(null);
 
