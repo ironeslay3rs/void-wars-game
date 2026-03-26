@@ -11,6 +11,7 @@ import {
 } from "react";
 import { useSearchParams } from "next/navigation";
 import { useGame } from "@/features/game/gameContext";
+import { getMissionById } from "@/features/game/gameMissionUtils";
 import {
   DEFAULT_HOME_DEPLOY_ZONE_ID,
   voidZoneById,
@@ -79,8 +80,35 @@ export default function VoidFieldScreen() {
     state.player.activeProcess?.kind === "hunt"
       ? state.player.activeProcess
       : null;
-  const isHuntRunning = activeHuntProcess?.status === "running";
-  const huntStatus = activeHuntProcess?.status ?? null;
+  const [nowMs, setNowMs] = useState(() => state.player.lastConditionTickAt);
+  useEffect(() => {
+    const interval = window.setInterval(() => setNowMs(Date.now()), 500);
+    return () => window.clearInterval(interval);
+  }, []);
+  const huntFromQueue = (() => {
+    const missionQueue = Array.isArray(state.player.missionQueue)
+      ? state.player.missionQueue
+      : [];
+    const matchingEntry = missionQueue.find((entry) => {
+      const mission = getMissionById(state.missions, entry.missionId);
+      if (!mission) return false;
+      if (mission.category !== "hunting-ground") return false;
+      if (mission.deployZoneId && mission.deployZoneId !== allocatedZone.id)
+        return false;
+      return true;
+    });
+
+    if (!matchingEntry) return null;
+
+    if (nowMs >= matchingEntry.endsAt) return "complete" as const;
+    if (nowMs >= matchingEntry.startsAt) return "running" as const;
+    // Pre-start: keep the field locked (prevents attacks before WS spawn loop).
+    return null;
+  })();
+
+  const huntStatus =
+    activeHuntProcess?.status ?? huntFromQueue ?? (activeHuntProcess ? "complete" : null);
+  const isHuntRunning = huntStatus === "running";
 
   const realtime = useVoidRealtimeSession();
   const { connected: realtimeConnected, sendMove } = realtime;
@@ -300,17 +328,16 @@ export default function VoidFieldScreen() {
   );
 
   const stateLine = useMemo(() => {
-    if (activeHuntProcess?.status === "running") {
+    if (huntStatus === "running") {
       return "Hunt active";
     }
-    if (activeHuntProcess?.status === "complete") {
+    if (huntStatus === "complete") {
       return "Run complete";
     }
     return "No hunt timer";
-  }, [activeHuntProcess]);
+  }, [huntStatus]);
 
-  const spawnWavesLine =
-    activeHuntProcess?.status === "running" ? "RUNNING" : "PAUSED";
+  const spawnWavesLine = huntStatus === "running" ? "RUNNING" : "PAUSED";
 
   const playerNameById = useMemo(
     () => new Map(realtime.players.map((p) => [p.clientId, p.playerName])),
@@ -335,7 +362,7 @@ export default function VoidFieldScreen() {
       ? `Feast Hall: ${feastHallOffer.label} · ${feastHallOffer.nextRunEffect} (${recoveryCooldownRemainingSeconds}s)`
       : null;
   const activeModifierChip =
-    state.player.nextRunModifiers && activeHuntProcess?.status === "running"
+    state.player.nextRunModifiers && huntStatus === "running"
       ? `${state.player.nextRunModifiers.effectKey}: ${state.player.nextRunModifiers.nextRunEffect}`
       : state.player.nextRunModifiers
         ? `Primed: ${state.player.nextRunModifiers.effectKey}`

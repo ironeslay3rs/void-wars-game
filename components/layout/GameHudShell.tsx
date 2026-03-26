@@ -10,8 +10,8 @@ export default function GameHudShell() {
     <main className="safe-min-h-screen relative overflow-hidden bg-black text-white">
       <CityHomeScene />
 
-      <div className="absolute inset-0 z-10 bg-gradient-to-b from-black/35 via-transparent to-black/80" />
-      <div className="absolute inset-0 z-10 bg-gradient-to-r from-black/60 via-transparent to-black/55" />
+      <div className="absolute inset-0 z-10 bg-gradient-to-b from-black/35 via-transparent to-black/80 opacity-80" />
+      <div className="absolute inset-0 z-10 bg-gradient-to-r from-black/60 via-transparent to-black/55 opacity-80" />
 
       <ScreenLines />
       <FrameOverlay />

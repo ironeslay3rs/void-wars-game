@@ -14,7 +14,7 @@ export default function GameShell({
   return (
     <main className="safe-min-h-screen relative overflow-hidden bg-[#05070d] text-white">
       <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-90"
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-70"
         style={{ backgroundImage: `url("${backgroundImage}")` }}
       />
 

@@ -73,14 +73,60 @@ export function VoidRealtimeBridge({
     state.player.activeProcess?.kind === "hunt"
       ? state.player.activeProcess
       : null;
-  const huntStatus: "running" | "complete" | null = activeHunt
-    ? (activeHunt.status as "running" | "complete")
-    : null;
-  const huntEndsAt = activeHunt?.endsAt ?? null;
+  const [nowTickMs, setNowTickMs] = useState(() => Date.now());
+  useEffect(() => {
+    if (!binding) return;
+    const interval = window.setInterval(() => setNowTickMs(Date.now()), 1000);
+    return () => window.clearInterval(interval);
+  }, [binding]);
+
+  // Realtime hunt spawning/attack gating is driven by hunt_status on the server.
+  // If `activeProcess` lags behind the mission queue, attacks can be rejected and
+  // the field appears "quiet". Use the mission queue timing as the source of truth.
+  const huntFromQueue = (() => {
+    const missionQueue = Array.isArray(state.player.missionQueue)
+      ? state.player.missionQueue
+      : [];
+    if (!binding) return null;
+
+    const matchingEntry = missionQueue.find((entry) => {
+      const mission = getMissionById(state.missions, entry.missionId);
+      if (!mission) return false;
+      if (mission.category !== "hunting-ground") return false;
+      if (mission.deployZoneId && mission.deployZoneId !== binding.zoneId)
+        return false;
+      return true;
+    });
+
+    if (!matchingEntry) return null;
+    return {
+      startsAt: matchingEntry.startsAt,
+      endsAt: matchingEntry.endsAt,
+      status:
+        nowTickMs >= matchingEntry.endsAt
+          ? ("complete" as const)
+          : nowTickMs >= matchingEntry.startsAt
+            ? ("running" as const)
+            : ("paused" as const),
+    };
+  })();
+
+  const huntStatus: "running" | "complete" | null =
+    activeHunt?.status === "running" || activeHunt?.status === "complete"
+      ? (activeHunt.status as "running" | "complete")
+      : huntFromQueue?.status === "running"
+        ? "running"
+        : huntFromQueue?.status === "complete"
+          ? "complete"
+          : null;
+
+  const huntEndsAt =
+    activeHunt?.endsAt ?? huntFromQueue?.endsAt ?? null;
 
   const pendingContribution = huntingGroundNeedsRealtimeContribution(state);
   const shouldConnect =
-    binding !== null && (activeHunt !== null || pendingContribution);
+    binding !== null &&
+    (activeHunt !== null || pendingContribution || huntFromQueue !== null);
 
   const [connected, setConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);

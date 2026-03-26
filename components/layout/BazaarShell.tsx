@@ -10,7 +10,7 @@ export default function BazaarShell() {
     <main className="relative min-h-screen overflow-hidden bg-black text-white">
       <CityHomeScene />
 
-      <div className="absolute inset-0 z-10 bg-[radial-gradient(circle_at_center,rgba(255,160,60,0.18),transparent_28%),linear-gradient(to_bottom,rgba(2,4,10,0.30),rgba(2,4,10,0.78)),linear-gradient(to_right,rgba(0,0,0,0.45),transparent_18%,transparent_82%,rgba(0,0,0,0.45))]" />
+      <div className="absolute inset-0 z-10 bg-[radial-gradient(circle_at_center,rgba(255,160,60,0.18),transparent_28%),linear-gradient(to_bottom,rgba(2,4,10,0.30),rgba(2,4,10,0.78)),linear-gradient(to_right,rgba(0,0,0,0.45),transparent_18%,transparent_82%,rgba(0,0,0,0.45))] opacity-80" />
 
       <ScreenLines />
       <FrameOverlay />

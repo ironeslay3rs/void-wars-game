@@ -104,6 +104,14 @@ export function GameProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // Session objects can update (token refresh) without the user identity
+    // changing. Re-hydrating in that case can overwrite the newer in-memory
+    // state (and re-apply survival decay), which looks like “stat drift” when
+    // switching screens.
+    if (hasHydratedForUser && hydratedUserId === user.id) {
+      return;
+    }
+
     const authenticatedUser = user;
     const authenticatedSession = session;
 
@@ -158,6 +166,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     return () => {
       isCancelled = true;
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clearPendingRemoteSave, session, status, user]);
 
   useEffect(() => {
