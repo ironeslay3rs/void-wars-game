@@ -22,6 +22,8 @@ export function formatResourceLabel(key: string) {
       return "Ash Synod Relic";
     case "vaultLatticeShard":
       return "Vault Lattice Shard";
+    case "ironHeart":
+      return "Ironheart";
     default:
       return key;
   }

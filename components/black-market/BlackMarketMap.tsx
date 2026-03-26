@@ -9,6 +9,7 @@ type ZoneDef = {
   id: string;
   label: string;
   sin: string;
+  desc: string;
   left: string;
   top: string;
   width: string;
@@ -27,6 +28,7 @@ const ZONES: ZoneDef[] = [
     id: "feast-hall",
     label: "Feast Hall",
     sin: "Gluttony",
+    desc: "Food, memories, ancestral relics",
     left: "24%",
     top: "58%",
     width: "48%",
@@ -37,6 +39,7 @@ const ZONES: ZoneDef[] = [
     id: "arena-of-blood",
     label: "Arena of Blood",
     sin: "Wrath",
+    desc: "Weapons, monster hunts, battle contracts",
     left: "6%",
     top: "14%",
     width: "40%",
@@ -47,6 +50,7 @@ const ZONES: ZoneDef[] = [
     id: "mirror-house",
     label: "Mirror House",
     sin: "Envy",
+    desc: "Illusions, disguises, identity theft",
     left: "54%",
     top: "14%",
     width: "40%",
@@ -57,6 +61,7 @@ const ZONES: ZoneDef[] = [
     id: "velvet-den",
     label: "Velvet Den",
     sin: "Lust",
+    desc: "Flesh, pleasure rites, desire binding",
     left: "54%",
     top: "54%",
     width: "40%",
@@ -67,6 +72,7 @@ const ZONES: ZoneDef[] = [
     id: "golden-bazaar",
     label: "Golden Bazaar",
     sin: "Greed",
+    desc: "Artifacts, contracts, forbidden knowledge",
     left: "6%",
     top: "52%",
     width: "16%",
@@ -77,6 +83,7 @@ const ZONES: ZoneDef[] = [
     id: "ivory-tower",
     label: "Ivory Tower",
     sin: "Pride",
+    desc: "Rare relics, secrets, prestige items",
     left: "40%",
     top: "4%",
     width: "22%",
@@ -87,6 +94,7 @@ const ZONES: ZoneDef[] = [
     id: "silent-garden",
     label: "Silent Garden",
     sin: "Sloth",
+    desc: "Time relics, stillness aids, vision enhancement",
     left: "78%",
     top: "56%",
     width: "18%",
@@ -95,7 +103,7 @@ const ZONES: ZoneDef[] = [
   },
 ];
 
-function ZoneChrome({ label, sin }: { label: string; sin: string }) {
+function ZoneChrome({ label, sin, desc }: { label: string; sin: string; desc: string }) {
   return (
     <>
       <span
@@ -112,6 +120,9 @@ function ZoneChrome({ label, sin }: { label: string; sin: string }) {
         </span>
         <span className="text-[9px] font-semibold uppercase tracking-[0.2em] text-white/45">
           {sin}
+        </span>
+        <span className="mt-0.5 max-w-[120px] text-[8px] leading-tight text-white/30 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100">
+          {desc}
         </span>
       </span>
     </>
@@ -166,12 +177,12 @@ export default function BlackMarketMap() {
             <button
               key={zone.id}
               type="button"
-              title={`${zone.label} — opening soon (M1)`}
+              title={`${zone.label} — ${zone.desc} (opening soon)`}
               aria-label={`${zone.label}, ${zone.sin} — not available yet`}
               className="group absolute z-[2] cursor-pointer rounded-xl border border-transparent bg-transparent text-left transition-colors hover:border-white/10 focus:outline-none focus-visible:border-amber-300/50 focus-visible:ring-2 focus-visible:ring-amber-400/40"
               style={style}
             >
-              <ZoneChrome label={zone.label} sin={zone.sin} />
+              <ZoneChrome label={zone.label} sin={zone.sin} desc={zone.desc} />
             </button>
           );
         }
@@ -181,12 +192,12 @@ export default function BlackMarketMap() {
           <Link
             key={zone.id}
             href={href}
-            title={`Enter ${zone.label}`}
+            title={`${zone.label} — ${zone.desc}`}
             aria-label={`${zone.label}, ${zone.sin}`}
             className="group absolute z-[2] rounded-xl border border-transparent bg-transparent transition-colors hover:border-white/12 focus:outline-none focus-visible:border-amber-300/50 focus-visible:ring-2 focus-visible:ring-amber-400/40"
             style={style}
           >
-            <ZoneChrome label={zone.label} sin={zone.sin} />
+            <ZoneChrome label={zone.label} sin={zone.sin} desc={zone.desc} />
           </Link>
         );
       })}

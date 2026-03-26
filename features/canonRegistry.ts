@@ -59,7 +59,7 @@ export const canonPathFactions: Record<
     ...canonFactions.bio,
     wingLabel: "Verdant Coil Wing",
     description:
-      "Verdant Coil body doctrine of adaptation, mutation, and survival hunts.",
+      "\"We are what survives.\" The Verdant Coil evolves through mutation, hunting, and DNA absorption — the body as weapon and crucible. Nations: Norway (Wrath), Greece (Envy), Lebanon (Lust). Embodiment: Body.",
     tagline: "Verdant Coil",
     themeKey: "bio",
   },
@@ -67,7 +67,7 @@ export const canonPathFactions: Record<
     ...canonFactions.mecha,
     wingLabel: "Chrome Synod Wing",
     description:
-      "Chrome Synod mind doctrine of precision, hierarchy, and machine perfection.",
+      "\"Perfection is property — and we own it.\" The Chrome Synod forges evolution through cybernetic precision, mechanical divinity, and Ironheart-fueled aristocratic control. Nations: Egypt (Pride), China (Sloth). Embodiment: Mind.",
     tagline: "Chrome Synod",
     themeKey: "mecha",
   },
@@ -75,7 +75,7 @@ export const canonPathFactions: Record<
     ...canonFactions.pure,
     wingLabel: "Ember Vault Wing",
     description:
-      "Ember Vault soul doctrine of fire, memory, saintcraft, and rune discipline.",
+      "\"Fire remembers.\" The Ember Vault pursues evolution through rune-craft, memory, and the Seven Flames — the most human path, perfected in soul rather than form. Nations: Peru (Gluttony), India (Greed). Embodiment: Soul.",
     tagline: "Ember Vault",
     themeKey: "pure",
   },
