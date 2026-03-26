@@ -13,6 +13,10 @@ import type {
   MissionQueueEntry,
 } from "@/features/game/gameTypes";
 import { VOID_EXPEDITION_PATH } from "@/features/void-maps/voidRoutes";
+import {
+  onMissionComplete,
+  queueMission,
+} from "@/features/missions/missionRunner";
 
 type QueuedMissionView = MissionQueueEntry & {
   mission: MissionDefinition;
@@ -383,6 +387,7 @@ export default function MissionsScreen() {
               resources={completionFeedback.resources}
               formatRewardLabel={formatRewardLabel}
               onReturn={() => setCompletionFeedback(null)}
+              returnLabel="Queue next"
             />
           </SectionCard>
         ) : null}
@@ -546,10 +551,7 @@ export default function MissionsScreen() {
                               return;
                             }
 
-                            dispatch({
-                              type: "QUEUE_MISSION",
-                              payload: { missionId: mission.id },
-                            });
+                            queueMission(dispatch, mission.id);
                             setBoardFeedback(
                               `${mission.title} entered the operations queue.`,
                             );
@@ -611,10 +613,10 @@ export default function MissionsScreen() {
                                   <>
                                     Ends in{" "}
                                     <MissionTimer
+                                      startsAt={entry.startsAt}
                                       endsAt={entry.endsAt}
                                       onDone={() => {
-                                        // GameProvider already processes the queue.
-                                        // This just forces a re-render near the boundary.
+                                        onMissionComplete(dispatch);
                                         setNow(Date.now());
                                       }}
                                     />

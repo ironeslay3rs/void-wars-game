@@ -11,6 +11,7 @@ import {
 } from "react";
 import { useSearchParams } from "next/navigation";
 import { useGame } from "@/features/game/gameContext";
+import type { ResourceKey } from "@/features/game/gameTypes";
 import { getMissionById } from "@/features/game/gameMissionUtils";
 import {
   DEFAULT_HOME_DEPLOY_ZONE_ID,
@@ -35,6 +36,11 @@ import VoidFieldControls from "@/components/void-field/VoidFieldControls";
 import VoidFieldDeployIntro from "@/components/void-field/VoidFieldDeployIntro";
 import VoidFieldHud from "@/components/void-field/VoidFieldHud";
 import { useVoidFieldLocalPlayer } from "@/components/void-field/useVoidFieldLocalPlayer";
+import ExtractionSummary from "@/components/field/ExtractionSummary";
+import {
+  buildExtractionSummary,
+  type ExtractionSummary as ExtractionSummaryData,
+} from "@/features/field/extractionLogic";
 import { getFeastHallOfferById } from "@/features/black-market/feastHallData";
 import {
   getCareerFocusFieldLootAmountMultiplier,
@@ -200,6 +206,14 @@ export default function VoidFieldScreen() {
     fieldLootAmountMultiplier,
   );
   const [lootCollectPulse, setLootCollectPulse] = useState(0);
+  const [sessionLoot, setSessionLoot] = useState<
+    Partial<Record<ResourceKey, number>>
+  >({});
+  const [sessionKills, setSessionKills] = useState(0);
+  const [extractionSummary, setExtractionSummary] =
+    useState<ExtractionSummaryData | null>(null);
+  const extractionAppliedRef = useRef(false);
+  const seenDeadMobIdsRef = useRef<Set<string>>(new Set());
 
   const onLootConsumed = useCallback(
     (id: string) => {
@@ -207,13 +221,13 @@ export default function VoidFieldScreen() {
       removeDrop(id);
       setLootCollectPulse((p) => p + 1);
       if (d) {
-        dispatch({
-          type: "ADD_FIELD_LOOT",
-          payload: { key: d.resource, amount: d.amount },
-        });
+        setSessionLoot((prev) => ({
+          ...prev,
+          [d.resource]: (prev[d.resource] ?? 0) + d.amount,
+        }));
       }
     },
-    [dispatch, lootDrops, removeDrop],
+    [lootDrops, removeDrop],
   );
 
   const stimFloatMultiplier =
@@ -368,6 +382,59 @@ export default function VoidFieldScreen() {
         ? `Primed: ${state.player.nextRunModifiers.effectKey}`
         : null;
 
+  useEffect(() => {
+    let added = 0;
+    for (const mob of mobsForField) {
+      if (mob.hp > 0) continue;
+      if (seenDeadMobIdsRef.current.has(mob.mobEntityId)) continue;
+      seenDeadMobIdsRef.current.add(mob.mobEntityId);
+      added += 1;
+    }
+    if (added > 0) {
+      queueMicrotask(() => {
+        setSessionKills((prev) => prev + added);
+      });
+    }
+  }, [mobsForField]);
+
+  const extractionXNorm = zone.extractionPositionPct.x / 100;
+  const extractionYNorm = zone.extractionPositionPct.y / 100;
+  const extractionDist = Math.hypot(
+    positionNorm.x - extractionXNorm,
+    positionNorm.y - extractionYNorm,
+  );
+  const inExtractionZone = extractionDist <= 0.055;
+
+  useEffect(() => {
+    if (!inExtractionZone) return;
+    if (extractionAppliedRef.current) return;
+
+    const summary = buildExtractionSummary({
+      zoneName: zone.label,
+      kills: sessionKills,
+      lootCollected: sessionLoot,
+    });
+
+    for (const [key, amount] of Object.entries(summary.lootCollected)) {
+      if (!amount || amount <= 0) continue;
+      dispatch({
+        type: "ADD_RESOURCE",
+        payload: { key: key as ResourceKey, amount },
+      });
+    }
+    if (summary.xpEarned > 0) {
+      dispatch({ type: "GAIN_RANK_XP", payload: summary.xpEarned });
+    }
+    if (summary.conditionSpent > 0) {
+      dispatch({ type: "ADJUST_CONDITION", payload: -summary.conditionSpent });
+    }
+
+    extractionAppliedRef.current = true;
+    queueMicrotask(() => {
+      setExtractionSummary(summary);
+    });
+  }, [dispatch, inExtractionZone, sessionKills, sessionLoot, zone.label]);
+
   return (
     <main className="fixed inset-0 overflow-hidden bg-black text-white">
       {showDeployIntro ? <VoidFieldDeployIntro /> : null}
@@ -398,6 +465,7 @@ export default function VoidFieldScreen() {
           lootPlayerPctRef={lootPlayerPctRef}
           onLootConsumed={onLootConsumed}
           lootCollectPulse={lootCollectPulse}
+          extractionPositionPct={zone.extractionPositionPct}
         />
       </div>
 
@@ -438,6 +506,12 @@ export default function VoidFieldScreen() {
           onAutoStrikeToggle={() => setAutoStrikeEngaged((v) => !v)}
         />
       </div>
+
+      <div className="pointer-events-none absolute right-4 top-24 z-30 rounded-full border border-emerald-300/45 bg-emerald-500/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-100">
+        Extraction
+      </div>
+
+      {extractionSummary ? <ExtractionSummary summary={extractionSummary} /> : null}
     </main>
   );
 }

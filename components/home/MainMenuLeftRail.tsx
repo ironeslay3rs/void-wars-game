@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef } from "react";
 import {
   Briefcase,
   BrainCircuit,
@@ -15,13 +14,11 @@ import {
   Wrench,
   type LucideIcon,
 } from "lucide-react";
-import { useGame } from "@/features/game/gameContext";
 import {
   mainMenuItems,
   type MainMenuIconKey,
   type MainMenuItem,
 } from "@/features/home/mainMenuData";
-import { useActiveProcessTimer } from "@/features/exploration/useActiveProcessTimer";
 import { VOID_EXPEDITION_PATH } from "@/features/void-maps/voidRoutes";
 
 const iconMap: Record<MainMenuIconKey, LucideIcon> = {
@@ -36,70 +33,14 @@ const iconMap: Record<MainMenuIconKey, LucideIcon> = {
   settings: Settings,
 };
 
-/** Default hunting-ground contract id — expedition deploy still queues this mission. */
-const DEFAULT_DEPLOY_HG_MISSION_ID = "hg-rustfang-prowl";
-
 export default function MainMenuLeftRail() {
   const router = useRouter();
   const pathname = usePathname();
-  const { state } = useGame();
   const isFieldActive = pathname === "/home";
-  const missionQueue = Array.isArray(state.player.missionQueue)
-    ? state.player.missionQueue
-    : [];
-  const isQueueFull =
-    missionQueue.length >= state.player.maxMissionQueueSlots;
-  const defaultDeployMission = state.missions.find(
-    (m) => m.id === DEFAULT_DEPLOY_HG_MISSION_ID,
-  );
-  const activeHuntProcess =
-    state.player.activeProcess?.kind === "hunt"
-      ? state.player.activeProcess
-      : null;
-  /** Informational only: button is always clickable in alpha. */
-  const huntBlocksDeploy =
-    activeHuntProcess !== null && activeHuntProcess.status === "running";
-  const { remainingSeconds, isRunning } =
-    useActiveProcessTimer(activeHuntProcess);
-  const pendingHomeResultNavRef = useRef(false);
-  const lastHandledHuntResultAtRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    if (!pendingHomeResultNavRef.current) {
-      return;
-    }
-
-    const result = state.player.lastHuntResult;
-    if (!result) {
-      return;
-    }
-
-    const mission = state.missions.find((m) => m.id === result.missionId);
-    if (mission?.category !== "hunting-ground") {
-      return;
-    }
-
-    if (lastHandledHuntResultAtRef.current === result.resolvedAt) {
-      return;
-    }
-
-    lastHandledHuntResultAtRef.current = result.resolvedAt;
-    pendingHomeResultNavRef.current = false;
-    router.push("/bazaar/biotech-labs/result");
-  }, [state.player.lastHuntResult, state.missions, router]);
 
   function handleStartVoidHunt() {
-    pendingHomeResultNavRef.current = true;
     router.push(VOID_EXPEDITION_PATH);
   }
-
-  const deployStatusLine = activeHuntProcess
-    ? huntBlocksDeploy
-      ? "Hunt active"
-      : "Ready"
-    : isQueueFull
-      ? "Queue full"
-      : "Ready";
 
   return (
     <div className="rounded-[28px] border border-white/10 bg-black/45 p-3 shadow-[0_18px_60px_rgba(0,0,0,0.45)] backdrop-blur-md">
@@ -119,22 +60,12 @@ export default function MainMenuLeftRail() {
           <div
             className={[
               "rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em]",
-              activeHuntProcess
-                ? "border-amber-300/40 bg-amber-300/14 text-amber-50"
-                : isFieldActive
-                  ? "border-cyan-300/40 bg-cyan-300/14 text-cyan-50"
-                  : "border-white/10 bg-black/20 text-white/55",
+              isFieldActive
+                ? "border-cyan-300/40 bg-cyan-300/14 text-cyan-50"
+                : "border-white/10 bg-black/20 text-white/55",
             ].join(" ")}
           >
-            {activeHuntProcess
-              ? isRunning
-                ? `Hunt ${remainingSeconds}s`
-                : "Resolving"
-              : isQueueFull
-                ? "Queue Full"
-                : isFieldActive
-                  ? "Field Active"
-                  : "Ready"}
+            {isFieldActive ? "Field Active" : "Ready"}
           </div>
         </div>
 
@@ -145,21 +76,16 @@ export default function MainMenuLeftRail() {
         </div>
 
         <p className="mt-2 text-xs font-semibold uppercase tracking-[0.14em] text-white/70">
-          {deployStatusLine}
+          Ready
         </p>
 
         <p className="mt-1.5 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/42">
-          Void Expedition · realm path · shared mission queue
+          Get Into The Void · realm path · shared mission queue
         </p>
 
         <p className="mt-3 max-w-[260px] text-sm leading-6 text-white/72">
-          {activeHuntProcess && isRunning
-            ? "AFK hunt is live on the mission timer. If you deployed from here, the Hunt Result screen opens when the contract resolves."
-            : activeHuntProcess && !isRunning
-              ? "Contract is finishing payout resolution."
-              : isQueueFull
-                ? "Mission queue is full. Clear or wait for a hunting contract slot before deploying again."
-                : `Sends you to Void Expedition to choose realm and queue ${defaultDeployMission?.title ?? "the short hunting-ground sortie"}, then opens the live void field while the timer runs.`}
+          Opens the normal realm selection flow so you can deploy from Void
+          Expedition as before.
         </p>
       </button>
 

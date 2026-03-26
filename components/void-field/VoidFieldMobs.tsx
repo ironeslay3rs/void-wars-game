@@ -2,6 +2,8 @@
 
 import Image from "next/image";
 import type { PointerEvent } from "react";
+import MobToken from "@/components/field/MobToken";
+import { toggleTarget } from "@/features/combat/targetingState";
 import type { MobEntity } from "@/features/void-maps/realtime/voidRealtimeProtocol";
 import { voidFieldEnemySpriteSrc } from "@/features/void-maps/voidFieldEnemyAssets";
 import {
@@ -48,6 +50,19 @@ function hpBarClass(faction: EnemyFaction) {
       return "from-violet-500/95 via-fuchsia-400/80 to-indigo-500/75";
     case "infernal":
       return "from-red-600/95 via-orange-500/90 to-amber-400/80";
+  }
+}
+
+function tokenColorClass(faction: EnemyFaction) {
+  switch (faction) {
+    case "bio":
+      return "border-emerald-300/70 bg-emerald-500/35";
+    case "mecha":
+      return "border-cyan-200/80 bg-cyan-500/35";
+    case "spirit":
+      return "border-violet-200/80 bg-violet-500/35";
+    case "infernal":
+      return "border-amber-200/80 bg-amber-500/35";
   }
 }
 
@@ -149,8 +164,7 @@ export default function VoidFieldMobs({
               }}
               onClick={() => {
                 if (mob.hp <= 0) return;
-                const nextTarget =
-                  targetedMobEntityId === mob.mobEntityId ? null : mob.mobEntityId;
+                const nextTarget = toggleTarget(targetedMobEntityId, mob.mobEntityId);
                 onMobTarget(nextTarget);
                 if (nextTarget === null) return;
                 onMobActivate(mob.mobEntityId);
@@ -205,17 +219,26 @@ export default function VoidFieldMobs({
                 </div>
               </div>
 
-              <div
-                className="mt-1 h-1 w-11 overflow-hidden rounded-full bg-black/75 md:w-12"
-                aria-hidden
-              >
-                <div
-                  className={`h-full rounded-full bg-gradient-to-r ${hpGrad} transition-[width] duration-200 ease-out`}
-                  style={{
-                    width: `${mob.hp <= 0 ? 0 : Math.max(4, hpPct)}%`,
-                  }}
+              {shell ? (
+                <MobToken
+                  hpPct={mob.hp <= 0 ? 0 : Math.max(4, hpPct)}
+                  colorClassName={tokenColorClass(enemyFaction)}
+                  targeted={targeted}
+                  label={mob.mobLabel}
                 />
-              </div>
+              ) : (
+                <div
+                  className="mt-1 h-1 w-11 overflow-hidden rounded-full bg-black/75 md:w-12"
+                  aria-hidden
+                >
+                  <div
+                    className={`h-full rounded-full bg-gradient-to-r ${hpGrad} transition-[width] duration-200 ease-out`}
+                    style={{
+                      width: `${mob.hp <= 0 ? 0 : Math.max(4, hpPct)}%`,
+                    }}
+                  />
+                </div>
+              )}
 
               {postureMax > 0 && mob.hp > 0 ? (
                 <div

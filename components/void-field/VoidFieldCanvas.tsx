@@ -71,6 +71,7 @@ export default function VoidFieldCanvas({
   lootPlayerPctRef,
   onLootConsumed,
   lootCollectPulse,
+  extractionPositionPct,
 }: {
   zoneId: VoidZoneId;
   fieldMapSrc: string | null;
@@ -98,6 +99,7 @@ export default function VoidFieldCanvas({
   lootPlayerPctRef: MutableRefObject<{ x: number; y: number }>;
   onLootConsumed: (id: string) => void;
   lootCollectPulse: number;
+  extractionPositionPct: { x: number; y: number };
 }) {
   const spawnIntervalMs =
     threatBand === "high" ? 2800 : threatBand === "medium" ? 4000 : 5500;
@@ -161,6 +163,23 @@ export default function VoidFieldCanvas({
         className="void-field-atmosphere pointer-events-none absolute inset-0"
         aria-hidden
       />
+      <div
+        className="pointer-events-none absolute z-[12] -translate-x-1/2 -translate-y-1/2"
+        style={{
+          left: `${extractionPositionPct.x}%`,
+          top: `${extractionPositionPct.y}%`,
+        }}
+        aria-hidden
+      >
+        <div className="relative h-20 w-20 md:h-24 md:w-24">
+          <span className="absolute inset-0 rounded-full border border-emerald-300/55 bg-emerald-500/12 shadow-[0_0_26px_rgba(52,211,153,0.35)] animate-pulse" />
+          <span className="absolute inset-[14%] rounded-full border border-emerald-200/65 bg-emerald-400/12" />
+          <span className="absolute inset-[30%] rounded-full border border-emerald-100/80 bg-emerald-300/30" />
+        </div>
+        <div className="mt-1 rounded-full border border-emerald-300/45 bg-black/55 px-2 py-0.5 text-center text-[9px] font-bold uppercase tracking-[0.14em] text-emerald-100">
+          Extract
+        </div>
+      </div>
 
       {multiplayerEnabled ? (
         <>

@@ -31,8 +31,8 @@ const SCHOOL_CARDS: Array<{
     title: "Pure",
     quote: "Ember Vault doctrine: attune, refine, burn away weakness under oath.",
     preview: "+Rune depth spine, ember rites, stable pressure cadence.",
-    accent: "text-amber-200",
-    border: "border-amber-400/25 hover:border-amber-300/45",
+    accent: "text-fuchsia-200",
+    border: "border-fuchsia-400/25 hover:border-fuchsia-300/45",
   },
 ];
 
@@ -59,7 +59,7 @@ export default function SchoolSelector({
               className={[
                 "rounded-2xl border bg-black/30 p-5 text-left transition",
                 card.border,
-                active ? "shadow-[0_0_28px_rgba(255,255,255,0.08)]" : "",
+                active ? "shadow-[0_0_28px_rgba(217,70,239,0.25)]" : "",
               ].join(" ")}
             >
               <div className={["text-lg font-black uppercase tracking-[0.06em]", card.accent].join(" ")}>

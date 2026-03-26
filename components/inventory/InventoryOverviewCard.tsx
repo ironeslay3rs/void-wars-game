@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import OverloadWarning from "@/components/inventory/OverloadWarning";
 import { formatResourceLabel } from "@/features/game/gameFeedback";
 import type { ResourceKey } from "@/features/game/gameTypes";
 import { useGame } from "@/features/game/gameContext";
@@ -148,18 +148,7 @@ export default function InventoryOverviewCard() {
         </div>
 
         {isOverloaded ? (
-          <div className="mt-3 rounded-xl border border-red-400/35 bg-red-500/12 px-4 py-3 text-sm text-red-100">
-            <div className="font-bold uppercase tracking-[0.12em]">Overloaded</div>
-            <div className="mt-1 text-red-100/90">{penalty.message}</div>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Link
-                href="/bazaar/black-market/golden-bazaar"
-                className="rounded-lg border border-red-200/45 bg-black/30 px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-red-50 hover:border-red-100/70"
-              >
-                Sell Surplus
-              </Link>
-            </div>
-          </div>
+          <OverloadWarning message={penalty.message} />
         ) : (
           <div className="mt-3 text-sm text-white/60">
             Capacity sums salvage, biomass, and refined materials only. Credits and moss

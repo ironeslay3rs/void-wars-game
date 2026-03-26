@@ -17,6 +17,9 @@ export const MOSS_RATION_RECIPE_COST = {
 
 export const MOSS_RATION_HUNGER_RESTORE = 25;
 export const MOSS_RATION_CONDITION_RESTORE = 5;
+export const EMERGENCY_RATION_COST = 100;
+export const EMERGENCY_RATION_CONDITION_RESTORE = 25;
+export const EMERGENCY_RATION_COOLDOWN_MS = 30000;
 
 export type SurvivalActivity = keyof typeof ACTIVITY_HUNGER_COST;
 

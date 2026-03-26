@@ -35,6 +35,9 @@ import {
   STATUS_RECOVERY_COST,
 } from "@/features/status/statusRecovery";
 import {
+  EMERGENCY_RATION_CONDITION_RESTORE,
+  EMERGENCY_RATION_COOLDOWN_MS,
+  EMERGENCY_RATION_COST,
   HUNGER_CONDITION_PRESSURE_PER_TICK,
   HUNGER_DECAY_PER_TICK,
   HUNGER_PRESSURE_THRESHOLD,
@@ -152,6 +155,9 @@ function hydratePlayerState(player: GameState["player"]): PlayerState {
     characterPortraitId:
       player.characterPortraitId ?? initialGameState.player.characterPortraitId,
     hunger: player.hunger ?? initialGameState.player.hunger,
+    emergencyRationAvailableAt:
+      player.emergencyRationAvailableAt ??
+      initialGameState.player.emergencyRationAvailableAt,
     voidRealtimeBinding:
       player.voidRealtimeBinding !== undefined
         ? player.voidRealtimeBinding
@@ -579,10 +585,14 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const now = Date.now();
       const player = applySurvivalDecay(state.player, now);
 
-      const cost = 100;
-      const restore = 25;
+      if (player.emergencyRationAvailableAt > now) {
+        return {
+          ...state,
+          player,
+        };
+      }
 
-      if (player.resources.credits < cost) {
+      if (player.resources.credits < EMERGENCY_RATION_COST) {
         return {
           ...state,
           player,
@@ -600,9 +610,18 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         ...state,
         player: {
           ...player,
-          condition: clamp(player.condition + restore, 0, 100),
+          condition: clamp(
+            player.condition + EMERGENCY_RATION_CONDITION_RESTORE,
+            0,
+            100,
+          ),
+          emergencyRationAvailableAt: now + EMERGENCY_RATION_COOLDOWN_MS,
           activeFeastHallOfferId: null,
-          resources: updateSingleResource(player.resources, "credits", -cost),
+          resources: updateSingleResource(
+            player.resources,
+            "credits",
+            -EMERGENCY_RATION_COST,
+          ),
         },
       };
     }

@@ -1,7 +1,6 @@
 "use client";
 
 import type { ReactNode } from "react";
-import Link from "next/link";
 import CharacterPortraitImage from "@/components/character/CharacterPortraitImage";
 import type { CharacterPortraitId } from "@/features/characters/characterPortraits";
 import type { VoidZone } from "@/features/void-maps/zoneData";
@@ -19,8 +18,6 @@ export default function VoidExpeditionHUD({
   isRecommended,
   mastery,
   nextLockLine,
-  contractTitle,
-  queueLabel,
   deployDisabled,
   deployHint,
   onDeploy,
@@ -33,8 +30,6 @@ export default function VoidExpeditionHUD({
   isRecommended: boolean;
   mastery: number;
   nextLockLine: string;
-  contractTitle: string;
-  queueLabel: string;
   deployDisabled: boolean;
   deployHint: ReactNode;
   onDeploy: () => void;
@@ -122,9 +117,6 @@ export default function VoidExpeditionHUD({
             </div>
           )}
           <p className="mt-2 text-xs text-white/45">{nextLockLine}</p>
-          <p className="mt-2 text-xs text-white/50">
-            Contract: {contractTitle} · Queue {queueLabel}
-          </p>
         </div>
 
         <div className="flex w-full shrink-0 flex-col gap-2 md:w-auto md:items-end">
@@ -146,20 +138,6 @@ export default function VoidExpeditionHUD({
               {deployHint}
             </div>
           ) : null}
-          <div className="flex flex-wrap justify-end gap-x-4 gap-y-1 text-[11px] text-white/45">
-            <Link
-              href="/missions"
-              className="text-cyan-200/85 underline decoration-cyan-400/30 underline-offset-2 hover:text-white"
-            >
-              Mission&nbsp;queue
-            </Link>
-            <Link
-              href="/bazaar/teleport-gate"
-              className="text-cyan-200/85 underline decoration-cyan-400/30 underline-offset-2 hover:text-white"
-            >
-              Teleport&nbsp;Gate
-            </Link>
-          </div>
         </div>
       </div>
     </div>

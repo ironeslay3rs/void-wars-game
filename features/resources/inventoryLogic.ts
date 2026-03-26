@@ -23,6 +23,8 @@ export type CapacityReport = {
 };
 
 export type OverflowPenalty = {
+  missionSpeedPenalty: number;
+  fieldMovePenalty: number;
   missionRewardPenaltyPct: number;
   movementPenaltyPct: number;
   message: string;
@@ -49,20 +51,34 @@ export function checkCapacity(
 export function getOverflowPenalty(report: CapacityReport): OverflowPenalty {
   if (!report.isOverloaded) {
     return {
+      missionSpeedPenalty: 1,
+      fieldMovePenalty: 1,
       missionRewardPenaltyPct: 0,
       movementPenaltyPct: 0,
       message: "Within carry limits.",
     };
   }
 
-  const missionRewardPenaltyPct = Math.min(40, 10 + Math.floor(report.overflow / 10) * 5);
-  const movementPenaltyPct = Math.min(35, 10 + Math.floor(report.overflow / 8) * 5);
+  // Step 17 baseline penalties.
+  const missionSpeedPenalty = 1.5; // 50% longer mission timers
+  const fieldMovePenalty = 0.7; // 30% slower field movement
+  const missionRewardPenaltyPct = 20;
+  const movementPenaltyPct = 30;
 
   return {
+    missionSpeedPenalty,
+    fieldMovePenalty,
     missionRewardPenaltyPct,
     movementPenaltyPct,
-    message: `Overloaded by ${report.overflow}. Mission rewards reduced by ${missionRewardPenaltyPct}% and movement slowed by ${movementPenaltyPct}%.`,
+    message: `Overloaded by ${report.overflow}. Mission timers run at x${missionSpeedPenalty.toFixed(1)}, field movement at x${fieldMovePenalty.toFixed(1)}, rewards reduced by ${missionRewardPenaltyPct}%.`,
   };
+}
+
+export function isOverloaded(
+  resources: ResourcesState,
+  max = INVENTORY_CAPACITY_MAX,
+): boolean {
+  return checkCapacity(resources, max).isOverloaded;
 }
 
 export function enforceCapacity(
@@ -107,4 +123,18 @@ export function enforceCapacity(
   }
 
   return { accepted, blocked };
+}
+
+/**
+ * Step 17 guard: hard-block new tracked pickups while overloaded.
+ */
+export function enforcePickup(
+  current: ResourcesState,
+  incoming?: Partial<ResourcesState>,
+  max = INVENTORY_CAPACITY_MAX,
+): { accepted: Partial<ResourcesState>; blocked: boolean } {
+  if (isOverloaded(current, max)) {
+    return { accepted: {}, blocked: true };
+  }
+  return enforceCapacity(current, incoming, max);
 }

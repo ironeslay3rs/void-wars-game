@@ -591,6 +591,10 @@ function normalizePlayer(value: unknown): PlayerState {
       typeof raw.conditionRecoveryAvailableAt === "number"
         ? raw.conditionRecoveryAvailableAt
         : initialGameState.player.conditionRecoveryAvailableAt,
+    emergencyRationAvailableAt:
+      typeof raw.emergencyRationAvailableAt === "number"
+        ? raw.emergencyRationAvailableAt
+        : initialGameState.player.emergencyRationAvailableAt,
 
     lastConditionTickAt:
       typeof raw.lastConditionTickAt === "number"

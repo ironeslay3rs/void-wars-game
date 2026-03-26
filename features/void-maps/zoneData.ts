@@ -38,6 +38,8 @@ export type VoidZone = {
   threatBand: "low" | "medium" | "high";
   spawnTableId: VoidZoneId;
   backdropClassName: string;
+  /** Normalized extraction marker for deploy field layer map. */
+  extractionPositionPct: { x: number; y: number };
 };
 
 function threatLevelToBand(threatLevel: number): "low" | "medium" | "high" {
@@ -64,6 +66,7 @@ export const voidZones: VoidZone[] = [
     spawnTableId: "howling-scar",
     backdropClassName:
       "bg-[radial-gradient(circle_at_top,rgba(30,110,120,0.25),rgba(8,10,18,0.95)_58%)]",
+    extractionPositionPct: { x: 94, y: 10 },
   },
   {
     id: "ash-relay",
@@ -82,6 +85,7 @@ export const voidZones: VoidZone[] = [
     spawnTableId: "ash-relay",
     backdropClassName:
       "bg-[radial-gradient(circle_at_top,rgba(140,80,40,0.24),rgba(12,10,14,0.95)_58%)]",
+    extractionPositionPct: { x: 10, y: 12 },
   },
   {
     id: "echo-ruins",
@@ -101,6 +105,7 @@ export const voidZones: VoidZone[] = [
     spawnTableId: "echo-ruins",
     backdropClassName:
       "bg-[radial-gradient(circle_at_top,rgba(70,55,130,0.28),rgba(8,8,18,0.96)_60%)]",
+    extractionPositionPct: { x: 88, y: 88 },
   },
   {
     id: "rift-maw",
@@ -124,6 +129,7 @@ export const voidZones: VoidZone[] = [
     spawnTableId: "rift-maw",
     backdropClassName:
       "bg-[radial-gradient(circle_at_top,rgba(40,120,95,0.24),rgba(6,10,16,0.96)_58%)]",
+    extractionPositionPct: { x: 50, y: 12 },
   },
 ];
 

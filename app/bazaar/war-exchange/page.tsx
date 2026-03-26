@@ -31,6 +31,7 @@ export default function WarExchangePage() {
     | { kind: "buy"; listingId: string }
     | { kind: "sell"; key: ResourceKey; amount: number }
   >(null);
+  const [toast, setToast] = useState<string | null>(null);
 
   const capacity = checkCapacity(player.resources);
   const penalty = getOverflowPenalty(capacity);
@@ -51,6 +52,13 @@ export default function WarExchangePage() {
       return { key, owned, base, quote };
     });
   }, [player.resources]);
+
+  function pushToast(message: string) {
+    setToast(message);
+    window.setTimeout(() => {
+      setToast((prev) => (prev === message ? null : prev));
+    }, 1800);
+  }
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(120,90,20,0.18),rgba(5,8,20,1)_55%)] px-6 py-10 text-white md:px-10">
@@ -120,6 +128,7 @@ export default function WarExchangePage() {
                     <div className="mt-1 text-[11px] uppercase tracking-[0.18em] text-white/45">
                       {l.category}
                     </div>
+                    <div className="mt-2 text-xs text-white/60">{l.description}</div>
                   </div>
                   <div
                     className={[
@@ -234,12 +243,23 @@ export default function WarExchangePage() {
                 type="button"
                 onClick={() => {
                   if (confirm.kind === "buy") {
+                    const listing = MARKET_LISTINGS.find(
+                      (l) => l.id === confirm.listingId,
+                    );
                     dispatch({ type: "MARKET_BUY", payload: { listingId: confirm.listingId } });
+                    pushToast(
+                      listing
+                        ? `Purchased ${listing.name}.`
+                        : "Purchase submitted.",
+                    );
                   } else {
                     dispatch({
                       type: "MARKET_SELL",
                       payload: { key: confirm.key, amount: confirm.amount },
                     });
+                    pushToast(
+                      `Sold ${confirm.amount} ${confirm.key} for credits.`,
+                    );
                   }
                   setConfirm(null);
                 }}
@@ -249,6 +269,12 @@ export default function WarExchangePage() {
               </button>
             </div>
           </div>
+        </div>
+      ) : null}
+
+      {toast ? (
+        <div className="fixed bottom-[calc(6rem+env(safe-area-inset-bottom))] left-1/2 z-[130] -translate-x-1/2 rounded-full border border-emerald-300/35 bg-emerald-500/15 px-4 py-2 text-xs font-semibold text-emerald-100 shadow-[0_8px_26px_rgba(0,0,0,0.35)]">
+          {toast}
         </div>
       ) : null}
     </main>

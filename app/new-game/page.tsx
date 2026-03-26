@@ -156,6 +156,9 @@ export default function NewGamePage() {
                 <div className="mt-2 text-white/75">
                   You start as <span className="font-semibold">Puppy</span> with 100% condition.
                 </div>
+                <div className="mt-3 border-l-2 border-amber-200/35 pl-3 text-xs leading-relaxed text-amber-100/85">
+                  The gate opens on your signal. The Black Market records your first oath, then sends you to the hub.
+                </div>
               </div>
             ) : null}
 

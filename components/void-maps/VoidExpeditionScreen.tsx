@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import BazaarSubpageNav from "@/components/bazaar/BazaarSubpageNav";
 import VoidExpeditionHUD from "@/components/void-expedition/VoidExpeditionHUD";
 import VoidExpeditionMap from "@/components/void-expedition/VoidExpeditionMap";
 import { useGame } from "@/features/game/gameContext";
@@ -33,7 +32,7 @@ export default function VoidExpeditionScreen() {
 }
 
 function VoidExpeditionScreenInner() {
-  const { state } = useGame();
+  const { state, dispatch } = useGame();
   const router = useRouter();
   const searchParams = useSearchParams();
   const hintZone = searchParams.get("zone");
@@ -79,16 +78,33 @@ function VoidExpeditionScreenInner() {
     ? `Next lock: ${nextLocked.label} at rank ${nextLocked.threatLevel}`
     : "All realms unlocked by rank.";
 
-  const defaultDeployMission = state.missions.find(
-    (m) => m.id === DEFAULT_DEPLOY_HG_MISSION_ID,
-  );
-
   function handleDeployThisZone() {
     if (!isUnlocked || !masteryGatesOk || isQueueFull || activeHunt) return;
+    const SESSION_BUCKET_MS = 2 * 60 * 1000;
+    const sessionBucketId = Math.floor(Date.now() / SESSION_BUCKET_MS);
+    const voidClientId =
+      globalThis.crypto?.randomUUID?.() ?? `void-${Date.now()}`;
+
+    dispatch({
+      type: "SET_VOID_REALTIME_BINDING",
+      payload: {
+        zoneId: selectedZoneId,
+        sessionBucketId,
+        clientId: voidClientId,
+      },
+    });
+
+    dispatch({
+      type: "QUEUE_MISSION",
+      payload: { missionId: DEFAULT_DEPLOY_HG_MISSION_ID },
+    });
+
     router.push(
-      `/hunt?zone=${encodeURIComponent(selectedZoneId)}&missionId=${encodeURIComponent(
-        DEFAULT_DEPLOY_HG_MISSION_ID,
-      )}&return=${encodeURIComponent("/home")}`,
+      voidFieldSearch({
+        zoneId: selectedZoneId,
+        sessionBucketId,
+        deployIntro: true,
+      }),
     );
   }
 
@@ -132,9 +148,15 @@ function VoidExpeditionScreenInner() {
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-black text-white">
-      <div className="absolute left-0 right-0 top-0 z-40 flex justify-end px-3 py-3 md:px-5 md:py-4">
-        <div className="rounded-2xl border border-white/10 bg-black/55 px-2 py-2 shadow-lg backdrop-blur-md">
-          <BazaarSubpageNav accentClassName="hover:border-cyan-400/35" />
+      <div className="absolute left-0 right-0 top-0 z-40 flex items-center justify-between px-3 py-3 md:px-5 md:py-4">
+        <Link
+          href="/home"
+          className="rounded-lg border border-white/15 bg-black/55 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-white/80 hover:border-white/30 hover:text-white"
+        >
+          Back to Home
+        </Link>
+        <div className="rounded-lg border border-fuchsia-300/35 bg-fuchsia-500/12 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-fuchsia-100">
+          Deploy Map
         </div>
       </div>
 
@@ -172,10 +194,6 @@ function VoidExpeditionScreenInner() {
         isRecommended={isRecommended}
         mastery={mastery}
         nextLockLine={nextLockLine}
-        contractTitle={
-          defaultDeployMission?.title ?? "Hunting ground sortie"
-        }
-        queueLabel={`${missionQueue.length}/${state.player.maxMissionQueueSlots}`}
         deployDisabled={deployDisabled}
         deployHint={deployHint}
         onDeploy={handleDeployThisZone}

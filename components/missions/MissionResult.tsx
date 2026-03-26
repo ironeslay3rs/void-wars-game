@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 type MissionResultProps = {
   title: string;
   detail: string;
@@ -10,6 +12,7 @@ type MissionResultProps = {
   resources: Array<[string, number]>;
   formatRewardLabel: (key: string) => string;
   onReturn?: () => void;
+  returnLabel?: string;
 };
 
 export default function MissionResult(props: MissionResultProps) {
@@ -23,7 +26,31 @@ export default function MissionResult(props: MissionResultProps) {
     resources,
     formatRewardLabel,
     onReturn,
+    returnLabel = "Back to board",
   } = props;
+  const [displayRankXp, setDisplayRankXp] = useState(0);
+  const [displayMastery, setDisplayMastery] = useState(0);
+  const [displayInfluence, setDisplayInfluence] = useState(0);
+  const [displayCondition, setDisplayCondition] = useState(0);
+
+  useEffect(() => {
+    const start = performance.now();
+    let raf = 0;
+    const duration = 480;
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / duration);
+      const eased = 1 - (1 - t) * (1 - t);
+      setDisplayRankXp(Math.round(rankXp * eased));
+      setDisplayMastery(Math.round(masteryProgress * eased));
+      setDisplayInfluence(Math.round(influence * eased));
+      setDisplayCondition(Math.round(conditionDelta * eased));
+      if (t < 1) {
+        raf = requestAnimationFrame(tick);
+      }
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [conditionDelta, influence, masteryProgress, rankXp]);
 
   return (
     <div className="space-y-4">
@@ -38,16 +65,16 @@ export default function MissionResult(props: MissionResultProps) {
 
         <div className="mt-4 flex flex-wrap gap-2">
           <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-xs text-white/85">
-            +{rankXp} XP
+            +{displayRankXp} XP
           </span>
           <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-xs text-white/85">
-            +{masteryProgress} Mastery
+            +{displayMastery} Mastery
           </span>
           <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-xs text-white/85">
-            +{influence} Influence
+            +{displayInfluence} Influence
           </span>
           <span className="rounded-full border border-red-500/20 bg-red-500/10 px-3 py-1 text-xs text-red-200">
-            {conditionDelta} Condition
+            {displayCondition} Condition
           </span>
           {resources.map(([key, value]) => (
             <span
@@ -65,7 +92,7 @@ export default function MissionResult(props: MissionResultProps) {
             onClick={onReturn}
             className="mt-4 rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-white/80 hover:border-white/25 hover:bg-white/10"
           >
-            Back to board
+            {returnLabel}
           </button>
         ) : null}
       </div>

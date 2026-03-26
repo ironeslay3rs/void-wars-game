@@ -16,6 +16,7 @@ import {
 } from "@/features/void-maps/voidFieldUtils";
 import type { PlayerState } from "@/features/game/gameTypes";
 import { resolveShellHit } from "@/features/combat/shellHitResolution";
+import { spawnFieldMobsFromCreatures } from "@/features/field/mobSpawner";
 
 /**
  * Keep shell corpses visible until loot can finish homing (VoidFieldLootDrops hold+home ~1180ms).
@@ -124,7 +125,11 @@ export function useVoidFieldShellMobPopulation(
   const shellMode =
     realtimeMobs.length === 0 || realtimeMobs.every((m) => isVoidFieldShellMobId(m.mobEntityId));
   const templates = useMemo(() => buildVoidFieldShellMobTemplates(zoneId), [zoneId]);
-  const template = templates.regular;
+  const creatureShellTemplate = useMemo(
+    () => spawnFieldMobsFromCreatures(zoneId),
+    [zoneId],
+  );
+  const template = creatureShellTemplate.length > 0 ? creatureShellTemplate : templates.regular;
   const bossTemplate = templates.boss;
   const bossConfig: VoidZoneBossSpawnConfig | null =
     voidZoneById[zoneId]?.bossEnabled ? voidZoneById[zoneId]?.bossSpawn ?? null : null;

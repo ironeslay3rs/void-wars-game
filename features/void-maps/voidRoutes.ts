@@ -1,6 +1,7 @@
 /** Canonical client routes for the two-layer Void flow (expedition → field). */
-export const VOID_EXPEDITION_PATH = "/bazaar/void-expedition";
-export const VOID_FIELD_PATH = "/bazaar/void-field";
+export const VOID_EXPEDITION_PATH = "/deploy-into-void";
+export const VOID_FIELD_PATH = "/deploy-into-void/field";
+export const TP_FIELD_PATH = "/tp-field";
 
 export function voidFieldSearch(params: {
   zoneId: string;

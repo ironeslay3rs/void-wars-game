@@ -20,6 +20,7 @@ export const initialGameState: GameState = {
     condition: 100,
     hunger: 100,
     conditionRecoveryAvailableAt: 0,
+    emergencyRationAvailableAt: 0,
     lastConditionTickAt: Date.now(),
     activeFeastHallOfferId: null,
     nextRunModifiers: null,

@@ -268,6 +268,7 @@ export type PlayerState = {
   condition: number;
   hunger: number;
   conditionRecoveryAvailableAt: number;
+  emergencyRationAvailableAt: number;
   lastConditionTickAt: number;
   /**
    * Feast Hall choice that sets `conditionRecoveryAvailableAt` (kitchen lockout).

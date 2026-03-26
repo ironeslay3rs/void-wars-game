@@ -29,7 +29,7 @@ export function createNewPlayer(params: {
 
     // Hour 0–3: puppy state (unmarked).
     rank: "Puppy",
-    rankLevel: 0,
+    rankLevel: 1,
     rankXp: 0,
     rankXpToNext: 100,
 
@@ -45,6 +45,7 @@ export function createNewPlayer(params: {
       ...initialGameState.player.resources,
       credits: 500,
       ironOre: 20,
+      scrapAlloy: 15,
       bioSamples: 10,
       mossRations: 2,
     },

@@ -13,6 +13,20 @@ export function queueMission(
   });
 }
 
+/**
+ * Forces a queue sync tick so completed entries resolve rewards immediately.
+ * GameProvider also runs this every second; this is an explicit boundary trigger.
+ */
+export function onMissionComplete(
+  dispatch: React.Dispatch<GameAction>,
+  now = Date.now(),
+) {
+  dispatch({
+    type: "PROCESS_MISSION_QUEUE",
+    payload: { now },
+  });
+}
+
 export function getMissionStatus(entry: MissionQueueEntry, now: number): MissionStatus {
   if (entry.completedAt !== null || entry.endsAt <= now) return "complete";
   if (now < entry.startsAt) return "pending";

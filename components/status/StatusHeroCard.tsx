@@ -15,6 +15,8 @@ import {
   STATUS_RECOVERY_COST,
 } from "@/features/status/statusRecovery";
 import {
+  EMERGENCY_RATION_CONDITION_RESTORE,
+  EMERGENCY_RATION_COST,
   getHungerLabel,
   HUNGER_PRESSURE_THRESHOLD,
   MOSS_RATION_CONDITION_RESTORE,
@@ -60,6 +62,10 @@ export default function StatusHeroCard() {
   const guidance = getFirstSessionGuidance(state);
   const { recoveryCooldownRemainingSeconds, isRecoveryOnCooldown } =
     useRecoveryCooldown(player.conditionRecoveryAvailableAt);
+  const {
+    recoveryCooldownRemainingSeconds: emergencyCooldownRemainingSeconds,
+    isRecoveryOnCooldown: isEmergencyOnCooldown,
+  } = useRecoveryCooldown(player.emergencyRationAvailableAt);
   const recoveryAmount = getStatusRecoveryAmount(player.knownRecipes);
   const stabilizationSigilActive = hasStabilizationSigil(player.knownRecipes);
   const conditionPressurePenalty = getConditionPressurePenalty(
@@ -70,7 +76,8 @@ export default function StatusHeroCard() {
   const canConsumeRation = player.resources.mossRations > 0;
   const showMossRationRecoveryPrompt =
     player.condition <= 15 && player.resources.mossRations === 0;
-  const canEmergencyRation = player.resources.credits >= 100;
+  const canEmergencyRation =
+    player.resources.credits >= EMERGENCY_RATION_COST && !isEmergencyOnCooldown;
   const canCraftMossRationNow =
     player.resources.bioSamples >= 10 && player.resources.ironOre >= 5;
   const recoveryActionMessage = isRecoveryOnCooldown
@@ -95,6 +102,12 @@ export default function StatusHeroCard() {
     if (!canConsumeRation) return;
 
     dispatch({ type: "CONSUME_MOSS_RATION" });
+  }
+
+  function handleEmergencyRation() {
+    if (!canEmergencyRation) return;
+
+    dispatch({ type: "USE_EMERGENCY_RATION" });
   }
 
   return (
@@ -222,6 +235,11 @@ export default function StatusHeroCard() {
                     ? `Recovery Cooldown: ${recoveryCooldownRemainingSeconds}s`
                     : "Recovery Cooldown: Ready"}
                 </div>
+                <div>
+                  {isEmergencyOnCooldown
+                    ? `Emergency Cooldown: ${emergencyCooldownRemainingSeconds}s`
+                    : "Emergency Cooldown: Ready"}
+                </div>
               </div>
 
               <button
@@ -238,8 +256,25 @@ export default function StatusHeroCard() {
                 {isRecoveryOnCooldown
                   ? "Recovery Cooling Down"
                   : canAffordRecovery
-                    ? "Recover Condition"
-                    : "Need 10 Credits"}
+                    ? `Recover Condition (${STATUS_RECOVERY_COST} cr)`
+                    : `Need ${STATUS_RECOVERY_COST} Credits`}
+              </button>
+              <button
+                type="button"
+                onClick={handleEmergencyRation}
+                disabled={!canEmergencyRation}
+                className={[
+                  "mt-2 rounded-xl border px-4 py-3 text-xs font-semibold uppercase tracking-[0.08em] transition",
+                  canEmergencyRation
+                    ? "border-amber-300/35 bg-amber-500/14 text-amber-50 hover:border-amber-200/45 hover:bg-amber-500/20"
+                    : "cursor-not-allowed border-white/10 bg-white/[0.03] text-white/30",
+                ].join(" ")}
+              >
+                {isEmergencyOnCooldown
+                  ? "Emergency Cooling Down"
+                  : player.resources.credits >= EMERGENCY_RATION_COST
+                    ? `Emergency Ration (${EMERGENCY_RATION_COST} cr)`
+                    : `Need ${EMERGENCY_RATION_COST} Credits`}
               </button>
 
               <div className="mt-3 text-xs leading-6 text-white/58">
@@ -318,7 +353,7 @@ export default function StatusHeroCard() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => dispatch({ type: "USE_EMERGENCY_RATION" })}
+                      onClick={handleEmergencyRation}
                       disabled={!canEmergencyRation}
                       className={[
                         "rounded-lg border px-2 py-1 font-semibold uppercase tracking-[0.08em] text-amber-50",
@@ -328,15 +363,15 @@ export default function StatusHeroCard() {
                       ].join(" ")}
                       title={
                         canEmergencyRation
-                          ? "Emergency Ration: spend 100 credits to restore 25% condition."
-                          : "Need 100 credits."
+                          ? `Emergency Ration: spend ${EMERGENCY_RATION_COST} credits to restore ${EMERGENCY_RATION_CONDITION_RESTORE}% condition.`
+                          : `Need ${EMERGENCY_RATION_COST} credits or wait for cooldown.`
                       }
                     >
                       Emergency Ration
                     </button>
                   </div>
                   <div className="mt-2 text-[11px] text-amber-100/75">
-                    Craft: 10 bio samples + 5 iron ore. Emergency: 100 credits → +25% condition.
+                    Craft: 10 bio samples + 5 iron ore. Emergency: {EMERGENCY_RATION_COST} credits for +{EMERGENCY_RATION_CONDITION_RESTORE}% condition.
                   </div>
                 </div>
               ) : null}

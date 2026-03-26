@@ -17,5 +17,5 @@ export default async function VoidMapLegacyPage({
   if (intro) q.set("deployIntro", intro);
 
   const suffix = q.size > 0 ? `?${q.toString()}` : "";
-  redirect(`/bazaar/void-field${suffix}`);
+  redirect(`/deploy-into-void/field${suffix}`);
 }

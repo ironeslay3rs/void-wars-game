@@ -3,6 +3,10 @@
 import { useCallback, useEffect, useRef, type MutableRefObject } from "react";
 import type { MobEntity } from "@/features/void-maps/realtime/voidRealtimeProtocol";
 import { isVoidFieldShellMobId } from "@/features/void-maps/voidFieldShellMobs";
+import {
+  AUTO_ATTACK_TICK_MS,
+  nextAttackCooldownMs,
+} from "@/features/combat/autoAttack";
 
 const STRIKE_RANGE_PCT = 10;
 // For autoplay movement, prefer targets inside this radius.
@@ -114,7 +118,8 @@ export function useVoidFieldControls({
     if (isVoidFieldShellMobId(best.mobEntityId)) {
       onAttackCommittedRef.current?.(best.mobEntityId);
       onShellStrikeRef.current?.(best.mobEntityId);
-      attackCooldownUntilRef.current = Date.now() + 600;
+      attackCooldownUntilRef.current =
+        Date.now() + nextAttackCooldownMs(autoStrikeEnabled);
       return;
     }
 
@@ -122,10 +127,12 @@ export function useVoidFieldControls({
 
     onAttackCommittedRef.current?.(best.mobEntityId);
     sendAttack(best.mobEntityId);
-    attackCooldownUntilRef.current = Date.now() + 600;
+    attackCooldownUntilRef.current =
+      Date.now() + nextAttackCooldownMs(autoStrikeEnabled);
   }, [
     multiplayerEnabled,
     connected,
+    autoStrikeEnabled,
     sendAttack,
     selfPositionPctRef,
     targetedMobEntityIdRef,
@@ -232,7 +239,7 @@ export function useVoidFieldControls({
       autoMoveTargetMobEntityIdRef.current = chosen.mobEntityId;
       lastAutoMoveTargetSetAtRef.current = now;
       setMoveTargetPct(chosen.x, chosen.y);
-    }, 520);
+    }, AUTO_ATTACK_TICK_MS);
 
     return () => window.clearInterval(id);
   }, [
@@ -263,16 +270,18 @@ export function useVoidFieldControls({
         if (!m || m.hp <= 0) return;
         onAttackCommittedRef.current?.(mobEntityId);
         onShellStrikeRef.current?.(mobEntityId);
-        attackCooldownUntilRef.current = Date.now() + 600;
+        attackCooldownUntilRef.current =
+          Date.now() + nextAttackCooldownMs(autoStrikeEnabled);
         return;
       }
 
       if (!isRunning || !connected) return;
       onAttackCommittedRef.current?.(mobEntityId);
       sendAttack(mobEntityId);
-      attackCooldownUntilRef.current = Date.now() + 600;
+      attackCooldownUntilRef.current =
+        Date.now() + nextAttackCooldownMs(autoStrikeEnabled);
     },
-    [isRunning, connected, sendAttack],
+    [isRunning, connected, sendAttack, autoStrikeEnabled],
   );
 
   return {
