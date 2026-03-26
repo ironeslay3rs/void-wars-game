@@ -427,7 +427,7 @@ export default function VoidFieldScreen() {
         mobLabelById={mobLabelById}
       />
 
-      <div className="absolute bottom-0 left-0 right-0 z-30">
+      <div className="absolute bottom-0 left-0 right-0 z-50">
         <VoidFieldControls
           connected={realtime.connected}
           isRunning={isHuntRunning}

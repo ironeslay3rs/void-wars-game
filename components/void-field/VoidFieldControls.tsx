@@ -26,10 +26,20 @@ export default function VoidFieldControls({
   const canUse = (connected && isRunning) || shellPracticeActive;
 
   return (
-    <div className="relative z-30 flex shrink-0 items-center justify-center gap-2 border-t border-white/15 bg-black/75 px-3 py-3 backdrop-blur-md md:gap-3 md:px-6">
+    <div
+      className={[
+        "relative z-50 flex shrink-0 items-center justify-center gap-2 border-t border-white/15 bg-black/75 px-3 py-3 backdrop-blur-md",
+        "pb-[calc(0.75rem+env(safe-area-inset-bottom))]",
+        "md:gap-3 md:px-6",
+      ].join(" ")}
+    >
       <button
         type="button"
-        onClick={onAttack}
+        onPointerDown={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onAttack();
+        }}
         disabled={!canUse}
         title={
           canUse
@@ -39,7 +49,7 @@ export default function VoidFieldControls({
             : "No mobs in range or field unavailable"
         }
         className={[
-          "flex min-h-[48px] min-w-[88px] items-center justify-center gap-2 rounded-xl border px-3 py-2 md:min-w-[108px]",
+          "touch-manipulation active:scale-[0.99] flex min-h-[56px] min-w-[104px] items-center justify-center gap-2 rounded-xl border px-4 py-3 md:min-h-[48px] md:min-w-[108px] md:px-3 md:py-2",
           canUse
             ? "border-cyan-400/45 bg-cyan-500/20 text-cyan-50 hover:border-cyan-300/55 hover:bg-cyan-500/28"
             : "cursor-not-allowed border-white/10 bg-black/30 text-white/35",
@@ -62,7 +72,11 @@ export default function VoidFieldControls({
       </button>
       <button
         type="button"
-        onClick={onAutoStrikeToggle}
+        onPointerDown={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onAutoStrikeToggle();
+        }}
         title={
           autoStrikeActive
             ? "Auto strike on — click to stop"
@@ -74,7 +88,7 @@ export default function VoidFieldControls({
         }
         aria-pressed={autoStrikeEngaged}
         className={[
-          "min-h-[48px] min-w-[72px] rounded-xl border px-3 py-2 text-xs font-bold uppercase tracking-[0.12em]",
+          "touch-manipulation active:scale-[0.99] min-h-[56px] min-w-[96px] rounded-xl border px-4 py-3 text-sm font-black uppercase tracking-[0.12em] md:min-h-[48px] md:min-w-[72px] md:px-3 md:py-2 md:text-xs md:font-bold",
           autoStrikeActive
             ? "border-amber-400/55 bg-amber-500/25 text-amber-50 shadow-[0_0_14px_rgba(251,191,36,0.25)]"
             : autoStrikeEngaged
