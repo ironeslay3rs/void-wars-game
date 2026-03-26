@@ -35,6 +35,16 @@ import VoidFieldDeployIntro from "@/components/void-field/VoidFieldDeployIntro";
 import VoidFieldHud from "@/components/void-field/VoidFieldHud";
 import { useVoidFieldLocalPlayer } from "@/components/void-field/useVoidFieldLocalPlayer";
 import { getFeastHallOfferById } from "@/features/black-market/feastHallData";
+import {
+  getCareerFocusFieldLootAmountMultiplier,
+  getCareerFocusShellDamageBonusPct,
+} from "@/features/player/careerFocusModifiers";
+import { getMasteryAlignedPickupYieldMultiplier } from "@/features/mastery/masteryGameplayEffects";
+import {
+  getSchoolCombatPassives,
+  getVisibleStrikeSchool,
+} from "@/features/combat/fieldCombatIdentity";
+import { FIELD_LOADOUT_PROFILES } from "@/features/combat/fieldLoadout";
 
 export default function VoidFieldScreen() {
   const { state, dispatch } = useGame();
@@ -89,10 +99,37 @@ export default function VoidFieldScreen() {
     autoStrikeEngaged &&
     ((realtimeConnected && isHuntRunning) || shellPracticeField);
 
-  const { mobsForField, applyShellMobDamage, bossChip } = useVoidFieldShellMobPopulation(
-    allocatedZone.id,
-    realtime.mobs,
-  );
+  const fieldLootAmountMultiplier = useMemo(() => {
+    const career = getCareerFocusFieldLootAmountMultiplier(
+      state.player.careerFocus,
+    );
+    const masteryAligned = getMasteryAlignedPickupYieldMultiplier(
+      state.player.runeMastery,
+      zone.lootTheme,
+    );
+    return career * masteryAligned;
+  }, [state.player.careerFocus, state.player.runeMastery, zone.lootTheme]);
+
+  const { mobsForField, applyShellMobDamage, bossChip } =
+    useVoidFieldShellMobPopulation(allocatedZone.id, realtime.mobs, state.player);
+
+  const combatHudLine = useMemo(() => {
+    const loadout =
+      FIELD_LOADOUT_PROFILES.find(
+        (x) => x.id === state.player.fieldLoadoutProfile,
+      )?.label ?? "Assault rig";
+    const school = getVisibleStrikeSchool(state.player);
+    const s =
+      school === "neutral" ? "NEUTRAL" : school.toUpperCase();
+    const passives = getSchoolCombatPassives(state.player);
+    const on = passives.filter((x) => x.active).length;
+    return `${loadout} · ${s} · passives ${on}/${passives.length}`;
+  }, [state.player]);
+
+  const encounterBrief = useMemo(() => {
+    if (allocatedZone.id !== "howling-scar") return null;
+    return "Hollowfang apex · shell drill + wave 5 scout (WS)";
+  }, [allocatedZone.id]);
 
   const effectiveTargetedMobEntityId = useMemo(() => {
     if (!targetedMobEntityId) return null;
@@ -132,6 +169,7 @@ export default function VoidFieldScreen() {
   const { drops: lootDrops, removeDrop } = useVoidFieldLootDropSpawns(
     mobsForField,
     allocatedZone.id,
+    fieldLootAmountMultiplier,
   );
   const [lootCollectPulse, setLootCollectPulse] = useState(0);
 
@@ -186,22 +224,28 @@ export default function VoidFieldScreen() {
     (mobEntityId: string) => {
       if (!isVoidFieldShellMobId(mobEntityId)) return;
       // Give shell drills the same "hit impact" weight as melee: slash + float.
-      const boostPct =
+      const stimBoostPct =
         state.player.nextRunModifiers?.effectKey === "EMBER_STIM"
           ? state.player.nextRunModifiers.applyInField?.shellDamageBoostPct ?? 0
           : 0;
+      const careerBoostPct = getCareerFocusShellDamageBonusPct(
+        state.player.careerFocus,
+      );
+      const boostPct = stimBoostPct + careerBoostPct;
       const dmg = Math.round(
         VOID_FIELD_SHELL_STRIKE_DAMAGE * (1 + boostPct / 100),
       );
       registerSlashForMob(mobEntityId);
-      pushLocalDamageFloat(mobEntityId, dmg);
-      applyShellMobDamage(mobEntityId, dmg);
+      const dealt = applyShellMobDamage(mobEntityId, dmg);
+      if (dealt > 0) {
+        pushLocalDamageFloat(mobEntityId, dealt);
+      }
     },
     [
       applyShellMobDamage,
       pushLocalDamageFloat,
       registerSlashForMob,
-      state.player.nextRunModifiers,
+      state.player,
     ],
   );
 
@@ -345,6 +389,8 @@ export default function VoidFieldScreen() {
         feastHallLockoutChip={feastHallLockoutChip}
         nextRunChip={activeModifierChip}
         bossChip={bossChip}
+        combatHudLine={combatHudLine}
+        encounterBrief={encounterBrief}
       />
 
       <VoidFieldCombatTicker

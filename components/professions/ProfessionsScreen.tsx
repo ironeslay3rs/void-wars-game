@@ -1,9 +1,16 @@
+"use client";
+
+import Link from "next/link";
 import ScreenHeader from "@/components/shared/ScreenHeader";
 import SectionCard from "@/components/shared/SectionCard";
 import PlaceholderPanel from "@/components/shared/PlaceholderPanel";
 import { professionsScreenData } from "@/features/professions/professionsScreenData";
+import { useGame } from "@/features/game/gameContext";
 
 export default function ProfessionsScreen() {
+  const { state } = useGame();
+  const runeCrafter = state.player.mythicAscension.runeCrafterLicense;
+
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(80,60,100,0.22),_rgba(5,8,20,1)_55%)] px-6 py-10 text-white md:px-10">
       <div className="mx-auto flex max-w-7xl flex-col gap-8">
@@ -12,6 +19,25 @@ export default function ProfessionsScreen() {
           title={professionsScreenData.title}
           subtitle={professionsScreenData.subtitle}
         />
+
+        {runeCrafter ? (
+          <div className="rounded-2xl border border-violet-400/35 bg-violet-950/25 px-5 py-4 text-sm text-violet-100/95">
+            <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-violet-200/80">
+              Recognised title
+            </span>
+            <p className="mt-2 font-semibold text-white">Rune Crafter</p>
+            <p className="mt-1 text-white/65">
+              Mythic ladder — visit{" "}
+              <Link
+                href="/mastery"
+                className="text-cyan-200 underline decoration-cyan-400/35 underline-offset-2"
+              >
+                Mastery
+              </Link>{" "}
+              for forge gates (L3 → Saint seal).
+            </p>
+          </div>
+        ) : null}
 
         <div className="grid gap-6 md:grid-cols-3">
           {professionsScreenData.cards.map((card) => (

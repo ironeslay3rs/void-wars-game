@@ -16,6 +16,12 @@ export function formatResourceLabel(key: string) {
       return "Bio Samples";
     case "mossRations":
       return "Moss Rations";
+    case "coilboundLattice":
+      return "Coilbound Lattice";
+    case "ashSynodRelic":
+      return "Ash Synod Relic";
+    case "vaultLatticeShard":
+      return "Vault Lattice Shard";
     default:
       return key;
   }
@@ -43,6 +49,10 @@ export function getResourceLoopMeaning(key: ResourceKey) {
       return "Spend at Feast Hall (Hunter’s Plate) or Crafting District (Void Extract) to manage pressure.";
     case "mossRations":
       return "Use to ease hunger and survival pressure.";
+    case "coilboundLattice":
+    case "ashSynodRelic":
+    case "vaultLatticeShard":
+      return "Boss relic; reserve for late mastery crafting.";
     default:
       return "Banked into current stock.";
   }

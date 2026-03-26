@@ -9,6 +9,10 @@ export const resourceIconMap: Record<ResourceKey, string> = {
   emberCore: assets.icons.generated.pureMaterials.solarOrb,
   bioSamples: assets.icons.generated.bioMaterials.sporeVial,
   mossRations: assets.icons.generated.bioConsumables.leafVial,
+  coilboundLattice: assets.icons.generated.bioMaterials.carapaceRelic,
+  ashSynodRelic: assets.icons.generated.mechaMaterials.arcReactor,
+  vaultLatticeShard: assets.icons.generated.pureMaterials.prismFrame,
+  ironHeart: assets.icons.generated.mechaMaterials.alloySpike,
 };
 
 export function getResourceIcon(

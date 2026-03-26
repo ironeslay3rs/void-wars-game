@@ -32,6 +32,10 @@ function resourceSubtitle(resource: ResourceKey): string {
     case "runeDust":
     case "emberCore":
       return "Pure residue · banked immediately";
+    case "coilboundLattice":
+    case "ashSynodRelic":
+    case "vaultLatticeShard":
+      return "Boss relic · banked immediately";
     default:
       return "Recovered · banked immediately";
   }

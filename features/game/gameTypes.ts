@@ -3,6 +3,18 @@ import type {
   NavigationState,
   RouteNodeId,
 } from "@/features/navigation/navigationTypes";
+import type { PlayerRuneMasteryState } from "@/features/mastery/runeMasteryTypes";
+import type { VoidMarketCommodity } from "@/features/bazaar/voidMarketTypes";
+import type {
+  DoctrinePressure,
+  GuildContributionLogEntry,
+} from "@/features/factions/factionWorldTypes";
+import type { VoidZoneId } from "@/features/void-maps/zoneData";
+import type { MythicAscensionState } from "@/features/progression/mythicAscensionTypes";
+import type {
+  GuildRosterState,
+  SharedGuildContract,
+} from "@/features/social/guildLiveTypes";
 
 export type FactionAlignment = "unbound" | "bio" | "mecha" | "pure";
 export type PathType = Exclude<FactionAlignment, "unbound">;
@@ -26,7 +38,13 @@ export type ResourceKey =
   | "runeDust"
   | "emberCore"
   | "bioSamples"
-  | "mossRations";
+  | "mossRations"
+  /** Boss-only phase-2 named mats (void field boss kills). */
+  | "coilboundLattice"
+  | "ashSynodRelic"
+  | "vaultLatticeShard"
+  /** M6: restricted-war / mythic forge metal (boss-named pool). */
+  | "ironHeart";
 
 export type FeastHallOfferId =
   | "scavenger-broth"
@@ -109,6 +127,7 @@ export type LatestHuntResult = {
   realtimeTotalHitsLanded?: number;
   realtimeMobsContributedTo?: number;
   realtimeMobsKilled?: number;
+  realtimeExposedKills?: number;
 
   // Special-zone boss outcome (realtime event)
   bossDefeated?: boolean;
@@ -190,6 +209,8 @@ export type MissionDefinition = {
   path: PathType | "neutral";
   durationHours: number;
   reward: MissionReward;
+  /** Void theatre for hunting contracts — drives doctrine pressure drift. */
+  deployZoneId?: VoidZoneId;
 };
 
 export type MissionQueueEntry = {
@@ -214,13 +235,22 @@ export type VoidRealtimeBinding = {
 
 export type CareerFocus = "combat" | "gathering" | "crafting";
 
+/** Void field shell combat — rigs influence posture/expose math (`resolveShellHit`). */
+export type FieldLoadoutProfile = "assault" | "support" | "breach";
+
 export type PlayerState = {
   playerName: string;
   factionAlignment: FactionAlignment;
   /** Hub / profile portrait only — not used on Void Field. */
   characterPortraitId: CharacterPortraitId;
-  /** Player-chosen career focus. Stored; no stat math until M2. */
+  /**
+   * Player-chosen career focus. Drives light M1 modifiers: combat (+shell drill
+   * damage), gathering (+field pickup amounts), crafting (−district recipe costs).
+   */
   careerFocus: CareerFocus | null;
+
+  /** Field loadout rig (local shell combat + preparation identity). */
+  fieldLoadoutProfile: FieldLoadoutProfile;
 
   condition: number;
   hunger: number;
@@ -276,6 +306,28 @@ export type PlayerState = {
 
   missionQueue: MissionQueueEntry[];
   maxMissionQueueSlots: number;
+
+  /** Hour 20–40 mastery spine: per-school depth, capacity pools, hybrid drain. */
+  runeMastery: PlayerRuneMasteryState;
+
+  /**
+   * Regional doctrine control (Bio / Mecha / Pure), 0–100 triplet per void zone.
+   * World sim for M1: shifts on hunt completion + realtime contribution.
+   */
+  zoneDoctrinePressure: Record<VoidZoneId, DoctrinePressure>;
+
+  /** Mercenary guild ledger (Black Market collective). */
+  guildContributionTotal: number;
+  guildContributionLog: GuildContributionLogEntry[];
+  /** M7: guild layer (local save + UI, serverless by default). */
+  guild: GuildRosterState;
+  guildContracts: SharedGuildContract[];
+
+  /** Last claim for aligned faction HQ wage (ms epoch). */
+  lastFactionHqStipendAt: number;
+
+  /** M6 mythic ladder + arena rated shell. */
+  mythicAscension: MythicAscensionState;
 };
 
 /* =========================
@@ -295,6 +347,7 @@ export type GameAction =
   | { type: "SET_PLAYER_NAME"; payload: string }
   | { type: "SET_CHARACTER_PORTRAIT_ID"; payload: CharacterPortraitId }
   | { type: "SET_CAREER_FOCUS"; payload: CareerFocus | null }
+  | { type: "SET_FIELD_LOADOUT_PROFILE"; payload: FieldLoadoutProfile }
   | { type: "SET_FACTION_ALIGNMENT"; payload: PathType }
   | { type: "ADD_RESOURCE"; payload: { key: ResourceKey; amount: number } }
   | { type: "ADD_FIELD_LOOT"; payload: { key: ResourceKey; amount: number } }
@@ -320,6 +373,8 @@ export type GameAction =
         totalHitsLanded?: number;
         mobsContributedTo?: number;
         mobsKilled?: number;
+        /** M4: kills where the pack had an expose-window contribution. */
+        exposedKills?: number;
         bossDefeated?: boolean;
         bossDropResourcesBase?: Partial<ResourcesState>;
         zoneThreatLevel?: number;
@@ -349,10 +404,35 @@ export type GameAction =
   | { type: "PROCESS_MISSION_QUEUE"; payload: { now: number } }
   | { type: "CLAIM_MISSION"; payload: { queueId: string; claimedAt?: number } }
   | { type: "ADD_RECIPE"; payload: string }
+  | {
+      type: "VOID_MARKET_TRADE";
+      payload: {
+        side: "buy" | "sell";
+        commodity: VoidMarketCommodity;
+        units: number;
+      };
+    }
+  | { type: "INSTALL_MINOR_RUNE"; payload: { school: PathType } }
   | { type: "UNLOCK_ROUTE"; payload: string }
   | { type: "SET_CURRENT_ROUTE"; payload: RouteNodeId }
   | { type: "REFRESH_AVAILABLE_ROUTES" }
   | { type: "ADD_INFLUENCE"; payload: number }
+  | { type: "CLAIM_FACTION_HQ_STIPEND" }
+  | {
+      type: "ATTEMPT_MYTHIC_UNLOCK";
+      payload: "l3-rare-rune-set" | "rune-crafter-license";
+    }
+  | { type: "GUILD_CREATE"; payload: { guildName: string } }
+  | { type: "GUILD_JOIN"; payload: { guildCode: string } }
+  | { type: "GUILD_LEAVE" }
+  | {
+      type: "GUILD_SET_PLEDGE";
+      payload: { pledge: PlayerState["factionAlignment"] };
+    }
+  | { type: "GUILD_ADD_MEMBER"; payload: { callsign: string } }
+  | { type: "GUILD_REMOVE_MEMBER"; payload: { memberId: string } }
+  | { type: "GUILD_POST_CONTRACT"; payload: { templateId: string } }
+  | { type: "GUILD_CLAIM_CONTRACT"; payload: { contractId: string } }
   | { type: "SET_FORGE_STATUS"; payload: ForgeStatus }
   | { type: "SET_ARENA_STATUS"; payload: ArenaStatus }
   | { type: "SET_MECHA_STATUS"; payload: MechaStatus }

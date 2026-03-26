@@ -1,6 +1,10 @@
 import { DEFAULT_CHARACTER_PORTRAIT_ID } from "@/features/characters/characterPortraits";
 import { buildNavigationState } from "@/features/navigation/navigationUtils";
 import type { GameState } from "@/features/game/gameTypes";
+import { createInitialRuneMastery } from "@/features/mastery/runeMasteryLogic";
+import { initialZoneDoctrineRecord } from "@/features/factions/factionWorldLogic";
+import { initialMythicAscension } from "@/features/progression/mythicAscensionLogic";
+import { initialGuildRoster } from "@/features/social/guildLiveLogic";
 
 export const initialGameState: GameState = {
   player: {
@@ -8,6 +12,7 @@ export const initialGameState: GameState = {
     factionAlignment: "unbound",
     characterPortraitId: DEFAULT_CHARACTER_PORTRAIT_ID,
     careerFocus: null,
+    fieldLoadoutProfile: "assault",
 
     condition: 100,
     hunger: 100,
@@ -34,6 +39,10 @@ export const initialGameState: GameState = {
       emberCore: 2,
       bioSamples: 0,
       mossRations: 2,
+      coilboundLattice: 0,
+      ashSynodRelic: 0,
+      vaultLatticeShard: 0,
+      ironHeart: 0,
     },
     fieldLootGainedThisRun: {},
 
@@ -77,6 +86,17 @@ export const initialGameState: GameState = {
     zoneRunStreak: 0,
     missionQueue: [],
     maxMissionQueueSlots: 3,
+
+    runeMastery: createInitialRuneMastery(),
+
+    zoneDoctrinePressure: initialZoneDoctrineRecord(),
+    guildContributionTotal: 0,
+    guildContributionLog: [],
+    guild: initialGuildRoster(),
+    guildContracts: [],
+    lastFactionHqStipendAt: 0,
+
+    mythicAscension: initialMythicAscension(),
   },
 
   missions: [
@@ -187,6 +207,7 @@ export const initialGameState: GameState = {
       description:
         "Deploy a mercenary field team into the outer trenchline to bring back alloy scrap, credits, and stripped ore.",
       path: "neutral",
+      deployZoneId: "ash-relay",
       durationHours: 0.0042,
       reward: {
         rankXp: 32,
@@ -207,6 +228,7 @@ export const initialGameState: GameState = {
       description:
         "Send a containment squad through the growth pits to recover raw tissue, saleable residue, and viable biotech samples.",
       path: "neutral",
+      deployZoneId: "howling-scar",
       durationHours: 0.0056,
       reward: {
         rankXp: 38,
@@ -227,6 +249,7 @@ export const initialGameState: GameState = {
       description:
         "Track a burrowing scavenger through ruined machine nests and return with alloy fragments, ore, and bounty credit.",
       path: "neutral",
+      deployZoneId: "rift-maw",
       durationHours: 0.007,
       reward: {
         rankXp: 46,

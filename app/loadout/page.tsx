@@ -1,0 +1,122 @@
+"use client";
+
+import Link from "next/link";
+import ScreenHeader from "@/components/shared/ScreenHeader";
+import { useGame } from "@/features/game/gameContext";
+import {
+  FIELD_LOADOUT_PROFILES,
+  getFieldLoadoutExposeDamageMult,
+  getFieldLoadoutPostureFillMult,
+  getFieldLoadoutStrikeMult,
+  type FieldLoadoutProfile,
+} from "@/features/combat/fieldLoadout";
+import { getSchoolCombatPassives } from "@/features/combat/fieldCombatIdentity";
+import { VOID_EXPEDITION_PATH } from "@/features/void-maps/voidRoutes";
+
+export default function LoadoutPage() {
+  const { state, dispatch } = useGame();
+  const player = state.player;
+  const passives = getSchoolCombatPassives(player);
+  const current = player.fieldLoadoutProfile;
+
+  return (
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(40,60,100,0.28),_rgba(5,8,18,1)_55%)] px-6 py-10 text-white md:px-10">
+      <div className="mx-auto flex max-w-4xl flex-col gap-8">
+        <ScreenHeader
+          eyebrow="Operations / Field loadout"
+          title="Combat loadout"
+          subtitle="Rigs change posture pressure and expose damage on the void field (local shell drills). School passives unlock from path depth and Executional tier."
+        />
+
+        <section className="rounded-2xl border border-cyan-400/25 bg-cyan-950/20 p-6">
+          <h2 className="text-lg font-black uppercase tracking-[0.06em] text-cyan-100">
+            Field rig
+          </h2>
+          <p className="mt-2 text-sm text-white/65">
+            Preparation matters: swap before deploying. Combat career focus still
+            adds raw strike % on top of rig math.
+          </p>
+          <p className="mt-3 rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-xs leading-relaxed text-white/60">
+            Active rig — strike ×
+            {getFieldLoadoutStrikeMult(current).toFixed(2)}, posture fill ×
+            {getFieldLoadoutPostureFillMult(current).toFixed(2)}, expose window ×
+            {getFieldLoadoutExposeDamageMult(current).toFixed(2)}.
+          </p>
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            {FIELD_LOADOUT_PROFILES.map((p) => {
+              const active = current === p.id;
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() =>
+                    dispatch({
+                      type: "SET_FIELD_LOADOUT_PROFILE",
+                      payload: p.id as FieldLoadoutProfile,
+                    })
+                  }
+                  className={[
+                    "rounded-xl border px-4 py-4 text-left transition",
+                    active
+                      ? "border-cyan-400/55 bg-cyan-500/15 shadow-[0_0_24px_rgba(34,211,238,0.12)]"
+                      : "border-white/12 bg-black/30 hover:border-white/22",
+                  ].join(" ")}
+                >
+                  <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/45">
+                    Rig
+                  </div>
+                  <div className="mt-1 text-sm font-black text-white">{p.label}</div>
+                  <p className="mt-2 text-xs leading-relaxed text-white/60">{p.line}</p>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="rounded-2xl border border-white/12 bg-white/[0.04] p-6">
+          <h2 className="text-lg font-black uppercase tracking-[0.06em] text-white">
+            School combat identity
+          </h2>
+          <p className="mt-2 text-sm text-white/55">
+            Passive row mirrors your mastery progression — no separate unlock grid
+            in this build.
+          </p>
+          <ul className="mt-4 space-y-3">
+            {passives.map((s) => (
+              <li
+                key={s.id}
+                className={[
+                  "rounded-xl border px-4 py-3 text-sm",
+                  s.active
+                    ? "border-emerald-400/35 bg-emerald-950/25 text-emerald-50/95"
+                    : "border-white/10 bg-black/25 text-white/45",
+                ].join(" ")}
+              >
+                <span className="font-bold uppercase tracking-wider text-[11px] text-white/70">
+                  {s.school}
+                </span>
+                <div className="mt-1 font-semibold text-white/90">{s.label}</div>
+                <div className="mt-1 text-xs text-white/60">{s.effectLine}</div>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <div className="flex flex-wrap gap-3">
+          <Link
+            href={VOID_EXPEDITION_PATH}
+            className="inline-flex rounded-xl border border-cyan-400/35 bg-cyan-500/12 px-4 py-2 text-sm font-semibold text-cyan-100 transition hover:border-cyan-300/50 hover:bg-cyan-500/18"
+          >
+            Void Expedition
+          </Link>
+          <Link
+            href="/character"
+            className="inline-flex rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white/85 transition hover:border-white/25"
+          >
+            Character path
+          </Link>
+        </div>
+      </div>
+    </main>
+  );
+}

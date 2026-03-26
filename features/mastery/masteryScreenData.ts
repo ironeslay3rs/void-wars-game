@@ -24,49 +24,46 @@ export const masteryScreenData: MasteryScreenData = {
   eyebrow: "Void Wars / Mastery Protocol",
   title: "School Mastery",
   subtitle:
-    "Framework for Bio, Mecha, and Pure progression: sticky by default, limited respec only before lock, and future-safe hybrid hooks later.",
+    "M2 functional: depth + capacity + Executional tiers (L2/L3) drive gates, theme-aligned field/contract yields, hybrid tax, zone deploy rules (see Void Expedition chips), Crafting relic refines, and recipe depth checks.",
 
   cards: [
     {
-      label: "Schools",
-      value: String(masteryFrameworkScaffold.schoolTracks.length),
-      hint: "Bio, Mecha, and Pure are the only active mastery rails.",
+      label: "School rails",
+      value: "03",
+      hint: "Bio, Mecha, Pure — parallel tracks; depth and minors per school.",
     },
     {
-      label: "Permanence",
-      value: "Sticky",
-      hint: "School investment is treated as permanent by default.",
+      label: "Sevenfold cap",
+      value: "L7",
+      hint: "Rune depth L1–L7 from main ladder + minor installs (see tree below).",
     },
     {
-      label: "Hybrid Hooks",
-      value: "Reserved",
-      hint: "Future hybrid unlocks must sit after primary specialization.",
+      label: "Gates",
+      value: "Live",
+      hint: "Example: Rift Maw needs deepest-school depth 3+; sigil + risky kits need depth.",
     },
   ],
 
   sections: [
     {
-      title: "Canon Rule",
+      title: "Canon rule",
       description:
-        "Mastery commitment should feel costly and specialization-first inside the current Book 1 direction.",
-      body: "Bio, Mecha, and Pure are the only school rails. School mastery is sticky by default, with permanence treated as the baseline rule rather than casual swapping.",
+        "Specialization-first, costly commits — Bio, Mecha, and Pure only.",
+      body: "Mastery investment is sticky by default. Hybrid installs are allowed but taxed so dabbling cannot replace committing to a path.",
     },
     {
-      title: "M1 Shape",
-      description:
-        "The current safe implementation is framework scaffolding, not a full node tree or class system.",
-      body: "Use threshold ids, state hooks, and read-only guidance now. Do not build deep tree logic, class effects, or reset systems until later gameplay work begins.",
+      title: "M1 operations",
+      description: "What you can do in-game this build.",
+      body: "Install minors on Career or here (same panel). Field loot can drop boss relics; Crafting District refines them into salvage. Set career focus on Character for combat, gathering, or crafting modifiers. Later: respec windows and deeper hybrid unlocks per Book 1 pacing.",
     },
     {
-      title: "Respec Window Hook",
-      description:
-        "Future respec should exist only as a narrow correction window before hard commitment.",
+      title: "Respec window (later)",
+      description: "Narrow correction before hard lock — not wired in M1.",
       body: masteryFrameworkScaffold.respecWindowHook.implementationNote,
     },
     {
-      title: "Hybrid Unlock Hook",
-      description:
-        "Future hybrids should branch from an already committed school identity instead of replacing specialization-first progression.",
+      title: "Hybrid unlock (later)",
+      description: "Branches after primary commitment — beyond current slice.",
       body: masteryFrameworkScaffold.hybridUnlockHooks.compatibilityNote,
     },
   ],

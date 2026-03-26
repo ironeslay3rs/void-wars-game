@@ -5,12 +5,12 @@ export function getCraftingDistrictScreenData(state: GameState) {
     eyebrow: "Bazaar / Crafting District",
     title: "Crafting District",
     subtitle:
-      "A practical utility stop for turning current salvage into one immediate survival advantage before the next push.",
+      "Survival buffers first. Bind Moss Rations to control hunger pressure, refine salvage into working stock, then graduate into deeper Rune Crafter outputs once the core loop is stable.",
     cards: [
       {
         label: "Utility Focus",
         value: "Moss Binder",
-        hint: "The active M1 use here is ration binding for survival pressure control.",
+        hint: "Primary early action: convert field biomass into a ration that protects the next run.",
       },
       {
         label: "Ration Stock",
@@ -20,7 +20,7 @@ export function getCraftingDistrictScreenData(state: GameState) {
       {
         label: "Bio Samples",
         value: String(state.player.resources.bioSamples),
-        hint: "Primary recovered input for the district's active utility action.",
+        hint: "Early crafting fuel. Spend this first when survival becomes the blocker.",
       },
       {
         label: "Material Stock",

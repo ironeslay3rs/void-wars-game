@@ -14,6 +14,8 @@ import {
   voidFieldClamp,
   voidFieldHashStringToInt,
 } from "@/features/void-maps/voidFieldUtils";
+import type { PlayerState } from "@/features/game/gameTypes";
+import { resolveShellHit } from "@/features/combat/shellHitResolution";
 
 /**
  * Keep shell corpses visible until loot can finish homing (VoidFieldLootDrops hold+home ~1180ms).
@@ -108,9 +110,10 @@ function formatMsAsClock(ms: number) {
 export function useVoidFieldShellMobPopulation(
   zoneId: VoidZoneId,
   realtimeMobs: MobEntity[],
+  shellCombatPlayer: PlayerState | null,
 ): {
   mobsForField: MobEntity[];
-  applyShellMobDamage: (mobEntityId: string, damage: number) => void;
+  applyShellMobDamage: (mobEntityId: string, rawDamage: number) => number;
   bossChip: string | null;
 } {
   /**
@@ -425,29 +428,44 @@ export function useVoidFieldShellMobPopulation(
   }, [bossConfig, bossTemplate, shellMode, zoneId]);
 
   const applyShellMobDamage = useCallback(
-    (mobEntityId: string, damage: number) => {
-      if (!shellMode) return;
-      if (!isVoidFieldShellMobId(mobEntityId)) return;
-      if (damage <= 0) return;
+    (mobEntityId: string, rawDamage: number): number => {
+      if (!shellMode) return 0;
+      if (!isVoidFieldShellMobId(mobEntityId)) return 0;
+      if (rawDamage <= 0) return 0;
 
-      // Boss damage path (still shell-only).
       if (isVoidFieldShellBossMobId(mobEntityId)) {
+        let dealt = 0;
         setBossSlot((prev) => {
           if (prev.kind !== "alive") return prev;
           if (prev.mob.mobEntityId !== mobEntityId) return prev;
-          const hp = Math.max(0, prev.mob.hp - damage);
-          if (hp > 0) {
-            return { kind: "alive", mob: { ...prev.mob, hp } };
+          if (!shellCombatPlayer) {
+            dealt = rawDamage;
+            const hp = Math.max(0, prev.mob.hp - rawDamage);
+            if (hp > 0) {
+              return { kind: "alive", mob: { ...prev.mob, hp } };
+            }
+            return {
+              kind: "corpse",
+              mob: { ...prev.mob, hp: 0 },
+              removeAt: Date.now() + VOID_FIELD_SHELL_CORPSE_VISIBLE_MS,
+            };
+          }
+          const out = resolveShellHit(prev.mob, rawDamage, shellCombatPlayer);
+          dealt = out.damageDealt;
+          const mob = out.mob;
+          if (mob.hp > 0) {
+            return { kind: "alive", mob };
           }
           return {
             kind: "corpse",
-            mob: { ...prev.mob, hp: 0 },
+            mob: { ...mob, hp: 0 },
             removeAt: Date.now() + VOID_FIELD_SHELL_CORPSE_VISIBLE_MS,
           };
         });
-        return;
+        return dealt;
       }
 
+      let dealt = 0;
       setSlots((prev) => {
         const i = prev.findIndex(
           (x) => x.kind === "alive" && x.mob.mobEntityId === mobEntityId,
@@ -456,27 +474,46 @@ export function useVoidFieldShellMobPopulation(
         const slot = prev[i];
         if (slot.kind !== "alive") return prev;
 
-        const hp = Math.max(0, slot.mob.hp - damage);
-        if (hp > 0) {
+        if (!shellCombatPlayer) {
+          dealt = rawDamage;
+          const hp = Math.max(0, slot.mob.hp - rawDamage);
+          if (hp > 0) {
+            return prev.map((x, j) =>
+              j === i ? { kind: "alive", mob: { ...slot.mob, hp } } : x,
+            );
+          }
           return prev.map((x, j) =>
             j === i
-              ? { kind: "alive", mob: { ...slot.mob, hp } }
+              ? {
+                  kind: "corpse",
+                  mob: { ...slot.mob, hp: 0 },
+                  removeAt: Date.now() + VOID_FIELD_SHELL_CORPSE_VISIBLE_MS,
+                }
               : x,
           );
         }
 
+        const out = resolveShellHit(slot.mob, rawDamage, shellCombatPlayer);
+        dealt = out.damageDealt;
+        const mob = out.mob;
+        if (mob.hp > 0) {
+          return prev.map((x, j) =>
+            j === i ? { kind: "alive", mob } : x,
+          );
+        }
         return prev.map((x, j) =>
           j === i
             ? {
                 kind: "corpse",
-                mob: { ...slot.mob, hp: 0 },
+                mob: { ...mob, hp: 0 },
                 removeAt: Date.now() + VOID_FIELD_SHELL_CORPSE_VISIBLE_MS,
               }
             : x,
         );
       });
+      return dealt;
     },
-    [shellMode],
+    [shellMode, shellCombatPlayer],
   );
 
   const mobsForField = useMemo(() => {

@@ -25,6 +25,13 @@ export type VoidZone = {
   bossEnabled: boolean;
   bossSpawn?: VoidZoneBossSpawnConfig;
   lootTheme: VoidZoneLootTheme;
+  /** Optional: deepest school rune depth must be ≥ this to deploy (mastery spine). */
+  minRuneDepth?: number;
+  /**
+   * Optional: school matching `lootTheme` must have Executional tier ≥ this
+   * (see `getExecutionalTier`: L2 = 1, L3 = 2).
+   */
+  minExecutionalTier?: 1 | 2;
   recommendedCondition: number;
 
   // Back-compat fields used by the realtime void map sim + UI.
@@ -69,6 +76,7 @@ export const voidZones: VoidZone[] = [
     bossEnabled: false,
     bossSpawn: undefined,
     lootTheme: "ash_mecha",
+    minRuneDepth: 2,
     recommendedCondition: 75,
     threatBand: threatLevelToBand(2),
     spawnTableId: "ash-relay",
@@ -87,6 +95,7 @@ export const voidZones: VoidZone[] = [
     bossEnabled: false,
     bossSpawn: undefined,
     lootTheme: "void_pure",
+    minRuneDepth: 2,
     recommendedCondition: 75,
     threatBand: threatLevelToBand(2),
     spawnTableId: "echo-ruins",
@@ -101,6 +110,8 @@ export const voidZones: VoidZone[] = [
     threatLevel: 4,
     dropType: "bio",
     bossEnabled: true,
+    minRuneDepth: 3,
+    minExecutionalTier: 1,
     bossSpawn: {
       cooldownMs: 5 * 60 * 1000,
       rollIntervalMs: 10 * 1000,

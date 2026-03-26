@@ -59,6 +59,11 @@ export default function ArenaScreen() {
       value: arenaEligibility,
       hint: "Eligibility is based on current combat condition.",
     },
+    {
+      label: "Ranked Season 1",
+      value: `SR ${player.mythicAscension.arenaRankedSeason1Rating}`,
+      hint: "Skill rating shell for Season 1 rewards track — updates when ranked queue goes live.",
+    },
   ];
 
   function handleEnterMatch() {

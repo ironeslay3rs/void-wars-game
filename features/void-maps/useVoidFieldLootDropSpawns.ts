@@ -21,6 +21,7 @@ type MobSnap = { hp: number; x: number; y: number };
 export function useVoidFieldLootDropSpawns(
   mobsForField: MobEntity[],
   zoneId: VoidZoneId,
+  fieldLootAmountMultiplier = 1,
 ) {
   const [drops, setDrops] = useState<VoidFieldLootDropVfx[]>([]);
   const prevRef = useRef<Map<string, MobSnap>>(new Map());
@@ -43,12 +44,16 @@ export function useVoidFieldLootDropSpawns(
           seed: `death-${mob.mobEntityId}-${mob.spawnedAt}`,
         });
         rolled.forEach((line, idx) => {
+          const amt = Math.max(
+            1,
+            Math.round(line.amount * fieldLootAmountMultiplier),
+          );
           additions.push(
             createVoidFieldLootDropVfx(
               mob.x,
               mob.y,
               line.resource,
-              line.amount,
+              amt,
               `death-${mob.mobEntityId}-${mob.spawnedAt}-${idx}`,
             ),
           );
@@ -92,7 +97,7 @@ export function useVoidFieldLootDropSpawns(
       setDrops((d) => [...additions, ...d].slice(0, MAX_DROPS));
     });
     return () => cancelAnimationFrame(raf);
-  }, [mobsForField, zoneId]);
+  }, [mobsForField, zoneId, fieldLootAmountMultiplier]);
 
   const removeDrop = useCallback((id: string) => {
     setDrops((d) => d.filter((x) => x.id !== id));

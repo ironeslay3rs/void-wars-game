@@ -4,7 +4,10 @@ import Image from "next/image";
 import type { PointerEvent } from "react";
 import type { MobEntity } from "@/features/void-maps/realtime/voidRealtimeProtocol";
 import { voidFieldEnemySpriteSrc } from "@/features/void-maps/voidFieldEnemyAssets";
-import { isVoidFieldShellMobId } from "@/features/void-maps/voidFieldShellMobs";
+import {
+  isVoidFieldShellBossMobId,
+  isVoidFieldShellMobId,
+} from "@/features/void-maps/voidFieldShellMobs";
 import { voidFieldHashStringToInt } from "@/features/void-maps/voidFieldUtils";
 import type { VoidZoneId } from "@/features/void-maps/zoneData";
 import {
@@ -95,8 +98,16 @@ export default function VoidFieldMobs({
     <>
       {visible.map((mob) => {
         const hpPct = mob.maxHp > 0 ? (mob.hp / mob.maxHp) * 100 : 0;
-        const isBoss = mob.mobLabel === "Void Boss";
+        const isBoss =
+          mob.isBoss === true ||
+          mob.mobLabel === "Void Boss" ||
+          isVoidFieldShellBossMobId(mob.mobEntityId);
         const shell = isVoidFieldShellMobId(mob.mobEntityId);
+        const postureMax = mob.shellPostureMax ?? 0;
+        const postureCur = mob.shellPosture ?? 0;
+        const posturePct =
+          postureMax > 0 ? Math.min(100, (postureCur / postureMax) * 100) : 0;
+        const exposedHits = mob.shellExposedHitsRemaining ?? 0;
         const motion = factionMotionClass(enemyFaction);
         const hpGrad = hpBarClass(enemyFaction);
         const { ox, oy } =
@@ -105,7 +116,9 @@ export default function VoidFieldMobs({
         const targeted = targetedMobEntityId === mob.mobEntityId;
         const z = 14 + Math.round(mob.y * 0.12);
 
-        const title = `${mob.mobLabel} · x${mob.packSize} · ${Math.round(hpPct)}% HP${shell ? " · drill" : ""}`;
+        const title = `${mob.mobLabel} · x${mob.packSize} · ${Math.round(hpPct)}% HP${
+          postureMax > 0 ? ` · posture ${Math.round(posturePct)}%` : ""
+        }${exposedHits > 0 ? ` · EXPOSED ×${exposedHits}` : ""}${shell ? " · drill" : ""}`;
         const hitUntil = mobHitUntilById[mob.mobEntityId];
         const hitActive = hitUntil !== undefined;
         const spriteMotionKey = hitActive
@@ -204,12 +217,31 @@ export default function VoidFieldMobs({
                 />
               </div>
 
+              {postureMax > 0 && mob.hp > 0 ? (
+                <div
+                  className="mt-0.5 h-0.5 w-11 overflow-hidden rounded-full bg-black/80 md:w-12"
+                  aria-hidden
+                >
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-amber-400/95 to-amber-200/70 transition-[width] duration-200 ease-out"
+                    style={{
+                      width: `${Math.min(100, Math.max(3, posturePct))}%`,
+                    }}
+                  />
+                </div>
+              ) : null}
+
               <span
                 className="pointer-events-none mt-0.5 max-w-[76px] truncate text-center text-[7px] font-medium uppercase tracking-[0.14em] text-white/70 opacity-[0.14] transition-opacity duration-200 group-hover:opacity-100 md:max-w-[84px]"
                 aria-hidden
               >
                 {mob.hp <= 0 ? "Down" : mob.mobLabel}
               </span>
+              {mob.shellTag && mob.hp > 0 ? (
+                <span className="pointer-events-none mt-0.5 text-[6px] font-bold uppercase tracking-[0.18em] text-amber-200/80">
+                  {exposedHits > 0 ? "EXPOSED" : mob.shellTag}
+                </span>
+              ) : null}
             </button>
           </div>
         );

@@ -1,9 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import ScreenHeader from "@/components/shared/ScreenHeader";
 import SectionCard from "@/components/shared/SectionCard";
 import PlaceholderPanel from "@/components/shared/PlaceholderPanel";
+import { ZoneDoctrinePressurePanel } from "@/components/factions/ZoneDoctrinePressurePanel";
 import { useGame } from "@/features/game/gameContext";
 import { getFactionHqsScreenData } from "@/features/factions/factionsScreenData";
 import { factionData } from "@/features/factions/factionData";
@@ -102,6 +104,29 @@ export default function FactionsScreen() {
               />
             ))}
           </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm">
+            <p className="text-white/65">
+              Doctrine wings issue wages and contracts from aligned HQs inside the
+              citadel bazaar.
+            </p>
+            <Link
+              href="/bazaar/faction-hqs"
+              className="shrink-0 rounded-lg border border-fuchsia-400/35 bg-fuchsia-500/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-fuchsia-100 transition hover:bg-fuchsia-500/20"
+            >
+              Faction HQs
+            </Link>
+          </div>
+
+          <SectionCard
+            title="Regional war stakes"
+            description="Live doctrine tilt across void theatres (Bio · Mecha · Pure). Field work pushes the needle."
+          >
+            <ZoneDoctrinePressurePanel
+              zoneDoctrinePressure={state.player.zoneDoctrinePressure}
+              factionAlignment={state.player.factionAlignment}
+            />
+          </SectionCard>
 
           <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
             <SectionCard

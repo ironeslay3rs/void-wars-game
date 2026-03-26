@@ -7,6 +7,11 @@ import {
   type CharacterPortraitId,
 } from "@/features/characters/characterPortraits";
 import CharacterPortraitImage from "@/components/character/CharacterPortraitImage";
+import {
+  CAREER_COMBAT_SHELL_DAMAGE_BONUS_PCT,
+  CAREER_CRAFTING_COST_MULT,
+  CAREER_GATHERING_FIELD_LOOT_MULT,
+} from "@/features/player/careerFocusModifiers";
 
 function factionLabel(alignment: FactionAlignment): string {
   switch (alignment) {
@@ -57,9 +62,21 @@ export default function CharacterProfile() {
         <div className="grid grid-cols-3 gap-2">
           {(
             [
-              { value: "combat",    label: "Combat",    sub: "Field pressure" },
-              { value: "gathering", label: "Gathering", sub: "Loot extraction" },
-              { value: "crafting",  label: "Crafting",  sub: "District utility" },
+              {
+                value: "combat",
+                label: "Combat",
+                sub: `+${CAREER_COMBAT_SHELL_DAMAGE_BONUS_PCT}% shell drill damage`,
+              },
+              {
+                value: "gathering",
+                label: "Gathering",
+                sub: `+${Math.round((CAREER_GATHERING_FIELD_LOOT_MULT - 1) * 100)}% field pickup amounts`,
+              },
+              {
+                value: "crafting",
+                label: "Crafting",
+                sub: `−${Math.round((1 - CAREER_CRAFTING_COST_MULT) * 100)}% district craft costs`,
+              },
             ] as { value: CareerFocus; label: string; sub: string }[]
           ).map(({ value, label, sub }) => {
             const active = p.careerFocus === value;

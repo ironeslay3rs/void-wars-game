@@ -35,6 +35,12 @@ function getAccentClasses(
   return isActive ? activeMap[accent] : idleMap[accent];
 }
 
+function isRouteActive(pathname: string, href: string) {
+  if (pathname === href) return true;
+  if (href === "/") return false;
+  return pathname.startsWith(`${href}/`);
+}
+
 export default function BottomNav() {
   const pathname = usePathname();
   const items = getNavigationItemsByPlacement("bottom");
@@ -44,7 +50,7 @@ export default function BottomNav() {
       <div className="grid grid-cols-5 gap-3">
         {items.map((item) => {
           const Icon = item.icon;
-          const isActive = pathname === item.href;
+          const isActive = isRouteActive(pathname, item.href);
 
           return (
             <Link

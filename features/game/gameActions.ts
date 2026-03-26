@@ -17,6 +17,13 @@ import {
   rebuildMissionQueueSchedule,
   syncMirroredHuntActiveProcess,
 } from "@/features/game/gameMissionUtils";
+import {
+  FACTION_HQ_STIPEND_COOLDOWN_MS,
+  computeFactionHqStipend,
+  huntIntensityFromMissionRankReward,
+  normalizePlayerFactionWorldSlice,
+  withWorldProgressAfterHunt,
+} from "@/features/factions/factionWorldLogic";
 import { voidZoneById, type VoidZoneId } from "@/features/void-maps/zoneData";
 import {
   buildNavigationState,
@@ -48,6 +55,33 @@ import type {
 } from "@/features/game/gameTypes";
 import { getNextRunModifierDefinitionById } from "@/features/crafting-district/nextRunModifiersData";
 import { rollVoidFieldLoot } from "@/features/void-maps/rollVoidFieldLoot";
+import { tryInstallMinorRune } from "@/features/mastery/runeMasteryLogic";
+import { getDistrictCraftingCost } from "@/features/crafting-district/craftingProfession";
+import {
+  quoteVoidMarketBuy,
+  quoteVoidMarketSell,
+  VOID_MARKET_COMMODITIES,
+} from "@/features/bazaar/voidMarketEconomy";
+import { getVoidMarketWarAdjustments } from "@/features/factions/warEconomy";
+import {
+  canGrantRuneCrafterLicense,
+  canUnlockL3RareRuneSet,
+  normalizeMythicAscension,
+} from "@/features/progression/mythicAscensionLogic";
+import { getMasteryAlignedContractResourceMultiplier } from "@/features/mastery/masteryGameplayEffects";
+import {
+  addGuildMember,
+  createGuild,
+  getContractProgressPct,
+  initialGuildRoster,
+  joinGuildByCode,
+  normalizeGuildContracts,
+  normalizeGuildRoster,
+  postGuildContract,
+  removeGuildMember,
+  setGuildPledge,
+} from "@/features/social/guildLiveLogic";
+import type { SharedGuildContract } from "@/features/social/guildLiveTypes";
 
 function updateSingleResource(
   resources: ResourcesState,
@@ -121,6 +155,25 @@ function hydratePlayerState(player: GameState["player"]): PlayerState {
     unlockedRoutes:
       player.unlockedRoutes ?? initialGameState.player.unlockedRoutes,
     missionQueue: player.missionQueue ?? initialGameState.player.missionQueue,
+    runeMastery:
+      player.runeMastery ?? initialGameState.player.runeMastery,
+    fieldLoadoutProfile:
+      player.fieldLoadoutProfile === "assault" ||
+      player.fieldLoadoutProfile === "support" ||
+      player.fieldLoadoutProfile === "breach"
+        ? player.fieldLoadoutProfile
+        : initialGameState.player.fieldLoadoutProfile,
+
+    ...normalizePlayerFactionWorldSlice(player),
+
+    guild: normalizeGuildRoster((player as { guild?: unknown }).guild),
+    guildContracts: normalizeGuildContracts(
+      (player as { guildContracts?: unknown }).guildContracts,
+    ),
+
+    mythicAscension: normalizeMythicAscension(
+      (player as { mythicAscension?: unknown }).mythicAscension,
+    ),
   };
 }
 
@@ -169,6 +222,15 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         player: {
           ...state.player,
           careerFocus: action.payload,
+        },
+      };
+
+    case "SET_FIELD_LOADOUT_PROFILE":
+      return {
+        ...state,
+        player: {
+          ...state.player,
+          fieldLoadoutProfile: action.payload,
         },
       };
 
@@ -228,6 +290,56 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           ),
         },
       };
+
+    case "VOID_MARKET_TRADE": {
+      const { side, commodity, units } = action.payload;
+      if (!(VOID_MARKET_COMMODITIES as readonly string[]).includes(commodity)) {
+        return state;
+      }
+      const n = Math.floor(units);
+      if (!Number.isFinite(n) || n < 1 || n > 9_999) {
+        return state;
+      }
+      const player = state.player;
+      if (side === "buy") {
+        const quote = quoteVoidMarketBuy(n, commodity);
+        const war = getVoidMarketWarAdjustments(player);
+        const totalCredits = Math.ceil(quote.totalCredits * war.buyMult);
+        if (player.resources.credits < totalCredits) {
+          return state;
+        }
+        let res = updateSingleResource(
+          player.resources,
+          "credits",
+          -totalCredits,
+        );
+        res = updateSingleResource(res, commodity, n);
+        return {
+          ...state,
+          player: {
+            ...player,
+            resources: res,
+          },
+        };
+      }
+      if (player.resources[commodity] < n) {
+        return state;
+      }
+      const { netCredits } = quoteVoidMarketSell(
+        n,
+        commodity,
+        player.careerFocus,
+      );
+      let res = updateSingleResource(player.resources, commodity, -n);
+      res = updateSingleResource(res, "credits", netCredits);
+      return {
+        ...state,
+        player: {
+          ...player,
+          resources: res,
+        },
+      };
+    }
 
     case "GAIN_RANK_XP": {
       const rankState = applyRankXp(
@@ -333,10 +445,14 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
     case "CRAFT_MOSS_RATION": {
       const player = state.player;
+      const mossCost = getDistrictCraftingCost(player, MOSS_RATION_RECIPE_COST);
+      const needBio =
+        mossCost.bioSamples ?? MOSS_RATION_RECIPE_COST.bioSamples;
+      const needDust = mossCost.runeDust ?? MOSS_RATION_RECIPE_COST.runeDust;
 
       if (
-        player.resources.bioSamples < MOSS_RATION_RECIPE_COST.bioSamples ||
-        player.resources.runeDust < MOSS_RATION_RECIPE_COST.runeDust
+        player.resources.bioSamples < needBio ||
+        player.resources.runeDust < needDust
       ) {
         return state;
       }
@@ -344,12 +460,12 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const spentSamples = updateSingleResource(
         player.resources,
         "bioSamples",
-        -MOSS_RATION_RECIPE_COST.bioSamples,
+        -needBio,
       );
       const spentDust = updateSingleResource(
         spentSamples,
         "runeDust",
-        -MOSS_RATION_RECIPE_COST.runeDust,
+        -needDust,
       );
 
       return {
@@ -392,7 +508,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const def = getNextRunModifierDefinitionById(action.payload.modifierId);
       if (!def) return state;
 
-      const costEntries = Object.entries(def.cost).filter(
+      const cost = getDistrictCraftingCost(player, def.cost);
+      const costEntries = Object.entries(cost).filter(
         (entry): entry is [ResourceKey, number] => typeof entry[1] === "number",
       );
       const canAfford = costEntries.every(
@@ -584,48 +701,65 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         "hunt",
       );
 
+      let resolvedPlayer: PlayerState = {
+        ...nextPlayer,
+        hasBiotechSpecimenLead:
+          mission.id === "bio-hunt-specimen"
+            ? false
+            : player.hasBiotechSpecimenLead,
+        fieldLootGainedThisRun: {},
+        lastHuntResult: {
+          missionId: mission.id,
+          huntTitle: mission.title,
+          resolvedAt,
+          conditionDelta: resolvedConditionDelta,
+          conditionAfter: nextPlayer.condition,
+          rankXpGained: rewardWithNextRunMods.rankXp,
+          masteryProgressGained: rewardWithNextRunMods.masteryProgress,
+          influenceGained: rewardWithNextRunMods.influence ?? 0,
+          resourcesGained: rewardWithNextRunMods.resources ?? {},
+          fieldLootGained: state.player.fieldLootGainedThisRun ?? {},
+          hungerPressureLabel: hungerEffects.label,
+          hungerRewardPenaltyPct: hungerEffects.rewardPenaltyPct,
+          hungerConditionDrainPenalty: hungerEffects.conditionDrainPenalty,
+
+          baseRankXpGained: rewardWithNextRunMods.rankXp,
+          baseMasteryProgressGained: rewardWithNextRunMods.masteryProgress,
+          baseInfluenceGained: rewardWithNextRunMods.influence ?? 0,
+          baseResourcesGained: rewardWithNextRunMods.resources ?? {},
+
+          realtimeContributionBonusMultiplier: null,
+          realtimeContributionAppliedForResolvedAt: null,
+          realtimeRankXpBonusGained: 0,
+          realtimeMasteryProgressBonusGained: 0,
+          realtimeInfluenceBonusGained: 0,
+          realtimeResourcesBonusGained: {},
+
+          realtimeTotalDamageDealt: 0,
+          realtimeTotalHitsLanded: 0,
+          realtimeMobsContributedTo: 0,
+          realtimeMobsKilled: 0,
+          realtimeExposedKills: 0,
+        },
+      };
+
+      if (
+        mission.category === "hunting-ground" &&
+        mission.deployZoneId
+      ) {
+        resolvedPlayer = withWorldProgressAfterHunt(resolvedPlayer, {
+          zoneId: mission.deployZoneId,
+          intensity: huntIntensityFromMissionRankReward(
+            rewardWithNextRunMods.rankXp,
+            rewardWithNextRunMods.influence ?? 0,
+          ),
+          reason: `Contract — ${mission.title}`,
+        });
+      }
+
       return {
         ...state,
-        player: {
-          ...nextPlayer,
-          hasBiotechSpecimenLead:
-            mission.id === "bio-hunt-specimen"
-              ? false
-              : player.hasBiotechSpecimenLead,
-          fieldLootGainedThisRun: {},
-          lastHuntResult: {
-            missionId: mission.id,
-            huntTitle: mission.title,
-            resolvedAt,
-            conditionDelta: resolvedConditionDelta,
-            conditionAfter: nextPlayer.condition,
-            rankXpGained: rewardWithNextRunMods.rankXp,
-            masteryProgressGained: rewardWithNextRunMods.masteryProgress,
-            influenceGained: rewardWithNextRunMods.influence ?? 0,
-            resourcesGained: rewardWithNextRunMods.resources ?? {},
-            fieldLootGained: state.player.fieldLootGainedThisRun ?? {},
-            hungerPressureLabel: hungerEffects.label,
-            hungerRewardPenaltyPct: hungerEffects.rewardPenaltyPct,
-            hungerConditionDrainPenalty: hungerEffects.conditionDrainPenalty,
-
-            baseRankXpGained: rewardWithNextRunMods.rankXp,
-            baseMasteryProgressGained: rewardWithNextRunMods.masteryProgress,
-            baseInfluenceGained: rewardWithNextRunMods.influence ?? 0,
-            baseResourcesGained: rewardWithNextRunMods.resources ?? {},
-
-            realtimeContributionBonusMultiplier: null,
-            realtimeContributionAppliedForResolvedAt: null,
-            realtimeRankXpBonusGained: 0,
-            realtimeMasteryProgressBonusGained: 0,
-            realtimeInfluenceBonusGained: 0,
-            realtimeResourcesBonusGained: {},
-
-            realtimeTotalDamageDealt: 0,
-            realtimeTotalHitsLanded: 0,
-            realtimeMobsContributedTo: 0,
-            realtimeMobsKilled: 0,
-          },
-        },
+        player: resolvedPlayer,
       };
     }
 
@@ -638,6 +772,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         totalHitsLanded,
         mobsContributedTo,
         mobsKilled,
+        exposedKills,
         bossDefeated,
         bossDropResourcesBase,
         zoneThreatLevel,
@@ -733,6 +868,20 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         1,
         1.25,
       );
+
+      const zoneForMastery = Object.prototype.hasOwnProperty.call(
+        voidZoneById,
+        zoneId,
+      )
+        ? voidZoneById[zoneId as VoidZoneId]
+        : null;
+      const masteryResourceYieldMult = zoneForMastery
+        ? getMasteryAlignedContractResourceMultiplier(
+            state.player.runeMastery,
+            zoneForMastery.lootTheme,
+          )
+        : 1;
+
       const nextZoneMastery = {
         ...prevZoneMastery,
         [zoneId]: (prevZoneMastery[zoneId] ?? 0) + 1,
@@ -769,7 +918,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             baseAmount *
               effectiveBonusMultiplier *
               resourceEfficiencyFactor *
-              streakYieldMultiplier,
+              streakYieldMultiplier *
+              masteryResourceYieldMult,
           );
           if (bonusAmount <= 0) return;
           realtimeResourcesBonusGained[key] =
@@ -785,7 +935,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         if (!baseAmount || baseAmount <= 0) return;
         const adjustedBaseAmount = Math.floor(baseAmount * bossDropMasteryFactor);
         const bonusAmount = Math.floor(
-          adjustedBaseAmount * effectiveBonusMultiplier * streakYieldMultiplier,
+          adjustedBaseAmount *
+            effectiveBonusMultiplier *
+            streakYieldMultiplier *
+            masteryResourceYieldMult,
         );
         if (bonusAmount <= 0) return;
         realtimeResourcesBonusGained[key] =
@@ -808,10 +961,12 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           seed: `rt-boss-${zoneId}-${resolvedAt}`,
         });
         rolledBossLoot.forEach((line) => {
+          const amt = Math.floor(line.amount * masteryResourceYieldMult);
+          if (amt <= 0) return;
           realtimeResourcesBonusGained[line.resource] =
-            (realtimeResourcesBonusGained[line.resource] ?? 0) + line.amount;
+            (realtimeResourcesBonusGained[line.resource] ?? 0) + amt;
           nextResourcesGained[line.resource] =
-            (nextResourcesGained[line.resource] ?? 0) + line.amount;
+            (nextResourcesGained[line.resource] ?? 0) + amt;
         });
         }
       }
@@ -868,6 +1023,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           realtimeMobsContributedTo:
             mobsContributedTo ?? latest.realtimeMobsContributedTo ?? 0,
           realtimeMobsKilled: mobsKilled ?? latest.realtimeMobsKilled ?? 0,
+          realtimeExposedKills: exposedKills ?? latest.realtimeExposedKills ?? 0,
           rankXpGained: baseRankXpGained + realtimeRankXpBonusGained,
           masteryProgressGained:
             baseMasteryProgressGained + realtimeMasteryProgressBonusGained,
@@ -1145,6 +1301,12 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         },
       };
 
+    case "INSTALL_MINOR_RUNE": {
+      const r = tryInstallMinorRune(state.player, action.payload.school);
+      if (!r.ok) return state;
+      return { ...state, player: r.player };
+    }
+
     case "UNLOCK_ROUTE": {
       if (state.player.unlockedRoutes.includes(action.payload)) return state;
 
@@ -1211,6 +1373,183 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           influence: Math.max(0, state.player.influence + action.payload),
         },
       };
+
+    case "ATTEMPT_MYTHIC_UNLOCK": {
+      const p = state.player;
+      if (action.payload === "l3-rare-rune-set") {
+        if (!canUnlockL3RareRuneSet(p)) return state;
+        let res = updateSingleResource(p.resources, "ironHeart", -1);
+        res = updateSingleResource(res, "runeDust", -30);
+        return {
+          ...state,
+          player: {
+            ...p,
+            resources: res,
+            mythicAscension: {
+              ...p.mythicAscension,
+              l3RareRuneSetUnlocked: true,
+            },
+          },
+        };
+      }
+      if (action.payload === "rune-crafter-license") {
+        if (!canGrantRuneCrafterLicense(p)) return state;
+        const res = updateSingleResource(p.resources, "ironHeart", -2);
+        return {
+          ...state,
+          player: {
+            ...p,
+            resources: res,
+            mythicAscension: {
+              ...p.mythicAscension,
+              runeCrafterLicense: true,
+            },
+          },
+        };
+      }
+      return state;
+    }
+
+    case "CLAIM_FACTION_HQ_STIPEND": {
+      const now = Date.now();
+      const p = state.player;
+      if (p.factionAlignment === "unbound") return state;
+      if (now - p.lastFactionHqStipendAt < FACTION_HQ_STIPEND_COOLDOWN_MS) {
+        return state;
+      }
+      const { credits, influence: infGain } = computeFactionHqStipend(p);
+      return {
+        ...state,
+        player: {
+          ...p,
+          lastFactionHqStipendAt: now,
+          resources: addPartialResources(p.resources, { credits }),
+          influence: Math.max(0, p.influence + infGain),
+        },
+      };
+    }
+
+    case "GUILD_CREATE": {
+      const p = state.player;
+      if (p.guild.kind === "inGuild") return state;
+      return {
+        ...state,
+        player: {
+          ...p,
+          guild: createGuild(p, action.payload.guildName),
+          guildContracts: [],
+        },
+      };
+    }
+
+    case "GUILD_JOIN": {
+      const p = state.player;
+      if (p.guild.kind === "inGuild") return state;
+      const roster = joinGuildByCode(p, action.payload.guildCode);
+      if (!roster) return state;
+      return {
+        ...state,
+        player: {
+          ...p,
+          guild: roster,
+          guildContracts: [],
+        },
+      };
+    }
+
+    case "GUILD_LEAVE": {
+      const p = state.player;
+      if (p.guild.kind !== "inGuild") return state;
+      return {
+        ...state,
+        player: {
+          ...p,
+          guild: initialGuildRoster(),
+          guildContracts: [],
+        },
+      };
+    }
+
+    case "GUILD_SET_PLEDGE": {
+      const p = state.player;
+      if (p.guild.kind !== "inGuild") return state;
+      const pledge =
+        action.payload.pledge === "bio" ||
+        action.payload.pledge === "mecha" ||
+        action.payload.pledge === "pure"
+          ? action.payload.pledge
+          : "unbound";
+      return {
+        ...state,
+        player: {
+          ...p,
+          guild: setGuildPledge(p.guild, pledge),
+        },
+      };
+    }
+
+    case "GUILD_ADD_MEMBER": {
+      const p = state.player;
+      if (p.guild.kind !== "inGuild") return state;
+      return {
+        ...state,
+        player: {
+          ...p,
+          guild: addGuildMember(p.guild, action.payload.callsign),
+        },
+      };
+    }
+
+    case "GUILD_REMOVE_MEMBER": {
+      const p = state.player;
+      if (p.guild.kind !== "inGuild") return state;
+      return {
+        ...state,
+        player: {
+          ...p,
+          guild: removeGuildMember(p.guild, action.payload.memberId),
+        },
+      };
+    }
+
+    case "GUILD_POST_CONTRACT": {
+      const p = state.player;
+      const contract = postGuildContract(p, action.payload.templateId);
+      if (!contract) return state;
+      const existingActive = (p.guildContracts ?? []).some(
+        (c) => c.status === "active",
+      );
+      if (existingActive) return state;
+      return {
+        ...state,
+        player: {
+          ...p,
+          guildContracts: [contract],
+        },
+      };
+    }
+
+    case "GUILD_CLAIM_CONTRACT": {
+      const p = state.player;
+      const contracts = p.guildContracts ?? [];
+      const idx = contracts.findIndex((c) => c.id === action.payload.contractId);
+      if (idx < 0) return state;
+      const c = contracts[idx];
+      if (c.status === "claimed") return state;
+      const pct = getContractProgressPct(p, c);
+      if (pct < 100) return state;
+      const nextContracts: SharedGuildContract[] = contracts.map((x) =>
+        x.id === c.id ? { ...x, status: "claimed" } : x,
+      );
+      return {
+        ...state,
+        player: {
+          ...p,
+          resources: addPartialResources(p.resources, c.reward),
+          guildContracts: nextContracts,
+        },
+      };
+    }
 
     case "SET_FORGE_STATUS":
       return {

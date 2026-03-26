@@ -1,6 +1,11 @@
+"use client";
+
+import Link from "next/link";
 import ScreenHeader from "@/components/shared/ScreenHeader";
 import SectionCard from "@/components/shared/SectionCard";
 import PlaceholderPanel from "@/components/shared/PlaceholderPanel";
+import MasteryDepthPanel from "@/components/career/MasteryDepthPanel";
+import MythicAscensionPanel from "@/components/mastery/MythicAscensionPanel";
 import { masteryScreenData } from "@/features/mastery/masteryScreenData";
 
 export default function MasteryScreen() {
@@ -13,6 +18,21 @@ export default function MasteryScreen() {
           subtitle={masteryScreenData.subtitle}
         />
 
+        <p className="-mt-4 max-w-3xl text-sm text-white/55">
+          Mirror of the{" "}
+          <Link
+            href="/career"
+            className="text-cyan-200/90 underline decoration-cyan-400/35 underline-offset-2 hover:text-white"
+          >
+            Career
+          </Link>{" "}
+          spine — same mastery tree and installs.
+        </p>
+
+        <MasteryDepthPanel />
+
+        <MythicAscensionPanel />
+
         <div className="grid gap-6 md:grid-cols-3">
           {masteryScreenData.cards.map((card) => (
             <PlaceholderPanel
@@ -24,7 +44,7 @@ export default function MasteryScreen() {
           ))}
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+        <div className="grid gap-6 lg:grid-cols-2">
           {masteryScreenData.sections.map((section) => (
             <SectionCard
               key={section.title}

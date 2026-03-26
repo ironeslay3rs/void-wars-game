@@ -96,12 +96,15 @@ export function VoidRealtimeBridge({
   const moveSeqRef = useRef(0);
   const attackSeqRef = useRef(0);
   const joinContextRef = useRef<{
-    binding: (typeof state.player)["voidRealtimeBinding"];
+    binding: GameState["player"]["voidRealtimeBinding"];
     playerName: string;
-    factionAlignment: (typeof state.player)["factionAlignment"];
+    factionAlignment: GameState["player"]["factionAlignment"];
     rankLevel: number;
     condition: number;
     zoneMasteryForZone: number;
+    fieldLoadoutProfile: GameState["player"]["fieldLoadoutProfile"];
+    runeDepthBySchool: GameState["player"]["runeMastery"]["depthBySchool"];
+    runeMinorsBySchool: GameState["player"]["runeMastery"]["minorCountBySchool"];
   }>({
     binding: null,
     playerName: "",
@@ -109,6 +112,9 @@ export function VoidRealtimeBridge({
     rankLevel: 1,
     condition: 100,
     zoneMasteryForZone: 0,
+    fieldLoadoutProfile: "assault",
+    runeDepthBySchool: {} as GameState["player"]["runeMastery"]["depthBySchool"],
+    runeMinorsBySchool: {} as GameState["player"]["runeMastery"]["minorCountBySchool"],
   });
 
   const huntSignalRef = useRef({
@@ -129,6 +135,9 @@ export function VoidRealtimeBridge({
         Object.prototype.hasOwnProperty.call(voidZoneById, binding.zoneId)
           ? state.player.zoneMastery[binding.zoneId] ?? 0
           : 0,
+      fieldLoadoutProfile: state.player.fieldLoadoutProfile,
+      runeDepthBySchool: state.player.runeMastery.depthBySchool,
+      runeMinorsBySchool: state.player.runeMastery.minorCountBySchool,
     };
     huntSignalRef.current = {
       clientId: binding?.clientId ?? "",
@@ -141,8 +150,11 @@ export function VoidRealtimeBridge({
     huntStatus,
     state.player.condition,
     state.player.factionAlignment,
+    state.player.fieldLoadoutProfile,
     state.player.playerName,
     state.player.rankLevel,
+    state.player.runeMastery.depthBySchool,
+    state.player.runeMastery.minorCountBySchool,
     state.player.zoneMastery,
   ]);
 
@@ -292,11 +304,29 @@ export function VoidRealtimeBridge({
             break;
           case "mob_hp_updated":
             setMobs((prev) =>
-              prev.map((m) =>
-                m.mobEntityId === msg.mobEntityId
-                  ? { ...m, hp: msg.hp, maxHp: msg.maxHp }
-                  : m,
-              ),
+              prev.map((m) => {
+                if (m.mobEntityId !== msg.mobEntityId) return m;
+                const next: MobEntity = { ...m, hp: msg.hp, maxHp: msg.maxHp };
+                if (
+                  typeof msg.shellPostureMax === "number" &&
+                  msg.shellPostureMax > 0
+                ) {
+                  next.shellArchetype = msg.shellArchetype;
+                  next.shellPosture = msg.shellPosture;
+                  next.shellPostureMax = msg.shellPostureMax;
+                  next.shellExposedHitsRemaining =
+                    typeof msg.shellExposedHitsRemaining === "number" &&
+                    msg.shellExposedHitsRemaining > 0
+                      ? msg.shellExposedHitsRemaining
+                      : undefined;
+                  next.shellTag = msg.shellTag;
+                  next.shellPurePulseNext =
+                    msg.shellPurePulseNext === true ? true : undefined;
+                  next.shellKillCreditExposed =
+                    msg.shellKillCreditExposed === true ? true : undefined;
+                }
+                return next;
+              }),
             );
             break;
           case "mob_defeated":
@@ -357,6 +387,8 @@ export function VoidRealtimeBridge({
     state.player.factionAlignment,
     state.player.rankLevel,
     state.player.condition,
+    state.player.fieldLoadoutProfile,
+    state.player.runeMastery,
     state.player.zoneMastery,
     flushJoin,
   ]);
@@ -380,6 +412,7 @@ export function VoidRealtimeBridge({
       totalHitsLanded: self.totalHits,
       mobsContributedTo: self.mobsContributedTo,
       mobsKilled: self.mobsKilled,
+      exposedKills: self.exposedKills ?? 0,
       bossDefeated: self.bossDefeated,
       bossDropResourcesBase: self.bossDropResourcesBase,
     };
@@ -404,6 +437,7 @@ export function VoidRealtimeBridge({
         totalHitsLanded: selfContribution.totalHitsLanded,
         mobsContributedTo: selfContribution.mobsContributedTo,
         mobsKilled: selfContribution.mobsKilled,
+        exposedKills: selfContribution.exposedKills,
         bossDefeated: selfContribution.bossDefeated,
         bossDropResourcesBase: selfContribution.bossDropResourcesBase,
         zoneThreatLevel: getZoneThreatLevel(binding.zoneId),

@@ -12,6 +12,24 @@ import type {
   ResourcesState,
   VoidRealtimeBinding,
 } from "@/features/game/gameTypes";
+import {
+  RUNE_SCHOOLS,
+  type PlayerRuneMasteryState,
+  type RuneSchool,
+} from "@/features/mastery/runeMasteryTypes";
+import {
+  createInitialRuneMastery,
+  normalizeRuneDepthFromMinors,
+} from "@/features/mastery/runeMasteryLogic";
+import {
+  normalizePlayerFactionWorldSlice,
+  parseVoidZoneId,
+} from "@/features/factions/factionWorldLogic";
+import { normalizeMythicAscension } from "@/features/progression/mythicAscensionLogic";
+import {
+  normalizeGuildContracts,
+  normalizeGuildRoster,
+} from "@/features/social/guildLiveLogic";
 
 const STORAGE_KEY_PREFIX = "void-wars-oblivion-game-state";
 
@@ -51,6 +69,22 @@ function normalizeResources(value: unknown): ResourcesState {
       typeof raw.mossRations === "number"
         ? raw.mossRations
         : initialGameState.player.resources.mossRations,
+    coilboundLattice:
+      typeof raw.coilboundLattice === "number"
+        ? raw.coilboundLattice
+        : initialGameState.player.resources.coilboundLattice,
+    ashSynodRelic:
+      typeof raw.ashSynodRelic === "number"
+        ? raw.ashSynodRelic
+        : initialGameState.player.resources.ashSynodRelic,
+    vaultLatticeShard:
+      typeof raw.vaultLatticeShard === "number"
+        ? raw.vaultLatticeShard
+        : initialGameState.player.resources.vaultLatticeShard,
+    ironHeart:
+      typeof raw.ironHeart === "number"
+        ? raw.ironHeart
+        : initialGameState.player.resources.ironHeart,
   };
 }
 
@@ -74,8 +108,99 @@ function normalizePartialResources(
   if (typeof value.mossRations === "number") {
     result.mossRations = value.mossRations;
   }
+  if (typeof value.coilboundLattice === "number") {
+    result.coilboundLattice = value.coilboundLattice;
+  }
+  if (typeof value.ashSynodRelic === "number") {
+    result.ashSynodRelic = value.ashSynodRelic;
+  }
+  if (typeof value.vaultLatticeShard === "number") {
+    result.vaultLatticeShard = value.vaultLatticeShard;
+  }
+  if (typeof value.ironHeart === "number") {
+    result.ironHeart = value.ironHeart;
+  }
 
   return result;
+}
+
+function clampInt(n: number, min: number, max: number) {
+  if (!Number.isFinite(n)) return min;
+  return Math.min(max, Math.max(min, Math.floor(n)));
+}
+
+function normalizeRuneMastery(value: unknown): PlayerRuneMasteryState {
+  const base = createInitialRuneMastery();
+  if (!isRecord(value)) {
+    return base;
+  }
+
+  const depthSrc = isRecord(value.depthBySchool)
+    ? value.depthBySchool
+    : {};
+  const minorSrc = isRecord(value.minorCountBySchool)
+    ? value.minorCountBySchool
+    : {};
+  const capSrc = isRecord(value.capacity) ? value.capacity : {};
+  const capMaxSrc = isRecord(value.capacityMax) ? value.capacityMax : {};
+
+  const depthBySchool = { ...base.depthBySchool };
+  const minorCountBySchool = { ...base.minorCountBySchool };
+
+  for (const s of RUNE_SCHOOLS) {
+    const d = (depthSrc as Record<string, unknown>)[s];
+    const m = (minorSrc as Record<string, unknown>)[s];
+    if (typeof m === "number") {
+      minorCountBySchool[s as RuneSchool] = clampInt(m, 0, 99);
+    }
+    if (typeof d === "number") {
+      depthBySchool[s as RuneSchool] = clampInt(d, 1, 7);
+    }
+  }
+
+  const capacity = {
+    blood:
+      typeof capSrc.blood === "number"
+        ? Math.max(0, capSrc.blood)
+        : base.capacity.blood,
+    frame:
+      typeof capSrc.frame === "number"
+        ? Math.max(0, capSrc.frame)
+        : base.capacity.frame,
+    resonance:
+      typeof capSrc.resonance === "number"
+        ? Math.max(0, capSrc.resonance)
+        : base.capacity.resonance,
+  };
+
+  const capacityMax = {
+    blood:
+      typeof capMaxSrc.blood === "number"
+        ? Math.max(0, capMaxSrc.blood)
+        : base.capacityMax.blood,
+    frame:
+      typeof capMaxSrc.frame === "number"
+        ? Math.max(0, capMaxSrc.frame)
+        : base.capacityMax.frame,
+    resonance:
+      typeof capMaxSrc.resonance === "number"
+        ? Math.max(0, capMaxSrc.resonance)
+        : base.capacityMax.resonance,
+  };
+
+  const hybridDrainStacks =
+    typeof value.hybridDrainStacks === "number" &&
+    Number.isFinite(value.hybridDrainStacks)
+      ? Math.max(0, Math.floor(value.hybridDrainStacks))
+      : base.hybridDrainStacks;
+
+  return normalizeRuneDepthFromMinors({
+    depthBySchool,
+    minorCountBySchool,
+    capacity,
+    capacityMax,
+    hybridDrainStacks,
+  });
 }
 
 function normalizeLatestHuntResult(value: unknown): LatestHuntResult | null {
@@ -189,6 +314,9 @@ function normalizeLatestHuntResult(value: unknown): LatestHuntResult | null {
   }
   if (typeof value.realtimeMobsKilled === "number") {
     result.realtimeMobsKilled = value.realtimeMobsKilled;
+  }
+  if (typeof value.realtimeExposedKills === "number") {
+    result.realtimeExposedKills = value.realtimeExposedKills;
   }
 
   const bossDefeatedCandidate = (value as Record<string, unknown>).bossDefeated;
@@ -382,11 +510,15 @@ function normalizeMissions(value: unknown): MissionDefinition[] {
       const category: MissionCategory =
         mission.category === "hunting-ground" ? "hunting-ground" : "operation";
       const path = mission.path === "spirit" ? "pure" : mission.path;
+      const deployZoneId = parseVoidZoneId(
+        (mission as Record<string, unknown>).deployZoneId,
+      );
 
       return {
         ...mission,
         path,
         category,
+        ...(deployZoneId ? { deployZoneId } : {}),
       };
     })
     .filter((mission): mission is MissionDefinition => mission !== null);
@@ -437,6 +569,13 @@ function normalizePlayer(value: unknown): PlayerState {
       raw.careerFocus === "crafting"
         ? raw.careerFocus
         : null,
+
+    fieldLoadoutProfile:
+      raw.fieldLoadoutProfile === "assault" ||
+      raw.fieldLoadoutProfile === "support" ||
+      raw.fieldLoadoutProfile === "breach"
+        ? raw.fieldLoadoutProfile
+        : initialGameState.player.fieldLoadoutProfile,
 
     condition:
       typeof raw.condition === "number"
@@ -600,6 +739,21 @@ function normalizePlayer(value: unknown): PlayerState {
       typeof raw.maxMissionQueueSlots === "number"
         ? raw.maxMissionQueueSlots
         : initialGameState.player.maxMissionQueueSlots,
+
+    runeMastery: normalizeRuneMastery(
+      (raw as Record<string, unknown>).runeMastery,
+    ),
+
+    ...normalizePlayerFactionWorldSlice(raw as PlayerState),
+
+    guild: normalizeGuildRoster((raw as Record<string, unknown>).guild),
+    guildContracts: normalizeGuildContracts(
+      (raw as Record<string, unknown>).guildContracts,
+    ),
+
+    mythicAscension: normalizeMythicAscension(
+      (raw as Record<string, unknown>).mythicAscension,
+    ),
   };
 }
 

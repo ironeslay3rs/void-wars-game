@@ -15,6 +15,10 @@ import type {
   PlayerState,
   ResourcesState,
 } from "@/features/game/gameTypes";
+import {
+  huntIntensityFromMissionRankReward,
+  withWorldProgressAfterHunt,
+} from "@/features/factions/factionWorldLogic";
 
 export function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
@@ -76,6 +80,12 @@ export function addPartialResources(
     emberCore: current.emberCore + (incoming.emberCore ?? 0),
     bioSamples: current.bioSamples + (incoming.bioSamples ?? 0),
     mossRations: current.mossRations + (incoming.mossRations ?? 0),
+    coilboundLattice:
+      current.coilboundLattice + (incoming.coilboundLattice ?? 0),
+    ashSynodRelic: current.ashSynodRelic + (incoming.ashSynodRelic ?? 0),
+    vaultLatticeShard:
+      current.vaultLatticeShard + (incoming.vaultLatticeShard ?? 0),
+    ironHeart: current.ironHeart + (incoming.ironHeart ?? 0),
   };
 }
 
@@ -506,7 +516,19 @@ export function processMissionQueue(state: GameState, now: number): GameState {
         realtimeTotalHitsLanded: 0,
         realtimeMobsContributedTo: 0,
         realtimeMobsKilled: 0,
+        realtimeExposedKills: 0,
       };
+
+      if (mission.deployZoneId) {
+        nextPlayer = withWorldProgressAfterHunt(nextPlayer, {
+          zoneId: mission.deployZoneId,
+          intensity: huntIntensityFromMissionRankReward(
+            rewardWithNextRunMods.rankXp,
+            rewardWithNextRunMods.influence ?? 0,
+          ),
+          reason: `Contract resolved — ${mission.title}`,
+        });
+      }
     }
   }
 

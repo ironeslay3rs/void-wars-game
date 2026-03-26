@@ -109,8 +109,8 @@ export function useVoidFieldCombatFeedback({
       const m = mobsRef.current.find((x) => x.mobEntityId === ev.mobEntityId);
       // If the mob isn't on-field anymore (or not yet spawned), don't render impacts.
       if (!m) continue;
-      const heavy =
-        !ev.isCrit && ev.damage >= HEAVY_DAMAGE_THRESHOLD;
+      const showDmg = ev.effectiveDamage ?? ev.damage;
+      const heavy = !ev.isCrit && showDmg >= HEAVY_DAMAGE_THRESHOLD;
       pulses.push({
         mobEntityId: ev.mobEntityId,
         ms: ev.isCrit || heavy ? MOB_HIT_PULSE_STRONG_MS : MOB_HIT_PULSE_MS,
@@ -130,8 +130,8 @@ export function useVoidFieldCombatFeedback({
         typeof selfDamageFloatMultiplier === "number" &&
         selfDamageFloatMultiplier !== 1;
       const shownDamage = boosted
-        ? Math.max(1, Math.round(ev.damage * selfDamageFloatMultiplier))
-        : ev.damage;
+        ? Math.max(1, Math.round(showDmg * selfDamageFloatMultiplier))
+        : showDmg;
       additions.push({
         id,
         xPct: m.x,

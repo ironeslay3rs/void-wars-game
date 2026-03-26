@@ -14,6 +14,8 @@ export type VoidFieldLootEntry = {
 export type VoidFieldLootTable = {
   normal: VoidFieldLootEntry[];
   bossBonus?: VoidFieldLootEntry[];
+  /** Boss-only named materials (phase 2); rolled only when `isBoss`. */
+  bossNamedMaterials?: VoidFieldLootEntry[];
 };
 
 export type VoidFieldLootProfileId =
@@ -97,6 +99,63 @@ const voidPureRare = ([
   { resource: "runeDust", weight: 45, min: 3, max: 5, rarity: "rare" },
 ] satisfies VoidFieldLootEntry[]).map(clampEntry);
 
+const bossNamedBio = (
+  [
+    {
+      resource: "coilboundLattice",
+      weight: 55,
+      min: 1,
+      max: 1,
+      rarity: "rare" as const,
+    },
+    {
+      resource: "ironHeart",
+      weight: 42,
+      min: 1,
+      max: 1,
+      rarity: "rare" as const,
+    },
+  ] satisfies VoidFieldLootEntry[]
+).map(clampEntry);
+
+const bossNamedMecha = (
+  [
+    {
+      resource: "ashSynodRelic",
+      weight: 55,
+      min: 1,
+      max: 1,
+      rarity: "rare" as const,
+    },
+    {
+      resource: "ironHeart",
+      weight: 42,
+      min: 1,
+      max: 1,
+      rarity: "rare" as const,
+    },
+  ] satisfies VoidFieldLootEntry[]
+).map(clampEntry);
+
+const bossNamedPure = (
+  [
+    {
+      resource: "vaultLatticeShard",
+      weight: 55,
+      min: 1,
+      max: 1,
+      rarity: "rare" as const,
+    },
+    {
+      resource: "ironHeart",
+      weight: 42,
+      min: 1,
+      max: 1,
+      rarity: "rare" as const,
+    },
+  ] satisfies VoidFieldLootEntry[]
+).map(clampEntry);
+
 export const voidFieldLootTablesByTheme: Record<
   VoidZoneLootTheme,
   VoidFieldLootTable
@@ -104,14 +163,17 @@ export const voidFieldLootTablesByTheme: Record<
   ash_mecha: {
     normal: [...ashMechaCommon, ...ashMechaUncommon, ...ashMechaRare],
     bossBonus: [...ashMechaUncommon, ...ashMechaRare],
+    bossNamedMaterials: bossNamedMecha,
   },
   bio_rot: {
     normal: [...bioRotCommon, ...bioRotUncommon, ...bioRotRare],
     bossBonus: [...bioRotUncommon, ...bioRotRare],
+    bossNamedMaterials: bossNamedBio,
   },
   void_pure: {
     normal: [...voidPureCommon, ...voidPureUncommon, ...voidPureRare],
     bossBonus: [...voidPureUncommon, ...voidPureRare],
+    bossNamedMaterials: bossNamedPure,
   },
 };
 

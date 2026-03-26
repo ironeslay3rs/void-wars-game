@@ -11,6 +11,7 @@ export const homeMenuData: HomeMenuItem[] = [
   { id: "mastery", label: "Mastery", href: "/mastery" },
   { id: "professions", label: "Professions", href: "/professions" },
   { id: "market", label: "Market", href: "/bazaar" },
+  { id: "loadout", label: "Loadout", href: "/loadout" },
   { id: "arena", label: "Arena", href: "/arena" },
   { id: "guild", label: "Guild", href: "/guild" },
   { id: "settings", label: "Settings", href: "/settings" },

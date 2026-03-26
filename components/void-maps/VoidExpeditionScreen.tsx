@@ -14,6 +14,10 @@ import {
   type VoidZoneId,
 } from "@/features/void-maps/zoneData";
 import { voidFieldSearch } from "@/features/void-maps/voidRoutes";
+import {
+  getZoneMasteryGateFailureLines,
+  playerMeetsAllZoneMasteryGates,
+} from "@/features/mastery/runeMasteryGates";
 
 const DEFAULT_DEPLOY_HG_MISSION_ID = "hg-rustfang-prowl";
 
@@ -59,6 +63,7 @@ function VoidExpeditionScreenInner() {
   const selected = voidZoneById[selectedZoneId];
   const playerCondition = state.player.condition;
   const isUnlocked = state.player.rankLevel >= selected.threatLevel;
+  const masteryGatesOk = playerMeetsAllZoneMasteryGates(state.player, selected);
   const isRecommended = playerCondition >= selected.recommendedCondition;
   const mastery = state.player.zoneMastery[selectedZoneId] ?? 0;
 
@@ -79,7 +84,7 @@ function VoidExpeditionScreenInner() {
   );
 
   function handleDeployThisZone() {
-    if (!isUnlocked || isQueueFull || activeHunt) return;
+    if (!isUnlocked || !masteryGatesOk || isQueueFull || activeHunt) return;
 
     const SESSION_BUCKET_MS = 2 * 60 * 1000;
     const sessionBucketId = Math.floor(Date.now() / SESSION_BUCKET_MS);
@@ -117,10 +122,21 @@ function VoidExpeditionScreenInner() {
     );
   }
 
-  const deployDisabled = !isUnlocked || isQueueFull || !!activeHunt;
+  const deployDisabled =
+    !isUnlocked || !masteryGatesOk || isQueueFull || !!activeHunt;
+
+  const masteryGateFailures = getZoneMasteryGateFailureLines(
+    state.player,
+    selected,
+  );
 
   const deployHint = !isUnlocked ? (
     <span>Raise rank to unlock this realm.</span>
+  ) : !masteryGatesOk && masteryGateFailures.length > 0 ? (
+    <span>
+      {masteryGateFailures.join(" ")} Open Career or Mastery to deepen runes,
+      then return.
+    </span>
   ) : isQueueFull ? (
     <>
       Mission queue full —{" "}

@@ -68,12 +68,13 @@ These are the systems that should define the shippable foundation.
   - Keep discoverable in the bazaar and navigation shell.
   - Allow only placeholder status or tightly limited test access if needed for UI continuity.
 - **Guild**
-  - Keep visible as a known system, but do not build membership, roster, or cooperative governance into Book 1.
+  - Allowed in the current build plan: implement the M7 social layer (guild roster, shared contracts, faction participation).
+  - Scope note: prefer local-first (save) scaffolding before server authority, unless infrastructure is explicitly scheduled.
 
 ### 3) Do not touch yet
 - Full profession specialization trees.
 - Career branch lock-ins and respec rules.
-- Guild governance, member management, or social dependency.
+- Guild governance, member management, or social dependency (unless explicitly required by the M7 milestone slice).
 - Ranked or seasonal arena structures.
 - Multi-route world travel or expedition map depth.
 

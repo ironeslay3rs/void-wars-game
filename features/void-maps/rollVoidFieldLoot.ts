@@ -141,6 +141,19 @@ export function rollVoidFieldLoot(params: {
     if (r2) out.push(r2);
   }
 
+  const named = table.bossNamedMaterials;
+  if (named && named.length > 0 && rng.next01() < 0.38) {
+    const n = pickWeighted(rng, named);
+    const amt = rng.nextInt(n.min, n.max);
+    if (amt > 0) {
+      out.push({
+        resource: n.resource,
+        amount: amt,
+        rarity: n.rarity,
+      });
+    }
+  }
+
   return mergeLoot(out);
 }
 

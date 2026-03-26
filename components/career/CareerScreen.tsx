@@ -1,6 +1,9 @@
+"use client";
+
 import ScreenHeader from "@/components/shared/ScreenHeader";
 import SectionCard from "@/components/shared/SectionCard";
 import PlaceholderPanel from "@/components/shared/PlaceholderPanel";
+import MasteryDepthPanel from "@/components/career/MasteryDepthPanel";
 import { careerScreenData } from "@/features/career/careerScreenData";
 
 export default function CareerScreen() {
@@ -12,6 +15,8 @@ export default function CareerScreen() {
           title={careerScreenData.title}
           subtitle={careerScreenData.subtitle}
         />
+
+        <MasteryDepthPanel />
 
         <div className="grid gap-6 md:grid-cols-3">
           {careerScreenData.cards.map((card) => (

@@ -28,7 +28,7 @@ Void Wars: Oblivion is a survival-first, war-scarred dark RPG where players depl
 
 \## Current Phase
 
-M2 - Loop Expansion (Black Market Depth + Progression Clarity)
+M1–M7 Full Implementation Track (Loop → Combat Texture → War Layer → Mythic Progression → Social Layer)
 
 
 
@@ -52,19 +52,11 @@ M2 - Loop Expansion (Black Market Depth + Progression Clarity)
 
 
 
-\## Forbidden In M1
+\## M1–M7 Scope Policy (explicitly allowed)
 
-\- skill trees
-
-\- guild/clans
-
-\- broad economy expansion
-
-\- large PvP systems
-
-\- backend redesign
-
-\- unrelated UI polish before loop stability
+\- Skill trees, guilds/clans, war-layer, and late-game progression are allowed **when they are implemented as milestone slices** (M1→M7) with bounded scope and validation.
+\- Multiplayer / server-authoritative social is allowed only when explicitly scheduled (M7), and must still preserve loop stability and save integrity.
+\- Economy work is allowed when it supports a milestone’s playable loop and has clear sinks/sources (avoid “broad redesign” without a migration plan).
 
 \## M2 Focus
 
@@ -73,11 +65,12 @@ M2 - Loop Expansion (Black Market Depth + Progression Clarity)
 \- Verify character portrait UI everywhere (hub/HUD consistency)
 \- Keep scope bounded; preserve loop stability (no unrelated UX panels)
 
-\## Forbidden In M2
+\## M2 (still a priority, not a restriction)
 
-\- new backend systems or economy redesign
-\- unrelated UI panels dominating the loop
-\- skill trees / guild systems / PvP expansion
+\- First Black Market depth slice: Crafting District utility (Moss Binder, Refinery Bay, Rune Crafter output)
+\- Reinforce progression/crafting priority: survival buffers first, then stabilizing wards
+\- Verify character portrait UI everywhere (hub/HUD consistency)
+\- Keep scope bounded; preserve loop stability (no unrelated UX panels)
 
 
 

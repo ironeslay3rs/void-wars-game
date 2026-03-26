@@ -1,4 +1,9 @@
-import type { FactionAlignment, ResourcesState } from "@/features/game/gameTypes";
+import type {
+  FactionAlignment,
+  FieldLoadoutProfile,
+  ResourcesState,
+} from "@/features/game/gameTypes";
+import type { RuneSchool } from "@/features/mastery/runeMasteryTypes";
 import type { VoidZoneId } from "@/features/void-maps/zoneData";
 
 export type VoidRealtimeClientId = string;
@@ -13,6 +18,9 @@ export type PlayerPresence = {
   rankLevel: number;
   condition: number;
   zoneMasteryForZone: number;
+  fieldLoadoutProfile?: FieldLoadoutProfile;
+  runeDepthBySchool?: Partial<Record<RuneSchool, number>>;
+  runeMinorsBySchool?: Partial<Record<RuneSchool, number>>;
 };
 
 export type MobEntity = {
@@ -33,6 +41,22 @@ export type MobEntity = {
   // Client-enriched after mob_defeated; not sent by server.
   isBoss?: boolean;
   lootProfileId?: string;
+
+  /**
+   * M4 combat texture: posture/expose/archetype — shell drills + void WS mobs.
+   */
+  shellArchetype?: "skirmisher" | "bulwark" | "volatile" | "apex";
+  /** Current posture 0..shellPostureMax */
+  shellPosture?: number;
+  shellPostureMax?: number;
+  /** Hits remaining that deal expose damage (after posture breaks). */
+  shellExposedHitsRemaining?: number;
+  /** Short HUD tag: SKIRM · ARMOR · VOL · APEX */
+  shellTag?: string;
+  /** Pure shallow passive: next strike +10% after posture break. */
+  shellPurePulseNext?: boolean;
+  /** Any expose-window hit landed — hunt contribution may score exposed kills. */
+  shellKillCreditExposed?: boolean;
 };
 
 /* =========================
@@ -48,6 +72,9 @@ export type JoinSessionMessage = {
   rankLevel: number;
   condition: number;
   zoneMasteryForZone: number;
+  fieldLoadoutProfile?: FieldLoadoutProfile;
+  runeDepthBySchool?: Partial<Record<RuneSchool, number>>;
+  runeMinorsBySchool?: Partial<Record<RuneSchool, number>>;
 };
 
 export type MoveInputMessage = {
@@ -100,6 +127,15 @@ export type MobHpUpdatedMessage = {
   mobEntityId: string;
   hp: number;
   maxHp: number;
+  /** M4 shell layer — present together when mob uses posture/expose. */
+  shellArchetype?: MobEntity["shellArchetype"];
+  shellPosture?: number;
+  shellPostureMax?: number;
+  /** 0 = not exposed (clears client strike window UI). */
+  shellExposedHitsRemaining?: number;
+  shellTag?: string;
+  shellPurePulseNext?: boolean;
+  shellKillCreditExposed?: boolean;
 };
 
 export type CombatEventMessage = {
@@ -107,6 +143,8 @@ export type CombatEventMessage = {
   mobEntityId: string;
   attackerClientId: VoidRealtimeClientId;
   damage: number;
+  /** HP loss after posture/expose mitigation (M4); omit = same as damage. */
+  effectiveDamage?: number;
   isCrit: boolean;
   ts: number;
 };
@@ -133,6 +171,8 @@ export type HuntContributionPerPlayer = {
   totalHits: number;
   mobsContributedTo: number;
   mobsKilled: number;
+  /** M4: kills that had at least one expose-window hit (risk–reward scorer). */
+  exposedKills?: number;
   bonusMultiplier: number;
   bossDefeated: boolean;
   bossDropResourcesBase: Partial<ResourcesState>;

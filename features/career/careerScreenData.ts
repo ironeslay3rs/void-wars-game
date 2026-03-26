@@ -22,38 +22,36 @@ export const careerScreenData: CareerScreenData = {
   eyebrow: "Void Wars / Career Protocol",
   title: "Career Systems",
   subtitle:
-    "Define long-term role identity, specialization direction, and class progression across Bio, Mecha, and Pure paths.",
+    "Role identity and Sevenfold mastery on this page; set portrait and career focus on Character — focus drives light field and crafting modifiers.",
 
   cards: [
     {
-      label: "Tracks",
+      label: "Schools",
       value: "03",
-      hint: "Bio / Mecha / Pure foundations",
+      hint: "Bio, Mecha, Pure — same rails as /mastery.",
     },
     {
-      label: "Branches",
-      value: "12",
-      hint: "Future specialization routes",
+      label: "Sevenfold",
+      value: "L7",
+      hint: "Per-school depth + minors; Executional L2 at three minors in one school.",
     },
     {
-      label: "Status",
-      value: "Alpha",
-      hint: "First-pass progression shell",
+      label: "Career focus",
+      value: "Live",
+      hint: "Combat / Gathering / Crafting — field and Crafting District bonuses.",
     },
   ],
 
   sections: [
     {
-      title: "Career Tracks",
-      description:
-        "Reserved for long-term identity choices and specialization branches.",
-      body: "Reserved for role paths, branching commitments, and future class development.",
+      title: "Character & focus",
+      description: "Portrait and career focus live on the Character screen.",
+      body: "Career focus drives shell drill damage, field pickup amounts, and discounted district craft costs. Faction alignment sets primary path for hybrid rune taxes.",
     },
     {
-      title: "Progress Outlook",
-      description:
-        "Forward view of how your role path could evolve over time.",
-      body: "Reserved for synergy forecasting, class milestones, and role unlocks.",
+      title: "Mastery tree",
+      description: "Shared with the Mastery home-menu route.",
+      body: "Install minors, read capacity pools, and deepen runes here or on /mastery. Zone deploy and some recipes check deepest-school depth.",
     },
   ],
 };

@@ -20,6 +20,8 @@ export default function VoidFieldHud({
   feastHallLockoutChip = null,
   nextRunChip = null,
   bossChip = null,
+  combatHudLine = null,
+  encounterBrief = null,
 }: {
   className?: string;
   zoneLabel: string;
@@ -41,6 +43,10 @@ export default function VoidFieldHud({
   nextRunChip?: string | null;
   /** Optional cue for local-only roaming boss state (shell mode). */
   bossChip?: string | null;
+  /** Loadout + school strike identity (shell combat). */
+  combatHudLine?: string | null;
+  /** M4: notable local encounter (e.g. Hollowfang apex on Howling Scar). */
+  encounterBrief?: string | null;
 }) {
   return (
     <header
@@ -91,6 +97,16 @@ export default function VoidFieldHud({
           {bossChip ? (
             <span className="rounded-full border border-rose-400/25 bg-rose-950/35 px-2.5 py-1 text-rose-100">
               {bossChip}
+            </span>
+          ) : null}
+          {combatHudLine ? (
+            <span className="rounded-full border border-emerald-400/30 bg-emerald-950/35 px-2.5 py-1 text-emerald-100">
+              {combatHudLine}
+            </span>
+          ) : null}
+          {encounterBrief ? (
+            <span className="rounded-full border border-orange-400/35 bg-orange-950/35 px-2.5 py-1 text-orange-100">
+              {encounterBrief}
             </span>
           ) : null}
           {!connected ? (

@@ -172,12 +172,12 @@ export default function FeastHallScreen({
 
             <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
               <div className="text-[11px] uppercase tracking-[0.22em] text-white/50">
-                Peru / Pure
+                Pure / Ember Vault
               </div>
               <p className="mt-2 text-sm leading-6 text-white/72">
-                The lane draws from the Mouth of Inti and Pure ritual excess,
+                The lane draws from the Mouth of Inti and Pure rite-pressure,
                 but sells survival first: eat now, endure longer, pay in credits
-                or salvage.
+                or salvage—then go back to work.
               </p>
             </div>
 

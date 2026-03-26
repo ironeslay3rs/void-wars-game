@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Hammer,
   Package,
@@ -18,7 +18,50 @@ import {
   RUNE_CRAFTER_STABILIZATION_SIGIL_BONUS,
   RUNE_CRAFTER_STABILIZATION_SIGIL_COST,
 } from "@/features/status/statusRecovery";
+import {
+  CRAFT_GATE_VOID_EXTRACT,
+  getRecipeRuneRequirementHint,
+  meetsRecipeRuneDepth,
+} from "@/features/mastery/runeMasteryRecipeGates";
 import { MOSS_RATION_RECIPE_COST } from "@/features/status/survival";
+import type { ResourceKey } from "@/features/game/gameTypes";
+import { formatCareerFocusCraftingHint } from "@/features/player/careerFocusModifiers";
+import {
+  formatCraftingProfessionHint,
+  getCraftingProfessionTier,
+  getDistrictCraftingCost,
+} from "@/features/crafting-district/craftingProfession";
+
+type BossRelicKey = "coil" | "ash" | "vault";
+
+const BOSS_RELIC_REFINES: Record<
+  BossRelicKey,
+  {
+    title: string;
+    blurb: string;
+    cost: Partial<Record<ResourceKey, number>>;
+    grant: Partial<Record<ResourceKey, number>>;
+  }
+> = {
+  coil: {
+    title: "Coilbound distill",
+    blurb: "Liquefy a Verdant boss lattice into biomass and dust.",
+    cost: { credits: 15, coilboundLattice: 1 },
+    grant: { bioSamples: 5, runeDust: 3 },
+  },
+  ash: {
+    title: "Synod break‑down",
+    blurb: "Strip an Ash Synod relic into alloy and dust.",
+    cost: { credits: 15, ashSynodRelic: 1 },
+    grant: { scrapAlloy: 6, runeDust: 2 },
+  },
+  vault: {
+    title: "Vault fuse",
+    blurb: "Stabilize a Pure lattice shard into cores and dust.",
+    cost: { credits: 15, vaultLatticeShard: 1 },
+    grant: { emberCore: 2, runeDust: 5 },
+  },
+};
 
 const craftingStations = [
   {
@@ -54,6 +97,7 @@ export default function CraftingDistrictPage() {
   const [refineResult, setRefineResult] = useState<string | null>(null);
   const [sigilResult, setSigilResult] = useState<string | null>(null);
   const [rationResult, setRationResult] = useState<string | null>(null);
+  const [bossRelicResult, setBossRelicResult] = useState<string | null>(null);
 
   const { ironOre, scrapAlloy, runeDust, emberCore, bioSamples, mossRations } =
     state.player.resources;
@@ -61,15 +105,50 @@ export default function CraftingDistrictPage() {
   const stabilizationSigilCrafted = hasStabilizationSigil(
     state.player.knownRecipes,
   );
+  const sigilRuneOk = meetsRecipeRuneDepth(
+    state.player,
+    RUNE_CRAFTER_STABILIZATION_SIGIL,
+  );
+
+  const mossRecipeCost = useMemo(
+    () => getDistrictCraftingCost(state.player, MOSS_RATION_RECIPE_COST),
+    [state.player],
+  );
+  const needMossBio =
+    mossRecipeCost.bioSamples ?? MOSS_RATION_RECIPE_COST.bioSamples;
+  const needMossDust =
+    mossRecipeCost.runeDust ?? MOSS_RATION_RECIPE_COST.runeDust;
+
+  const sigilCost = useMemo(
+    () =>
+      getDistrictCraftingCost(state.player, {
+        credits: RUNE_CRAFTER_STABILIZATION_SIGIL_COST.credits,
+        runeDust: RUNE_CRAFTER_STABILIZATION_SIGIL_COST.runeDust,
+        emberCore: RUNE_CRAFTER_STABILIZATION_SIGIL_COST.emberCore,
+      }),
+    [state.player],
+  );
+  const needSigilCredits =
+    sigilCost.credits ?? RUNE_CRAFTER_STABILIZATION_SIGIL_COST.credits;
+  const needSigilDust =
+    sigilCost.runeDust ?? RUNE_CRAFTER_STABILIZATION_SIGIL_COST.runeDust;
+  const needSigilEmber =
+    sigilCost.emberCore ?? RUNE_CRAFTER_STABILIZATION_SIGIL_COST.emberCore;
+
   const canCraftStabilizationSigil =
     !stabilizationSigilCrafted &&
-    state.player.resources.credits >=
-      RUNE_CRAFTER_STABILIZATION_SIGIL_COST.credits &&
-    runeDust >= RUNE_CRAFTER_STABILIZATION_SIGIL_COST.runeDust &&
-    emberCore >= RUNE_CRAFTER_STABILIZATION_SIGIL_COST.emberCore;
+    sigilRuneOk &&
+    state.player.resources.credits >= needSigilCredits &&
+    runeDust >= needSigilDust &&
+    emberCore >= needSigilEmber;
   const canCraftMossRation =
-    bioSamples >= MOSS_RATION_RECIPE_COST.bioSamples &&
-    runeDust >= MOSS_RATION_RECIPE_COST.runeDust;
+    bioSamples >= needMossBio && runeDust >= needMossDust;
+
+  const careerCraftingHint = formatCareerFocusCraftingHint(
+    state.player.careerFocus,
+  );
+  const craftingProfessionHint = formatCraftingProfessionHint(state.player);
+  const craftingProfessionTier = getCraftingProfessionTier(state.player);
 
   function refineScrapAlloy() {
     if (!canRefineScrapAlloy) {
@@ -96,9 +175,17 @@ export default function CraftingDistrictPage() {
       return;
     }
 
+    if (!sigilRuneOk) {
+      setSigilResult(
+        getRecipeRuneRequirementHint(RUNE_CRAFTER_STABILIZATION_SIGIL) ??
+          "Rune depth too shallow for this inscription.",
+      );
+      return;
+    }
+
     if (!canCraftStabilizationSigil) {
       setSigilResult(
-        `Need ${RUNE_CRAFTER_STABILIZATION_SIGIL_COST.credits} Credits, ${RUNE_CRAFTER_STABILIZATION_SIGIL_COST.runeDust} Rune Dust, and ${RUNE_CRAFTER_STABILIZATION_SIGIL_COST.emberCore} Ember Core.`,
+        `Need ${needSigilCredits} Credits, ${needSigilDust} Rune Dust, and ${needSigilEmber} Ember Core.`,
       );
       return;
     }
@@ -107,21 +194,21 @@ export default function CraftingDistrictPage() {
       type: "SPEND_RESOURCE",
       payload: {
         key: "credits",
-        amount: RUNE_CRAFTER_STABILIZATION_SIGIL_COST.credits,
+        amount: needSigilCredits,
       },
     });
     dispatch({
       type: "SPEND_RESOURCE",
       payload: {
         key: "runeDust",
-        amount: RUNE_CRAFTER_STABILIZATION_SIGIL_COST.runeDust,
+        amount: needSigilDust,
       },
     });
     dispatch({
       type: "SPEND_RESOURCE",
       payload: {
         key: "emberCore",
-        amount: RUNE_CRAFTER_STABILIZATION_SIGIL_COST.emberCore,
+        amount: needSigilEmber,
       },
     });
     dispatch({
@@ -136,7 +223,7 @@ export default function CraftingDistrictPage() {
   function craftMossRation() {
     if (!canCraftMossRation) {
       setRationResult(
-        `Need ${MOSS_RATION_RECIPE_COST.bioSamples} biomass samples and ${MOSS_RATION_RECIPE_COST.runeDust} Rune Dust to bind 1 Moss Ration.`,
+        `Need ${needMossBio} biomass samples and ${needMossDust} Rune Dust to bind 1 Moss Ration.`,
       );
       return;
     }
@@ -145,9 +232,54 @@ export default function CraftingDistrictPage() {
     setRationResult("Binding complete. 1 Moss Ration sealed for survival use.");
   }
 
-  function craftNextRunModifier(modifierId: (typeof nextRunModifierDefinitions)[number]["id"]) {
+  function refineBossRelic(recipeKey: BossRelicKey) {
+    const recipe = BOSS_RELIC_REFINES[recipeKey];
+    const cost = getDistrictCraftingCost(state.player, recipe.cost);
+    const spendLines = Object.entries(cost).filter(
+      (e): e is [ResourceKey, number] =>
+        typeof e[1] === "number" && e[1] > 0,
+    );
+    const affordable = spendLines.every(
+      ([key, amount]) => state.player.resources[key] >= amount,
+    );
+    if (!affordable) {
+      setBossRelicResult("Insufficient materials for this refinement.");
+      return;
+    }
+    for (const [key, amount] of spendLines) {
+      dispatch({
+        type: "SPEND_RESOURCE",
+        payload: { key, amount },
+      });
+    }
+    for (const [key, amount] of Object.entries(recipe.grant)) {
+      if (typeof amount === "number" && amount > 0) {
+        dispatch({
+          type: "ADD_RESOURCE",
+          payload: { key: key as ResourceKey, amount },
+        });
+      }
+    }
+    setBossRelicResult(`${recipe.title} complete. Salvage routed to stock.`);
+  }
+
+  function craftNextRunModifier(
+    modifierId: (typeof nextRunModifierDefinitions)[number]["id"],
+  ) {
+    if (
+      modifierId === "void-extract" &&
+      !meetsRecipeRuneDepth(state.player, CRAFT_GATE_VOID_EXTRACT)
+    ) {
+      setRationResult(
+        getRecipeRuneRequirementHint(CRAFT_GATE_VOID_EXTRACT) ??
+          "Rune depth too shallow for Void Extract.",
+      );
+      return;
+    }
     dispatch({ type: "CRAFT_NEXT_RUN_MODIFIER", payload: { modifierId } });
-    setRationResult("Kit primed. Next run will apply the modifier once, then clear.");
+    setRationResult(
+      "Kit primed. Next run will apply the modifier once, then clear.",
+    );
   }
 
   return (
@@ -165,6 +297,18 @@ export default function CraftingDistrictPage() {
               A utility stop inside the current loop. Bring back salvage, bind
               one practical survival item, then return to recovery pressure,
               contracts, or the field.
+            </p>
+            {careerCraftingHint ? (
+              <p className="mt-3 max-w-2xl rounded-xl border border-cyan-400/25 bg-cyan-950/35 px-4 py-3 text-sm text-cyan-100/90">
+                {careerCraftingHint}
+              </p>
+            ) : null}
+            <p className="mt-3 max-w-2xl rounded-xl border border-orange-400/25 bg-orange-950/25 px-4 py-3 text-sm text-orange-100/90">
+              <span className="font-bold text-orange-200/95">
+                Profession tier {craftingProfessionTier}
+              </span>
+              {" — "}
+              {craftingProfessionHint}
             </p>
           </div>
         </div>
@@ -259,7 +403,8 @@ export default function CraftingDistrictPage() {
                   Convert recovered biomass into one immediate survival buffer.
                 </div>
                 <div className="mt-2 text-sm text-white/65">
-                  Current utility proof: bind {MOSS_RATION_RECIPE_COST.bioSamples} Bio Samples and {MOSS_RATION_RECIPE_COST.runeDust} Rune Dust into 1 Moss Ration.
+                  Current utility proof: bind {needMossBio} Bio Samples and{" "}
+                  {needMossDust} Rune Dust into 1 Moss Ration.
                 </div>
                 <div className="mt-3 rounded-xl border border-cyan-400/20 bg-cyan-400/8 px-4 py-3 text-sm text-cyan-50/88">
                   Next Step: bind a ration when hunger is becoming the next blocker, then return to Feast Hall, contracts, or the field.
@@ -273,7 +418,8 @@ export default function CraftingDistrictPage() {
                 >
                   Bind Moss Ration
                   <div className="mt-1 text-xs text-white/60">
-                    Costs {MOSS_RATION_RECIPE_COST.bioSamples} Bio Samples + {MOSS_RATION_RECIPE_COST.runeDust} Rune Dust / Produces 1 Moss Ration
+                    Costs {needMossBio} Bio Samples + {needMossDust} Rune Dust /
+                    Produces 1 Moss Ration
                   </div>
                 </button>
 
@@ -321,6 +467,76 @@ export default function CraftingDistrictPage() {
             </div>
 
             <div className="rounded-2xl border border-white/10 bg-black/25 p-6">
+              <div className="text-[11px] uppercase tracking-[0.22em] text-violet-300/70">
+                Boss relic refinement
+              </div>
+              <h2 className="mt-2 text-xl font-black uppercase">
+                Phase‑2 mat sinks
+              </h2>
+              <p className="mt-2 text-sm text-white/65">
+                Void boss pulls only. Break them down when you need working
+                stock—not hoard dead weight.
+              </p>
+              <div className="mt-4 grid gap-3">
+                {(
+                  Object.keys(BOSS_RELIC_REFINES) as BossRelicKey[]
+                ).map((key) => {
+                  const recipe = BOSS_RELIC_REFINES[key];
+                  const cost = getDistrictCraftingCost(state.player, recipe.cost);
+                  const lines = Object.entries(cost).filter(
+                    (e): e is [ResourceKey, number] =>
+                      typeof e[1] === "number" && e[1] > 0,
+                  );
+                  const canAffordBoss = lines.every(
+                    ([k, amt]) => state.player.resources[k] >= amt,
+                  );
+                  return (
+                    <div
+                      key={key}
+                      className="rounded-xl border border-violet-400/20 bg-violet-950/20 p-4"
+                    >
+                      <div className="text-sm font-semibold text-white">
+                        {recipe.title}
+                      </div>
+                      <p className="mt-1 text-xs text-white/55">{recipe.blurb}</p>
+                      <div className="mt-2 text-xs text-white/70">
+                        <span className="font-semibold text-white/90">
+                          Pay:
+                        </span>{" "}
+                        {lines.map(([k, v]) => `${v} ${k}`).join(" · ")}
+                      </div>
+                      <div className="mt-1 text-xs text-white/70">
+                        <span className="font-semibold text-white/90">
+                          Receive:
+                        </span>{" "}
+                        {Object.entries(recipe.grant)
+                          .filter(
+                            (e): e is [string, number] =>
+                              typeof e[1] === "number",
+                          )
+                          .map(([k, v]) => `${v} ${k}`)
+                          .join(" · ")}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => refineBossRelic(key)}
+                        disabled={!canAffordBoss}
+                        className="mt-3 w-full rounded-xl border border-violet-400/35 bg-violet-600/15 px-4 py-3 text-left text-sm font-semibold text-violet-100 transition hover:bg-violet-600/22 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        Refine
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+              {bossRelicResult ? (
+                <div className="mt-3 rounded-xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white/80">
+                  {bossRelicResult}
+                </div>
+              ) : null}
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-black/25 p-6">
               <div className="text-[11px] uppercase tracking-[0.22em] text-cyan-300/70">
                 Next Run Modifiers
               </div>
@@ -332,13 +548,26 @@ export default function CraftingDistrictPage() {
               </p>
               <div className="mt-4 grid gap-3">
                 {nextRunModifierDefinitions.map((def) => {
-                  const costEntries = Object.entries(def.cost).filter(
-                    (e): e is [string, number] => typeof e[1] === "number",
+                  const effectiveCost = getDistrictCraftingCost(
+                    state.player,
+                    def.cost,
                   );
-                  const canAfford = costEntries.every(([key, amount]) => {
-                    const resourceKey = key as keyof typeof state.player.resources;
-                    return (state.player.resources[resourceKey] ?? 0) >= amount;
-                  });
+                  const costEntries = Object.entries(effectiveCost).filter(
+                    (e): e is [ResourceKey, number] =>
+                      typeof e[1] === "number",
+                  );
+                  const voidExtractRuneOk =
+                    def.id !== "void-extract" ||
+                    meetsRecipeRuneDepth(state.player, CRAFT_GATE_VOID_EXTRACT);
+                  const canAfford =
+                    voidExtractRuneOk &&
+                    costEntries.every(([key, amount]) => {
+                      const resourceKey =
+                        key as keyof typeof state.player.resources;
+                      return (
+                        (state.player.resources[resourceKey] ?? 0) >= amount
+                      );
+                    });
 
                   return (
                     <div
@@ -364,9 +593,7 @@ export default function CraftingDistrictPage() {
                       <div className="mt-3 grid gap-2 text-xs text-white/70">
                         <div>
                           <span className="font-semibold text-white">Cost:</span>{" "}
-                          {costEntries
-                            .map(([k, v]) => `${v} ${k}`)
-                            .join(" · ")}
+                          {costEntries.map(([k, v]) => `${v} ${k}`).join(" · ")}
                         </div>
                         <div>
                           <span className="font-semibold text-white">
@@ -375,6 +602,12 @@ export default function CraftingDistrictPage() {
                           {def.modifiers.nextRunEffect}
                         </div>
                       </div>
+
+                      {def.id === "void-extract" && !voidExtractRuneOk ? (
+                        <div className="mt-3 rounded-xl border border-violet-400/25 bg-violet-950/40 px-4 py-3 text-xs text-violet-100/90">
+                          {getRecipeRuneRequirementHint(CRAFT_GATE_VOID_EXTRACT)}
+                        </div>
+                      ) : null}
 
                       <button
                         type="button"
@@ -412,6 +645,12 @@ export default function CraftingDistrictPage() {
                   Use this after the basic loop already makes sense. Moss Binder is still the clearest first-session utility action.
                 </div>
 
+                {!stabilizationSigilCrafted && !sigilRuneOk ? (
+                  <div className="mt-3 rounded-xl border border-violet-400/25 bg-violet-950/40 px-4 py-3 text-sm text-violet-100/85">
+                    {getRecipeRuneRequirementHint(RUNE_CRAFTER_STABILIZATION_SIGIL)}
+                  </div>
+                ) : null}
+
                 <button
                   type="button"
                   onClick={craftStabilizationSigil}
@@ -422,9 +661,8 @@ export default function CraftingDistrictPage() {
                     ? "Stabilization Sigil Inscribed"
                     : "Craft Stabilization Sigil"}
                   <div className="mt-1 text-xs text-white/60">
-                    Costs {RUNE_CRAFTER_STABILIZATION_SIGIL_COST.credits} Credits /{" "}
-                    {RUNE_CRAFTER_STABILIZATION_SIGIL_COST.runeDust} Rune Dust /{" "}
-                    {RUNE_CRAFTER_STABILIZATION_SIGIL_COST.emberCore} Ember Core
+                    Costs {needSigilCredits} Credits / {needSigilDust} Rune Dust /{" "}
+                    {needSigilEmber} Ember Core
                   </div>
                 </button>
 

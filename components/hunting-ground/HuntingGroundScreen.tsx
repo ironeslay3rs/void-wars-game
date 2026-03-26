@@ -90,6 +90,12 @@ function formatRewardLabel(key: string) {
       return "Bio Samples";
     case "mossRations":
       return "Moss Rations";
+    case "coilboundLattice":
+      return "Coilbound Lattice";
+    case "ashSynodRelic":
+      return "Ash Synod Relic";
+    case "vaultLatticeShard":
+      return "Vault Lattice Shard";
     default:
       return key;
   }

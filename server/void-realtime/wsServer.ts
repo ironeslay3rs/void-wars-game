@@ -1,5 +1,8 @@
 import { WebSocket, WebSocketServer } from "ws";
 import { buildSpawnEncounter } from "../../features/void-maps/spawnSim";
+import { enrichRealtimeMobWithM4Traits } from "../../features/void-maps/realtimeMobTraits";
+import { resolveShellHitWithSnapshot } from "../../features/combat/shellHitResolution";
+import { strikeSnapshotFromPresence } from "../../features/combat/strikeSnapshot";
 import { voidZoneById, type VoidZoneId } from "../../features/void-maps/zoneData";
 import type {
   FactionAlignment,
@@ -27,6 +30,7 @@ type PlayerContributionLedger = {
   totalHits: number;
   mobsContributedTo: number;
   mobsKilled: number;
+  exposedKills: number;
   damagedMobs: Set<string>;
   killedMobs: Set<string>;
   bossDefeated: boolean;
@@ -284,7 +288,7 @@ function createSession(zoneId: VoidZoneId, sessionBucketId: number): VoidSession
       const maxHp = baseHp * encounter.packSize;
       const mobEntityId = `mob-${session.zoneId}-${session.waveIndex}-${now2}`;
 
-      const mob: MobEntity = {
+      let mob: MobEntity = {
         mobEntityId,
         zoneId: session.zoneId,
         waveIndex: session.waveIndex,
@@ -297,6 +301,13 @@ function createSession(zoneId: VoidZoneId, sessionBucketId: number): VoidSession
         x,
         y,
       };
+
+      mob = enrichRealtimeMobWithM4Traits({
+        mob,
+        zoneId: session.zoneId,
+        waveIndex: session.waveIndex,
+        isBoss: shouldSpawnBossWithMastery,
+      });
 
       session.mobs = [mob, ...session.mobs].slice(0, MOB_LIMIT);
 
@@ -328,12 +339,13 @@ function broadcastSession(session: VoidSession, msg: ServerToClientMessage) {
 }
 
 function computeContributionScore(ledger: PlayerContributionLedger) {
-  // MVP weights: prioritize damage, then landed hits, then kills.
+  // MVP weights: damage, hits, map presence, kills, exposed-window kills (M4).
   return (
     ledger.totalDamage +
     ledger.totalHits * 8 +
     ledger.mobsContributedTo * 10 +
-    ledger.mobsKilled * 40
+    ledger.mobsKilled * 40 +
+    ledger.exposedKills * 32
   );
 }
 
@@ -439,6 +451,9 @@ wss.on("connection", (ws) => {
         rankLevel: join.rankLevel,
         condition: join.condition,
         zoneMasteryForZone: join.zoneMasteryForZone,
+        fieldLoadoutProfile: join.fieldLoadoutProfile,
+        runeDepthBySchool: join.runeDepthBySchool,
+        runeMinorsBySchool: join.runeMinorsBySchool,
       };
 
       session.players.set(join.clientId, next);
@@ -448,6 +463,7 @@ wss.on("connection", (ws) => {
           totalHits: 0,
           mobsContributedTo: 0,
           mobsKilled: 0,
+          exposedKills: 0,
           damagedMobs: new Set(),
           killedMobs: new Set(),
           bossDefeated: false,
@@ -532,8 +548,11 @@ wss.on("connection", (ws) => {
       const player = joinedSession.players.get(attack.clientId);
       if (!player) return;
 
-      const mob = joinedSession.mobs.find((m) => m.mobEntityId === attack.mobEntityId);
-      if (!mob) return;
+      const mobIndex = joinedSession.mobs.findIndex(
+        (m) => m.mobEntityId === attack.mobEntityId,
+      );
+      if (mobIndex < 0) return;
+      const mob = joinedSession.mobs[mobIndex];
       if (mob.hp <= 0) return;
 
       const profile = getPlayerDamageProfile({
@@ -549,7 +568,6 @@ wss.on("connection", (ws) => {
         profile.critMultiplier,
       );
 
-      // Contribution ledger updates (server-authoritative)
       let playerLedger = joinedSession.playerContribByClientId.get(
         attack.clientId,
       );
@@ -559,6 +577,7 @@ wss.on("connection", (ws) => {
           totalHits: 0,
           mobsContributedTo: 0,
           mobsKilled: 0,
+          exposedKills: 0,
           damagedMobs: new Set(),
           killedMobs: new Set(),
           bossDefeated: false,
@@ -567,7 +586,12 @@ wss.on("connection", (ws) => {
         joinedSession.playerContribByClientId.set(attack.clientId, playerLedger);
       }
 
-      playerLedger.totalDamage += damage;
+      const snap = strikeSnapshotFromPresence(player);
+      const out = resolveShellHitWithSnapshot(mob, damage, snap);
+      const nextMob = out.mob;
+      const effectiveHp = out.damageDealt;
+
+      playerLedger.totalDamage += effectiveHp;
       playerLedger.totalHits += 1;
 
       let mobLedger = joinedSession.mobContribLedgerByEntityId.get(
@@ -583,32 +607,47 @@ wss.on("connection", (ws) => {
       }
 
       const prevDamage = mobLedger.damageByClientId.get(attack.clientId) ?? 0;
-      mobLedger.damageByClientId.set(attack.clientId, prevDamage + damage);
+      mobLedger.damageByClientId.set(attack.clientId, prevDamage + effectiveHp);
 
       const prevHits = mobLedger.hitsByClientId.get(attack.clientId) ?? 0;
       mobLedger.hitsByClientId.set(attack.clientId, prevHits + 1);
 
-      if (prevDamage <= 0 && damage > 0) {
+      if (prevDamage <= 0 && effectiveHp > 0) {
         if (!playerLedger.damagedMobs.has(mob.mobEntityId)) {
           playerLedger.damagedMobs.add(mob.mobEntityId);
           playerLedger.mobsContributedTo += 1;
         }
       }
 
-      mob.hp = Math.max(0, mob.hp - damage);
+      joinedSession.mobs[mobIndex] = nextMob;
+
+      const shellPatch =
+        typeof nextMob.shellPostureMax === "number" && nextMob.shellPostureMax > 0
+          ? {
+              shellArchetype: nextMob.shellArchetype,
+              shellPosture: nextMob.shellPosture ?? 0,
+              shellPostureMax: nextMob.shellPostureMax,
+              shellExposedHitsRemaining: nextMob.shellExposedHitsRemaining ?? 0,
+              shellTag: nextMob.shellTag,
+              shellPurePulseNext: nextMob.shellPurePulseNext === true,
+              shellKillCreditExposed: nextMob.shellKillCreditExposed === true,
+            }
+          : {};
 
       const hpUpdated: ServerToClientMessage = {
         type: "mob_hp_updated",
-        mobEntityId: mob.mobEntityId,
-        hp: mob.hp,
-        maxHp: mob.maxHp,
+        mobEntityId: nextMob.mobEntityId,
+        hp: nextMob.hp,
+        maxHp: nextMob.maxHp,
+        ...shellPatch,
       };
 
       const combatEvent: CombatEventMessage = {
         type: "combat_event",
-        mobEntityId: mob.mobEntityId,
+        mobEntityId: nextMob.mobEntityId,
         attackerClientId: attack.clientId,
         damage,
+        effectiveDamage: effectiveHp,
         isCrit,
         ts: Date.now(),
       };
@@ -616,12 +655,12 @@ wss.on("connection", (ws) => {
       broadcastSession(joinedSession, hpUpdated);
       broadcastSession(joinedSession, combatEvent);
 
-      if (mob.hp <= 0) {
+      if (nextMob.hp <= 0) {
         if (!mobLedger.finalized) {
           mobLedger.finalized = true;
 
-          const isBossMob = mob.mobLabel === "Void Boss";
-          const zone = getZoneById(mob.zoneId);
+          const isBossMob = nextMob.mobLabel === "Void Boss";
+          const zone = getZoneById(nextMob.zoneId);
           const rewards: Partial<ResourcesState> = {};
 
           if (isBossMob) {
@@ -645,8 +684,8 @@ wss.on("connection", (ws) => {
             if (dealtDamage <= 0) continue;
             const p = joinedSession.playerContribByClientId.get(clientId);
             if (!p) continue;
-            if (!p.killedMobs.has(mob.mobEntityId)) {
-              p.killedMobs.add(mob.mobEntityId);
+            if (!p.killedMobs.has(nextMob.mobEntityId)) {
+              p.killedMobs.add(nextMob.mobEntityId);
               p.mobsKilled += 1;
 
               if (isBossMob) {
@@ -661,11 +700,20 @@ wss.on("connection", (ws) => {
               }
             }
           }
+
+          if (nextMob.shellKillCreditExposed) {
+            for (const [clientId, dealtDamage] of mobLedger.damageByClientId) {
+              if (dealtDamage <= 0) continue;
+              const pLedger =
+                joinedSession.playerContribByClientId.get(clientId);
+              if (pLedger) pLedger.exposedKills += 1;
+            }
+          }
         }
 
         const defeated: ServerToClientMessage = {
           type: "mob_defeated",
-          mobEntityId: mob.mobEntityId,
+          mobEntityId: nextMob.mobEntityId,
           ts: Date.now(),
         };
         broadcastSession(joinedSession, defeated);

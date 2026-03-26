@@ -32,6 +32,16 @@ export default function InventoryCategoriesCard() {
         { label: "Ember Core", value: player.resources.emberCore },
       ],
     },
+    {
+      title: "Boss relics",
+      subtitle: "Rare void boss extracts (phase 2 crafting)",
+      entries: [
+        { label: "Coilbound Lattice", value: player.resources.coilboundLattice },
+        { label: "Ash Synod Relic", value: player.resources.ashSynodRelic },
+        { label: "Vault Lattice Shard", value: player.resources.vaultLatticeShard },
+        { label: "Ironheart", value: player.resources.ironHeart },
+      ],
+    },
   ];
 
   return (

@@ -1,30 +1,9 @@
 import Link from "next/link";
 import BazaarSubpageNav from "@/components/bazaar/BazaarSubpageNav";
+import VoidMarketExchange from "@/components/bazaar/VoidMarketExchange";
 import ScreenHeader from "@/components/shared/ScreenHeader";
 import SectionCard from "@/components/shared/SectionCard";
-import PlaceholderPanel from "@/components/shared/PlaceholderPanel";
 import { VOID_EXPEDITION_PATH } from "@/features/void-maps/voidRoutes";
-
-const summaryCards = [
-  {
-    label: "Market Role",
-    value: "Primary Exchange",
-    hint:
-      "The legal-facing trade floor for routine buying, selling, and price discovery across the Bazaar.",
-  },
-  {
-    label: "Current Scope",
-    value: "Trade Placeholder",
-    hint:
-      "This remains a light shell so the Bazaar map can expose the main exchange without inventing a full economy ahead of the Black Market lanes.",
-  },
-  {
-    label: "Relationship",
-    value: "Counterpart Hub",
-    hint:
-      "Use the Void Market for stable commerce and the Black Market for risky district services, debt, contracts, and clandestine upgrades.",
-  },
-] as const;
 
 export default function VoidMarketPage() {
   return (
@@ -35,38 +14,57 @@ export default function VoidMarketPage() {
         <ScreenHeader
           eyebrow="Bazaar / Void Market"
           title="Void Market"
-          subtitle="The primary exchange hub for open trade, routine auctions, and legal-facing Bazaar commerce."
+          subtitle="M3 commodity desk: taxed buys, fee-bearing sells, and profession-adjusted quotes — legal trade complement to Black Market sin lanes."
         />
 
-        <div className="grid gap-6 md:grid-cols-3">
-          {summaryCards.map((card) => (
-            <PlaceholderPanel
-              key={card.label}
-              label={card.label}
-              value={card.value}
-              hint={card.hint}
-            />
-          ))}
-        </div>
+        <VoidMarketExchange />
 
-        <SectionCard
-          title="Market Position"
-          description="This page exists as a small supporting destination so the Bazaar map has a stable public-market counterpart to the new Black Market citadel."
-        >
-          <p className="max-w-4xl text-sm leading-7 text-white/70 md:text-base">
-            Keep the Void Market focused on standard trade, routine auctions, and safe
-            exchange flows. Let the Black Market own the sin-lane gameplay identity,
-            risky services, and faction-neutral pressure valves.
-          </p>
-          <div className="mt-5">
-            <Link
-              href={VOID_EXPEDITION_PATH}
-              className="inline-flex rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-4 py-2 text-sm font-semibold text-cyan-100 transition hover:border-cyan-300/45 hover:bg-cyan-500/16"
-            >
-              Void Expedition — realm path and field deploy
-            </Link>
-          </div>
-        </SectionCard>
+        <div className="grid gap-6 md:grid-cols-2">
+          <SectionCard
+            title="Contracts & field"
+            description="Economy ties back to work you can take today."
+          >
+            <div className="flex flex-col gap-3 text-sm text-white/70">
+              <p>
+                Mission payouts and void contracts use your save resources; field
+                pickups respect Gathering focus and mastery-aligned zone bonuses.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <Link
+                  href="/missions"
+                  className="inline-flex rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-4 py-2 text-sm font-semibold text-cyan-100 transition hover:border-cyan-300/45 hover:bg-cyan-500/16"
+                >
+                  Mission queue
+                </Link>
+                <Link
+                  href={VOID_EXPEDITION_PATH}
+                  className="inline-flex rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white/85 transition hover:border-white/25 hover:bg-white/10"
+                >
+                  Void Expedition
+                </Link>
+              </div>
+            </div>
+          </SectionCard>
+          <SectionCard
+            title="Black Market"
+            description="Risk, services, and Greed-lane pressure valves."
+          >
+            <p className="text-sm text-white/70">
+              The surface exchange stays predictable. For feast contracts, arena
+              blood-work, and the rest of the citadel, use the Black Market hub —
+              Greed&apos;s Golden Bazaar links here for above-board commodity
+              trades.
+            </p>
+            <div className="mt-4">
+              <Link
+                href="/bazaar/black-market"
+                className="inline-flex rounded-xl border border-amber-400/35 bg-amber-500/10 px-4 py-2 text-sm font-semibold text-amber-100 transition hover:border-amber-300/45 hover:bg-amber-500/16"
+              >
+                Black Market map
+              </Link>
+            </div>
+          </SectionCard>
+        </div>
       </div>
     </main>
   );

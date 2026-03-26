@@ -14,17 +14,17 @@ export function getFactionHqsScreenData(state: GameState) {
       {
         label: "Affiliation",
         value: getFactionLabel(state.player.factionAlignment),
-        hint: "Live shared affiliation state from the global game store.",
+        hint: "Doctrine wing allegiance — unlocks HQ stipends and pressure reading.",
       },
       {
         label: "Influence",
         value: String(state.player.influence),
-        hint: "Influence now comes from shared state.",
+        hint: "Standing currency for city-side progression.",
       },
       {
-        label: "Affiliation Reward Tier",
-        value: state.player.factionAlignment === "unbound" ? "Locked" : "Tier 1",
-        hint: "Reward availability now reacts to affiliation.",
+        label: "Guild contribution",
+        value: String(state.player.guildContributionTotal),
+        hint: "Mercenary ledger from closed contracts and void field work.",
       },
     ],
   };

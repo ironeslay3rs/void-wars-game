@@ -5,6 +5,12 @@ import Link from "next/link";
 import CharacterPortraitImage from "@/components/character/CharacterPortraitImage";
 import type { CharacterPortraitId } from "@/features/characters/characterPortraits";
 import type { VoidZone } from "@/features/void-maps/zoneData";
+import { lootThemeToRuneSchool } from "@/features/mastery/masteryGameplayEffects";
+
+function pathLabelFromLootTheme(theme: VoidZone["lootTheme"]) {
+  const path = lootThemeToRuneSchool(theme);
+  return path === "bio" ? "Bio" : path === "mecha" ? "Mecha" : "Pure";
+}
 
 export default function VoidExpeditionHUD({
   selectedZone,
@@ -100,6 +106,21 @@ export default function VoidExpeditionHUD({
               Boss zone
             </p>
           ) : null}
+          {(selectedZone.minRuneDepth !== undefined ||
+            selectedZone.minExecutionalTier !== undefined) && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {selectedZone.minRuneDepth !== undefined ? (
+                <span className="rounded-full border border-violet-400/35 bg-violet-950/45 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-violet-100/90">
+                  Mastery · deepest depth {selectedZone.minRuneDepth}+
+                </span>
+              ) : null}
+              {selectedZone.minExecutionalTier !== undefined ? (
+                <span className="rounded-full border border-emerald-400/35 bg-emerald-950/40 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-100/90">
+                  {`Executional tier ${selectedZone.minExecutionalTier}+ (${pathLabelFromLootTheme(selectedZone.lootTheme)} path)`}
+                </span>
+              ) : null}
+            </div>
+          )}
           <p className="mt-2 text-xs text-white/45">{nextLockLine}</p>
           <p className="mt-2 text-xs text-white/50">
             Contract: {contractTitle} · Queue {queueLabel}
