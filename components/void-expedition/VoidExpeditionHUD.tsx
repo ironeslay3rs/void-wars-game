@@ -1,0 +1,146 @@
+"use client";
+
+import type { ReactNode } from "react";
+import Link from "next/link";
+import CharacterPortraitImage from "@/components/character/CharacterPortraitImage";
+import type { CharacterPortraitId } from "@/features/characters/characterPortraits";
+import type { VoidZone } from "@/features/void-maps/zoneData";
+
+export default function VoidExpeditionHUD({
+  selectedZone,
+  dropBiasLabel,
+  isUnlocked,
+  isRecommended,
+  mastery,
+  nextLockLine,
+  contractTitle,
+  queueLabel,
+  deployDisabled,
+  deployHint,
+  onDeploy,
+  playerName,
+  characterPortraitId,
+}: {
+  selectedZone: VoidZone;
+  dropBiasLabel: string;
+  isUnlocked: boolean;
+  isRecommended: boolean;
+  mastery: number;
+  nextLockLine: string;
+  contractTitle: string;
+  queueLabel: string;
+  deployDisabled: boolean;
+  deployHint: ReactNode;
+  onDeploy: () => void;
+  playerName: string;
+  characterPortraitId: CharacterPortraitId;
+}) {
+  return (
+    <div className="pointer-events-auto absolute inset-x-0 bottom-0 z-20 border-t border-white/15 bg-black/80 px-4 py-4 shadow-[0_-12px_40px_rgba(0,0,0,0.45)] backdrop-blur-md md:px-6">
+      <div className="mx-auto flex max-w-4xl flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div className="min-w-0 flex-1">
+          <div className="mb-3 flex items-center gap-3 border-b border-white/10 pb-3 md:mb-4 md:pb-3.5">
+            <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-cyan-400/25 bg-black/55 shadow-[0_0_16px_rgba(34,211,238,0.12)] md:h-14 md:w-14">
+              <CharacterPortraitImage
+                portraitId={characterPortraitId}
+                className="h-full w-full"
+                sizes="56px"
+              />
+            </div>
+            <div className="min-w-0">
+              <div className="text-[9px] uppercase tracking-[0.2em] text-white/45">
+                Operative
+              </div>
+              <div className="truncate text-sm font-bold text-white md:text-base">
+                {playerName}
+              </div>
+            </div>
+          </div>
+          <div className="text-[10px] uppercase tracking-[0.22em] text-cyan-200/70">
+            Selected realm
+          </div>
+          <h2 className="mt-1 text-xl font-black text-white md:text-2xl">
+            {selectedZone.label}
+          </h2>
+          <p className="mt-2 text-sm text-white/60">{selectedZone.description}</p>
+          <div className="mt-3 flex flex-wrap gap-2 text-xs">
+            <span className="rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-white/80">
+              Threat level {selectedZone.threatLevel} ·{" "}
+              {selectedZone.threatBand.toUpperCase()}
+            </span>
+            <span
+              className={[
+                "rounded-full border px-2.5 py-1 font-semibold",
+                isUnlocked
+                  ? "border-emerald-400/35 bg-emerald-500/12 text-emerald-100"
+                  : "border-white/15 bg-white/5 text-white/50",
+              ].join(" ")}
+            >
+              {isUnlocked ? "Unlocked" : "Locked"}
+            </span>
+            <span className="rounded-full border border-white/12 bg-white/5 px-2.5 py-1 text-white/70">
+              Mastery {mastery}
+            </span>
+            <span
+              className={[
+                "rounded-full border px-2.5 py-1 font-semibold",
+                isRecommended
+                  ? "border-emerald-400/35 bg-emerald-500/10 text-emerald-100"
+                  : "border-red-400/35 bg-red-500/12 text-red-100",
+              ].join(" ")}
+            >
+              {isRecommended ? "Recommended" : "High risk"}
+            </span>
+            <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-white/55">
+              Drop bias: {dropBiasLabel}
+            </span>
+          </div>
+          {selectedZone.category === "special" ? (
+            <p className="mt-2 text-xs font-semibold text-fuchsia-200/90">
+              Boss zone
+            </p>
+          ) : null}
+          <p className="mt-2 text-xs text-white/45">{nextLockLine}</p>
+          <p className="mt-2 text-xs text-white/50">
+            Contract: {contractTitle} · Queue {queueLabel}
+          </p>
+        </div>
+
+        <div className="flex w-full shrink-0 flex-col gap-2 md:w-auto md:items-end">
+          <button
+            type="button"
+            onClick={onDeploy}
+            disabled={deployDisabled}
+            className={[
+              "w-full rounded-xl border px-6 py-3 text-sm font-black uppercase tracking-[0.12em] md:w-auto md:min-w-[240px]",
+              deployDisabled
+                ? "cursor-not-allowed border-white/10 bg-white/5 text-white/40"
+                : "border-cyan-400/45 bg-cyan-500/20 text-cyan-50 hover:border-cyan-300/55 hover:bg-cyan-500/28",
+            ].join(" ")}
+          >
+            Deploy into {selectedZone.label}
+          </button>
+          {deployHint ? (
+            <div className="max-w-md text-right text-xs text-amber-200/85 md:text-left">
+              {deployHint}
+            </div>
+          ) : null}
+          <div className="flex flex-wrap justify-end gap-x-4 gap-y-1 text-[11px] text-white/45">
+            <Link
+              href="/missions"
+              className="text-cyan-200/85 underline decoration-cyan-400/30 underline-offset-2 hover:text-white"
+            >
+              Mission&nbsp;queue
+            </Link>
+            <Link
+              href="/bazaar/teleport-gate"
+              className="text-cyan-200/85 underline decoration-cyan-400/30 underline-offset-2 hover:text-white"
+            >
+              Teleport&nbsp;Gate
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

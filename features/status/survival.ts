@@ -26,6 +26,52 @@ export function getHungerLabel(hunger: number) {
   return "Starving";
 }
 
+export type HungerPressureTier = "fed" | "low" | "starving";
+
+/**
+ * Discrete hunger pressure effects for M2 resource sink tuning.
+ * - Fed: no penalty
+ * - Low: slight payout reduction + slightly harsher condition drain
+ * - Starving: stronger payout reduction + stronger condition drain
+ *
+ * Kept intentionally simple (no hidden math, no stacking).
+ */
+export function getHungerPressureEffects(hunger: number): {
+  tier: HungerPressureTier;
+  label: ReturnType<typeof getHungerLabel>;
+  rewardPenaltyPct: number; // 0..20
+  conditionDrainPenalty: number; // extra condition drain to apply to a run
+  rewardMultiplier: number; // 1 - rewardPenaltyPct/100
+} {
+  if (hunger >= HUNGER_FED_THRESHOLD) {
+    return {
+      tier: "fed",
+      label: "Fed",
+      rewardPenaltyPct: 0,
+      conditionDrainPenalty: 0,
+      rewardMultiplier: 1,
+    };
+  }
+
+  if (hunger >= HUNGER_PRESSURE_THRESHOLD) {
+    return {
+      tier: "low",
+      label: "Low",
+      rewardPenaltyPct: 10,
+      conditionDrainPenalty: 2,
+      rewardMultiplier: 0.9,
+    };
+  }
+
+  return {
+    tier: "starving",
+    label: "Starving",
+    rewardPenaltyPct: 20,
+    conditionDrainPenalty: 4,
+    rewardMultiplier: 0.8,
+  };
+}
+
 export function getActivityHungerCost(activity: SurvivalActivity) {
   return ACTIVITY_HUNGER_COST[activity];
 }

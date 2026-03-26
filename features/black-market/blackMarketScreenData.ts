@@ -19,7 +19,7 @@ export const blackMarketRoleSummary = {
   eyebrow: "Black Market / Neutral Citadel",
   title: "Black Market",
   subtitle:
-    "A neutral survivor citadel between Bio, Mecha, and Pure. Deals are sacred here, and Book 1 keeps the market focused on one live lane: Gluttony / Feast Hall.",
+    "A neutral survivor citadel between Bio, Mecha, and Pure. All seven sin lanes are marked on the hub map; Book 1 play is Gluttony / Feast Hall — the rest open as future services.",
 } as const;
 
 export const blackMarketLanePlaceholders: BlackMarketLanePlaceholder[] = [

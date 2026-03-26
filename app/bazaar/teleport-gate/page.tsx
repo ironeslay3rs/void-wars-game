@@ -1,5 +1,5 @@
-import HuntingGroundScreen from "@/components/hunting-ground/HuntingGroundScreen";
+import TeleportGateScreen from "@/components/bazaar/TeleportGateScreen";
 
 export default function TeleportGatePage() {
-  return <HuntingGroundScreen />;
+  return <TeleportGateScreen />;
 }

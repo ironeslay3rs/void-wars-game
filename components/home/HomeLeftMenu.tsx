@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { VOID_EXPEDITION_PATH } from "@/features/void-maps/voidRoutes";
 
 const menuItems = [
   { label: "Continue", href: "#" },
@@ -20,10 +21,10 @@ export default function HomeLeftMenu() {
       
       {/* CTA */}
       <Link
-        href="/bazaar/mercenary-guild"
+        href={VOID_EXPEDITION_PATH}
         className="mb-2 block rounded-xl border border-red-500/40 bg-red-600/20 px-4 py-4 text-left text-sm font-bold uppercase tracking-[0.12em] text-red-200 transition hover:bg-red-600/30"
       >
-        Enter the Void
+        Into the Void
       </Link>
 
       {/* MENU */}

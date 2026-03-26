@@ -1,3 +1,4 @@
+import { isCharacterPortraitId } from "@/features/characters/characterPortraits";
 import { initialGameState } from "@/features/game/initialGameState";
 import type {
   ActiveProcess,
@@ -9,6 +10,7 @@ import type {
   PlayerState,
   RealtimeFieldRole,
   ResourcesState,
+  VoidRealtimeBinding,
 } from "@/features/game/gameTypes";
 
 const STORAGE_KEY_PREFIX = "void-wars-oblivion-game-state";
@@ -103,6 +105,38 @@ function normalizeLatestHuntResult(value: unknown): LatestHuntResult | null {
     influenceGained: value.influenceGained,
     resourcesGained: normalizePartialResources(value.resourcesGained),
   };
+
+  if ((value as Record<string, unknown>).fieldLootGained !== undefined) {
+    result.fieldLootGained = normalizePartialResources(
+      (value as Record<string, unknown>).fieldLootGained,
+    );
+  }
+
+  const hungerPressureLabelCandidate = (value as Record<string, unknown>)
+    .hungerPressureLabel;
+  if (
+    hungerPressureLabelCandidate === "Fed" ||
+    hungerPressureLabelCandidate === "Low" ||
+    hungerPressureLabelCandidate === "Starving"
+  ) {
+    result.hungerPressureLabel = hungerPressureLabelCandidate;
+  }
+
+  if (
+    typeof (value as Record<string, unknown>).hungerRewardPenaltyPct ===
+    "number"
+  ) {
+    result.hungerRewardPenaltyPct = (value as Record<string, unknown>)
+      .hungerRewardPenaltyPct as number;
+  }
+
+  if (
+    typeof (value as Record<string, unknown>).hungerConditionDrainPenalty ===
+    "number"
+  ) {
+    result.hungerConditionDrainPenalty = (value as Record<string, unknown>)
+      .hungerConditionDrainPenalty as number;
+  }
 
   if (typeof value.baseRankXpGained === "number") {
     result.baseRankXpGained = value.baseRankXpGained;
@@ -217,6 +251,28 @@ function normalizeBehaviorStats(value: unknown) {
     roleCounts,
     lastRealtimeRole,
   };
+}
+
+function normalizeVoidRealtimeBinding(
+  value: unknown,
+): VoidRealtimeBinding | null {
+  if (value === null) return null;
+  if (!isRecord(value)) return initialGameState.player.voidRealtimeBinding;
+
+  const zoneId =
+    typeof value.zoneId === "string" ? value.zoneId : null;
+  const sessionBucketId =
+    typeof value.sessionBucketId === "number" && Number.isFinite(value.sessionBucketId)
+      ? value.sessionBucketId
+      : null;
+  const clientId =
+    typeof value.clientId === "string" ? value.clientId : null;
+
+  if (!zoneId || sessionBucketId === null || !clientId) {
+    return initialGameState.player.voidRealtimeBinding;
+  }
+
+  return { zoneId, sessionBucketId, clientId };
 }
 
 function normalizeZoneMastery(value: unknown) {
@@ -341,6 +397,15 @@ function normalizeMissions(value: unknown): MissionDefinition[] {
 function normalizePlayer(value: unknown): PlayerState {
   const raw = isRecord(value) ? value : {};
   const rawDistrictState = isRecord(raw.districtState) ? raw.districtState : {};
+  const nextRunModifiersCandidate = (raw as Record<string, unknown>)
+    .nextRunModifiers;
+  const nextRunModifiers =
+    isRecord(nextRunModifiersCandidate) &&
+    typeof nextRunModifiersCandidate.id === "string" &&
+    typeof nextRunModifiersCandidate.title === "string" &&
+    typeof nextRunModifiersCandidate.nextRunEffect === "string"
+      ? (nextRunModifiersCandidate as PlayerState["nextRunModifiers"])
+      : initialGameState.player.nextRunModifiers;
 
   return {
     ...initialGameState.player,
@@ -359,6 +424,19 @@ function normalizePlayer(value: unknown): PlayerState {
         : raw.factionAlignment === "spirit"
           ? "pure"
         : initialGameState.player.factionAlignment,
+
+    characterPortraitId:
+      typeof raw.characterPortraitId === "string" &&
+      isCharacterPortraitId(raw.characterPortraitId)
+        ? raw.characterPortraitId
+        : initialGameState.player.characterPortraitId,
+
+    careerFocus:
+      raw.careerFocus === "combat" ||
+      raw.careerFocus === "gathering" ||
+      raw.careerFocus === "crafting"
+        ? raw.careerFocus
+        : null,
 
     condition:
       typeof raw.condition === "number"
@@ -379,6 +457,22 @@ function normalizePlayer(value: unknown): PlayerState {
       typeof raw.lastConditionTickAt === "number"
         ? raw.lastConditionTickAt
         : Date.now(),
+
+    activeFeastHallOfferId:
+      raw.activeFeastHallOfferId === null ||
+      raw.activeFeastHallOfferId === "scavenger-broth" ||
+      raw.activeFeastHallOfferId === "sample-stew" ||
+      raw.activeFeastHallOfferId === "mouth-of-inti"
+        ? raw.activeFeastHallOfferId
+        : initialGameState.player.activeFeastHallOfferId,
+
+    nextRunModifiers,
+
+    nextRunModifiersAppliedForProcessId:
+      raw.nextRunModifiersAppliedForProcessId === null ||
+      typeof raw.nextRunModifiersAppliedForProcessId === "string"
+        ? raw.nextRunModifiersAppliedForProcessId
+        : initialGameState.player.nextRunModifiersAppliedForProcessId,
 
     rank:
       typeof raw.rank === "string" ? raw.rank : initialGameState.player.rank,
@@ -414,6 +508,10 @@ function normalizePlayer(value: unknown): PlayerState {
         : initialGameState.player.hasBiotechSpecimenLead,
 
     resources: normalizeResources(raw.resources),
+    fieldLootGainedThisRun:
+      raw.fieldLootGainedThisRun !== undefined
+        ? normalizePartialResources(raw.fieldLootGainedThisRun)
+        : initialGameState.player.fieldLootGainedThisRun,
 
     knownRecipes: Array.isArray(raw.knownRecipes)
       ? raw.knownRecipes.filter(
@@ -484,6 +582,7 @@ function normalizePlayer(value: unknown): PlayerState {
 
     activeProcess: normalizeActiveProcess(raw.activeProcess),
     lastHuntResult: normalizeLatestHuntResult(raw.lastHuntResult),
+    voidRealtimeBinding: normalizeVoidRealtimeBinding(raw.voidRealtimeBinding),
     behaviorStats: normalizeBehaviorStats(raw.behaviorStats),
     zoneMastery: normalizeZoneMastery(raw.zoneMastery),
     lastCompletedZoneId:

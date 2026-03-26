@@ -8,6 +8,7 @@ import ConditionWidget from "@/components/home/ConditionWidget";
 import FactionPathPanel from "@/components/home/FactionPathPanel";
 import MissionPanel from "@/components/home/MissionPanel";
 import { getFirstSessionGuidance } from "@/features/guidance/firstSessionGuidance";
+import { getProgressionMeaning } from "@/features/game/gameSelectors";
 
 function getSelectedPath(alignment: FactionAlignment) {
   return alignment === "unbound" ? null : alignment;
@@ -16,6 +17,7 @@ function getSelectedPath(alignment: FactionAlignment) {
 export default function HomeHudClient() {
   const { state, selectPath } = useGame();
   const guidance = getFirstSessionGuidance(state);
+  const progressionMeaning = getProgressionMeaning(state);
 
   return (
     <>
@@ -45,6 +47,7 @@ export default function HomeHudClient() {
           masteryProgress={state.player.masteryProgress}
           loopStateLabel={guidance.stateLabel}
           nextStepLabel={guidance.nextStepLabel}
+          progressionMeaning={progressionMeaning}
         />
       </section>
 

@@ -339,11 +339,22 @@ export default function FeastHallScreen({
                   <div className="flex items-start gap-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3">
                     <Flame className="mt-0.5 h-4 w-4 text-emerald-300" />
                     <div>
-                      <div className="font-semibold text-white">Effect</div>
+                      <div className="font-semibold text-white">Immediate</div>
                       <div className="mt-1 text-white/65">
                         Restore {offer.conditionGain} condition,{" "}
                         {formatHungerEffect(offer.hungerDelta)}, and set a{" "}
-                        {Math.ceil(offer.cooldownMs / 1000)}s hall cooldown.
+                        {Math.ceil(offer.cooldownMs / 1000)}s kitchen lockout (recovery
+                        disabled).
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3">
+                    <div className="mt-0.5 h-4 w-4 rounded-full bg-amber-400/20 ring-1 ring-amber-300/35" />
+                    <div>
+                      <div className="font-semibold text-white">Next run</div>
+                      <div className="mt-1 text-white/65">
+                        {offer.nextRunEffect}
                       </div>
                     </div>
                   </div>

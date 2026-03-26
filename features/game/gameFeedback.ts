@@ -30,17 +30,17 @@ export function getNonZeroResourceEntries(resources: Partial<ResourcesState>) {
 export function getResourceLoopMeaning(key: ResourceKey) {
   switch (key) {
     case "credits":
-      return "Use for recovery and citadel services.";
+      return "Spend at Feast Hall and Crafting District to stabilize and prime the next deployment.";
     case "ironOre":
-      return "Bank for forge stock and repairs.";
+      return "Refine into Scrap Alloy in the Crafting District.";
     case "scrapAlloy":
-      return "Hold for heavier fabrication work.";
+      return "Prime utility kits like Scrap Kit in the Crafting District.";
     case "runeDust":
-      return "Spend on ritual crafting and ration binding.";
+      return "Bind Moss Rations and prime kits in the Crafting District.";
     case "emberCore":
-      return "Rare forge fuel. Save it.";
+      return "Prime high-impact prep like Ember Stim in the Crafting District.";
     case "bioSamples":
-      return "Convert into rations or Feast Hall recovery.";
+      return "Spend at Feast Hall (Hunter’s Plate) or Crafting District (Void Extract) to manage pressure.";
     case "mossRations":
       return "Use to ease hunger and survival pressure.";
     default:

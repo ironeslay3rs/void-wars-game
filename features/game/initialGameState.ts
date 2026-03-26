@@ -1,3 +1,4 @@
+import { DEFAULT_CHARACTER_PORTRAIT_ID } from "@/features/characters/characterPortraits";
 import { buildNavigationState } from "@/features/navigation/navigationUtils";
 import type { GameState } from "@/features/game/gameTypes";
 
@@ -5,11 +6,16 @@ export const initialGameState: GameState = {
   player: {
     playerName: "Iron",
     factionAlignment: "unbound",
+    characterPortraitId: DEFAULT_CHARACTER_PORTRAIT_ID,
+    careerFocus: null,
 
     condition: 100,
     hunger: 100,
     conditionRecoveryAvailableAt: 0,
     lastConditionTickAt: Date.now(),
+    activeFeastHallOfferId: null,
+    nextRunModifiers: null,
+    nextRunModifiersAppliedForProcessId: null,
 
     rank: "Initiate",
     rankLevel: 1,
@@ -29,6 +35,7 @@ export const initialGameState: GameState = {
       bioSamples: 0,
       mossRations: 2,
     },
+    fieldLootGainedThisRun: {},
 
     knownRecipes: [],
     unlockedRoutes: ["home", "bazaar"],
@@ -45,6 +52,8 @@ export const initialGameState: GameState = {
 
     activeProcess: null,
     lastHuntResult: null,
+
+    voidRealtimeBinding: null,
 
     behaviorStats: {
       totalRealtimeHuntsWithContribution: 0,

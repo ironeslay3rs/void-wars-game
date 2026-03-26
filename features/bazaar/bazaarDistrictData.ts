@@ -2,6 +2,7 @@ import {
   canonFactionHqs,
   getFactionLabelList,
 } from "@/features/canonRegistry";
+import { VOID_EXPEDITION_PATH } from "@/features/void-maps/voidRoutes";
 
 export type BazaarDistrictId =
   | "biotech-labs"
@@ -10,6 +11,7 @@ export type BazaarDistrictId =
   | "arena"
   | "mecha-foundry"
   | "mercenary-guild"
+  | "void-expedition"
   | "faction-hqs"
   | "teleport-gate";
 
@@ -102,6 +104,17 @@ export const bazaarDistrictData: BazaarDistrict[] = [
     widthClass: "w-[320px]",
   },
   {
+    id: "void-expedition",
+    title: "Void Expedition",
+    subtitle: "Realm path · live field",
+    description:
+      "Pick threat band and zone order, then deploy into the shared void field with the same hunt queue as the board.",
+    route: VOID_EXPEDITION_PATH,
+    themeKey: "travel",
+    positionClass: "right-[4%] top-[84%] md:right-[6%] md:top-[83%]",
+    widthClass: "w-[300px]",
+  },
+  {
     id: canonFactionHqs.id,
     title: canonFactionHqs.title,
     subtitle: getFactionLabelList(),
@@ -117,7 +130,7 @@ export const bazaarDistrictData: BazaarDistrict[] = [
     title: "Teleport Gate",
     subtitle: "Travel & Expeditions",
     description:
-      "Launch into danger zones, world maps, and expedition routes.",
+      "Jump to Void Expedition, the Hunting Ground board, hunt results, or Home without crossing the full bazaar map.",
     route: "/bazaar/teleport-gate",
     themeKey: "travel",
     positionClass: "right-[14%] bottom-[6%]",

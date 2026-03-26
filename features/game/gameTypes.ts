@@ -1,3 +1,4 @@
+import type { CharacterPortraitId } from "@/features/characters/characterPortraits";
 import type {
   NavigationState,
   RouteNodeId,
@@ -32,6 +33,41 @@ export type FeastHallOfferId =
   | "sample-stew"
   | "mouth-of-inti";
 
+export type NextRunModifierId =
+  | "scrap-kit"
+  | "ember-stim"
+  | "frost-stabilizer"
+  | "void-extract";
+
+export type NextRunEffectKey =
+  | "SCRAP_KIT"
+  | "EMBER_STIM"
+  | "FROST_STABILIZER"
+  | "VOID_EXTRACT";
+
+export type NextRunModifiers = {
+  id: NextRunModifierId;
+  effectKey: NextRunEffectKey;
+  title: string;
+  nextRunEffect: string;
+  /** Applied once when the next hunt starts. */
+  applyOnStart?: {
+    conditionGain?: number;
+    hungerDelta?: number;
+  };
+  /** Applied to hunt settlement (reward + condition wear). */
+  applyOnSettlement?: {
+    rewardBonusPct?: number; // e.g. +15
+    conditionDrainReduction?: number; // e.g. 3 (reduces drain)
+    conditionDrainPenalty?: number; // e.g. 4 (adds risk)
+  };
+  /** Applied to shell-only combat feel (client practice). */
+  applyInField?: {
+    shellDamageBoostPct?: number; // e.g. 25
+    floatDamageBoostPct?: number; // e.g. 25 (display-only)
+  };
+};
+
 export type ResourcesState = Record<ResourceKey, number>;
 
 export type LatestHuntResult = {
@@ -44,6 +80,16 @@ export type LatestHuntResult = {
   masteryProgressGained: number;
   influenceGained: number;
   resourcesGained: Partial<ResourcesState>;
+  /** Field pickups banked immediately during the run (separate from contract payout). */
+  fieldLootGained?: Partial<ResourcesState>;
+  /**
+   * M2 hunger pressure tuning (resource sink):
+   * - High hunger reduces payout quality and increases condition drain.
+   * Stored so Hunt Result UI can explain the outcome without hidden math.
+   */
+  hungerPressureLabel?: "Fed" | "Low" | "Starving";
+  hungerRewardPenaltyPct?: number; // 0..20
+  hungerConditionDrainPenalty?: number; // extra condition drain applied to this run
   // Base AFK reward snapshot (source of truth before realtime contribution bonus)
   baseRankXpGained?: number;
   baseMasteryProgressGained?: number;
@@ -159,14 +205,36 @@ export type MissionQueueEntry = {
    PLAYER
 ========================= */
 
+/** Stable identity for a single void deploy/redeploy (WS clientId + shard routing). */
+export type VoidRealtimeBinding = {
+  zoneId: string;
+  sessionBucketId: number;
+  clientId: string;
+};
+
+export type CareerFocus = "combat" | "gathering" | "crafting";
+
 export type PlayerState = {
   playerName: string;
   factionAlignment: FactionAlignment;
+  /** Hub / profile portrait only — not used on Void Field. */
+  characterPortraitId: CharacterPortraitId;
+  /** Player-chosen career focus. Stored; no stat math until M2. */
+  careerFocus: CareerFocus | null;
 
   condition: number;
   hunger: number;
   conditionRecoveryAvailableAt: number;
   lastConditionTickAt: number;
+  /**
+   * Feast Hall choice that sets `conditionRecoveryAvailableAt` (kitchen lockout).
+   * UI uses this to show a subtle next-run handoff.
+   */
+  activeFeastHallOfferId: FeastHallOfferId | null;
+  /** One-slot, non-stacking next-run kit crafted in Crafting District. */
+  nextRunModifiers: NextRunModifiers | null;
+  /** Idempotency: which hunt process already received on-start modifiers. */
+  nextRunModifiersAppliedForProcessId: string | null;
 
   rank: string;
   rankLevel: number;
@@ -178,6 +246,8 @@ export type PlayerState = {
   hasBiotechSpecimenLead: boolean;
 
   resources: ResourcesState;
+  /** Field pickups accrued during the currently running hunt (cleared on run start/end). */
+  fieldLootGainedThisRun: Partial<ResourcesState>;
 
   knownRecipes: string[];
   unlockedRoutes: string[];
@@ -186,6 +256,12 @@ export type PlayerState = {
   districtState: DistrictState;
   activeProcess: ActiveProcess | null;
   lastHuntResult: LatestHuntResult | null;
+
+  /**
+   * When non-null, the client should maintain void realtime for this shard using `clientId`.
+   * Set on deploy/redeploy; cleared after realtime bonus is applied for that run.
+   */
+  voidRealtimeBinding: VoidRealtimeBinding | null;
 
   // Long-term identity memory derived from realtime void sessions.
   behaviorStats: PlayerBehaviorStats;
@@ -217,8 +293,11 @@ export type GameState = {
 
 export type GameAction =
   | { type: "SET_PLAYER_NAME"; payload: string }
+  | { type: "SET_CHARACTER_PORTRAIT_ID"; payload: CharacterPortraitId }
+  | { type: "SET_CAREER_FOCUS"; payload: CareerFocus | null }
   | { type: "SET_FACTION_ALIGNMENT"; payload: PathType }
   | { type: "ADD_RESOURCE"; payload: { key: ResourceKey; amount: number } }
+  | { type: "ADD_FIELD_LOOT"; payload: { key: ResourceKey; amount: number } }
   | { type: "SPEND_RESOURCE"; payload: { key: ResourceKey; amount: number } }
   | { type: "GAIN_RANK_XP"; payload: number }
   | { type: "SET_RANK_LEVEL"; payload: number }
@@ -228,6 +307,7 @@ export type GameAction =
   | { type: "RECOVER_CONDITION" }
   | { type: "CRAFT_MOSS_RATION" }
   | { type: "CONSUME_MOSS_RATION" }
+  | { type: "CRAFT_NEXT_RUN_MODIFIER"; payload: { modifierId: NextRunModifierId } }
   | { type: "USE_FEAST_HALL_OFFER"; payload: { offerId: FeastHallOfferId } }
   | { type: "RESOLVE_HUNT"; payload: { missionId: string; resolvedAt?: number } }
   | {
@@ -245,6 +325,7 @@ export type GameAction =
         zoneThreatLevel?: number;
       };
     }
+  | { type: "SET_VOID_REALTIME_BINDING"; payload: VoidRealtimeBinding | null }
   | {
       type: "START_EXPLORATION_PROCESS";
       payload: {

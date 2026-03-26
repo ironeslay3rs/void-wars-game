@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import BazaarSubpageNav from "@/components/bazaar/BazaarSubpageNav";
 import BiotechLabsStateSummary from "@/components/biotech-labs/BiotechLabsStateSummary";
@@ -12,6 +13,7 @@ import { biotechLabsScreenData } from "@/features/biotech-labs/biotechLabsScreen
 import { useGame } from "@/features/game/gameContext";
 import { getFirstSessionGuidance } from "@/features/guidance/firstSessionGuidance";
 import { getActivityHungerCost } from "@/features/status/survival";
+import { VOID_EXPEDITION_PATH } from "@/features/void-maps/voidRoutes";
 
 export default function BiotechLabsPage() {
   const router = useRouter();
@@ -64,6 +66,25 @@ export default function BiotechLabsPage() {
         </div>
 
         <BiotechLabsStateSummary />
+
+        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white/70">
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/45">
+            Shared queue
+          </span>
+          <Link
+            href={VOID_EXPEDITION_PATH}
+            className="font-semibold text-cyan-200/95 underline decoration-cyan-400/35 underline-offset-2 hover:text-white"
+          >
+            Void Expedition
+          </Link>
+          <span className="text-white/35">·</span>
+          <Link
+            href="/bazaar/mercenary-guild"
+            className="font-semibold text-amber-200/95 underline decoration-amber-400/35 underline-offset-2 hover:text-white"
+          >
+            Hunting Ground
+          </Link>
+        </div>
 
         <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           <SectionCard

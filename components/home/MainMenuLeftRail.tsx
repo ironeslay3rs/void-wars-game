@@ -21,8 +21,8 @@ import {
   type MainMenuIconKey,
   type MainMenuItem,
 } from "@/features/home/mainMenuData";
-import { DEFAULT_HOME_DEPLOY_ZONE_ID, voidZones } from "@/features/void-maps/zoneData";
 import { useActiveProcessTimer } from "@/features/exploration/useActiveProcessTimer";
+import { VOID_EXPEDITION_PATH } from "@/features/void-maps/voidRoutes";
 
 const iconMap: Record<MainMenuIconKey, LucideIcon> = {
   play: Play,
@@ -36,13 +36,13 @@ const iconMap: Record<MainMenuIconKey, LucideIcon> = {
   settings: Settings,
 };
 
-/** Shortest neutral Hunting Ground contract — used for one-tap home deploy. */
+/** Default hunting-ground contract id — expedition deploy still queues this mission. */
 const DEFAULT_DEPLOY_HG_MISSION_ID = "hg-rustfang-prowl";
 
 export default function MainMenuLeftRail() {
   const router = useRouter();
   const pathname = usePathname();
-  const { state, dispatch } = useGame();
+  const { state } = useGame();
   const isFieldActive = pathname === "/home";
   const missionQueue = Array.isArray(state.player.missionQueue)
     ? state.player.missionQueue
@@ -90,27 +90,7 @@ export default function MainMenuLeftRail() {
 
   function handleStartVoidHunt() {
     pendingHomeResultNavRef.current = true;
-    dispatch({
-      type: "QUEUE_MISSION",
-      payload: { missionId: DEFAULT_DEPLOY_HG_MISSION_ID },
-    });
-
-    const SESSION_BUCKET_MS = 2 * 60 * 1000;
-    const sessionBucketId = Math.floor(Date.now() / SESSION_BUCKET_MS);
-    // Deterministic zone allocation so multiple players deploying around the same time
-    // land in the same shared realtime shard.
-    const hashed = Math.imul(sessionBucketId ^ (sessionBucketId >>> 16), 0x45d9f3b);
-    const unlockedZones = voidZones.filter(
-      (z) => state.player.rankLevel >= z.threatLevel,
-    );
-    const candidates = unlockedZones.length > 0 ? unlockedZones : voidZones;
-    const zoneIndex = Math.abs(hashed) % candidates.length;
-    const allocatedZoneId =
-      candidates[zoneIndex]?.id ?? DEFAULT_HOME_DEPLOY_ZONE_ID;
-
-    router.push(
-      `/bazaar/void-map?zone=${allocatedZoneId}&bucket=${sessionBucketId}&deployIntro=1`,
-    );
+    router.push(VOID_EXPEDITION_PATH);
   }
 
   const deployStatusLine = activeHuntProcess
@@ -169,7 +149,7 @@ export default function MainMenuLeftRail() {
         </p>
 
         <p className="mt-1.5 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/42">
-          Hunting Ground · contract board · shared mission queue
+          Void Expedition · realm path · shared mission queue
         </p>
 
         <p className="mt-3 max-w-[260px] text-sm leading-6 text-white/72">
@@ -179,7 +159,7 @@ export default function MainMenuLeftRail() {
               ? "Contract is finishing payout resolution."
               : isQueueFull
                 ? "Mission queue is full. Clear or wait for a hunting contract slot before deploying again."
-                : `Queues ${defaultDeployMission?.title ?? "a short hunting-ground contract"} and opens the Void map shell with zone spawn simulation while the timer runs.`}
+                : `Sends you to Void Expedition to choose realm and queue ${defaultDeployMission?.title ?? "the short hunting-ground sortie"}, then opens the live void field while the timer runs.`}
         </p>
       </button>
 

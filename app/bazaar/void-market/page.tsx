@@ -1,7 +1,9 @@
+import Link from "next/link";
 import BazaarSubpageNav from "@/components/bazaar/BazaarSubpageNav";
 import ScreenHeader from "@/components/shared/ScreenHeader";
 import SectionCard from "@/components/shared/SectionCard";
 import PlaceholderPanel from "@/components/shared/PlaceholderPanel";
+import { VOID_EXPEDITION_PATH } from "@/features/void-maps/voidRoutes";
 
 const summaryCards = [
   {
@@ -56,6 +58,14 @@ export default function VoidMarketPage() {
             exchange flows. Let the Black Market own the sin-lane gameplay identity,
             risky services, and faction-neutral pressure valves.
           </p>
+          <div className="mt-5">
+            <Link
+              href={VOID_EXPEDITION_PATH}
+              className="inline-flex rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-4 py-2 text-sm font-semibold text-cyan-100 transition hover:border-cyan-300/45 hover:bg-cyan-500/16"
+            >
+              Void Expedition — realm path and field deploy
+            </Link>
+          </div>
         </SectionCard>
       </div>
     </main>

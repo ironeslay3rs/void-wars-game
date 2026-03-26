@@ -1,6 +1,9 @@
 import { buildNavigationState } from "@/features/navigation/navigationUtils";
 import { getPressureAdjustedConditionDelta } from "@/features/status/statusRecovery";
-import { getActivityHungerCost } from "@/features/status/survival";
+import {
+  getActivityHungerCost,
+  getHungerPressureEffects,
+} from "@/features/status/survival";
 import type {
   ActiveProcess,
   GameState,
@@ -284,7 +287,40 @@ export function syncMirroredHuntActiveProcess(
       return player;
     }
 
-    return { ...player, activeProcess: nextProcess };
+    let nextPlayer: PlayerState = {
+      ...player,
+      activeProcess: nextProcess,
+      // New hunt process: clear per-run field loot ledger.
+      fieldLootGainedThisRun:
+        current?.kind === "hunt" && current.id === nextProcess.id
+          ? player.fieldLootGainedThisRun
+          : {},
+    };
+
+    // Apply "next run modifiers" once per hunt process id.
+    const mods = player.nextRunModifiers;
+    if (
+      mods &&
+      player.nextRunModifiersAppliedForProcessId !== nextProcess.id &&
+      mods.applyOnStart
+    ) {
+      const gainedCondition = mods.applyOnStart.conditionGain ?? 0;
+      const hungerDelta = mods.applyOnStart.hungerDelta ?? 0;
+      nextPlayer = {
+        ...nextPlayer,
+        condition: clamp(nextPlayer.condition + gainedCondition, 0, 100),
+        hunger: clamp(nextPlayer.hunger + hungerDelta, 0, 100),
+        nextRunModifiersAppliedForProcessId: nextProcess.id,
+      };
+    } else if (mods && player.nextRunModifiersAppliedForProcessId !== nextProcess.id) {
+      // Still mark as applied so we don't re-check every tick.
+      nextPlayer = {
+        ...nextPlayer,
+        nextRunModifiersAppliedForProcessId: nextProcess.id,
+      };
+    }
+
+    return nextPlayer;
   }
 
   if (player.activeProcess?.kind === "hunt") {
@@ -340,33 +376,124 @@ export function processMissionQueue(state: GameState, now: number): GameState {
       continue;
     }
 
+    const hungerEffects =
+      mission.category === "hunting-ground"
+        ? getHungerPressureEffects(nextPlayer.hunger)
+        : null;
+    const nextRunMods =
+      mission.category === "hunting-ground" ? nextPlayer.nextRunModifiers : null;
+    const settlementMods = nextRunMods?.applyOnSettlement ?? null;
+    const nextRunRewardMultiplier =
+      settlementMods && typeof settlementMods.rewardBonusPct === "number"
+        ? 1 + settlementMods.rewardBonusPct / 100
+        : 1;
+    const nextRunConditionDeltaOffset =
+      (settlementMods?.conditionDrainReduction ?? 0) -
+      (settlementMods?.conditionDrainPenalty ?? 0);
+
+    const rewardForResolution =
+      hungerEffects && hungerEffects.rewardPenaltyPct !== 0
+        ? {
+            ...mission.reward,
+            conditionDelta:
+              mission.reward.conditionDelta -
+              hungerEffects.conditionDrainPenalty,
+            rankXp: Math.round(
+              mission.reward.rankXp * hungerEffects.rewardMultiplier,
+            ),
+            masteryProgress: Math.round(
+              mission.reward.masteryProgress * hungerEffects.rewardMultiplier,
+            ),
+            influence:
+              typeof mission.reward.influence === "number"
+                ? Math.round(
+                    mission.reward.influence * hungerEffects.rewardMultiplier,
+                  )
+                : undefined,
+            resources: mission.reward.resources
+              ? (Object.fromEntries(
+                  Object.entries(mission.reward.resources).map(
+                    ([key, value]) => [
+                      key,
+                      Math.round(value * hungerEffects.rewardMultiplier),
+                    ],
+                  ),
+                ) as typeof mission.reward.resources)
+              : undefined,
+          }
+        : mission.reward;
+
+    const rewardWithNextRunMods =
+      mission.category !== "hunting-ground" ||
+      (nextRunRewardMultiplier === 1 && nextRunConditionDeltaOffset === 0)
+        ? rewardForResolution
+        : {
+            ...rewardForResolution,
+            conditionDelta:
+              rewardForResolution.conditionDelta + nextRunConditionDeltaOffset,
+            rankXp: Math.round(
+              rewardForResolution.rankXp * nextRunRewardMultiplier,
+            ),
+            masteryProgress: Math.round(
+              rewardForResolution.masteryProgress * nextRunRewardMultiplier,
+            ),
+            influence:
+              typeof rewardForResolution.influence === "number"
+                ? Math.round(
+                    rewardForResolution.influence * nextRunRewardMultiplier,
+                  )
+                : undefined,
+            resources: rewardForResolution.resources
+              ? (Object.fromEntries(
+                  Object.entries(rewardForResolution.resources).map(
+                    ([key, value]) => [
+                      key,
+                      Math.round(value * nextRunRewardMultiplier),
+                    ],
+                  ),
+                ) as typeof rewardForResolution.resources)
+              : undefined,
+          };
+
     const resolvedConditionDelta = getResolvedConditionDelta(
       nextPlayer,
-      mission.reward,
+      rewardWithNextRunMods,
     );
 
     nextPlayer = applyActivityHungerCost(
-      applyMissionReward(nextPlayer, mission.reward),
+      applyMissionReward(nextPlayer, rewardWithNextRunMods),
       mission.category === "hunting-ground" ? "hunt" : "mission",
     );
     playerChanged = true;
 
     if (mission.category === "hunting-ground") {
+      const fieldLoot = nextPlayer.fieldLootGainedThisRun ?? {};
+      // Clear next-run modifiers after the run ends (single-use, non-stacking).
+      nextPlayer = {
+        ...nextPlayer,
+        nextRunModifiers: null,
+        nextRunModifiersAppliedForProcessId: null,
+        fieldLootGainedThisRun: {},
+      };
       latestHgHuntResult = {
         missionId: mission.id,
         huntTitle: mission.title,
         resolvedAt: entry.endsAt,
         conditionDelta: resolvedConditionDelta,
         conditionAfter: nextPlayer.condition,
-        rankXpGained: mission.reward.rankXp,
-        masteryProgressGained: mission.reward.masteryProgress,
-        influenceGained: mission.reward.influence ?? 0,
-        resourcesGained: mission.reward.resources ?? {},
+        rankXpGained: rewardWithNextRunMods.rankXp,
+        masteryProgressGained: rewardWithNextRunMods.masteryProgress,
+        influenceGained: rewardWithNextRunMods.influence ?? 0,
+        resourcesGained: rewardWithNextRunMods.resources ?? {},
+        fieldLootGained: fieldLoot,
+        hungerPressureLabel: hungerEffects?.label,
+        hungerRewardPenaltyPct: hungerEffects?.rewardPenaltyPct,
+        hungerConditionDrainPenalty: hungerEffects?.conditionDrainPenalty,
 
-        baseRankXpGained: mission.reward.rankXp,
-        baseMasteryProgressGained: mission.reward.masteryProgress,
-        baseInfluenceGained: mission.reward.influence ?? 0,
-        baseResourcesGained: mission.reward.resources ?? {},
+        baseRankXpGained: rewardWithNextRunMods.rankXp,
+        baseMasteryProgressGained: rewardWithNextRunMods.masteryProgress,
+        baseInfluenceGained: rewardWithNextRunMods.influence ?? 0,
+        baseResourcesGained: rewardWithNextRunMods.resources ?? {},
 
         realtimeContributionBonusMultiplier: null,
         realtimeContributionAppliedForResolvedAt: null,

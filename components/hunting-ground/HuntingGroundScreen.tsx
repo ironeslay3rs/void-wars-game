@@ -8,6 +8,7 @@ import SectionCard from "@/components/shared/SectionCard";
 import PlaceholderPanel from "@/components/shared/PlaceholderPanel";
 import { useGame } from "@/features/game/gameContext";
 import { huntingGroundScreenData } from "@/features/hunting-ground/huntingGroundScreenData";
+import { VOID_EXPEDITION_PATH } from "@/features/void-maps/voidRoutes";
 import {
   buildAfkFieldRunFeedback,
   formatAfkTrendLabel,
@@ -372,6 +373,13 @@ export default function HuntingGroundScreen({
               className="text-amber-200 underline decoration-amber-400/40 underline-offset-2 hover:text-white"
             >
               Hunt Result
+            </Link>
+            . For realm choice and the live void field, use{" "}
+            <Link
+              href={VOID_EXPEDITION_PATH}
+              className="text-amber-200 underline decoration-amber-400/40 underline-offset-2 hover:text-white"
+            >
+              Void Expedition
             </Link>
             .
           </div>

@@ -1,12 +1,73 @@
-import { Bell, Power, Users, UserCircle2 } from "lucide-react";
+"use client";
+
+import Link from "next/link";
+import { Bell, Power, UserCircle2, Users } from "lucide-react";
 import IconBadge from "@/components/shared/IconBadge";
+import CharacterPortraitImage from "@/components/character/CharacterPortraitImage";
 import { homeSceneData } from "@/features/home/homeSceneData";
+import { useGame } from "@/features/game/gameContext";
+import type { FactionAlignment } from "@/features/game/gameTypes";
+
+function shortFactionLabel(alignment: FactionAlignment): string {
+  switch (alignment) {
+    case "bio":
+      return "Bio";
+    case "mecha":
+      return "Mecha";
+    case "pure":
+      return "Pure";
+    default:
+      return "Unbound";
+  }
+}
 
 export default function TopBar() {
+  const { state } = useGame();
+  const p = state.player;
+  const conditionPct = Math.max(0, Math.min(100, p.condition));
+
   return (
     <header className="absolute inset-x-0 top-0 z-30 px-6 pt-3">
-      <div className="relative mx-auto flex h-24 max-w-[1700px] items-start justify-between">
-        <div className="flex items-center gap-3 pt-1">
+      <div className="relative mx-auto flex h-24 max-w-[1700px] items-start justify-between gap-4">
+        <div className="flex min-w-0 flex-1 items-start gap-2 pt-1 sm:gap-3">
+          <Link
+            href="/character"
+            className="group flex min-w-0 max-w-[min(100%,220px)] items-center gap-2.5 rounded-xl border border-transparent py-0.5 pr-2 transition-colors hover:border-white/10 hover:bg-black/25 sm:max-w-[260px] sm:gap-3"
+            title="Character profile"
+          >
+            <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg border border-white/20 bg-black/55 shadow-[0_0_16px_rgba(0,0,0,0.5)] sm:h-12 sm:w-12">
+              <CharacterPortraitImage
+                portraitId={p.characterPortraitId}
+                className="absolute inset-0"
+                sizes="48px"
+              />
+            </div>
+            <div className="min-w-0 flex-1 flex-col gap-1">
+              <span className="hidden truncate text-[11px] font-black uppercase tracking-[0.12em] text-white/95 sm:block">
+                {p.playerName}
+              </span>
+              <span className="hidden text-[9px] font-bold uppercase tracking-[0.18em] text-white/50 sm:block">
+                {shortFactionLabel(p.factionAlignment)}
+              </span>
+              <div
+                className="mt-0.5 h-1.5 w-full max-w-[140px] overflow-hidden rounded-full bg-black/55 ring-1 ring-white/10 sm:max-w-[160px]"
+                role="progressbar"
+                aria-valuenow={Math.round(conditionPct)}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label="Condition"
+              >
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-emerald-600/95 via-teal-500/90 to-cyan-500/85 transition-[width] duration-300"
+                  style={{ width: `${conditionPct}%` }}
+                />
+              </div>
+              <span className="text-[8px] font-bold tabular-nums text-white/40 sm:hidden">
+                {Math.round(conditionPct)}%
+              </span>
+            </div>
+          </Link>
+
           <IconBadge>
             <Bell className="h-4 w-4" />
           </IconBadge>
@@ -35,9 +96,15 @@ export default function TopBar() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3 pt-1">
+        <div className="flex shrink-0 items-center gap-3 pt-1">
           <IconBadge>
-            <UserCircle2 className="h-4 w-4" />
+            <Link
+              href="/character"
+              className="flex h-full w-full items-center justify-center text-slate-200"
+              aria-label="Character profile"
+            >
+              <UserCircle2 className="h-4 w-4" />
+            </Link>
           </IconBadge>
           <IconBadge>
             <Users className="h-4 w-4" />

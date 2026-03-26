@@ -2,6 +2,19 @@ export type VoidZoneId = "howling-scar" | "ash-relay" | "echo-ruins" | "rift-maw
 
 export type VoidZoneCategory = "standard" | "danger" | "special";
 
+export type VoidZoneBossSpawnConfig = {
+  /** Cooldown after boss death before any spawn checks begin. */
+  cooldownMs: number;
+  /** How often we roll a spawn attempt after cooldown. */
+  rollIntervalMs: number;
+  /** Chance per roll (0..1). */
+  spawnChancePerRoll: number;
+  /** Guaranteed spawn if no boss has spawned by this time since death/start. */
+  forceSpawnAfterMs: number;
+};
+
+export type VoidZoneLootTheme = "ash_mecha" | "bio_rot" | "void_pure";
+
 export type VoidZone = {
   id: VoidZoneId;
   label: string;
@@ -10,6 +23,8 @@ export type VoidZone = {
   threatLevel: number;
   dropType: "bio" | "mecha" | "spirit";
   bossEnabled: boolean;
+  bossSpawn?: VoidZoneBossSpawnConfig;
+  lootTheme: VoidZoneLootTheme;
   recommendedCondition: number;
 
   // Back-compat fields used by the realtime void map sim + UI.
@@ -35,6 +50,8 @@ export const voidZones: VoidZone[] = [
     threatLevel: 1,
     dropType: "bio",
     bossEnabled: false,
+    bossSpawn: undefined,
+    lootTheme: "bio_rot",
     recommendedCondition: 80,
     threatBand: threatLevelToBand(1),
     spawnTableId: "howling-scar",
@@ -50,6 +67,8 @@ export const voidZones: VoidZone[] = [
     threatLevel: 2,
     dropType: "mecha",
     bossEnabled: false,
+    bossSpawn: undefined,
+    lootTheme: "ash_mecha",
     recommendedCondition: 75,
     threatBand: threatLevelToBand(2),
     spawnTableId: "ash-relay",
@@ -66,6 +85,8 @@ export const voidZones: VoidZone[] = [
     threatLevel: 2,
     dropType: "spirit",
     bossEnabled: false,
+    bossSpawn: undefined,
+    lootTheme: "void_pure",
     recommendedCondition: 75,
     threatBand: threatLevelToBand(2),
     spawnTableId: "echo-ruins",
@@ -80,6 +101,13 @@ export const voidZones: VoidZone[] = [
     threatLevel: 4,
     dropType: "bio",
     bossEnabled: true,
+    bossSpawn: {
+      cooldownMs: 5 * 60 * 1000,
+      rollIntervalMs: 10 * 1000,
+      spawnChancePerRoll: 0.22,
+      forceSpawnAfterMs: 8 * 60 * 1000,
+    },
+    lootTheme: "void_pure",
     recommendedCondition: 90,
     threatBand: threatLevelToBand(4),
     spawnTableId: "rift-maw",

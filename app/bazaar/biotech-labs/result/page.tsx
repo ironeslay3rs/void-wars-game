@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import BazaarSubpageNav from "@/components/bazaar/BazaarSubpageNav";
+import CharacterPortraitImage from "@/components/character/CharacterPortraitImage";
 import ScreenHeader from "@/components/shared/ScreenHeader";
 import SectionCard from "@/components/shared/SectionCard";
 import { getLatestBiotechSpecimen } from "@/features/biotech-labs/specimenData";
@@ -15,6 +16,7 @@ import {
 import { getResourceIcon } from "@/features/game/resourceIconMap";
 import { getFirstSessionGuidance } from "@/features/guidance/firstSessionGuidance";
 import ScreenStateSummary from "@/components/shared/ScreenStateSummary";
+import { getProgressionMeaning } from "@/features/game/gameSelectors";
 import {
   getHungerLabel,
   HUNGER_PRESSURE_THRESHOLD,
@@ -25,6 +27,7 @@ import {
   getContributionRole,
 } from "@/features/void-maps/realtime/contributionScoring";
 import { getEmergingRoleHint } from "@/features/player/playerIdentity";
+import { VOID_EXPEDITION_PATH } from "@/features/void-maps/voidRoutes";
 
 function formatResolvedAt(timestamp: number) {
   return new Date(timestamp).toLocaleString();
@@ -78,6 +81,7 @@ export default function BiotechLabsResultPage() {
   const { state } = useGame();
   const latestHuntResult = state.player.lastHuntResult;
   const guidance = getFirstSessionGuidance(state);
+  const progressionMeaning = getProgressionMeaning(state);
   const specimen = getLatestBiotechSpecimen(latestHuntResult);
   const specimenBossAsset = specimen?.bossAsset ?? null;
 
@@ -97,6 +101,9 @@ export default function BiotechLabsResultPage() {
 
   const resourceEntries = getNonZeroResourceEntries(
     latestHuntResult?.resourcesGained ?? {},
+  );
+  const fieldLootEntries = getNonZeroResourceEntries(
+    latestHuntResult?.fieldLootGained ?? {},
   );
   const shouldRouteToFeastHall =
     guidance.nextAction === "recover" ||
@@ -248,6 +255,154 @@ export default function BiotechLabsResultPage() {
           }
         />
 
+        <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 sm:flex-row sm:items-center sm:gap-5">
+          <div className="relative mx-auto h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-emerald-400/25 bg-black/45 shadow-[0_0_20px_rgba(16,185,129,0.12)] sm:mx-0 md:h-[72px] md:w-[72px]">
+            <CharacterPortraitImage
+              portraitId={state.player.characterPortraitId}
+              className="h-full w-full"
+              sizes="72px"
+            />
+          </div>
+          <div className="min-w-0 flex-1 text-center sm:text-left">
+            <div className="text-[10px] uppercase tracking-[0.2em] text-white/45">
+              Operative
+            </div>
+            <div className="mt-0.5 text-lg font-bold text-white md:text-xl">
+              {state.player.playerName}
+            </div>
+            {latestHuntResult ? (
+              <p className="mt-1 text-xs text-white/55">
+                Settlement below is{" "}
+                <span className="font-semibold text-emerald-100/90">
+                  final for this run
+                </span>
+                {isFieldContractResult && isRealtimeBonusApplied
+                  ? " — base contract plus realtime bonus."
+                  : isFieldContractResult
+                    ? " — base contract; link next run for bonus eligibility."
+                    : "."}
+              </p>
+            ) : (
+              <p className="mt-1 text-xs text-white/50">
+                No payout on file yet. Finish a hunt to populate this screen.
+              </p>
+            )}
+          </div>
+        </div>
+
+        {latestHuntResult ? (
+          <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4">
+            <div className="text-[10px] uppercase tracking-[0.2em] text-white/45">
+              Progression — how this run paid out
+            </div>
+            <p className="mt-2 text-sm text-white/65">
+              {isFieldContractResult
+                ? isRealtimeBonusApplied
+                  ? "Base is the AFK contract timer. Bonus is extra from realtime contribution on the void field. Final is what was applied to your operative."
+                  : "Base is the AFK contract timer. Bonus from the void field links shortly after settlement — refresh Hunt Result if totals are still updating."
+                : "Final payout is logged below — progression matches what you secured on this sortie."}
+            </p>
+            <div className="mt-4 overflow-x-auto">
+              <table className="w-full min-w-[320px] border-separate border-spacing-0 text-left text-sm">
+                <thead>
+                  <tr className="text-[10px] uppercase tracking-[0.16em] text-white/45">
+                    <th className="border-b border-white/10 pb-2 pr-3 font-semibold">
+                      Track
+                    </th>
+                    <th className="border-b border-white/10 pb-2 pr-3 font-semibold">
+                      Base
+                    </th>
+                    <th className="border-b border-white/10 pb-2 pr-3 font-semibold">
+                      Bonus
+                    </th>
+                    <th className="border-b border-white/10 pb-2 font-semibold">
+                      Final
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="text-white/85">
+                  <tr>
+                    <td className="border-b border-white/5 py-2.5 pr-3 font-medium text-white/75">
+                      Rank XP
+                    </td>
+                    <td className="border-b border-white/5 py-2.5 pr-3 tabular-nums">
+                      +{baseRankXp}
+                    </td>
+                    <td className="border-b border-white/5 py-2.5 pr-3 tabular-nums text-cyan-100/90">
+                      {isFieldContractResult
+                        ? isRealtimeBonusApplied
+                          ? `+${bonusRankXp}`
+                          : "…"
+                        : "—"}
+                    </td>
+                    <td className="border-b border-white/5 py-2.5 font-semibold tabular-nums text-emerald-100">
+                      +{finalRankXp}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="border-b border-white/5 py-2.5 pr-3 font-medium text-white/75">
+                      Mastery
+                    </td>
+                    <td className="border-b border-white/5 py-2.5 pr-3 tabular-nums">
+                      +{baseMastery}
+                    </td>
+                    <td className="border-b border-white/5 py-2.5 pr-3 tabular-nums text-cyan-100/90">
+                      {isFieldContractResult
+                        ? isRealtimeBonusApplied
+                          ? `+${bonusMastery}`
+                          : "…"
+                        : "—"}
+                    </td>
+                    <td className="border-b border-white/5 py-2.5 font-semibold tabular-nums text-emerald-100">
+                      +{finalMastery}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="border-b border-white/5 py-2.5 pr-3 font-medium text-white/75">
+                      Influence
+                    </td>
+                    <td className="border-b border-white/5 py-2.5 pr-3 tabular-nums">
+                      +{baseInfluence}
+                    </td>
+                    <td className="border-b border-white/5 py-2.5 pr-3 tabular-nums text-cyan-100/90">
+                      {isFieldContractResult
+                        ? isRealtimeBonusApplied
+                          ? `+${bonusInfluence}`
+                          : "…"
+                        : "—"}
+                    </td>
+                    <td className="border-b border-white/5 py-2.5 font-semibold tabular-nums text-emerald-100">
+                      +{finalInfluence}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="py-2.5 pr-3 font-medium text-white/75">
+                      Credits
+                    </td>
+                    <td className="py-2.5 pr-3 tabular-nums">+{baseCredits}</td>
+                    <td className="py-2.5 pr-3 tabular-nums text-cyan-100/90">
+                      {isFieldContractResult
+                        ? isRealtimeBonusApplied
+                          ? `+${bonusCredits}`
+                          : "…"
+                        : "—"}
+                    </td>
+                    <td className="py-2.5 font-semibold tabular-nums text-emerald-100">
+                      +{finalCredits}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            {isFieldContractResult && !isRealtimeBonusApplied ? (
+              <p className="mt-3 text-xs text-white/50">
+                … Bonus fills in once realtime contribution settles (usually
+                within a few seconds).
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+
         {fieldRunFeedback ? (
           <div className="flex flex-wrap gap-2">
             <span className="rounded-full border border-amber-400/30 bg-amber-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-amber-100">
@@ -275,8 +430,8 @@ export default function BiotechLabsResultPage() {
             nextStep={
               isFieldContractResult
                 ? shouldRouteToFeastHall
-                  ? "Feast Hall if pressure is flashing; otherwise the Hunting Ground contract board for another deploy."
-                  : "Hunting Ground for another deploy, or Home to shift the wider loop."
+                  ? "Feast Hall if pressure is flashing; otherwise the Hunting Ground board or Void Expedition for another deploy."
+                  : "Hunting Ground, Void Expedition, or Home to shift the wider loop."
                 : shouldRouteToFeastHall
                   ? "Open Feast Hall to spend the haul on stabilization before the next run."
                   : guidance.nextStepLabel
@@ -292,8 +447,14 @@ export default function BiotechLabsResultPage() {
           >
             <div className="rounded-xl border border-dashed border-white/10 p-6 text-sm text-white/50">
               No hunt result on record yet. Finish an AFK contract from the
-              Hunting Ground, use Deploy Into the Void on Home, or resolve a specimen hunt
-              from Biotech Labs.
+              Hunting Ground, deploy from Home (Command Deck), start from{" "}
+              <Link
+                href={VOID_EXPEDITION_PATH}
+                className="font-semibold text-cyan-200/90 underline decoration-cyan-400/35 underline-offset-2 hover:text-white"
+              >
+                Void Expedition
+              </Link>
+              , or resolve a specimen hunt from Biotech Labs.
             </div>
           </SectionCard>
         ) : (
@@ -655,6 +816,29 @@ export default function BiotechLabsResultPage() {
                   )}
                 </div>
 
+                {fieldLootEntries.length > 0 ? (
+                  <div className="rounded-xl border border-cyan-400/15 bg-cyan-500/8 p-4">
+                    <div className="text-[10px] uppercase tracking-[0.18em] text-cyan-200/70">
+                      Field pickups (banked during the run)
+                    </div>
+                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                      {fieldLootEntries.slice(0, 4).map(([key, value]) => (
+                        <div
+                          key={key}
+                          className="rounded-xl border border-white/10 bg-black/20 px-3 py-3 text-sm text-white/75"
+                        >
+                          +{value} {formatResourceLabel(key)}
+                        </div>
+                      ))}
+                    </div>
+                    {fieldLootEntries.length > 4 ? (
+                      <p className="mt-2 text-xs text-white/55">
+                        +{fieldLootEntries.length - 4} more pickup lines.
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
+
                 <div className="rounded-xl border border-white/10 bg-white/5 p-4">
                   <div className="text-[10px] uppercase tracking-[0.18em] text-white/45">
                     Decision Pressure
@@ -671,6 +855,24 @@ export default function BiotechLabsResultPage() {
                   </div>
                 </div>
 
+                {progressionMeaning.huntResultEnablement.length > 0 ? (
+                  <div className="rounded-xl border border-violet-400/20 bg-violet-500/8 p-4">
+                    <div className="text-[10px] uppercase tracking-[0.18em] text-violet-200/70">
+                      What this enables next
+                    </div>
+                    <div className="mt-3 space-y-2">
+                      {progressionMeaning.huntResultEnablement.slice(0, 3).map((line) => (
+                        <div
+                          key={line}
+                          className="rounded-xl border border-white/10 bg-black/20 px-3 py-3 text-sm text-white/70"
+                        >
+                          {line}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+
                 <div className="rounded-xl border border-cyan-400/20 bg-cyan-400/8 p-4">
                   <div className="text-[10px] uppercase tracking-[0.18em] text-cyan-200/70">
                     Decide Now
@@ -679,7 +881,7 @@ export default function BiotechLabsResultPage() {
                     {isFieldContractResult
                       ? shouldRouteToFeastHall
                         ? "Stabilize first, then reopen the contract board."
-                        : "Redeploy from the Hunting Ground or step back to Home."
+                        : "Redeploy from the Hunting Ground, Void Expedition, or step back to Home."
                       : shouldRouteToFeastHall
                         ? "Take the haul to Feast Hall before the loop frays."
                         : "Field pressure is still yours to spend."}
@@ -688,32 +890,62 @@ export default function BiotechLabsResultPage() {
                     {isFieldContractResult
                       ? shouldRouteToFeastHall
                         ? "Pressure says Black Market recovery. After that, the Hunting Ground uses the same timer queue for the next AFK contract."
-                        : "Hunting Ground contracts share the live mission queue with other ops. Deploy Into the Void on Home still queues a short hunt and can route here when it finishes."
+                        : "Hunting Ground and Void Expedition share the same contract queue. Home deploy and expedition deploy both enqueue a short hunt; expedition also opens the live void field for the sortie."
                       : shouldRouteToFeastHall
                         ? "Condition or hunger says the safer next stop is Black Market recovery. Stabilize there, then decide whether to craft utility or reopen exploration."
                         : guidance.detail}
                   </p>
-                  <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-                    <Link
-                      href={nextStepHref}
-                      className="inline-flex rounded-xl border border-cyan-300/30 bg-cyan-300/12 px-4 py-2 text-sm font-semibold text-cyan-50 transition hover:border-cyan-200/45 hover:bg-cyan-300/18"
-                    >
-                      {nextStepLabel}
-                    </Link>
-                    {secondaryFieldStep ? (
-                      <Link
-                        href={secondaryFieldStep.href}
-                        className="inline-flex rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white/88 transition hover:border-white/28 hover:bg-white/10"
-                      >
-                        {secondaryFieldStep.label}
-                      </Link>
-                    ) : null}
-                    <Link
-                      href="/bazaar/black-market"
-                      className="inline-flex rounded-xl border border-emerald-300/25 bg-emerald-300/10 px-4 py-2 text-sm font-semibold text-emerald-50 transition hover:border-emerald-200/40 hover:bg-emerald-300/16"
-                    >
-                      Black Market (Hub)
-                    </Link>
+                  <div className="mt-4 space-y-4">
+                    <div>
+                      <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">
+                        Suggested next (pressure-aware)
+                      </div>
+                      <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                        <Link
+                          href={nextStepHref}
+                          className="inline-flex rounded-xl border border-cyan-300/30 bg-cyan-300/12 px-4 py-2 text-sm font-semibold text-cyan-50 transition hover:border-cyan-200/45 hover:bg-cyan-300/18"
+                        >
+                          {nextStepLabel}
+                        </Link>
+                        {secondaryFieldStep ? (
+                          <Link
+                            href={secondaryFieldStep.href}
+                            className="inline-flex rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white/88 transition hover:border-white/28 hover:bg-white/10"
+                          >
+                            {secondaryFieldStep.label}
+                          </Link>
+                        ) : null}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">
+                        Always clear options
+                      </div>
+                      <p className="mt-1 text-xs text-white/55">
+                        Redeploy returns to the field map. Black Market is the hub.
+                        Recover is Feast Hall when you need stores or stabilization.
+                      </p>
+                      <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                        <Link
+                          href={VOID_EXPEDITION_PATH}
+                          className="inline-flex rounded-xl border border-fuchsia-400/30 bg-fuchsia-500/10 px-4 py-2 text-sm font-semibold text-fuchsia-100 transition hover:border-fuchsia-300/45 hover:bg-fuchsia-500/16"
+                        >
+                          Redeploy — Void Expedition
+                        </Link>
+                        <Link
+                          href="/bazaar/black-market"
+                          className="inline-flex rounded-xl border border-emerald-300/25 bg-emerald-300/10 px-4 py-2 text-sm font-semibold text-emerald-50 transition hover:border-emerald-200/40 hover:bg-emerald-300/16"
+                        >
+                          Black Market (Hub)
+                        </Link>
+                        <Link
+                          href="/bazaar/black-market/feast-hall"
+                          className="inline-flex rounded-xl border border-amber-300/25 bg-amber-500/10 px-4 py-2 text-sm font-semibold text-amber-50 transition hover:border-amber-200/40 hover:bg-amber-500/16"
+                        >
+                          Recover — Feast Hall
+                        </Link>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -740,6 +972,14 @@ export default function BiotechLabsResultPage() {
                       </div>
                     </div>
                   </div>
+
+                  {latestHuntResult?.hungerRewardPenaltyPct &&
+                  (latestHuntResult.hungerRewardPenaltyPct ?? 0) > 0 ? (
+                    <p className="mt-3 text-xs text-white/60">
+                      Hunger pressure ({latestHuntResult.hungerPressureLabel ?? "Low"}) reduced payout quality by{" "}
+                      {latestHuntResult.hungerRewardPenaltyPct}% and added +{latestHuntResult.hungerConditionDrainPenalty ?? 0} condition drain to this run.
+                    </p>
+                  ) : null}
 
                   <p className="mt-3 text-sm text-white/60">
                     {shouldRouteToFeastHall

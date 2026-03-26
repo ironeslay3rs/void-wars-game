@@ -1,6 +1,7 @@
 import PanelFrame from "@/components/shared/PanelFrame";
 import { PathType } from "@/features/game/gameTypes";
 import { getHungerLabel } from "@/features/status/survival";
+import type { ProgressionMeaning } from "@/features/game/gameSelectors";
 
 type ConditionWidgetProps = {
   path: PathType | null;
@@ -13,6 +14,7 @@ type ConditionWidgetProps = {
   masteryProgress: number;
   loopStateLabel: string;
   nextStepLabel: string;
+  progressionMeaning: ProgressionMeaning;
 };
 
 export default function ConditionWidget({
@@ -26,6 +28,7 @@ export default function ConditionWidget({
   masteryProgress,
   loopStateLabel,
   nextStepLabel,
+  progressionMeaning,
 }: ConditionWidgetProps) {
   const conditionLabel =
     condition >= 80
@@ -80,6 +83,35 @@ export default function ConditionWidget({
         <div className="mt-1 text-xs text-cyan-50/80">
           Next: {nextStepLabel}
         </div>
+      </div>
+
+      <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+        <div className="text-[10px] uppercase tracking-[0.18em] text-white/45">
+          {progressionMeaning.objectiveTitle}
+        </div>
+        <div className="mt-2 text-sm font-semibold text-white">
+          {progressionMeaning.objectiveLine}
+        </div>
+
+        <div className="mt-4 text-[10px] uppercase tracking-[0.18em] text-white/45">
+          {progressionMeaning.whyTitle}
+        </div>
+        <div className="mt-2 text-xs leading-5 text-white/70">
+          {progressionMeaning.whyLine}
+        </div>
+
+        {progressionMeaning.chips.length > 0 ? (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {progressionMeaning.chips.slice(0, 2).map((chip) => (
+              <span
+                key={chip.id}
+                className="rounded-full border border-white/15 bg-black/25 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/80"
+              >
+                {chip.label}
+              </span>
+            ))}
+          </div>
+        ) : null}
       </div>
 
       <div className="grid gap-3">

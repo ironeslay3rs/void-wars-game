@@ -9,6 +9,7 @@ import {
   getContinueRoute,
   hasMeaningfulProgress,
 } from "@/features/game/gameProgress";
+import { VOID_EXPEDITION_PATH } from "@/features/void-maps/voidRoutes";
 
 export default function LeftCommandMenu() {
   const router = useRouter();
@@ -26,9 +27,9 @@ export default function LeftCommandMenu() {
 
         <div className="space-y-2.5">
           <MenuButton
-            label="Enter the Void"
+            label="Into the Void"
             isPrimary
-            href="/bazaar/mercenary-guild"
+            href={VOID_EXPEDITION_PATH}
           />
 
           {homeMenuData.map((item) => {

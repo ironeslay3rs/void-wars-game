@@ -53,3 +53,411 @@ body {
   padding-bottom: max(1rem, var(--safe-area-inset-bottom));
   padding-left: max(1.5rem, var(--safe-area-inset-left));
 }
+
+/* Void Field — lightweight combat feedback (no animation lib) */
+@keyframes void-field-hit-slash-bloom {
+  0% {
+    opacity: 0;
+    transform: scale(0.45);
+  }
+  28% {
+    opacity: 0.9;
+    transform: scale(1.02);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.45);
+  }
+}
+
+@keyframes void-field-hit-slash {
+  0% {
+    opacity: 0;
+    filter: brightness(1.75) saturate(1.22);
+    transform: translate(-50%, -50%) scale(0.48) rotate(-28deg);
+  }
+  18% {
+    opacity: 1;
+    filter: brightness(1.45) saturate(1.12);
+    transform: translate(-50%, -50%) scale(1.2) rotate(6deg);
+  }
+  40% {
+    opacity: 0.98;
+    filter: brightness(1.2) saturate(1.06);
+    transform: translate(-50%, -50%) scale(1.08) rotate(12deg);
+  }
+  100% {
+    opacity: 0;
+    filter: brightness(1);
+    transform: translate(-50%, -50%) scale(1.32) rotate(28deg);
+  }
+}
+
+@keyframes void-field-hit-impact-core {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.35);
+  }
+  22% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.15);
+  }
+}
+
+@keyframes void-field-damage-float {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 6px) scale(0.82);
+  }
+  12% {
+    opacity: 1;
+    transform: translate(-50%, -6px) scale(1.08);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -34px) scale(0.92);
+  }
+}
+
+@keyframes void-field-damage-float-heavy {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 8px) scale(0.78);
+  }
+  11% {
+    opacity: 1;
+    transform: translate(-50%, -8px) scale(1.12);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -38px) scale(0.94);
+  }
+}
+
+@keyframes void-field-damage-float-crit {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 8px) scale(0.75) rotate(-2deg);
+  }
+  14% {
+    opacity: 1;
+    transform: translate(-50%, -10px) scale(1.22) rotate(3deg);
+  }
+  32% {
+    opacity: 1;
+    transform: translate(-50%, -14px) scale(1.1) rotate(-1deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -42px) scale(0.88) rotate(0deg);
+  }
+}
+
+@keyframes void-field-mob-drift {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(2.5px, -2px);
+  }
+}
+
+.void-field-hit-impact-core {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 48px;
+  height: 8px;
+  margin-left: -24px;
+  margin-top: -4px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(250, 250, 250, 0.95) 45%,
+    rgba(34, 211, 238, 0.9) 100%
+  );
+  box-shadow:
+    0 0 16px rgba(34, 211, 238, 0.9),
+    0 0 34px rgba(14, 165, 233, 0.48);
+  transform: translate(-50%, -50%);
+  animation: void-field-hit-impact-core 400ms cubic-bezier(0.15, 0.9, 0.2, 1)
+    forwards;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.void-field-hit-slash-bloom {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 64px;
+  height: 64px;
+  margin-left: -32px;
+  margin-top: -32px;
+  border-radius: 9999px;
+  background: radial-gradient(
+    circle,
+    rgba(34, 211, 238, 0.6) 0%,
+    rgba(14, 165, 233, 0.26) 45%,
+    transparent 72%
+  );
+  filter: blur(2px);
+  animation: void-field-hit-slash-bloom 360ms ease-out forwards;
+  pointer-events: none;
+}
+
+.void-field-hit-slash {
+  animation: void-field-hit-slash 400ms cubic-bezier(0.18, 0.88, 0.24, 1) forwards;
+}
+
+.void-field-damage-float {
+  animation: void-field-damage-float 720ms cubic-bezier(0.25, 0.46, 0.32, 1) forwards;
+}
+
+.void-field-damage-float-heavy {
+  animation: void-field-damage-float-heavy 820ms cubic-bezier(0.2, 0.82, 0.28, 1)
+    forwards;
+}
+
+.void-field-damage-float-crit {
+  animation: void-field-damage-float-crit 920ms cubic-bezier(0.2, 0.85, 0.25, 1)
+    forwards;
+}
+
+@keyframes void-field-mob-hit-flinch {
+  0% {
+    transform: translate(0, 0) scale(1);
+    filter: brightness(1);
+  }
+  12% {
+    transform: translate(2px, -1px) scale(0.93);
+    filter: brightness(1.35);
+  }
+  30% {
+    transform: translate(-3px, 1px) scale(1.06);
+    filter: brightness(1.22);
+  }
+  55% {
+    transform: translate(1px, 0) scale(1.02);
+    filter: brightness(1.08);
+  }
+  100% {
+    transform: translate(0, 0) scale(1);
+    filter: brightness(1);
+  }
+}
+
+.void-field-mob-hit-flinch {
+  animation: void-field-mob-hit-flinch 300ms cubic-bezier(0.25, 0.82, 0.32, 1)
+    forwards;
+  transform-origin: center bottom;
+}
+
+.void-field-mob-drift {
+  animation: void-field-mob-drift 5.5s ease-in-out infinite;
+}
+
+/* Slow field atmosphere (immersion, no extra systems) */
+@keyframes void-field-atmo-pulse {
+  0%,
+  100% {
+    opacity: 0.22;
+  }
+  50% {
+    opacity: 0.38;
+  }
+}
+
+.void-field-atmosphere {
+  background:
+    radial-gradient(
+      ellipse 85% 65% at 50% 42%,
+      rgba(6, 182, 212, 0.07) 0%,
+      transparent 55%
+    ),
+    radial-gradient(
+      circle at 20% 80%,
+      rgba(52, 211, 153, 0.05) 0%,
+      transparent 45%
+    );
+  animation: void-field-atmo-pulse 11s ease-in-out infinite;
+}
+
+@keyframes void-field-mob-ambient-glint {
+  0%,
+  100% {
+    filter: brightness(1) drop-shadow(0 0 4px rgba(0, 0, 0, 0.35));
+  }
+  50% {
+    filter: brightness(1.09) drop-shadow(0 0 10px rgba(34, 211, 238, 0.18));
+  }
+}
+
+.void-field-mob-ambient-glint {
+  animation: void-field-mob-ambient-glint 4.8s ease-in-out infinite;
+}
+
+/* Void Field — faction enemy motion (client-only presentation) */
+@keyframes void-enemy-bio-jitter {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  25% {
+    transform: translate(0.5px, -0.35px) rotate(-0.45deg);
+  }
+  50% {
+    transform: translate(-0.45px, 0.3px) rotate(0.35deg);
+  }
+  75% {
+    transform: translate(0.35px, 0.45px) rotate(-0.2deg);
+  }
+}
+
+.void-enemy-bio-motion {
+  animation: void-enemy-bio-jitter 2.6s ease-in-out infinite;
+}
+
+@keyframes void-enemy-mecha-idle {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(0, -1px);
+  }
+}
+
+.void-enemy-mecha-motion {
+  animation: void-enemy-mecha-idle 3.4s ease-in-out infinite;
+}
+
+@keyframes void-enemy-spirit-float {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.86;
+  }
+  50% {
+    transform: translateY(-2px);
+    opacity: 1;
+  }
+}
+
+.void-enemy-spirit-motion {
+  animation: void-enemy-spirit-float 4.2s ease-in-out infinite;
+}
+
+@keyframes void-enemy-infernal-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 5px rgba(248, 113, 113, 0.4));
+  }
+  50% {
+    transform: scale(1.02);
+    filter: drop-shadow(0 0 12px rgba(251, 146, 60, 0.65));
+  }
+}
+
+.void-enemy-infernal-motion {
+  animation: void-enemy-infernal-pulse 2.1s ease-in-out infinite;
+}
+
+/* Void Field — player presence (subtle world idle) */
+@keyframes void-field-player-idle {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+.void-field-player-idle {
+  animation: void-field-player-idle 3.2s ease-in-out infinite;
+}
+
+.void-field-player-idle-other {
+  animation: void-field-player-idle 4s ease-in-out infinite;
+}
+
+/* Box-shadow pulse on inner layer only (parent carries `ring-*`). */
+@keyframes void-field-target-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 10px 2px rgba(34, 211, 238, 0.35),
+      0 0 22px 4px rgba(6, 182, 212, 0.12);
+  }
+  50% {
+    box-shadow:
+      0 0 16px 3px rgba(34, 211, 238, 0.55),
+      0 0 32px 6px rgba(6, 182, 212, 0.2);
+  }
+}
+
+.void-field-mob-targeted {
+  animation: void-field-target-pulse 1.35s ease-in-out infinite;
+}
+
+@keyframes void-field-loot-pop {
+  0% {
+    transform: scale(0.32);
+    opacity: 0;
+  }
+  52% {
+    transform: scale(1.16);
+    opacity: 1;
+  }
+  72% {
+    transform: scale(0.96);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.void-field-loot-pop {
+  animation: void-field-loot-pop 0.42s cubic-bezier(0.34, 1.45, 0.64, 1) forwards;
+}
+
+@keyframes void-field-loot-spawn-pulse {
+  0% {
+    transform: scale(0.55);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.65);
+    opacity: 0;
+  }
+}
+
+.void-field-loot-spawn-pulse {
+  animation: void-field-loot-spawn-pulse 0.48s ease-out forwards;
+}
+
+@keyframes void-field-player-loot-ping {
+  0% {
+    filter: brightness(1) drop-shadow(0 0 0 transparent);
+  }
+  40% {
+    filter: brightness(1.4) drop-shadow(0 0 22px rgba(255, 255, 255, 0.65));
+  }
+  100% {
+    filter: brightness(1) drop-shadow(0 0 0 transparent);
+  }
+}
+
+.void-field-player-loot-ping {
+  animation: void-field-player-loot-ping 0.34s ease-out;
+}

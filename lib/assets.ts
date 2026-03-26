@@ -1,4 +1,38 @@
 export const assets = {
+  backgrounds: {
+    voidRealmExpeditionMap:
+      "/assets/backgrounds/void-realm-expedition-map.jpeg",
+  },
+
+  maps: {
+    blackMarketHub: "/assets/maps/black-market-hub.png",
+  },
+
+  voidField: {
+    howlingScar: "/assets/void-field/howling-scar.jpg",
+    ashRelay: "/assets/void-field/ash-relay.jpg",
+    echoRuins: "/assets/void-field/echo-ruins.jpg",
+    riftMaw: "/assets/void-field/rift-maw.jpg",
+    vfx: {
+      hitSlash: "/assets/void-field/vfx/hit-slash.png",
+    },
+  },
+
+  enemies: {
+    bio: {
+      wolf: "/assets/enemies/bio/bio_wolf.png",
+    },
+    mecha: {
+      scorpion: "/assets/enemies/mecha/mecha_scorpion.png",
+    },
+    spirit: {
+      wraith: "/assets/enemies/spirit/spirit_wraith.png",
+    },
+    infernal: {
+      titan: "/assets/enemies/infernal/infernal_titan.png",
+    },
+  },
+
   home: {
     background: "/images/home/bg-city-eclipse-main.png",
     crest: "/images/home/crest-main.png",
@@ -198,6 +232,15 @@ export const assets = {
     voidHydra: "/assets/bosses/boss-void-hydra.png",
     voidMaw: "/assets/bosses/boss-void-maw.png",
     voidMawAlpha: "/assets/bosses/boss-void-maw-alpha.png",
+  },
+
+  characters: {
+    male01: "/assets/characters/male_01.png",
+    female01: "/assets/characters/female_01.png",
+    male02: "/assets/characters/male_02.png",
+    female02: "/assets/characters/female_02.png",
+    elderMale: "/assets/characters/elder_male.png",
+    elderFemale: "/assets/characters/elder_female.png",
   },
 
   factions: {

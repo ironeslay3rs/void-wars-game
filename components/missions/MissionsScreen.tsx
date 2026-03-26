@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import ScreenHeader from "@/components/shared/ScreenHeader";
 import SectionCard from "@/components/shared/SectionCard";
@@ -9,6 +10,7 @@ import type {
   MissionDefinition,
   MissionQueueEntry,
 } from "@/features/game/gameTypes";
+import { VOID_EXPEDITION_PATH } from "@/features/void-maps/voidRoutes";
 
 type QueuedMissionView = MissionQueueEntry & {
   mission: MissionDefinition;
@@ -396,7 +398,7 @@ export default function MissionsScreen() {
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_360px]">
           <SectionCard
             title="Mission Board"
-            description="Queue standard operations here. Hunting Ground contracts use this same shared timer stack."
+            description="Queue standard operations here. Hunting Ground contracts and Void Expedition deploys share this same timer stack."
           >
             <div className="mb-4 space-y-3">
               <div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-white/65">
@@ -416,6 +418,17 @@ export default function MissionsScreen() {
                   {boardFeedback}
                 </div>
               ) : null}
+
+              <div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-white/65">
+                Live void field: pick realm on{" "}
+                <Link
+                  href={VOID_EXPEDITION_PATH}
+                  className="font-semibold text-fuchsia-200/95 underline decoration-fuchsia-400/35 underline-offset-2 hover:text-white"
+                >
+                  Void Expedition
+                </Link>
+                — deploy still enqueues here.
+              </div>
             </div>
 
             <div className="space-y-3">
@@ -577,7 +590,7 @@ export default function MissionsScreen() {
             <div className="flex flex-col gap-6">
               <SectionCard
                 title="Operations"
-                description="This is the shared live queue for both standard missions and Hunting Ground hunts."
+                description="Shared live queue for standard missions, Hunting Ground hunts, and Void Expedition sorties."
               >
                 <div className="space-y-3">
                   {queuedEntries.length === 0 ? (

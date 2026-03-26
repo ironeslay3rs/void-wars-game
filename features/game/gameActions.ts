@@ -17,6 +17,7 @@ import {
   rebuildMissionQueueSchedule,
   syncMirroredHuntActiveProcess,
 } from "@/features/game/gameMissionUtils";
+import { voidZoneById, type VoidZoneId } from "@/features/void-maps/zoneData";
 import {
   buildNavigationState,
   getAvailableRoutes,
@@ -30,6 +31,7 @@ import {
   HUNGER_CONDITION_PRESSURE_PER_TICK,
   HUNGER_DECAY_PER_TICK,
   HUNGER_PRESSURE_THRESHOLD,
+  getHungerPressureEffects,
   MOSS_RATION_CONDITION_RESTORE,
   MOSS_RATION_HUNGER_RESTORE,
   MOSS_RATION_RECIPE_COST,
@@ -44,6 +46,8 @@ import type {
   ResourceKey,
   ResourcesState,
 } from "@/features/game/gameTypes";
+import { getNextRunModifierDefinitionById } from "@/features/crafting-district/nextRunModifiersData";
+import { rollVoidFieldLoot } from "@/features/void-maps/rollVoidFieldLoot";
 
 function updateSingleResource(
   resources: ResourcesState,
@@ -59,6 +63,18 @@ function updateSingleResource(
 function applySurvivalDecay(player: PlayerState, now: number): PlayerState {
   if (now <= player.lastConditionTickAt) {
     return player;
+  }
+
+  // Clear Feast Hall UI state once the kitchen lockout expires.
+  // This keeps the "active effect" field easy to reason about/clear.
+  if (
+    player.activeFeastHallOfferId !== null &&
+    player.conditionRecoveryAvailableAt <= now
+  ) {
+    player = {
+      ...player,
+      activeFeastHallOfferId: null,
+    };
   }
 
   const elapsedMs = now - player.lastConditionTickAt;
@@ -90,7 +106,13 @@ function hydratePlayerState(player: GameState["player"]): PlayerState {
   return {
     ...initialGameState.player,
     ...player,
+    characterPortraitId:
+      player.characterPortraitId ?? initialGameState.player.characterPortraitId,
     hunger: player.hunger ?? initialGameState.player.hunger,
+    voidRealtimeBinding:
+      player.voidRealtimeBinding !== undefined
+        ? player.voidRealtimeBinding
+        : initialGameState.player.voidRealtimeBinding,
     resources: {
       ...initialGameState.player.resources,
       ...player.resources,
@@ -114,12 +136,39 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       };
     }
 
+    case "SET_VOID_REALTIME_BINDING":
+      return {
+        ...state,
+        player: {
+          ...state.player,
+          voidRealtimeBinding: action.payload,
+        },
+      };
+
     case "SET_PLAYER_NAME":
       return {
         ...state,
         player: {
           ...state.player,
           playerName: action.payload,
+        },
+      };
+
+    case "SET_CHARACTER_PORTRAIT_ID":
+      return {
+        ...state,
+        player: {
+          ...state.player,
+          characterPortraitId: action.payload,
+        },
+      };
+
+    case "SET_CAREER_FOCUS":
+      return {
+        ...state,
+        player: {
+          ...state.player,
+          careerFocus: action.payload,
         },
       };
 
@@ -144,6 +193,28 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           ),
         },
       };
+
+    case "ADD_FIELD_LOOT": {
+      const nextResources = updateSingleResource(
+        state.player.resources,
+        action.payload.key,
+        action.payload.amount,
+      );
+      const nextFieldLoot = {
+        ...(state.player.fieldLootGainedThisRun ?? {}),
+        [action.payload.key]:
+          (state.player.fieldLootGainedThisRun?.[action.payload.key] ?? 0) +
+          action.payload.amount,
+      };
+      return {
+        ...state,
+        player: {
+          ...state.player,
+          resources: nextResources,
+          fieldLootGainedThisRun: nextFieldLoot,
+        },
+      };
+    }
 
     case "SPEND_RESOURCE":
       return {
@@ -250,6 +321,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           ...player,
           condition: clamp(player.condition + recoveryAmount, 0, 100),
           conditionRecoveryAvailableAt: now + STATUS_RECOVERY_COOLDOWN_MS,
+          activeFeastHallOfferId: null,
           resources: updateSingleResource(
             player.resources,
             "credits",
@@ -315,6 +387,36 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       };
     }
 
+    case "CRAFT_NEXT_RUN_MODIFIER": {
+      const player = state.player;
+      const def = getNextRunModifierDefinitionById(action.payload.modifierId);
+      if (!def) return state;
+
+      const costEntries = Object.entries(def.cost).filter(
+        (entry): entry is [ResourceKey, number] => typeof entry[1] === "number",
+      );
+      const canAfford = costEntries.every(
+        ([key, amount]) => player.resources[key] >= amount,
+      );
+      if (!canAfford) return state;
+
+      let nextResources = player.resources;
+      for (const [key, amount] of costEntries) {
+        nextResources = updateSingleResource(nextResources, key, -amount);
+      }
+
+      return {
+        ...state,
+        player: {
+          ...player,
+          resources: nextResources,
+          // One-slot, non-stacking: crafting replaces any previously primed kit.
+          nextRunModifiers: def.modifiers,
+          nextRunModifiersAppliedForProcessId: null,
+        },
+      };
+    }
+
     case "USE_FEAST_HALL_OFFER": {
       const now = Date.now();
       const player = applySurvivalDecay(state.player, now);
@@ -362,6 +464,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           condition: clamp(player.condition + offer.conditionGain, 0, 100),
           hunger: clamp(player.hunger + offer.hungerDelta, 0, 100),
           conditionRecoveryAvailableAt: now + offer.cooldownMs,
+          activeFeastHallOfferId: offer.id,
           resources: nextResources,
         },
       };
@@ -402,12 +505,82 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       }
 
       const resolvedAt = action.payload.resolvedAt ?? now;
+      const hungerEffects = getHungerPressureEffects(player.hunger);
+
+      const nextRunMods = player.nextRunModifiers;
+      const settlementMods = nextRunMods?.applyOnSettlement ?? null;
+      const nextRunRewardMultiplier =
+        settlementMods && typeof settlementMods.rewardBonusPct === "number"
+          ? 1 + settlementMods.rewardBonusPct / 100
+          : 1;
+      const nextRunConditionDeltaOffset =
+        (settlementMods?.conditionDrainReduction ?? 0) -
+        (settlementMods?.conditionDrainPenalty ?? 0);
+
+      const rewardForResolution =
+        hungerEffects.rewardPenaltyPct === 0
+          ? mission.reward
+          : {
+              ...mission.reward,
+              conditionDelta:
+                mission.reward.conditionDelta -
+                hungerEffects.conditionDrainPenalty,
+              rankXp: Math.round(
+                mission.reward.rankXp * hungerEffects.rewardMultiplier,
+              ),
+              masteryProgress: Math.round(
+                mission.reward.masteryProgress * hungerEffects.rewardMultiplier,
+              ),
+              influence:
+                typeof mission.reward.influence === "number"
+                  ? Math.round(
+                      mission.reward.influence * hungerEffects.rewardMultiplier,
+                    )
+                  : undefined,
+              resources: mission.reward.resources
+                ? (Object.fromEntries(
+                    Object.entries(mission.reward.resources).map(
+                      ([key, value]) => [
+                        key,
+                        Math.round(value * hungerEffects.rewardMultiplier),
+                      ],
+                    ),
+                  ) as typeof mission.reward.resources)
+                : undefined,
+            };
+
+      const rewardWithNextRunMods =
+        nextRunRewardMultiplier === 1 && nextRunConditionDeltaOffset === 0
+          ? rewardForResolution
+          : {
+              ...rewardForResolution,
+              conditionDelta: rewardForResolution.conditionDelta + nextRunConditionDeltaOffset,
+              rankXp: Math.round(rewardForResolution.rankXp * nextRunRewardMultiplier),
+              masteryProgress: Math.round(
+                rewardForResolution.masteryProgress * nextRunRewardMultiplier,
+              ),
+              influence:
+                typeof rewardForResolution.influence === "number"
+                  ? Math.round(rewardForResolution.influence * nextRunRewardMultiplier)
+                  : undefined,
+              resources: rewardForResolution.resources
+                ? (Object.fromEntries(
+                    Object.entries(rewardForResolution.resources).map(
+                      ([key, value]) => [
+                        key,
+                        Math.round(value * nextRunRewardMultiplier),
+                      ],
+                    ),
+                  ) as typeof rewardForResolution.resources)
+                : undefined,
+            };
+
       const resolvedConditionDelta = getResolvedConditionDelta(
         player,
-        mission.reward,
+        rewardWithNextRunMods,
       );
       const nextPlayer = applyActivityHungerCost(
-        applyMissionReward(player, mission.reward),
+        applyMissionReward(player, rewardWithNextRunMods),
         "hunt",
       );
 
@@ -419,21 +592,26 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             mission.id === "bio-hunt-specimen"
               ? false
               : player.hasBiotechSpecimenLead,
+          fieldLootGainedThisRun: {},
           lastHuntResult: {
             missionId: mission.id,
             huntTitle: mission.title,
             resolvedAt,
             conditionDelta: resolvedConditionDelta,
             conditionAfter: nextPlayer.condition,
-            rankXpGained: mission.reward.rankXp,
-            masteryProgressGained: mission.reward.masteryProgress,
-            influenceGained: mission.reward.influence ?? 0,
-            resourcesGained: mission.reward.resources ?? {},
+            rankXpGained: rewardWithNextRunMods.rankXp,
+            masteryProgressGained: rewardWithNextRunMods.masteryProgress,
+            influenceGained: rewardWithNextRunMods.influence ?? 0,
+            resourcesGained: rewardWithNextRunMods.resources ?? {},
+            fieldLootGained: state.player.fieldLootGainedThisRun ?? {},
+            hungerPressureLabel: hungerEffects.label,
+            hungerRewardPenaltyPct: hungerEffects.rewardPenaltyPct,
+            hungerConditionDrainPenalty: hungerEffects.conditionDrainPenalty,
 
-            baseRankXpGained: mission.reward.rankXp,
-            baseMasteryProgressGained: mission.reward.masteryProgress,
-            baseInfluenceGained: mission.reward.influence ?? 0,
-            baseResourcesGained: mission.reward.resources ?? {},
+            baseRankXpGained: rewardWithNextRunMods.rankXp,
+            baseMasteryProgressGained: rewardWithNextRunMods.masteryProgress,
+            baseInfluenceGained: rewardWithNextRunMods.influence ?? 0,
+            baseResourcesGained: rewardWithNextRunMods.resources ?? {},
 
             realtimeContributionBonusMultiplier: null,
             realtimeContributionAppliedForResolvedAt: null,
@@ -615,6 +793,29 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         nextResourcesGained[key] = (nextResourcesGained[key] ?? 0) + bonusAmount;
       });
 
+      // Alpha-safe: if the session reports a boss defeat, add a themed boss loot spike
+      // using the same field loot tables (existing resources only).
+      if (bossDefeated) {
+        if (!Object.prototype.hasOwnProperty.call(voidZoneById, zoneId)) {
+          // Unknown zone id: skip themed boss spike safely.
+          // (Keeps alpha behavior stable under mismatched server payloads.)
+        } else {
+          const zone = voidZoneById[zoneId as VoidZoneId];
+        const rolledBossLoot = rollVoidFieldLoot({
+          zoneLootTheme: zone.lootTheme,
+          mobId: "realtime-boss",
+          isBoss: true,
+          seed: `rt-boss-${zoneId}-${resolvedAt}`,
+        });
+        rolledBossLoot.forEach((line) => {
+          realtimeResourcesBonusGained[line.resource] =
+            (realtimeResourcesBonusGained[line.resource] ?? 0) + line.amount;
+          nextResourcesGained[line.resource] =
+            (nextResourcesGained[line.resource] ?? 0) + line.amount;
+        });
+        }
+      }
+
       const rankState = applyRankXp(
         state.player.rankLevel,
         state.player.rankXp,
@@ -642,6 +843,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         zoneMastery: nextZoneMastery,
         lastCompletedZoneId: nextLastCompletedZoneId,
         zoneRunStreak: nextZoneRunStreak,
+        // Bonus is fully applied; tear down shard binding so the global WS can close.
+        voidRealtimeBinding: null,
         navigation: buildNavigationState(
           rankState.rankLevel,
           state.player.unlockedRoutes,
@@ -703,6 +906,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             startedAt,
             endsAt: action.payload.endsAt,
           },
+          fieldLootGainedThisRun:
+            (action.payload.kind ?? "exploration") === "hunt" ? {} : state.player.fieldLootGainedThisRun,
         },
       };
     }

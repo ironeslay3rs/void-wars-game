@@ -1,0 +1,14 @@
+---
+description: Raw assets in public/assets/incoming must never be linked from code; always promote to public/assets and lib/assets.ts
+alwaysApply: true
+---
+
+# Incoming / asset ingestion (permanent)
+
+- **Canonical drop:** `public/assets/incoming/` (shorthand **`/incoming`**). Legacy **`public/assets/_incoming/`** — same rules until retired.
+- **Never** reference these paths in production UI, content JSON, or shipped registry string values.
+- **Mandatory:** rename (lowercase, hyphen-separated) → copy into the correct folder under `public/assets/` (`maps/`, `maps/void-fields/`, `icons/`, `icons/skills/`, `icons/items/`, `backgrounds/`, `ui/`, `factions/`, `creatures/`, `bosses/`) → split multi-item sheets when **clearly separable** → **register in `lib/assets.ts`** → use **only** registered keys/paths in code.
+- If splitting is ambiguous: one **renamed production sheet** in the right category, register it, note **manual slicing** later.
+- No hardcoded temporary paths to raw drops in components.
+
+See **AGENTS.md** → *Incoming / asset ingestion* for the full pipeline and **For asset-ingestion tasks** delivery format.

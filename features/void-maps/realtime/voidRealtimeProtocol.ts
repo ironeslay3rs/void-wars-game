@@ -29,6 +29,10 @@ export type MobEntity = {
 
   x: number; // percent [0..100]
   y: number; // percent [0..100]
+
+  // Client-enriched after mob_defeated; not sent by server.
+  isBoss?: boolean;
+  lootProfileId?: string;
 };
 
 /* =========================

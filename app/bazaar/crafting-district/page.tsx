@@ -11,6 +11,7 @@ import {
 import BazaarSubpageNav from "@/components/bazaar/BazaarSubpageNav";
 import { useGame } from "@/features/game/gameContext";
 import { getCraftingDistrictScreenData } from "@/features/crafting-district/craftingDistrictScreenData";
+import { nextRunModifierDefinitions } from "@/features/crafting-district/nextRunModifiersData";
 import {
   hasStabilizationSigil,
   RUNE_CRAFTER_STABILIZATION_SIGIL,
@@ -142,6 +143,11 @@ export default function CraftingDistrictPage() {
 
     dispatch({ type: "CRAFT_MOSS_RATION" });
     setRationResult("Binding complete. 1 Moss Ration sealed for survival use.");
+  }
+
+  function craftNextRunModifier(modifierId: (typeof nextRunModifierDefinitions)[number]["id"]) {
+    dispatch({ type: "CRAFT_NEXT_RUN_MODIFIER", payload: { modifierId } });
+    setRationResult("Kit primed. Next run will apply the modifier once, then clear.");
   }
 
   return (
@@ -311,6 +317,76 @@ export default function CraftingDistrictPage() {
                       "Refinery idle. Process raw ore whenever you need alloy."}
                   </div>
                 </div>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-black/25 p-6">
+              <div className="text-[11px] uppercase tracking-[0.22em] text-cyan-300/70">
+                Next Run Modifiers
+              </div>
+              <h2 className="mt-2 text-xl font-black uppercase">
+                Prime One Kit
+              </h2>
+              <p className="mt-3 text-sm leading-6 text-white/70">
+                No inventory layer: pick one kit, pay the cost, and it applies on the next run only.
+              </p>
+              <div className="mt-4 grid gap-3">
+                {nextRunModifierDefinitions.map((def) => {
+                  const costEntries = Object.entries(def.cost).filter(
+                    (e): e is [string, number] => typeof e[1] === "number",
+                  );
+                  const canAfford = costEntries.every(([key, amount]) => {
+                    const resourceKey = key as keyof typeof state.player.resources;
+                    return (state.player.resources[resourceKey] ?? 0) >= amount;
+                  });
+
+                  return (
+                    <div
+                      key={def.id}
+                      className="rounded-xl border border-white/10 bg-white/[0.03] p-4"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="text-sm font-semibold text-white">
+                            {def.title}
+                          </div>
+                          <div className="mt-1 text-xs text-white/60">
+                            {def.description}
+                          </div>
+                        </div>
+                        {state.player.nextRunModifiers?.id === def.id ? (
+                          <span className="shrink-0 rounded-full border border-cyan-300/30 bg-cyan-300/12 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-cyan-50">
+                            Primed
+                          </span>
+                        ) : null}
+                      </div>
+
+                      <div className="mt-3 grid gap-2 text-xs text-white/70">
+                        <div>
+                          <span className="font-semibold text-white">Cost:</span>{" "}
+                          {costEntries
+                            .map(([k, v]) => `${v} ${k}`)
+                            .join(" · ")}
+                        </div>
+                        <div>
+                          <span className="font-semibold text-white">
+                            Next Run Effect:
+                          </span>{" "}
+                          {def.modifiers.nextRunEffect}
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => craftNextRunModifier(def.id)}
+                        disabled={!canAfford}
+                        className="mt-3 w-full rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-4 py-3 text-left text-sm font-semibold text-cyan-100 transition hover:bg-cyan-500/18 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        Prime {def.title}
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>

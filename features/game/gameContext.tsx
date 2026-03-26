@@ -28,6 +28,7 @@ import type {
   GameAction,
   GameState,
 } from "@/features/game/gameTypes";
+import { VoidRealtimeBridge } from "@/features/void-maps/realtime/VoidRealtimeBridge";
 
 type PathSelection = Exclude<FactionAlignment, "unbound">;
 
@@ -271,7 +272,13 @@ export function GameProvider({ children }: { children: ReactNode }) {
     );
   }
 
-  return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
+  return (
+    <GameContext.Provider value={value}>
+      <VoidRealtimeBridge state={state} dispatch={dispatch}>
+        {children}
+      </VoidRealtimeBridge>
+    </GameContext.Provider>
+  );
 }
 
 export function useGame() {
