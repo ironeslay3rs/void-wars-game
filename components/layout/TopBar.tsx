@@ -27,8 +27,8 @@ export default function TopBar() {
   const conditionPct = Math.max(0, Math.min(100, p.condition));
 
   return (
-    <header className="absolute inset-x-0 top-0 z-30 px-6 pt-3">
-      <div className="relative mx-auto flex h-24 max-w-[1700px] items-start justify-between gap-4">
+    <header className="absolute inset-x-0 top-0 z-30 px-4 pt-3 sm:px-6">
+      <div className="relative mx-auto flex h-20 max-w-[1700px] items-start justify-between gap-3 sm:h-24 sm:gap-4">
         <div className="flex min-w-0 flex-1 items-start gap-2 pt-1 sm:gap-3">
           <Link
             href="/character"
@@ -73,7 +73,7 @@ export default function TopBar() {
           </IconBadge>
         </div>
 
-        <div className="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2">
+        <div className="pointer-events-none absolute left-1/2 top-0 hidden -translate-x-1/2 lg:block">
           <div className="relative min-w-[560px] px-16 pt-1 text-center">
             <div className="absolute left-0 right-0 top-3 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 

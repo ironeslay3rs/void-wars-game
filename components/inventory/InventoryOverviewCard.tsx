@@ -14,6 +14,16 @@ const RESOURCE_SLOT_ORDER: ResourceKey[] = [
   "mossRations",
 ];
 
+const RESOURCE_SLOT_TOOLTIPS: Partial<Record<ResourceKey, string>> = {
+  credits: "Universal payment used across market and services.",
+  ironOre: "Raw salvage from the field. Refine into usable stock.",
+  scrapAlloy: "Refined salvage used for early crafting and loadout preparation.",
+  runeDust: "Binding reagent used for rations, sigils, and rune-linked crafts.",
+  emberCore: "Heat-stable component used for higher-grade crafting.",
+  bioSamples: "Recovered biomass used for survival buffers and Bio-facing crafts.",
+  mossRations: "Consumable survival buffer: restores hunger and condition.",
+};
+
 function formatFactionLabel(faction: string) {
   if (faction === "unbound") return "Unbound";
   if (faction === "bio") return "Bio";
@@ -137,10 +147,12 @@ export default function InventoryOverviewCard() {
           {RESOURCE_SLOT_ORDER.map((key) => {
             const amount = player.resources[key];
             const hasStock = amount > 0;
+            const tooltip = RESOURCE_SLOT_TOOLTIPS[key];
 
             return (
               <div
                 key={key}
+                title={tooltip}
                 className="flex min-h-[48px] items-center justify-between gap-4 rounded-xl border border-white/12 bg-black/35 px-4 py-3"
               >
                 <span className="text-sm font-semibold uppercase tracking-[0.08em] text-white/85">

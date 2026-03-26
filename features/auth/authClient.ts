@@ -3,6 +3,8 @@
 import type { AuthSession, AuthUser } from "@/features/auth/authTypes";
 
 const AUTH_STORAGE_KEY = "void-wars-oblivion-auth-session";
+const AUTH_COOKIE_KEY = "void-wars-session";
+const AUTH_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24;
 
 function getSupabaseConfig() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -63,6 +65,35 @@ function mapAuthSession(value: unknown): AuthSession | null {
   };
 }
 
+function mapStoredAuthSession(value: unknown): AuthSession | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const raw = value as Record<string, unknown>;
+
+  // Current persisted shape (AuthSession).
+  if (
+    typeof raw.accessToken === "string" &&
+    typeof raw.refreshToken === "string"
+  ) {
+    const user = mapAuthUser(raw.user);
+    if (!user) return null;
+    return {
+      accessToken: raw.accessToken,
+      refreshToken: raw.refreshToken,
+      expiresAt:
+        typeof raw.expiresAt === "number"
+          ? raw.expiresAt
+          : Date.now() + 5 * 60 * 1000,
+      user,
+    };
+  }
+
+  // Backward compatibility: allow raw Supabase response shape in storage.
+  return mapAuthSession(value);
+}
+
 async function supabaseRequest(
   path: string,
   init: RequestInit,
@@ -107,14 +138,16 @@ export function loadStoredAuthSession(): AuthSession | null {
   try {
     const raw = window.localStorage.getItem(AUTH_STORAGE_KEY);
 
-    if (!raw) {
-      return null;
+    if (raw) {
+      return mapStoredAuthSession(JSON.parse(raw));
     }
-
-    return mapAuthSession(JSON.parse(raw));
   } catch {
-    return null;
+    // fall through
   }
+
+  // Note: cookie only stores accessToken for middleware gating.
+  // Client session hydration remains localStorage-based.
+  return null;
 }
 
 export function storeAuthSession(session: AuthSession) {
@@ -123,6 +156,13 @@ export function storeAuthSession(session: AuthSession) {
   }
 
   window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session));
+  try {
+    document.cookie = `${AUTH_COOKIE_KEY}=${encodeURIComponent(
+      session.accessToken,
+    )}; Path=/; Max-Age=${AUTH_COOKIE_MAX_AGE_SECONDS}; SameSite=Lax`;
+  } catch {
+    // cookie write is best-effort only
+  }
 }
 
 export function clearStoredAuthSession() {
@@ -131,6 +171,11 @@ export function clearStoredAuthSession() {
   }
 
   window.localStorage.removeItem(AUTH_STORAGE_KEY);
+  try {
+    document.cookie = `${AUTH_COOKIE_KEY}=; Path=/; Max-Age=0; SameSite=Lax`;
+  } catch {
+    // cookie clear is best-effort only
+  }
 }
 
 export async function refreshAuthSession(refreshToken: string) {

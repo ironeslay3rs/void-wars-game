@@ -23,6 +23,7 @@ export default function MainMenuRightRail({
 }: MainMenuRightRailProps) {
   const condition = state.player.condition;
   const mastery = state.player.masteryProgress;
+  const hasMeaningfulCondition = condition > 0 || state.player.rankLevel > 1;
   const alignment =
     state.player.factionAlignment === "unbound"
       ? "UNBOUND"
@@ -42,7 +43,7 @@ export default function MainMenuRightRail({
 
         <div className="mt-4 flex items-end justify-between gap-4">
           <div className="text-[52px] font-black leading-none text-white">
-            {condition}%
+            {hasMeaningfulCondition ? `${condition}%` : "—"}
           </div>
 
           <div className="pb-1 text-right text-xs uppercase tracking-[0.24em] text-cyan-300/80">
@@ -53,12 +54,16 @@ export default function MainMenuRightRail({
         <div className="mt-4 h-3 overflow-hidden rounded-full bg-white/10">
           <div
             className="h-full rounded-full bg-[linear-gradient(90deg,rgba(255,70,70,0.9),rgba(0,220,255,0.92))]"
-            style={{ width: `${Math.max(0, Math.min(100, condition))}%` }}
+            style={{
+              width: `${hasMeaningfulCondition ? Math.max(0, Math.min(100, condition)) : 0}%`,
+            }}
           />
         </div>
 
         <div className="mt-3 text-sm text-white/65">
-          {getConditionLabel(condition)}
+          {hasMeaningfulCondition
+            ? getConditionLabel(condition)
+            : "No field data yet. Deploy once to establish a live condition readout."}
         </div>
 
         <div className="mt-5 grid grid-cols-2 gap-3">

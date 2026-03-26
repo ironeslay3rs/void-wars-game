@@ -21,21 +21,45 @@ export default function HomeHudClient() {
 
   return (
     <>
-      {/* LEFT SIDE */}
-      <section className="absolute left-8 top-16 z-30 w-[320px]">
+      {/* MOBILE STACK (single column, scrollable) */}
+      <section className="fixed inset-x-4 top-[92px] bottom-[176px] z-30 overflow-y-auto lg:hidden">
+        <div className="mx-auto flex w-full max-w-xl flex-col gap-4 pb-4">
+          <MissionPanel />
+
+          <ConditionWidget
+            path={getSelectedPath(state.player.factionAlignment)}
+            rank={state.player.rank}
+            rankLevel={state.player.rankLevel}
+            rankXp={state.player.rankXp}
+            rankXpToNext={state.player.rankXpToNext}
+            condition={state.player.condition}
+            hunger={state.player.hunger}
+            masteryProgress={state.player.masteryProgress}
+            loopStateLabel={guidance.stateLabel}
+            nextStepLabel={guidance.nextStepLabel}
+            progressionMeaning={progressionMeaning}
+          />
+
+          <FactionPathPanel
+            selectedPath={getSelectedPath(state.player.factionAlignment)}
+            onSelectPath={selectPath}
+          />
+        </div>
+      </section>
+
+      {/* DESKTOP PANELS */}
+      <section className="absolute left-8 top-16 z-30 hidden w-[320px] lg:block">
         <MissionPanel />
       </section>
 
-      {/* RIGHT SIDE */}
-      <section className="absolute right-8 top-16 z-30 w-[320px] xl:w-[360px]">
+      <section className="absolute right-8 top-16 z-30 hidden w-[320px] lg:block xl:w-[360px]">
         <FactionPathPanel
           selectedPath={getSelectedPath(state.player.factionAlignment)}
           onSelectPath={selectPath}
         />
       </section>
 
-      {/* CONDITION / STATUS */}
-      <section className="absolute right-8 top-[420px] z-30 w-[320px] xl:w-[360px]">
+      <section className="absolute right-8 top-[420px] z-30 hidden w-[320px] lg:block xl:w-[360px]">
         <ConditionWidget
           path={getSelectedPath(state.player.factionAlignment)}
           rank={state.player.rank}
@@ -52,12 +76,12 @@ export default function HomeHudClient() {
       </section>
 
       {/* RESOURCE BAR */}
-      <section className="absolute inset-x-8 bottom-20 z-30">
+      <section className="absolute inset-x-4 bottom-[104px] z-[15] lg:inset-x-8 lg:bottom-20">
         <ResourceBar values={state.player.resources} />
       </section>
 
       {/* BOTTOM NAV */}
-      <section className="absolute inset-x-8 bottom-4 z-30">
+      <section className="absolute inset-x-4 bottom-4 z-30 lg:inset-x-8">
         <BottomNav />
       </section>
     </>

@@ -96,6 +96,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = useCallback(async (email: string, password: string) => {
     const nextSession = await signInWithPassword(email, password);
+    // Clear stale unsuffixed state key from older builds to prevent collisions.
+    try {
+      window.localStorage.removeItem("void-wars-oblivion-game-state");
+    } catch {
+      // best-effort only
+    }
     storeAuthSession(nextSession);
     setSession(nextSession);
     setStatus("authenticated");
@@ -109,6 +115,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return false;
     }
 
+    // Clear stale unsuffixed state key from older builds to prevent collisions.
+    try {
+      window.localStorage.removeItem("void-wars-oblivion-game-state");
+    } catch {
+      // best-effort only
+    }
     storeAuthSession(nextSession);
     setSession(nextSession);
     setStatus("authenticated");

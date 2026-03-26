@@ -42,6 +42,18 @@ export default function LoadoutPage() {
             {getFieldLoadoutPostureFillMult(current).toFixed(2)}, expose window ×
             {getFieldLoadoutExposeDamageMult(current).toFixed(2)}.
           </p>
+          <div className="mt-3 rounded-xl border border-amber-300/25 bg-amber-500/10 px-4 py-3 text-xs leading-relaxed text-amber-100/90">
+            New operator prompt: if your combat kit feels empty, visit the Black
+            Market loop first, then return here to finalize your field setup.
+            <div className="mt-2 flex flex-wrap gap-2">
+              <Link
+                href="/bazaar"
+                className="rounded-lg border border-amber-200/45 bg-black/25 px-2 py-1 font-semibold uppercase tracking-[0.08em] text-amber-50 hover:border-amber-100/60"
+              >
+                Visit Black Market
+              </Link>
+            </div>
+          </div>
           <div className="mt-4 grid gap-3 md:grid-cols-3">
             {FIELD_LOADOUT_PROFILES.map((p) => {
               const active = current === p.id;

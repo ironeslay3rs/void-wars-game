@@ -413,10 +413,40 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const player = applySurvivalDecay(state.player, now);
       const recoveryAmount = getStatusRecoveryAmount(player.knownRecipes);
 
-      if (player.conditionRecoveryAvailableAt > now) {
+      // Emergency stabilization: allow a low-credit / no-ration recovery path
+      // when survival is critically threatened.
+      const emergencyEligible =
+        player.condition <= 15 && player.resources.credits > 0;
+
+      // Normal recovery respects cooldown + full cost.
+      if (player.conditionRecoveryAvailableAt > now && !emergencyEligible) {
         return {
           ...state,
           player,
+        };
+      }
+
+      if (emergencyEligible) {
+        const emergencyCost = 1;
+        const emergencyRecoveryAmount = Math.max(1, Math.floor(recoveryAmount / 10));
+
+        return {
+          ...state,
+          player: {
+            ...player,
+            condition: clamp(
+              player.condition + emergencyRecoveryAmount,
+              0,
+              100,
+            ),
+            conditionRecoveryAvailableAt: now + STATUS_RECOVERY_COOLDOWN_MS,
+            activeFeastHallOfferId: null,
+            resources: updateSingleResource(
+              player.resources,
+              "credits",
+              -Math.min(emergencyCost, player.resources.credits),
+            ),
+          },
         };
       }
 

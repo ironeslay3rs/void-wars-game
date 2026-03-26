@@ -71,7 +71,7 @@ const ZONES: ZoneDef[] = [
     top: "52%",
     width: "16%",
     height: "14%",
-    href: "/bazaar/void-market",
+    href: "/bazaar/black-market/golden-bazaar",
   },
   {
     id: "ivory-tower",

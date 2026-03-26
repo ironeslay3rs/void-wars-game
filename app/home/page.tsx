@@ -10,13 +10,8 @@ export default function HomePage() {
     <div className="relative min-h-screen">
       <GameHudShell />
 
-      <section className="pointer-events-none fixed inset-x-0 top-20 z-40 px-6">
-        <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
-          <div className="pointer-events-auto">
-            <HomeResourceStrip />
-          </div>
-
-          <div className="mx-auto flex w-full max-w-xl flex-col gap-4">
+      <section className="pointer-events-none fixed inset-x-0 top-20 z-40 px-4 sm:px-6">
+        <div className="mx-auto flex w-full max-w-xl flex-col gap-4">
           <div className="pointer-events-auto">
             <ExplorationScreenSummary />
           </div>
@@ -32,7 +27,12 @@ export default function HomePage() {
           <div className="pointer-events-auto mx-auto w-full max-w-md">
             <ExplorationPanel />
           </div>
-          </div>
+        </div>
+      </section>
+
+      <section className="pointer-events-none fixed inset-x-0 bottom-4 z-30 px-4 sm:px-6">
+        <div className="pointer-events-auto mx-auto w-full max-w-4xl">
+          <HomeResourceStrip />
         </div>
       </section>
     </div>

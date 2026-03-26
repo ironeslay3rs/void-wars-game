@@ -56,9 +56,7 @@ export default function ArenaModesCard({
               </div>
             </div>
 
-            <p className="mt-3 text-sm leading-6 text-white/60">
-              {entry.body}
-            </p>
+            <p className="mt-3 text-sm leading-6 text-white/60">{entry.body}</p>
           </button>
         );
       })}

@@ -2,6 +2,7 @@ import PanelFrame from "@/components/shared/PanelFrame";
 import { PathType } from "@/features/game/gameTypes";
 import { getHungerLabel } from "@/features/status/survival";
 import type { ProgressionMeaning } from "@/features/game/gameSelectors";
+import Link from "next/link";
 
 type ConditionWidgetProps = {
   path: PathType | null;
@@ -30,6 +31,7 @@ export default function ConditionWidget({
   nextStepLabel,
   progressionMeaning,
 }: ConditionWidgetProps) {
+  const isCriticalSurvival = condition <= 0 || hunger <= 0;
   const conditionLabel =
     condition >= 80
       ? "System condition optimal."
@@ -71,6 +73,11 @@ export default function ConditionWidget({
         <p className="mt-1 text-sm text-white/60">
           Live readout for survival pressure, rank, and current alignment.
         </p>
+        {isCriticalSurvival ? (
+          <div className="mt-3 rounded-xl border border-amber-300/30 bg-amber-500/10 px-3 py-2 text-[11px] leading-relaxed text-amber-100/90">
+            Condition/Hunger depleted. Open <Link className="underline decoration-amber-300/40 underline-offset-2 hover:text-amber-50" href="/status">Status</Link> to recover.
+          </div>
+        ) : null}
       </div>
 
       <div className="rounded-xl border border-cyan-400/20 bg-cyan-400/8 p-3">
@@ -151,6 +158,9 @@ export default function ConditionWidget({
               style={{ width: `${xpPercent}%` }}
             />
           </div>
+          <div className="mt-2 text-[11px] text-white/55">
+            Rank is earned through hunts, missions, and contracts.
+          </div>
         </div>
 
         <div className="rounded-xl border border-white/10 bg-white/5 p-3">
@@ -201,21 +211,23 @@ export default function ConditionWidget({
                 Condition
               </div>
               <div className="mt-1 text-sm font-semibold text-white">
-                {condition}%
+                {condition === 0 ? "Awaiting field data" : `${condition}%`}
               </div>
             </div>
 
             <div className="text-right text-xs text-white/55">
-              {conditionLabel}
+              {condition === 0 ? "—" : conditionLabel}
             </div>
           </div>
 
-          <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
-            <div
-              className="h-full rounded-full bg-emerald-500 transition-all"
-              style={{ width: `${Math.max(0, Math.min(100, condition))}%` }}
-            />
-          </div>
+          {condition !== 0 ? (
+            <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
+              <div
+                className="h-full rounded-full bg-emerald-500 transition-all"
+                style={{ width: `${Math.max(0, Math.min(100, condition))}%` }}
+              />
+            </div>
+          ) : null}
         </div>
 
         <div className="rounded-xl border border-white/10 bg-white/5 p-3">

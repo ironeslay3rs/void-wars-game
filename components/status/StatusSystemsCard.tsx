@@ -59,10 +59,15 @@ export default function StatusSystemsCard() {
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         {systems.map((sys) => {
           const color = getStateColor(sys.value);
+          const gateTooltip =
+            sys.label === "Gate" && sys.value === "sealed"
+              ? "GATE: SEALED — the Teleport Gate is currently uncharged (travel staging is locked). Unseal when the gate-charge/open preparation is completed so the gate transitions out of Sealed and the travel route becomes available."
+              : undefined;
 
           return (
             <div
               key={sys.label}
+              title={gateTooltip}
               className={`rounded-xl border px-4 py-3 ${color}`}
             >
               <div className="text-[10px] uppercase tracking-[0.2em] opacity-60">
@@ -72,6 +77,11 @@ export default function StatusSystemsCard() {
               <div className="mt-1 text-sm font-bold uppercase tracking-[0.05em]">
                 {formatStatus(sys.value)}
               </div>
+              {sys.label === "Gate" && sys.value === "sealed" ? (
+                <p className="mt-2 text-[11px] normal-case leading-relaxed text-white/70">
+                  The Gate remains sealed until field progression unlocks the travel sequence.
+                </p>
+              ) : null}
             </div>
           );
         })}

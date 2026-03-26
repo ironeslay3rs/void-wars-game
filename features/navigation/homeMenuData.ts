@@ -6,7 +6,7 @@ export type HomeMenuItem = {
 
 export const homeMenuData: HomeMenuItem[] = [
   { id: "continue", label: "Continue", href: "/" },
-  { id: "new-game", label: "New Game", href: "/" },
+  { id: "new-game", label: "New Game", href: "/new-game" },
   { id: "career", label: "Career", href: "/career" },
   { id: "mastery", label: "Mastery", href: "/mastery" },
   { id: "professions", label: "Professions", href: "/professions" },

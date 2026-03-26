@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { canonPathFactions } from "@/features/canonRegistry";
 import { factionData } from "@/features/factions/factionData";
 import { useGame } from "@/features/game/gameContext";
@@ -68,6 +69,9 @@ export default function StatusHeroCard() {
   const canAffordRecovery = player.resources.credits >= STATUS_RECOVERY_COST;
   const canRecoverCondition = canAffordRecovery && !isRecoveryOnCooldown;
   const canConsumeRation = player.resources.mossRations > 0;
+  const showMossRationRecoveryPrompt =
+    player.condition <= 15 && player.resources.mossRations === 0;
+  const canEmergencyRation = player.resources.credits > 0;
   const recoveryActionMessage = isRecoveryOnCooldown
     ? `Blocked. Recovery is cooling down for ${recoveryCooldownRemainingSeconds}s before another stabilization cycle can begin.`
     : !canAffordRecovery
@@ -287,6 +291,39 @@ export default function StatusHeroCard() {
               >
                 {canConsumeRation ? "Use Moss Ration" : "No Moss Rations"}
               </button>
+              {showMossRationRecoveryPrompt ? (
+                <div className="mt-3 rounded-xl border border-amber-300/30 bg-amber-500/10 px-3 py-3 text-xs leading-relaxed text-amber-100/90">
+                  Critical survival condition with no Moss Rations on hand.
+                  Stabilize via crafting, or use an emergency ration if credits
+                  remain.
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <Link
+                      href="/bazaar/crafting-district"
+                      className="rounded-lg border border-amber-200/40 bg-black/25 px-2 py-1 font-semibold uppercase tracking-[0.08em] text-amber-50 hover:border-amber-100/60"
+                    >
+                      Craft Moss Ration
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => dispatch({ type: "RECOVER_CONDITION" })}
+                      disabled={!canEmergencyRation}
+                      className={[
+                        "rounded-lg border px-2 py-1 font-semibold uppercase tracking-[0.08em] text-amber-50",
+                        canEmergencyRation
+                          ? "border-amber-200/40 bg-black/25 hover:border-amber-100/60"
+                          : "cursor-not-allowed border-white/10 bg-white/[0.03] text-white/30",
+                      ].join(" ")}
+                      title={
+                        canEmergencyRation
+                          ? "Emergency Ration spends 1 credit to restore condition."
+                          : "No credits available."
+                      }
+                    >
+                      Emergency Ration
+                    </button>
+                  </div>
+                </div>
+              ) : null}
             </div>
           </div>
         </div>
@@ -311,6 +348,9 @@ export default function StatusHeroCard() {
                     style={{ width: `${rankProgress}%` }}
                   />
                 </div>
+                <p className="mt-2 text-xs text-white/55">
+                  Complete hunts and missions to advance rank.
+                </p>
               </div>
 
               <div>

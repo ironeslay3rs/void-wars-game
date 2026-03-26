@@ -36,7 +36,7 @@ export default function HomeHudClient() {
         />
       </section>
 
-      <section className="absolute inset-x-[300px] bottom-[92px] z-30 hidden xl:block">
+      <section className="absolute inset-x-[300px] bottom-[104px] z-20 hidden xl:block">
         <ResourceBar values={state.player.resources} />
       </section>
 
