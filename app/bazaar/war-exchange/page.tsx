@@ -12,6 +12,7 @@ import {
 } from "@/features/market/marketData";
 import { checkCapacity, getOverflowPenalty } from "@/features/resources/inventoryLogic";
 import { quoteSellPriceCredits } from "@/features/market/marketActions";
+import { formatResourceLabel } from "@/features/game/gameFeedback";
 
 type Tab = "buy" | "sell";
 
@@ -21,6 +22,8 @@ function rarityChip(rarity: string) {
     return "border-emerald-400/30 bg-emerald-400/10 text-emerald-100";
   return "border-white/10 bg-white/5 text-white/80";
 }
+
+const SELL_AMOUNTS = [1, 5, 10] as const;
 
 export default function WarExchangePage() {
   const { state, dispatch } = useGame();
@@ -48,8 +51,7 @@ export default function WarExchangePage() {
     return SELLABLE_RESOURCE_KEYS.map((key) => {
       const owned = player.resources[key] ?? 0;
       const base = RESOURCE_BASE_PRICES[key] ?? 0;
-      const quote = quoteSellPriceCredits(key, 10);
-      return { key, owned, base, quote };
+      return { key, owned, base };
     });
   }, [player.resources]);
 
@@ -115,94 +117,153 @@ export default function WarExchangePage() {
 
         {tab === "buy" ? (
           <section className="grid gap-3 md:grid-cols-2">
-            {listings.map((l) => (
-              <div
-                key={l.id}
-                className="rounded-2xl border border-white/12 bg-black/25 p-5"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <div className="text-sm font-black uppercase tracking-[0.05em] text-white">
-                      {l.name}
-                    </div>
-                    <div className="mt-1 text-[11px] uppercase tracking-[0.18em] text-white/45">
-                      {l.category}
-                    </div>
-                    <div className="mt-2 text-xs text-white/60">{l.description}</div>
-                  </div>
-                  <div
-                    className={[
-                      "rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em]",
-                      rarityChip(l.rarity),
-                    ].join(" ")}
-                  >
-                    {l.rarity}
-                  </div>
-                </div>
-
-                <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-sm">
-                  <div className="text-white/75">
-                    Price:{" "}
-                    <span className="font-black text-white">{l.priceCredits}</span>{" "}
-                    credits
-                  </div>
-                  <div className="text-white/55">Stock: {l.stockLeft}</div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setConfirm({ kind: "buy", listingId: l.id })}
-                  disabled={l.stockLeft <= 0 || player.resources.credits < l.priceCredits}
-                  className="mt-4 w-full rounded-xl border border-amber-300/25 bg-amber-500/10 px-4 py-3 text-sm font-semibold text-amber-100 transition hover:border-amber-200/40 hover:bg-amber-500/16 disabled:cursor-not-allowed disabled:opacity-40"
+            {listings.map((l) => {
+              const grantEntries = Object.entries(l.grant).filter(
+                (e): e is [string, number] => typeof e[1] === "number" && e[1] > 0,
+              );
+              const canAfford = player.resources.credits >= l.priceCredits;
+              return (
+                <div
+                  key={l.id}
+                  className="rounded-2xl border border-white/12 bg-black/25 p-5"
                 >
-                  Buy
-                </button>
-              </div>
-            ))}
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <div className="text-sm font-black uppercase tracking-[0.05em] text-white">
+                        {l.name}
+                      </div>
+                      <div className="mt-1 text-[11px] uppercase tracking-[0.18em] text-white/45">
+                        {l.category}
+                      </div>
+                      <div className="mt-2 text-xs text-white/60">{l.description}</div>
+                    </div>
+                    <div
+                      className={[
+                        "shrink-0 rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em]",
+                        rarityChip(l.rarity),
+                      ].join(" ")}
+                    >
+                      {l.rarity}
+                    </div>
+                  </div>
+
+                  {grantEntries.length > 0 ? (
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      {grantEntries.map(([k, v]) => (
+                        <span
+                          key={k}
+                          className="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-100"
+                        >
+                          +{v} {formatResourceLabel(k)}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
+
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-sm">
+                    <div className={canAfford ? "text-white/75" : "text-red-300/90"}>
+                      Price:{" "}
+                      <span className="font-black text-white">{l.priceCredits}</span>{" "}
+                      credits
+                      {!canAfford ? (
+                        <span className="ml-2 text-[11px] text-red-300/80">
+                          (need {l.priceCredits - player.resources.credits} more)
+                        </span>
+                      ) : null}
+                    </div>
+                    <div className="text-white/55">Stock: {l.stockLeft}</div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setConfirm({ kind: "buy", listingId: l.id })}
+                    disabled={l.stockLeft <= 0 || !canAfford}
+                    className="mt-4 w-full rounded-xl border border-amber-300/25 bg-amber-500/10 px-4 py-3 text-sm font-semibold text-amber-100 transition hover:border-amber-200/40 hover:bg-amber-500/16 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    {l.stockLeft <= 0 ? "Out of Stock" : "Buy"}
+                  </button>
+                </div>
+              );
+            })}
           </section>
         ) : (
           <section className="grid gap-3 md:grid-cols-2">
-            {sellRows.map((row) => (
-              <div
-                key={row.key}
-                className="rounded-2xl border border-white/12 bg-black/25 p-5"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <div className="text-sm font-black uppercase tracking-[0.05em] text-white">
-                      {row.key}
-                    </div>
-                    <div className="mt-1 text-[11px] uppercase tracking-[0.18em] text-white/45">
-                      Base {row.base} credits each · net 90%
-                    </div>
-                  </div>
-                  <div className="rounded-full border border-white/12 bg-white/5 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-white/75">
-                    x{row.owned}
-                  </div>
-                </div>
-
-                <div className="mt-3 text-sm text-white/70">
-                  Sell 10 → net{" "}
-                  <span className="font-black text-white">{row.quote.net}</span>{" "}
-                  credits
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    setConfirm({
-                      kind: "sell",
-                      key: row.key,
-                      amount: Math.min(10, row.owned),
-                    })
-                  }
-                  disabled={row.owned <= 0}
-                  className="mt-4 w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm font-semibold text-white/85 transition hover:border-white/25 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+            {sellRows.map((row) => {
+              const hasAny = row.owned > 0;
+              return (
+                <div
+                  key={row.key}
+                  className="rounded-2xl border border-white/12 bg-black/25 p-5"
                 >
-                  Sell 10
-                </button>
-              </div>
-            ))}
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <div className="text-sm font-black uppercase tracking-[0.05em] text-white">
+                        {formatResourceLabel(row.key)}
+                      </div>
+                      <div className="mt-1 text-[11px] uppercase tracking-[0.18em] text-white/45">
+                        {row.base} credits each · net 90% after cut
+                      </div>
+                    </div>
+                    <div
+                      className={[
+                        "rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em]",
+                        hasAny
+                          ? "border-white/15 bg-white/8 text-white/85"
+                          : "border-white/8 bg-white/[0.03] text-white/35",
+                      ].join(" ")}
+                    >
+                      x{row.owned} owned
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {SELL_AMOUNTS.map((qty) => {
+                      const canSell = row.owned >= qty;
+                      const net = quoteSellPriceCredits(row.key, qty).net;
+                      return (
+                        <button
+                          key={qty}
+                          type="button"
+                          onClick={() =>
+                            setConfirm({ kind: "sell", key: row.key, amount: qty })
+                          }
+                          disabled={!canSell}
+                          className="flex-1 rounded-xl border border-white/12 bg-white/[0.04] px-3 py-2 text-center transition hover:border-white/25 hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-30"
+                        >
+                          <div className="text-xs font-bold text-white/90">
+                            Sell {qty}
+                          </div>
+                          <div className="mt-0.5 text-[10px] text-white/50">
+                            +{net} cr
+                          </div>
+                        </button>
+                      );
+                    })}
+                    {row.owned > 0 ? (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setConfirm({ kind: "sell", key: row.key, amount: row.owned })
+                        }
+                        className="flex-1 rounded-xl border border-amber-300/20 bg-amber-500/8 px-3 py-2 text-center transition hover:border-amber-300/35 hover:bg-amber-500/14"
+                      >
+                        <div className="text-xs font-bold text-amber-100">
+                          Sell All
+                        </div>
+                        <div className="mt-0.5 text-[10px] text-amber-100/55">
+                          +{quoteSellPriceCredits(row.key, row.owned).net} cr
+                        </div>
+                      </button>
+                    ) : (
+                      <div className="flex-1 rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2 text-center opacity-30">
+                        <div className="text-xs font-bold text-white/60">None</div>
+                        <div className="mt-0.5 text-[10px] text-white/35">stocked</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </section>
         )}
       </div>
@@ -221,13 +282,37 @@ export default function WarExchangePage() {
               {confirm.kind === "buy"
                 ? (() => {
                     const listing = MARKET_LISTINGS.find((l) => l.id === confirm.listingId);
-                    return listing
-                      ? `${listing.name} for ${listing.priceCredits} credits.`
-                      : "Listing not found.";
+                    if (!listing) return "Listing not found.";
+                    const grantEntries = Object.entries(listing.grant).filter(
+                      (e): e is [string, number] => typeof e[1] === "number" && e[1] > 0,
+                    );
+                    return (
+                      <span>
+                        {listing.name} for{" "}
+                        <span className="font-black text-white">{listing.priceCredits}</span>{" "}
+                        credits.
+                        {grantEntries.length > 0 ? (
+                          <span className="mt-1 block text-emerald-100/80">
+                            Receive:{" "}
+                            {grantEntries
+                              .map(([k, v]) => `${v} ${formatResourceLabel(k)}`)
+                              .join(", ")}
+                          </span>
+                        ) : null}
+                      </span>
+                    );
                   })()
                 : (() => {
                     const quote = quoteSellPriceCredits(confirm.key, confirm.amount);
-                    return `Sell ${confirm.amount} ${confirm.key} for ${quote.net} credits (after cut).`;
+                    return (
+                      <span>
+                        Sell{" "}
+                        <span className="font-black text-white">{confirm.amount}</span>{" "}
+                        {formatResourceLabel(confirm.key)} →{" "}
+                        <span className="font-black text-emerald-200">+{quote.net} credits</span>{" "}
+                        (after 10% cut).
+                      </span>
+                    );
                   })()}
             </div>
 
@@ -257,8 +342,9 @@ export default function WarExchangePage() {
                       type: "MARKET_SELL",
                       payload: { key: confirm.key, amount: confirm.amount },
                     });
+                    const net = quoteSellPriceCredits(confirm.key, confirm.amount).net;
                     pushToast(
-                      `Sold ${confirm.amount} ${confirm.key} for credits.`,
+                      `Sold ${confirm.amount} ${formatResourceLabel(confirm.key)} for +${net} credits.`,
                     );
                   }
                   setConfirm(null);
@@ -280,4 +366,3 @@ export default function WarExchangePage() {
     </main>
   );
 }
-
