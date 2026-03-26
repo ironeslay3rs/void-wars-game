@@ -19,6 +19,7 @@ import {
   huntIntensityFromMissionRankReward,
   withWorldProgressAfterHunt,
 } from "@/features/factions/factionWorldLogic";
+import { enforceCapacity } from "@/features/resources/inventoryLogic";
 
 export function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
@@ -71,21 +72,22 @@ export function addPartialResources(
   incoming?: Partial<ResourcesState>,
 ): ResourcesState {
   if (!incoming) return current;
+  const { accepted } = enforceCapacity(current, incoming);
 
   return {
-    credits: current.credits + (incoming.credits ?? 0),
-    ironOre: current.ironOre + (incoming.ironOre ?? 0),
-    scrapAlloy: current.scrapAlloy + (incoming.scrapAlloy ?? 0),
-    runeDust: current.runeDust + (incoming.runeDust ?? 0),
-    emberCore: current.emberCore + (incoming.emberCore ?? 0),
-    bioSamples: current.bioSamples + (incoming.bioSamples ?? 0),
-    mossRations: current.mossRations + (incoming.mossRations ?? 0),
+    credits: current.credits + (accepted.credits ?? 0),
+    ironOre: current.ironOre + (accepted.ironOre ?? 0),
+    scrapAlloy: current.scrapAlloy + (accepted.scrapAlloy ?? 0),
+    runeDust: current.runeDust + (accepted.runeDust ?? 0),
+    emberCore: current.emberCore + (accepted.emberCore ?? 0),
+    bioSamples: current.bioSamples + (accepted.bioSamples ?? 0),
+    mossRations: current.mossRations + (accepted.mossRations ?? 0),
     coilboundLattice:
-      current.coilboundLattice + (incoming.coilboundLattice ?? 0),
-    ashSynodRelic: current.ashSynodRelic + (incoming.ashSynodRelic ?? 0),
+      current.coilboundLattice + (accepted.coilboundLattice ?? 0),
+    ashSynodRelic: current.ashSynodRelic + (accepted.ashSynodRelic ?? 0),
     vaultLatticeShard:
-      current.vaultLatticeShard + (incoming.vaultLatticeShard ?? 0),
-    ironHeart: current.ironHeart + (incoming.ironHeart ?? 0),
+      current.vaultLatticeShard + (accepted.vaultLatticeShard ?? 0),
+    ironHeart: current.ironHeart + (accepted.ironHeart ?? 0),
   };
 }
 

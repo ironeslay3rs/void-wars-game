@@ -10,6 +10,6 @@ export const bazaarRouteMap = {
   "void-expedition": VOID_EXPEDITION_PATH,
   "faction-hqs": "/bazaar/faction-hqs",
   "teleport-gate": "/bazaar/teleport-gate",
-  "void-market": "/bazaar/void-market",
+  "void-market": "/bazaar/war-exchange",
   "black-market": "/bazaar/black-market",
 } as const;

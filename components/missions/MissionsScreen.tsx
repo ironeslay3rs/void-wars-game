@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import MissionResult from "@/components/missions/MissionResult";
+import MissionTimer from "@/components/missions/MissionTimer";
 import ScreenHeader from "@/components/shared/ScreenHeader";
 import SectionCard from "@/components/shared/SectionCard";
 import { useGame } from "@/features/game/gameContext";
@@ -371,35 +373,17 @@ export default function MissionsScreen() {
             title={completionFeedback.title}
             description={completionFeedback.detail}
           >
-            <div className="space-y-4">
-              <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/10 p-4">
-                <div className="text-[10px] uppercase tracking-[0.18em] text-emerald-200/70">
-                  Rewards Applied
-                </div>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-xs text-white/85">
-                    +{completionFeedback.rankXp} XP
-                  </span>
-                  <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-xs text-white/85">
-                    +{completionFeedback.masteryProgress} Mastery
-                  </span>
-                  <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-xs text-white/85">
-                    +{completionFeedback.influence} Influence
-                  </span>
-                  <span className="rounded-full border border-red-500/20 bg-red-500/10 px-3 py-1 text-xs text-red-200">
-                    {completionFeedback.conditionDelta} Condition
-                  </span>
-                  {completionFeedback.resources.map(([key, value]) => (
-                    <span
-                      key={key}
-                      className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-100"
-                    >
-                      +{value} {formatRewardLabel(key)}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
+            <MissionResult
+              title={completionFeedback.title}
+              detail={completionFeedback.detail}
+              rankXp={completionFeedback.rankXp}
+              masteryProgress={completionFeedback.masteryProgress}
+              influence={completionFeedback.influence}
+              conditionDelta={completionFeedback.conditionDelta}
+              resources={completionFeedback.resources}
+              formatRewardLabel={formatRewardLabel}
+              onReturn={() => setCompletionFeedback(null)}
+            />
           </SectionCard>
         ) : null}
 
@@ -621,7 +605,21 @@ export default function MissionsScreen() {
                                 {entry.mission.title}
                               </div>
                               <div className="mt-1 text-xs text-white/50">
-                                {getQueueStatusLabel(entry, now)}
+                                {now < entry.startsAt ? (
+                                  getQueueStatusLabel(entry, now)
+                                ) : (
+                                  <>
+                                    Ends in{" "}
+                                    <MissionTimer
+                                      endsAt={entry.endsAt}
+                                      onDone={() => {
+                                        // GameProvider already processes the queue.
+                                        // This just forces a re-render near the boundary.
+                                        setNow(Date.now());
+                                      }}
+                                    />
+                                  </>
+                                )}
                               </div>
                             </div>
 

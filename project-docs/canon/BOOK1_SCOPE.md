@@ -14,7 +14,7 @@
 
 \## Player Loop
 
-Deploy → Hunt → Extract → Recover → Repeat
+Deploy → Hunt → Extract → Recover → Repeat -craft
 
 
 
@@ -22,33 +22,13 @@ Deploy → Hunt → Extract → Recover → Repeat
 
 \- Void Field
 
-\- Black Market (basic)
+\- Black Market
 
-\- Inventory (basic)
+\- Inventory 
 
-\- Crafting (minimal)
+\- Crafting 
 
 \- Condition system
 
 
-
-\## Excluded Systems (DO NOT BUILD)
-
-\- Fusion systems
-
-\- Advanced economy
-
-\- Guild/clans
-
-\- PvP systems
-
-\- Skill trees
-
-\- Large narrative systems
-
-
-
-\## Rule
-
-If it feels like "endgame" → it does NOT belong in Book 1
 

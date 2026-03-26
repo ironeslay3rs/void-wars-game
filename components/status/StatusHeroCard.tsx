@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { canonPathFactions } from "@/features/canonRegistry";
 import { factionData } from "@/features/factions/factionData";
 import { useGame } from "@/features/game/gameContext";
@@ -71,7 +70,9 @@ export default function StatusHeroCard() {
   const canConsumeRation = player.resources.mossRations > 0;
   const showMossRationRecoveryPrompt =
     player.condition <= 15 && player.resources.mossRations === 0;
-  const canEmergencyRation = player.resources.credits > 0;
+  const canEmergencyRation = player.resources.credits >= 100;
+  const canCraftMossRationNow =
+    player.resources.bioSamples >= 10 && player.resources.ironOre >= 5;
   const recoveryActionMessage = isRecoveryOnCooldown
     ? `Blocked. Recovery is cooling down for ${recoveryCooldownRemainingSeconds}s before another stabilization cycle can begin.`
     : !canAffordRecovery
@@ -297,15 +298,27 @@ export default function StatusHeroCard() {
                   Stabilize via crafting, or use an emergency ration if credits
                   remain.
                   <div className="mt-2 flex flex-wrap gap-2">
-                    <Link
-                      href="/bazaar/crafting-district"
-                      className="rounded-lg border border-amber-200/40 bg-black/25 px-2 py-1 font-semibold uppercase tracking-[0.08em] text-amber-50 hover:border-amber-100/60"
-                    >
-                      Craft Moss Ration
-                    </Link>
                     <button
                       type="button"
-                      onClick={() => dispatch({ type: "RECOVER_CONDITION" })}
+                      onClick={() => dispatch({ type: "CRAFT_MOSS_RATION" })}
+                      disabled={!canCraftMossRationNow}
+                      className={[
+                        "rounded-lg border px-2 py-1 font-semibold uppercase tracking-[0.08em]",
+                        canCraftMossRationNow
+                          ? "border-amber-200/40 bg-black/25 text-amber-50 hover:border-amber-100/60"
+                          : "cursor-not-allowed border-white/10 bg-white/[0.03] text-white/30",
+                      ].join(" ")}
+                      title={
+                        canCraftMossRationNow
+                          ? "Craft Moss Ration: 10 bio samples + 5 iron ore."
+                          : "Need 10 bio samples and 5 iron ore."
+                      }
+                    >
+                      Craft Moss Ration
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => dispatch({ type: "USE_EMERGENCY_RATION" })}
                       disabled={!canEmergencyRation}
                       className={[
                         "rounded-lg border px-2 py-1 font-semibold uppercase tracking-[0.08em] text-amber-50",
@@ -315,12 +328,15 @@ export default function StatusHeroCard() {
                       ].join(" ")}
                       title={
                         canEmergencyRation
-                          ? "Emergency Ration spends 1 credit to restore condition."
-                          : "No credits available."
+                          ? "Emergency Ration: spend 100 credits to restore 25% condition."
+                          : "Need 100 credits."
                       }
                     >
                       Emergency Ration
                     </button>
+                  </div>
+                  <div className="mt-2 text-[11px] text-amber-100/75">
+                    Craft: 10 bio samples + 5 iron ore. Emergency: 100 credits → +25% condition.
                   </div>
                 </div>
               ) : null}

@@ -31,7 +31,9 @@ export default function StatusScreenSummary() {
   const canAffordRecovery = player.resources.credits >= STATUS_RECOVERY_COST;
   const canCraftRation =
     player.resources.bioSamples >= MOSS_RATION_RECIPE_COST.bioSamples &&
-    player.resources.runeDust >= MOSS_RATION_RECIPE_COST.runeDust;
+    player.resources.ironOre >= MOSS_RATION_RECIPE_COST.ironOre &&
+    MOSS_RATION_RECIPE_COST.bioSamples > 0 &&
+    MOSS_RATION_RECIPE_COST.ironOre > 0;
 
   if (player.hunger < HUNGER_PRESSURE_THRESHOLD) {
     return (

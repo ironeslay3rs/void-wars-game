@@ -1,6 +1,7 @@
 import type { FactionAlignment } from "@/features/game/gameTypes";
 
-type InventoryLoadoutItem = {
+export type InventoryLoadoutItem = {
+  id: string;
   name: string;
   type: string;
   rarity: string;
@@ -18,6 +19,7 @@ export function getFactionStarterLoadout(
   if (faction === "bio") {
     return [
       {
+        id: "bio-sporeneedle-launcher",
         name: "Sporeneedle Launcher",
         type: "Primary Weapon",
         rarity: "Rare",
@@ -26,6 +28,7 @@ export function getFactionStarterLoadout(
           "A living launcher that seeds corrosive pods into clustered targets.",
       },
       {
+        id: "bio-mirefang-sidearm",
         name: "Mirefang Sidearm",
         type: "Secondary Weapon",
         rarity: "Uncommon",
@@ -34,6 +37,7 @@ export function getFactionStarterLoadout(
           "Bone-framed sidearm tuned for quick follow-up shots while moving.",
       },
       {
+        id: "bio-carapace-weave",
         name: "Carapace Weave",
         type: "Armor Core",
         rarity: "Rare",
@@ -47,6 +51,7 @@ export function getFactionStarterLoadout(
   if (faction === "mecha") {
     return [
       {
+        id: "mecha-synod-railcarbine",
         name: "Synod Railcarbine",
         type: "Primary Weapon",
         rarity: "Rare",
@@ -55,6 +60,7 @@ export function getFactionStarterLoadout(
           "Precision coil rifle built from salvage-grade convoy parts.",
       },
       {
+        id: "mecha-arc-welder-pistol",
         name: "Arc Welder Pistol",
         type: "Secondary Weapon",
         rarity: "Uncommon",
@@ -63,6 +69,7 @@ export function getFactionStarterLoadout(
           "Compact sidearm that overloads damaged armor seams at close range.",
       },
       {
+        id: "mecha-servo-shell-harness",
         name: "Servo Shell Harness",
         type: "Armor Core",
         rarity: "Rare",
@@ -76,6 +83,7 @@ export function getFactionStarterLoadout(
   if (faction === "pure") {
     return [
       {
+        id: "pure-emberglass-pike",
         name: "Emberglass Pike",
         type: "Primary Weapon",
         rarity: "Rare",
@@ -84,6 +92,7 @@ export function getFactionStarterLoadout(
           "Attuned polearm that stores heat from each strike for ritual bursts.",
       },
       {
+        id: "pure-whisper-coil",
         name: "Whisper Coil",
         type: "Secondary Weapon",
         rarity: "Uncommon",
@@ -92,6 +101,7 @@ export function getFactionStarterLoadout(
           "A resonant focus that lashes nearby enemies with tuned energy arcs.",
       },
       {
+        id: "pure-ashen-mantle",
         name: "Ashen Mantle",
         type: "Armor Core",
         rarity: "Rare",
@@ -104,6 +114,7 @@ export function getFactionStarterLoadout(
 
   return [
     {
+      id: "unbound-rustline-carbine",
       name: "Rustline Carbine",
       type: "Primary Weapon",
       rarity: "Uncommon",
@@ -112,6 +123,7 @@ export function getFactionStarterLoadout(
         "Reliable scavenger rifle rebuilt from district wall defense leftovers.",
     },
     {
+      id: "unbound-scrapburst-repeater",
       name: "Scrapburst Repeater",
       type: "Secondary Weapon",
       rarity: "Common",
@@ -120,6 +132,7 @@ export function getFactionStarterLoadout(
         "Short-range backup repeater designed for alley ambushes and retreats.",
     },
     {
+      id: "unbound-patchwork-shell",
       name: "Patchwork Shell",
       type: "Armor Core",
       rarity: "Uncommon",
@@ -133,6 +146,7 @@ export function getFactionStarterLoadout(
 export function getUtilityItems(): UtilityItem[] {
   return [
     {
+      id: "utility-field-med-patch",
       name: "Field Med Patch",
       type: "Consumable",
       rarity: "Common",
@@ -142,6 +156,7 @@ export function getUtilityItems(): UtilityItem[] {
         "Emergency recovery strips for stabilizing condition loss between missions.",
     },
     {
+      id: "utility-signal-flare",
       name: "Signal Flare",
       type: "Utility",
       rarity: "Common",
@@ -151,6 +166,7 @@ export function getUtilityItems(): UtilityItem[] {
         "Used to mark salvage drops, extraction points, or squad rally calls.",
     },
     {
+      id: "utility-field-toolkit",
       name: "Field Toolkit",
       type: "Utility",
       rarity: "Uncommon",

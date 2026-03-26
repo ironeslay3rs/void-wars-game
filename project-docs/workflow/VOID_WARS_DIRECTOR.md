@@ -4,189 +4,637 @@
 
 \## Project Identity
 
+
+
 Void Wars: Oblivion is a survival-first, war-scarred dark RPG where players deploy from the Black Market into the Void, hunt in dangerous field maps, extract resources, and return stronger. The game must feel readable, costly, and world-driven.
+
+
+
+North star: growth brings power, war gives purpose, and every ascent risks corruption.
 
 
 
 \## Locked Canon
 
-\- Void = 3D prison
 
-\- Fusion = body + mind + soul
 
-\- Bio = Verdant Coil
+\- Void = 3D prison where humanity was exiled
 
-\- Mecha = Chrome Synod
+\- Fusion = body + mind + soul (the divine trinity, hidden until late-game)
 
-\- Pure = Ember Vault
+\- Bio = Verdant Coil (blood, mutation, hunting, survival instinct)
 
-\- Black Market = neutral survivor citadel
+\- Mecha = Chrome Synod (cybernetics, precision, engineered perfection)
 
-\- Book 1 scope only
+\- Pure = Ember Vault (runes, soul, memory, sacred fire)
+
+\- Black Market = neutral survivor citadel, not owned by any faction
+
+\- Three Empires exist in the distance; Black Market survives on their scraps
+
+\- Players start as Puppies (new, hungry, hopeful, easy to bait)
+
+\- Book 1 scope only — grounded reality, lore below the surface
+
+\- The first mistake is important. It should become the seed of identity.
+
+
+
+\## Tech Stack
+
+
+
+\- Next.js (App Router) on Vercel
+
+\- GitHub for version control (push = auto-deploy)
+
+\- Supabase for auth (cookie-based session, JWT in void-wars-session cookie)
+
+\- Client-side state in features/ with reducer pattern
+
+\- No backend database yet — player state is localStorage + Supabase auth
+
+
+
+\## Live Site
+
+
+
+https://void-wars-game.vercel.app
+
+
+
+\---
 
 
 
 \## Current Phase
 
-M1–M7 Full Implementation Track (Loop → Combat Texture → War Layer → Mythic Progression → Social Layer)
+
+
+\*\*M1 hardening + M2 entry\*\* — the core loop must work end-to-end before expanding depth.
 
 
 
-\## M1 Focus
-
-\- playable field shell
-
-\- movement
-
-\- visible mobs
-
-\- targeting
-
-\- auto attack baseline
-
-\- shell fallback
-
-\- reward clarity
-
-\- route clarity
+\## Live Audit Status (March 26, 2026)
 
 
 
-\## M1–M7 Scope Policy (explicitly allowed)
-
-\- Skill trees, guilds/clans, war-layer, and late-game progression are allowed **when they are implemented as milestone slices** (M1→M7) with bounded scope and validation.
-\- Multiplayer / server-authoritative social is allowed only when explicitly scheduled (M7), and must still preserve loop stability and save integrity.
-\- Economy work is allowed when it supports a milestone’s playable loop and has clear sinks/sources (avoid “broad redesign” without a migration plan).
-
-\## M2 Focus
-
-\- First Black Market depth slice: Crafting District utility (Moss Binder, Refinery Bay, Rune Crafter output)
-\- Reinforce progression/crafting priority: survival buffers first, then stabilizing wards
-\- Verify character portrait UI everywhere (hub/HUD consistency)
-\- Keep scope bounded; preserve loop stability (no unrelated UX panels)
-
-\## M2 (still a priority, not a restriction)
-
-\- First Black Market depth slice: Crafting District utility (Moss Binder, Refinery Bay, Rune Crafter output)
-\- Reinforce progression/crafting priority: survival buffers first, then stabilizing wards
-\- Verify character portrait UI everywhere (hub/HUD consistency)
-\- Keep scope bounded; preserve loop stability (no unrelated UX panels)
+\### Working
 
 
 
-\## Current Active Milestone
+\- Login flow with cookie persistence (Step 1 DONE)
 
-Playable Void Field shell
+\- Homepage command deck: deployment panel, path selector, resource strip, left nav, bottom nav
+
+\- Status screen: character identity, system states, rank/mastery, survival state with recovery prompts
+
+\- Inventory: live item data, rarity tags, capacity tracking, resource counts, utility items
+
+\- Missions: queue system with timers, reward previews, path-locked missions
+
+\- Black Market hub: all districts visible and navigable
+
+\- Career: Mastery Tree, Hour 20-40 spine, tri-rail Bio/Mecha/Pure progression
+
+\- Arena: ranked/practice modes with condition gating
+
+\- All routes survive hard navigation (session auth fixed)
 
 
 
-\## Approved Build Order
+\### Broken / Missing
 
-1\. Movement
 
-2\. Player presence
 
-3\. Visible mobs
+\- Condition recovery partially wired — Emergency Ration shares cooldown with Recover Condition (should be separate action)
 
-4\. Target selection
+\- Inventory capacity 426/120 with no enforcement or overflow penalty
 
-5\. Auto attack baseline
+\- Loadout slots all empty — no equip flow connecting inventory to loadout
 
-6\. Shell fallback
+\- Mission queue button exists but no timer execution, no reward distribution, no result screen
 
-7\. Hit feedback
+\- Black Market districts have no buy/sell transactions
 
-8\. Entity immersion polish
+\- New Game flow leads nowhere — no onboarding, no Puppy creation
 
-9\. Reward clarity
+\- Crafting District has no functional recipes
 
-10\. Black Market expansion
+\- No hunt/combat encounter screen — combat visual payoff is missing
+
+\- Homepage resource strip overlaps center content; left nav clips MARKET
+
+
+
+\---
+
+
+
+\## 10-Step Upgrade Plan (Execution Order)
+
+
+
+Each step is one bounded session. Steps 1-2 are complete. Steps 3-10 remain.
+
+
+
+\### DONE — Step 1: Session auth persistence
+
+Cookie-based auth in middleware.ts. Hard nav keeps session. VERIFIED LIVE.
+
+
+
+\### DONE — Step 2: Condition recovery wiring
+
+Moss Ration recipe (50 credits + 10 bioSamples), Emergency Ration action (USE\_EMERGENCY\_RATION), recovery prompts wired. NEEDS TUNING: Emergency Ration should bypass recovery cooldown.
+
+
+
+\### Step 3: Homepage layout fix (HIGH)
+
+\- Move HomeResourceStrip from top overlay to bottom-docked position (above BottomNav)
+
+\- Fix z-index so center cinematic content is never obscured
+
+\- Fix LeftCommandMenu overflow clipping MARKET item
+
+\- Files: `app/home/page.tsx`, `components/layout/LeftCommandMenu.tsx`
+
+\- Gate: BIO PATH ENGAGED text fully readable, all nav items visible
+
+
+
+\### Step 4: Inventory capacity enforcement (HIGH)
+
+\- Create `features/resources/inventoryLogic.ts` with checkCapacity(), enforceCapacity(), getOverflowPenalty()
+
+\- Show OVERLOADED warning when capacity > max
+
+\- Add Sell Surplus (links to Market) and Discard buttons
+
+\- Block new pickups when overloaded
+
+\- Files: `features/resources/inventoryLogic.ts`, `components/inventory/StorageOverview.tsx`
+
+\- Gate: 426/120 shows red warning, mission penalties visible
+
+
+
+\### Step 5: Loadout equip flow (HIGH)
+
+\- Create `features/player/loadoutState.ts` with slots: weapon/armor/core/runeSet/professionBind
+
+\- equipItem(slot, itemId) moves from inventory to slot; unequipItem returns to inventory
+
+\- Build loadout screen with slot cards and ItemPicker modal
+
+\- Files: `features/player/loadoutState.ts`, `app/loadout/page.tsx`, `components/shared/ItemPicker.tsx`
+
+\- Gate: Mirefang Sidearm equippable from inventory to weapon slot
+
+
+
+\### Step 6: Black Market buy/sell (MEDIUM)
+
+\- Create `features/market/marketData.ts` with 10+ listings (weapons, armor, consumables, materials)
+
+\- Create `features/market/marketActions.ts` with buyItem() and sellItem() (10% tax on sells)
+
+\- Build War Exchange screen with listing grid, Buy/Sell tabs, confirmation modal
+
+\- Files: `features/market/marketData.ts`, `features/market/marketActions.ts`, `app/bazaar/war-exchange/page.tsx`
+
+\- Gate: Player can buy Field Med Patch, credits decrease, item appears in inventory
+
+
+
+\### Step 7: Mission execution + rewards (MEDIUM)
+
+\- Create `features/missions/missionRunner.ts` with queueMission(), onMissionComplete(), getMissionStatus()
+
+\- Build MissionTimer (live countdown) and MissionResult (reward breakdown card)
+
+\- Rewards distribute to playerState on completion (XP, credits, materials, condition cost)
+
+\- Files: `features/missions/missionRunner.ts`, `components/missions/MissionTimer.tsx`, `components/missions/MissionResult.tsx`
+
+\- Gate: Queue Scavenge the Outer Wastes → 10s countdown → +25 XP, +60 Credits, -8 Condition
+
+
+
+\### Step 8: New Game onboarding (MEDIUM)
+
+\- Build multi-step wizard: name entry → school lean → career focus → confirmation
+
+\- Create `features/player/playerFactory.ts` with createNewPlayer(name, school, career)
+
+\- Starter state: Puppy rank, condition 100%, 500 credits, 20 Iron Ore, 10 Bio Samples, 2 Moss Rations
+
+\- Files: `app/new-game/page.tsx`, `features/player/playerFactory.ts`, `components/onboarding/SchoolSelector.tsx`
+
+\- Gate: NEW GAME → enter name → select Bio → land on homepage with fresh Puppy state
+
+
+
+\### Step 9: Crafting recipes (MEDIUM)
+
+\- Define 5+ recipes in `features/crafting/recipeData.ts`: Moss Ration, Scrap Blade, Bone Plating, Rune Sigil, Bio Serum
+
+\- Create `features/crafting/craftActions.ts` with craftItem() — checks materials, deducts, rolls success, adds output
+
+\- Build Crafting District page with category tabs, recipe cards, material cost display
+
+\- Files: `features/crafting/recipeData.ts`, `features/crafting/craftActions.ts`, `app/bazaar/crafting-district/page.tsx`
+
+\- Gate: Craft Moss Ration → Bio Samples and credits decrease, Moss Rations increase
+
+
+
+\### Step 10: Hunt encounter + result screen (MEDIUM)
+
+\- Define 5+ creatures in `features/combat/creatureData.ts`: Rustfang, Hollowed Drone, Spore Crawler, Scrap Sentinel, Void Wisp
+
+\- Create `features/combat/encounterEngine.ts` with resolveEncounter() — outcome based on condition + loadout
+
+\- Build hunt screen with creature display, auto-resolve combat, loot breakdown
+
+\- Files: `features/combat/creatureData.ts`, `features/combat/encounterEngine.ts`, `app/hunt/page.tsx`, `components/hunt/HuntResult.tsx`
+
+\- Gate: Deploy → fight Rustfang → Victory → +15 XP, +3 Iron Ore, -5 Condition → return to homepage
+
+
+
+\---
+
+
+
+\## M1–M7 Roadmap (Long-Term)
+
+
+
+\### M1: Foundation Slice (Steps 1–10 above)
+
+A new player can create a character, hunt, loot, craft, equip, buy, run missions, and recover condition.
+
+\*\*Success test:\*\* A Puppy understands the fantasy and wants to return.
+
+
+
+\### M2: Black Market Depth
+
+\- Crafting District utility: Moss Binder, Refinery Bay, Rune Crafter output
+
+\- Progression/crafting priority: survival buffers first, stabilizing wards second
+
+\- Character portrait UI consistency across hub/HUD
+
+\- War Exchange depth: 4 commodity categories, dynamic pricing seeds
+
+\*\*Success test:\*\* A crafter has real choices and real outputs.
+
+
+
+\### M3: Progression Depth
+
+\- Mastery tree becomes interactive (spend mastery points, unlock nodes)
+
+\- First profession trees wired (Combat → Blood Hunter/Marksman, Gathering → Beast Hunter/Bio Harvester)
+
+\- Corruption and consequence system: Void Pressure, Mutation Instability
+
+\- Path-specific visual identity on Character screen
+
+\*\*Success test:\*\* Growth feels meaningful, not cosmetic. Schools feel different.
+
+
+
+\### M4: Tactical Encounter Layer
+
+\- Loadout bonuses affect combat outcomes
+
+\- 3+ enemy tiers with distinct behaviors and loot tables
+
+\- Hollowfang as first flagship boss (economy-spiking prestige challenge)
+
+\- Risk-reward: better loot zones cost more condition
+
+\*\*Success test:\*\* Preparation matters and combat has texture.
+
+
+
+\### M5: Faction War Layer
+
+\- Contested zones with faction influence mechanics
+
+\- School pressure: Bio/Mecha/Pure alignment affects available missions and rewards
+
+\- Regional war stakes tied to mission board
+
+\- Faction reputation unlocks school-specific gear and crafting recipes
+
+\*\*Success test:\*\* The world feels alive and larger than the individual player.
+
+
+
+\### M6: Mythic Progression
+
+\- Rune Crafter prestige line (Level 5 Saint Rune = title earned)
+
+\- Rune Knight ascent path (elite wartime power class)
+
+\- Rare material economy: Bloodvein, Ironheart, Ashveil, Meldheart
+
+\- Story arc reveals (Chapter 2+)
+
+\*\*Success test:\*\* Late-game identity feels mythic, not just bigger numbers.
+
+
+
+\### M7: Social Layer
+
+\- Guilds with contribution systems and shared contracts
+
+\- Rankings and seasonal competitive structure
+
+\- Server-authoritative multiplayer (transition from client-only state)
+
+\- Campaign participation and guild-vs-guild operations
+
+\*\*Success test:\*\* Players gain routine, rivalry, and belonging.
+
+
+
+\---
 
 
 
 \## Architecture Rules
 
-\- app/ = thin route wrappers only
 
-\- components/ = presentation and composition
 
-\- features/ = logic, data, helpers
+\### Code Structure
 
-\- avoid god files
+\- `app/` = thin route wrappers only (page.tsx files stay under 50 lines)
 
-\- one approved task at a time
+\- `components/` = presentation and composition (no business logic)
 
-\- no unrelated edits
+\- `features/` = logic, data, helpers, state management
 
-\- extend existing systems before inventing new ones
+\- `data/` = static game data (items, creatures, recipes, missions)
+
+\- `lib/` = utilities, shared helpers
+
+\- `store/` = global state management
+
+\- `types/` = shared TypeScript types
+
+\- `public/assets/` = production-ready images and icons
+
+
+
+\### Principles
+
+\- Avoid god files — split when a file exceeds 200 lines
+
+\- One approved task at a time
+
+\- No unrelated edits in any PR
+
+\- Extend existing systems before inventing new ones
+
+\- Pages stay thin, shared UI stays reusable
+
+\- Navigation logic belongs in data/config files, not view components
+
+\- Data-driven UI: bottomNavData.ts, homeMenuData.ts pattern for all nav
+
+
+
+\### State Management
+
+\- Player state lives in `features/player/playerState.ts` with reducer pattern
+
+\- Resources tracked in `features/resources/` — every resource has a key, display name, icon, and category
+
+\- Game actions dispatched through `features/game/gameActions.ts`
+
+\- All state changes must be traceable (action type → reducer → new state)
 
 
 
 \## Asset Pipeline
 
-\- /incoming = raw source only
 
-\- never use /incoming directly in production
 
-\- rename every asset clearly
+\- `/incoming` = raw source only — never use in production
 
-\- move to /public/assets/...
+\- Rename every asset clearly before moving to production
 
-\- split sheets when practical
+\- Move to `/public/assets/{category}/` (home, icons, creatures, items, etc.)
 
-\- register in lib/assets.ts
+\- Split sprite sheets when practical
+
+\- Register asset paths in `lib/assets.ts`
+
+\- No important text baked into icons or images
+
+
+
+\## Resource Keys (Canonical)
+
+
+
+\### Survival
+
+credits, mossRations, organicMatter, water, restSupplies
+
+
+
+\### Bio Evolution
+
+bloodShards, predatorMarrow, mutagenicTissue, bioSamples
+
+
+
+\### Mecha Evolution
+
+coreFragments, alloyPlates, energyCells, emberCore
+
+
+
+\### Spirit Evolution
+
+soulEmbers, memoryAsh, sigilDust, runeDust
+
+
+
+\### Shared Crafting
+
+bone, scrapMetal, relicShards, fiberHide, ironOre, scrapAlloy
+
+
+
+\### Market
+
+blackCredits, infamy, contractSeals
+
+
+
+\### Forbidden (late-game)
+
+voidResidue, trinityFragments, heartcores
+
+
+
+\### Apex Materials (event/prestige only)
+
+bloodvein, ironheart, ashveil, meldheart
+
+
+
+\---
 
 
 
 \## Worker Roles
 
+
+
+\### Claude (Orchestrator / Planner)
+
+Plans sessions, writes forge logs, designs systems, generates Cursor prompts, reviews architecture, maintains canon alignment. Does not write production code directly — generates specifications and prompts for workers.
+
+
+
 \### Codex
 
-Implements approved bounded tasks only. Must return exact files changed, validations, and full file contents.
+Implements approved bounded tasks only. Must return: exact files changed, validations (tsc + lint), scope decision, and what changed. Async execution — can work on background tasks (test suites, type coverage, documentation).
 
 
 
 \### Cursor
 
-Applies local edits, testing, and repo-aware iteration. Does not decide roadmap.
+Applies local edits, testing, and repo-aware iteration. Receives Cursor prompts from Claude. Has full codebase context. Does not decide roadmap — executes approved steps.
 
 
 
 \### ChatGPT
 
-Acts as Lead Game Designer + Technical Director. Picks next task, challenges assumptions, reviews architecture, and prevents scope creep.
+Art direction and image generation. Generates concept art, UI mockups, icons, creature designs, world art. Every image must match: cyberpunk + dark fantasy + Black Market survival tone.
+
+
+
+\### Claude Code (when active)
+
+Terminal-native agent for multi-file refactors, test generation, and architectural changes. Can spawn subagents for parallel work. Reads CLAUDE.md for project context.
+
+
+
+\---
 
 
 
 \## Required Task Return Format
 
-1\. Role Summary
 
-2\. Task Classification
 
-3\. Exact Files Changed
-
-4\. Scope Decision
-
-5\. What Changed
-
-6\. Validation
-
-7\. Full Updated File Contents
+Every worker must return:
 
 
 
-\## Rejection Rules
+1\. \*\*Role Summary\*\* — who did what
 
-Reject any task that:
+2\. \*\*Task Classification\*\* — which Step (1-10) or Milestone (M1-M7) this serves
 
-\- expands scope beyond the active milestone
+3\. \*\*Exact Files Changed\*\* — full paths, no ambiguity
 
-\- starts a new system before the current one is playable
+4\. \*\*Scope Decision\*\* — what was included, what was explicitly excluded
 
-\- touches unrelated files
+5\. \*\*What Changed\*\* — plain English description of logic changes
 
-\- introduces backend changes without approval
+6\. \*\*Validation\*\* — `npx tsc --noEmit` pass + `npm run lint` pass (both required)
 
-\- prioritizes polish over loop stability
+7\. \*\*Known Issues\*\* — anything that needs follow-up in next session
+
+
+
+\---
+
+
+
+\## Guardrails and Hard Truths
+
+
+
+\- Do not let crafting become generic side content
+
+\- The homepage is the style law for the rest of the game
+
+\- Graphics first, structure second, functionality third
+
+\- Every session ends with: what was finished, what is still broken, and the exact next task
+
+
+
+\---
+
+
+
+\## Session Protocol
+
+
+
+1\. Identify the current active step from the 10-Step Plan
+
+2\. Confirm what was completed in the last session
+
+3\. Execute exactly one step per session (no jumping ahead)
+
+4\. Validate: `npx tsc --noEmit` + `npm run lint`
+
+5\. Push to GitHub → Vercel auto-deploys
+
+6\. Record: what was finished, what is still broken, what is the exact next task
+
+7\. Update this file's "Live Audit Status" section if any status changed
+
+
+
+\---
+
+
+
+\## Current Active Step
+
+
+
+\*\*Step 3: Homepage layout fix\*\*
+
+
+
+Next worker should: Move HomeResourceStrip to bottom position, fix z-index, fix left nav overflow.
+
+
+
+\---
+
+
+
+\## Canon Voice Reference
+
+
+
+All player-facing text should match Black Market survival tone:
+
+\- "Nobody survives the field empty-handed. The Market knows who came prepared."
+
+\- "Rank is earned in blood, scrap, and proof. The city watches."
+
+\- "No one in the Black Market stays alive for free."
+
+\- "The first mistake is important. It should become the seed of identity."
+
+\- "Returning players should experience a recovery arc, not a punishment screen."
 

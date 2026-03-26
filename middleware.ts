@@ -3,6 +3,33 @@ import { NextResponse, type NextRequest } from "next/server";
 const PUBLIC_AUTH_ROUTES = new Set(["/login", "/register", "/recover"]);
 const AUTH_COOKIE_KEY = "void-wars-session";
 
+function isProbablyValidAccessToken(token: string): boolean {
+  const trimmed = token.trim();
+  if (!trimmed || trimmed === "undefined" || trimmed === "null") return false;
+
+  // Basic JWT shape check.
+  const parts = trimmed.split(".");
+  if (parts.length !== 3) return false;
+
+  // Best-effort exp validation (no signature verification here).
+  try {
+    const payloadB64 = parts[1]
+      .replace(/-/g, "+")
+      .replace(/_/g, "/")
+      .padEnd(Math.ceil(parts[1].length / 4) * 4, "=");
+    const json = JSON.parse(atob(payloadB64)) as { exp?: unknown };
+    if (typeof json.exp === "number") {
+      const expMs = json.exp * 1000;
+      // Treat tokens expiring within 30s as invalid for navigation gating.
+      return expMs > Date.now() + 30_000;
+    }
+  } catch {
+    // If decoding fails, still treat as a token-shaped value.
+  }
+
+  return true;
+}
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -20,7 +47,7 @@ export function middleware(request: NextRequest) {
   }
 
   const token = request.cookies.get(AUTH_COOKIE_KEY)?.value ?? "";
-  if (!token) {
+  if (!isProbablyValidAccessToken(token)) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);

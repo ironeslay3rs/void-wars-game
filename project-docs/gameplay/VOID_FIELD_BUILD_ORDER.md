@@ -22,9 +22,5 @@
 
 
 
-\## Rule
 
-Do not skip steps.
-
-Do not build out of order.
 

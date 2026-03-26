@@ -19,7 +19,7 @@ export const bazaarHubData: BazaarHub[] = [
     title: "War Exchange",
     subtitle: "Taxed buys · listing-fee sells · four commodities",
     badge: "M3 Commodity Desk",
-    route: "/bazaar/void-market",
+    route: "/bazaar/war-exchange",
     themeKey: "market",
     positionClass: "left-1/2 top-[44%] -translate-x-1/2 -translate-y-1/2",
     widthClass: "w-[360px]",

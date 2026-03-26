@@ -10,6 +10,11 @@ import SectionCard from "@/components/shared/SectionCard";
 import PlaceholderPanel from "@/components/shared/PlaceholderPanel";
 import { useGame } from "@/features/game/gameContext";
 import { inventoryScreenData } from "@/features/inventory/inventoryScreenData";
+import {
+  checkCapacity,
+  getOverflowPenalty,
+  INVENTORY_CAPACITY_MAX,
+} from "@/features/resources/inventoryLogic";
 
 function formatFactionLabel(faction: string) {
   if (faction === "unbound") return "Unbound";
@@ -23,15 +28,8 @@ export default function InventoryScreen() {
   const { state } = useGame();
   const { player } = state;
 
-  const totalStoredItems =
-    player.resources.ironOre +
-    player.resources.scrapAlloy +
-    player.resources.runeDust +
-    player.resources.emberCore +
-    player.resources.bioSamples;
-
-  const capacityUsed = totalStoredItems;
-  const capacityMax = 120;
+  const capacity = checkCapacity(player.resources, INVENTORY_CAPACITY_MAX);
+  const overloadPenalty = getOverflowPenalty(capacity);
 
   const liveCards = [
     {
@@ -41,13 +39,20 @@ export default function InventoryScreen() {
     },
     {
       label: "Used Capacity",
-      value: `${capacityUsed}/${capacityMax}`,
+      value: `${capacity.used}/${capacity.max}`,
       hint: "Material storage load—salvage, biomass, and refined stock only (not credits or rations).",
     },
     {
       label: "Credits",
       value: String(player.resources.credits),
       hint: "Shared global state balance available for market and inventory use.",
+    },
+    {
+      label: "Load State",
+      value: capacity.isOverloaded ? "OVERLOADED" : "STABLE",
+      hint: capacity.isOverloaded
+        ? overloadPenalty.message
+        : "Carry weight is within limits and pickups are accepted.",
     },
   ];
 

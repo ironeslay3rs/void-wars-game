@@ -15,7 +15,6 @@ Minimum required reads for all tasks:
 - /project-docs/workflow/VOID_WARS_DIRECTOR.md
 - /project-docs/workflow/VOID_WARS_TASK_QUEUE.md
 - /project-docs/architecture/ARCHITECTURE_RULES.md
-- /project-docs/gameplay/M1_RULES.md
 
 If the task affects visuals, also read:
 

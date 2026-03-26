@@ -30,17 +30,3 @@ The Black Market is a hub, not a menu.
 
 
 
-\## Interaction
-
-\- Clickable zones (M1)
-
-\- Movement later
-
-
-
-\## DO NOT
-
-\- turn it into a button list
-
-\- overload with systems early
-

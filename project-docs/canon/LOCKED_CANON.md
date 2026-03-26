@@ -30,8 +30,6 @@ These truths must NEVER change or drift.
 
 \- True evolution = body + mind + soul
 
-\- Fusion is NOT available in Book 1
-
 
 
 \## Black Market

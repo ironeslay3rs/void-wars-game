@@ -20,7 +20,7 @@ export default function LeftCommandMenu() {
   const sideNavItems = getNavigationItemsByPlacement("side");
 
   return (
-    <aside className="absolute left-6 top-20 z-30 w-[290px] xl:w-[320px] max-h-[calc(100vh-6rem)] overflow-y-auto pr-1 pb-3">
+    <aside className="absolute bottom-[calc(5.5rem+env(safe-area-inset-bottom))] left-6 top-20 z-30 w-[290px] overflow-y-auto pr-1 pb-3 xl:w-[320px]">
       <div className="relative rounded-[22px] border border-white/8 bg-black/24 p-2 shadow-[0_20px_50px_rgba(0,0,0,0.35)] backdrop-blur-[3px]">
         <div className="pointer-events-none absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
         <div className="pointer-events-none absolute inset-y-6 left-0 w-px bg-gradient-to-b from-transparent via-red-500/20 to-transparent" />

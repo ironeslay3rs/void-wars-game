@@ -82,6 +82,15 @@ import {
   setGuildPledge,
 } from "@/features/social/guildLiveLogic";
 import type { SharedGuildContract } from "@/features/social/guildLiveTypes";
+import { enforceCapacity } from "@/features/resources/inventoryLogic";
+import {
+  equipItem,
+  sanitizeLoadoutForFaction,
+  unequipItem,
+} from "@/features/player/loadoutState";
+import { applyMarketBuy, applyMarketSell } from "@/features/market/marketActions";
+import { craftItem } from "@/features/crafting/craftActions";
+import { craftRecipes } from "@/features/crafting/recipeData";
 
 function updateSingleResource(
   resources: ResourcesState,
@@ -151,6 +160,27 @@ function hydratePlayerState(player: GameState["player"]): PlayerState {
       ...initialGameState.player.resources,
       ...player.resources,
     },
+    market:
+      typeof (player as { market?: unknown }).market === "object" &&
+      (player as { market?: unknown }).market !== null
+        ? {
+            ...initialGameState.player.market,
+            ...(player as { market?: Partial<PlayerState["market"]> }).market,
+            stockByListingId: {
+              ...initialGameState.player.market.stockByListingId,
+              ...((player as { market?: { stockByListingId?: Record<string, number> } })
+                .market?.stockByListingId ?? {}),
+            },
+          }
+        : initialGameState.player.market,
+    craftedInventory:
+      typeof (player as { craftedInventory?: unknown }).craftedInventory === "object" &&
+      (player as { craftedInventory?: unknown }).craftedInventory !== null
+        ? {
+            ...initialGameState.player.craftedInventory,
+            ...((player as { craftedInventory?: Record<string, number> }).craftedInventory ?? {}),
+          }
+        : initialGameState.player.craftedInventory,
     knownRecipes: player.knownRecipes ?? initialGameState.player.knownRecipes,
     unlockedRoutes:
       player.unlockedRoutes ?? initialGameState.player.unlockedRoutes,
@@ -163,6 +193,13 @@ function hydratePlayerState(player: GameState["player"]): PlayerState {
       player.fieldLoadoutProfile === "breach"
         ? player.fieldLoadoutProfile
         : initialGameState.player.fieldLoadoutProfile,
+    loadoutSlots:
+      typeof player.loadoutSlots === "object" && player.loadoutSlots !== null
+        ? {
+            ...initialGameState.player.loadoutSlots,
+            ...player.loadoutSlots,
+          }
+        : initialGameState.player.loadoutSlots,
 
     ...normalizePlayerFactionWorldSlice(player),
 
@@ -234,12 +271,39 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         },
       };
 
+    case "EQUIP_LOADOUT_ITEM":
+      return {
+        ...state,
+        player: {
+          ...state.player,
+          loadoutSlots: equipItem(
+            state.player.loadoutSlots,
+            action.payload.slot,
+            action.payload.itemId,
+            state.player.factionAlignment,
+          ),
+        },
+      };
+
+    case "UNEQUIP_LOADOUT_ITEM":
+      return {
+        ...state,
+        player: {
+          ...state.player,
+          loadoutSlots: unequipItem(state.player.loadoutSlots, action.payload.slot),
+        },
+      };
+
     case "SET_FACTION_ALIGNMENT":
       return {
         ...state,
         player: {
           ...state.player,
           factionAlignment: action.payload,
+          loadoutSlots: sanitizeLoadoutForFaction(
+            state.player.loadoutSlots,
+            action.payload,
+          ),
         },
       };
 
@@ -257,16 +321,23 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       };
 
     case "ADD_FIELD_LOOT": {
+      const { accepted } = enforceCapacity(state.player.resources, {
+        [action.payload.key]: action.payload.amount,
+      });
+      const acceptedAmount = accepted[action.payload.key] ?? 0;
+      if (acceptedAmount <= 0) {
+        return state;
+      }
       const nextResources = updateSingleResource(
         state.player.resources,
         action.payload.key,
-        action.payload.amount,
+        acceptedAmount,
       );
       const nextFieldLoot = {
         ...(state.player.fieldLootGainedThisRun ?? {}),
         [action.payload.key]:
           (state.player.fieldLootGainedThisRun?.[action.payload.key] ?? 0) +
-          action.payload.amount,
+          acceptedAmount,
       };
       return {
         ...state,
@@ -290,6 +361,30 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           ),
         },
       };
+
+    case "MARKET_BUY": {
+      const result = applyMarketBuy(state, action.payload.listingId);
+      return result.next;
+    }
+
+    case "MARKET_SELL": {
+      const result = applyMarketSell(
+        state,
+        action.payload.key,
+        action.payload.amount,
+      );
+      return result.next;
+    }
+
+    case "CRAFT_RECIPE": {
+      const recipe = craftRecipes.find((r) => r.id === action.payload.recipeId) ?? null;
+      if (!recipe) return state;
+      const { player } = craftItem({ player: state.player, recipe });
+      return {
+        ...state,
+        player,
+      };
+    }
 
     case "VOID_MARKET_TRADE": {
       const { side, commodity, units } = action.payload;
@@ -413,40 +508,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const player = applySurvivalDecay(state.player, now);
       const recoveryAmount = getStatusRecoveryAmount(player.knownRecipes);
 
-      // Emergency stabilization: allow a low-credit / no-ration recovery path
-      // when survival is critically threatened.
-      const emergencyEligible =
-        player.condition <= 15 && player.resources.credits > 0;
-
-      // Normal recovery respects cooldown + full cost.
-      if (player.conditionRecoveryAvailableAt > now && !emergencyEligible) {
+      if (player.conditionRecoveryAvailableAt > now) {
         return {
           ...state,
           player,
-        };
-      }
-
-      if (emergencyEligible) {
-        const emergencyCost = 1;
-        const emergencyRecoveryAmount = Math.max(1, Math.floor(recoveryAmount / 10));
-
-        return {
-          ...state,
-          player: {
-            ...player,
-            condition: clamp(
-              player.condition + emergencyRecoveryAmount,
-              0,
-              100,
-            ),
-            conditionRecoveryAvailableAt: now + STATUS_RECOVERY_COOLDOWN_MS,
-            activeFeastHallOfferId: null,
-            resources: updateSingleResource(
-              player.resources,
-              "credits",
-              -Math.min(emergencyCost, player.resources.credits),
-            ),
-          },
         };
       }
 
@@ -478,11 +543,14 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const mossCost = getDistrictCraftingCost(player, MOSS_RATION_RECIPE_COST);
       const needBio =
         mossCost.bioSamples ?? MOSS_RATION_RECIPE_COST.bioSamples;
-      const needDust = mossCost.runeDust ?? MOSS_RATION_RECIPE_COST.runeDust;
+      const needIron =
+        mossCost.ironOre ?? MOSS_RATION_RECIPE_COST.ironOre;
 
       if (
         player.resources.bioSamples < needBio ||
-        player.resources.runeDust < needDust
+        player.resources.ironOre < needIron ||
+        needBio < 1 ||
+        needIron < 1
       ) {
         return state;
       }
@@ -492,17 +560,49 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         "bioSamples",
         -needBio,
       );
-      const spentDust = updateSingleResource(
+      const spentOre = updateSingleResource(
         spentSamples,
-        "runeDust",
-        -needDust,
+        "ironOre",
+        -needIron,
       );
 
       return {
         ...state,
         player: {
           ...player,
-          resources: updateSingleResource(spentDust, "mossRations", 1),
+          resources: updateSingleResource(spentOre, "mossRations", 1),
+        },
+      };
+    }
+
+    case "USE_EMERGENCY_RATION": {
+      const now = Date.now();
+      const player = applySurvivalDecay(state.player, now);
+
+      const cost = 100;
+      const restore = 25;
+
+      if (player.resources.credits < cost) {
+        return {
+          ...state,
+          player,
+        };
+      }
+
+      if (player.condition >= 100) {
+        return {
+          ...state,
+          player,
+        };
+      }
+
+      return {
+        ...state,
+        player: {
+          ...player,
+          condition: clamp(player.condition + restore, 0, 100),
+          activeFeastHallOfferId: null,
+          resources: updateSingleResource(player.resources, "credits", -cost),
         },
       };
     }

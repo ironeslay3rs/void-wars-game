@@ -30,7 +30,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="pointer-events-none fixed inset-x-0 bottom-4 z-30 px-4 sm:px-6">
+      <section className="pointer-events-none fixed inset-x-0 bottom-16 z-30 px-4 sm:px-6">
         <div className="pointer-events-auto mx-auto w-full max-w-4xl">
           <HomeResourceStrip />
         </div>

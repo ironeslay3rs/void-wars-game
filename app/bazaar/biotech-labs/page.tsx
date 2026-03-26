@@ -17,7 +17,7 @@ import { VOID_EXPEDITION_PATH } from "@/features/void-maps/voidRoutes";
 
 export default function BiotechLabsPage() {
   const router = useRouter();
-  const { state, dispatch } = useGame();
+  const { state } = useGame();
   const hasBiotechSpecimenLead = state.player.hasBiotechSpecimenLead;
   const guidance = getFirstSessionGuidance(state);
   const shouldHighlightHuntAction =
@@ -35,12 +35,13 @@ export default function BiotechLabsPage() {
     if (!hasBiotechSpecimenLead) {
       return;
     }
-
-    dispatch({
-      type: "RESOLVE_HUNT",
-      payload: { missionId: "bio-hunt-specimen" },
-    });
-    router.push("/bazaar/biotech-labs/result");
+    router.push(
+      `/hunt?missionId=${encodeURIComponent(
+        "bio-hunt-specimen",
+      )}&zone=${encodeURIComponent("howling-scar")}&return=${encodeURIComponent(
+        "/bazaar/biotech-labs/result",
+      )}`,
+    );
   }
 
   return (

@@ -40,9 +40,3 @@ Defines what a Void Field should feel like.
 
 
 
-\## DO NOT
-
-\- build UI-heavy overlays
-
-\- block movement with UI layers
-

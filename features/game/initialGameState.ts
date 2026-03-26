@@ -5,6 +5,8 @@ import { createInitialRuneMastery } from "@/features/mastery/runeMasteryLogic";
 import { initialZoneDoctrineRecord } from "@/features/factions/factionWorldLogic";
 import { initialMythicAscension } from "@/features/progression/mythicAscensionLogic";
 import { initialGuildRoster } from "@/features/social/guildLiveLogic";
+import { createInitialLoadoutSlots } from "@/features/player/loadoutState";
+import { createInitialMarketState } from "@/features/market/marketActions";
 
 export const initialGameState: GameState = {
   player: {
@@ -13,6 +15,7 @@ export const initialGameState: GameState = {
     characterPortraitId: DEFAULT_CHARACTER_PORTRAIT_ID,
     careerFocus: null,
     fieldLoadoutProfile: "assault",
+    loadoutSlots: createInitialLoadoutSlots(),
 
     condition: 100,
     hunger: 100,
@@ -45,6 +48,8 @@ export const initialGameState: GameState = {
       ironHeart: 0,
     },
     fieldLootGainedThisRun: {},
+    market: createInitialMarketState(),
+    craftedInventory: {},
 
     knownRecipes: [],
     unlockedRoutes: ["home", "bazaar"],

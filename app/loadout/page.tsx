@@ -1,8 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo, useState } from "react";
+import ItemPicker from "@/components/shared/ItemPicker";
 import ScreenHeader from "@/components/shared/ScreenHeader";
 import { useGame } from "@/features/game/gameContext";
+import type { LoadoutSlotId } from "@/features/game/gameTypes";
 import {
   FIELD_LOADOUT_PROFILES,
   getFieldLoadoutExposeDamageMult,
@@ -11,6 +14,12 @@ import {
   type FieldLoadoutProfile,
 } from "@/features/combat/fieldLoadout";
 import { getSchoolCombatPassives } from "@/features/combat/fieldCombatIdentity";
+import {
+  getAvailableItemsForSlot,
+  getEquippedItem,
+  LOADOUT_SLOT_LABELS,
+  LOADOUT_SLOT_ORDER,
+} from "@/features/player/loadoutState";
 import { VOID_EXPEDITION_PATH } from "@/features/void-maps/voidRoutes";
 
 export default function LoadoutPage() {
@@ -18,6 +27,16 @@ export default function LoadoutPage() {
   const player = state.player;
   const passives = getSchoolCombatPassives(player);
   const current = player.fieldLoadoutProfile;
+  const [pickerSlot, setPickerSlot] = useState<LoadoutSlotId | null>(null);
+
+  const pickerItems = useMemo(() => {
+    if (!pickerSlot) return [];
+    return getAvailableItemsForSlot(
+      player.loadoutSlots,
+      pickerSlot,
+      player.factionAlignment,
+    );
+  }, [pickerSlot, player.factionAlignment, player.loadoutSlots]);
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(40,60,100,0.28),_rgba(5,8,18,1)_55%)] px-6 py-10 text-white md:px-10">
@@ -89,6 +108,72 @@ export default function LoadoutPage() {
 
         <section className="rounded-2xl border border-white/12 bg-white/[0.04] p-6">
           <h2 className="text-lg font-black uppercase tracking-[0.06em] text-white">
+            Active loadout slots
+          </h2>
+          <p className="mt-2 text-sm text-white/60">
+            Equip items from owned inventory into your combat slots. Unequip returns the
+            item to your available inventory list.
+          </p>
+
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            {LOADOUT_SLOT_ORDER.map((slot) => {
+              const equipped = getEquippedItem(
+                player.loadoutSlots,
+                slot,
+                player.factionAlignment,
+              );
+              return (
+                <div
+                  key={slot}
+                  className="rounded-xl border border-white/12 bg-black/25 p-4"
+                >
+                  <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/45">
+                    {LOADOUT_SLOT_LABELS[slot]}
+                  </div>
+                  {equipped ? (
+                    <>
+                      <div className="mt-2 text-sm font-black uppercase tracking-[0.05em] text-white">
+                        {equipped.name}
+                      </div>
+                      <div className="mt-1 text-[11px] uppercase tracking-[0.16em] text-white/45">
+                        {equipped.rarity} / {equipped.type}
+                      </div>
+                      <div className="mt-2 text-xs text-white/65">{equipped.description}</div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          dispatch({
+                            type: "UNEQUIP_LOADOUT_ITEM",
+                            payload: { slot },
+                          })
+                        }
+                        className="mt-3 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-white/80 hover:border-white/30 hover:bg-white/10"
+                      >
+                        Unequip
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <div className="mt-2 text-sm text-white/60">
+                        Slot empty. Equip an item from inventory.
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setPickerSlot(slot)}
+                        className="mt-3 rounded-lg border border-cyan-400/35 bg-cyan-500/12 px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-cyan-100 hover:border-cyan-300/55 hover:bg-cyan-500/18"
+                      >
+                        Equip Item
+                      </button>
+                    </>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="rounded-2xl border border-white/12 bg-white/[0.04] p-6">
+          <h2 className="text-lg font-black uppercase tracking-[0.06em] text-white">
             School combat identity
           </h2>
           <p className="mt-2 text-sm text-white/55">
@@ -131,6 +216,20 @@ export default function LoadoutPage() {
           </Link>
         </div>
       </div>
+      {pickerSlot ? (
+        <ItemPicker
+          slot={pickerSlot}
+          items={pickerItems}
+          onClose={() => setPickerSlot(null)}
+          onEquip={(itemId) => {
+            dispatch({
+              type: "EQUIP_LOADOUT_ITEM",
+              payload: { slot: pickerSlot, itemId },
+            });
+            setPickerSlot(null);
+          }}
+        />
+      ) : null}
     </main>
   );
 }

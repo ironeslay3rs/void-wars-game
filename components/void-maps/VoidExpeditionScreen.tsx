@@ -33,7 +33,7 @@ export default function VoidExpeditionScreen() {
 }
 
 function VoidExpeditionScreenInner() {
-  const { state, dispatch } = useGame();
+  const { state } = useGame();
   const router = useRouter();
   const searchParams = useSearchParams();
   const hintZone = searchParams.get("zone");
@@ -85,32 +85,10 @@ function VoidExpeditionScreenInner() {
 
   function handleDeployThisZone() {
     if (!isUnlocked || !masteryGatesOk || isQueueFull || activeHunt) return;
-
-    const SESSION_BUCKET_MS = 2 * 60 * 1000;
-    const sessionBucketId = Math.floor(Date.now() / SESSION_BUCKET_MS);
-    const voidClientId =
-      globalThis.crypto?.randomUUID?.() ?? `void-${Date.now()}`;
-
-    dispatch({
-      type: "SET_VOID_REALTIME_BINDING",
-      payload: {
-        zoneId: selectedZoneId,
-        sessionBucketId,
-        clientId: voidClientId,
-      },
-    });
-
-    dispatch({
-      type: "QUEUE_MISSION",
-      payload: { missionId: DEFAULT_DEPLOY_HG_MISSION_ID },
-    });
-
     router.push(
-      voidFieldSearch({
-        zoneId: selectedZoneId,
-        sessionBucketId,
-        deployIntro: true,
-      }),
+      `/hunt?zone=${encodeURIComponent(selectedZoneId)}&missionId=${encodeURIComponent(
+        DEFAULT_DEPLOY_HG_MISSION_ID,
+      )}&return=${encodeURIComponent("/home")}`,
     );
   }
 

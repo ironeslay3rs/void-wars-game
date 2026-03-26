@@ -88,6 +88,10 @@ export type NextRunModifiers = {
 
 export type ResourcesState = Record<ResourceKey, number>;
 
+export type MarketState = {
+  stockByListingId: Record<string, number>;
+};
+
 export type LatestHuntResult = {
   missionId: string;
   huntTitle: string;
@@ -237,6 +241,13 @@ export type CareerFocus = "combat" | "gathering" | "crafting";
 
 /** Void field shell combat — rigs influence posture/expose math (`resolveShellHit`). */
 export type FieldLoadoutProfile = "assault" | "support" | "breach";
+export type LoadoutSlotId =
+  | "weapon"
+  | "armor"
+  | "core"
+  | "runeSet"
+  | "professionBind";
+export type LoadoutSlotsState = Record<LoadoutSlotId, string | null>;
 
 export type PlayerState = {
   playerName: string;
@@ -251,6 +262,8 @@ export type PlayerState = {
 
   /** Field loadout rig (local shell combat + preparation identity). */
   fieldLoadoutProfile: FieldLoadoutProfile;
+  /** M3 loadout equip path: 5 slots wired to owned inventory gear. */
+  loadoutSlots: LoadoutSlotsState;
 
   condition: number;
   hunger: number;
@@ -278,6 +291,12 @@ export type PlayerState = {
   resources: ResourcesState;
   /** Field pickups accrued during the currently running hunt (cleared on run start/end). */
   fieldLootGainedThisRun: Partial<ResourcesState>;
+
+  /** M3→M4: War Exchange storefront stock state. */
+  market: MarketState;
+
+  /** M3 crafting output: lightweight crafted item inventory (non-resource). */
+  craftedInventory: Record<string, number>;
 
   knownRecipes: string[];
   unlockedRoutes: string[];
@@ -348,6 +367,8 @@ export type GameAction =
   | { type: "SET_CHARACTER_PORTRAIT_ID"; payload: CharacterPortraitId }
   | { type: "SET_CAREER_FOCUS"; payload: CareerFocus | null }
   | { type: "SET_FIELD_LOADOUT_PROFILE"; payload: FieldLoadoutProfile }
+  | { type: "EQUIP_LOADOUT_ITEM"; payload: { slot: LoadoutSlotId; itemId: string } }
+  | { type: "UNEQUIP_LOADOUT_ITEM"; payload: { slot: LoadoutSlotId } }
   | { type: "SET_FACTION_ALIGNMENT"; payload: PathType }
   | { type: "ADD_RESOURCE"; payload: { key: ResourceKey; amount: number } }
   | { type: "ADD_FIELD_LOOT"; payload: { key: ResourceKey; amount: number } }
@@ -360,6 +381,10 @@ export type GameAction =
   | { type: "RECOVER_CONDITION" }
   | { type: "CRAFT_MOSS_RATION" }
   | { type: "CONSUME_MOSS_RATION" }
+  | { type: "USE_EMERGENCY_RATION" }
+  | { type: "MARKET_BUY"; payload: { listingId: string } }
+  | { type: "MARKET_SELL"; payload: { key: ResourceKey; amount: number } }
+  | { type: "CRAFT_RECIPE"; payload: { recipeId: string } }
   | { type: "CRAFT_NEXT_RUN_MODIFIER"; payload: { modifierId: NextRunModifierId } }
   | { type: "USE_FEAST_HALL_OFFER"; payload: { offerId: FeastHallOfferId } }
   | { type: "RESOLVE_HUNT"; payload: { missionId: string; resolvedAt?: number } }

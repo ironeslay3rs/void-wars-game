@@ -31,6 +31,7 @@ import {
   getCraftingProfessionTier,
   getDistrictCraftingCost,
 } from "@/features/crafting-district/craftingProfession";
+import { craftRecipes, craftingCategoryLabels, type CraftingCategory } from "@/features/crafting/recipeData";
 
 type BossRelicKey = "coil" | "ash" | "vault";
 
@@ -91,6 +92,137 @@ const craftingStations = [
   },
 ];
 
+function formatResource(key: string) {
+  switch (key) {
+    case "credits":
+      return "Credits";
+    case "ironOre":
+      return "Iron Ore";
+    case "scrapAlloy":
+      return "Scrap Alloy";
+    case "runeDust":
+      return "Rune Dust";
+    case "emberCore":
+      return "Ember Core";
+    case "bioSamples":
+      return "Bio Samples";
+    case "mossRations":
+      return "Moss Rations";
+    default:
+      return key;
+  }
+}
+
+function CraftingConsole() {
+  const { state, dispatch } = useGame();
+  const [tab, setTab] = useState<CraftingCategory>("organic");
+  const [toast, setToast] = useState<string | null>(null);
+
+  const recipes = craftRecipes.filter((r) => r.category === tab);
+
+  return (
+    <div className="mt-4 space-y-4">
+      <div className="flex flex-wrap gap-2">
+        {(Object.keys(craftingCategoryLabels) as CraftingCategory[]).map((key) => {
+          const active = tab === key;
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setTab(key)}
+              className={[
+                "rounded-full border px-3 py-2 text-[10px] font-bold uppercase tracking-[0.18em] transition",
+                active
+                  ? "border-cyan-400/40 bg-cyan-500/10 text-cyan-100"
+                  : "border-white/12 bg-white/5 text-white/70 hover:border-white/25",
+              ].join(" ")}
+            >
+              {craftingCategoryLabels[key]}
+            </button>
+          );
+        })}
+      </div>
+
+      {toast ? (
+        <div className="rounded-xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-50/90">
+          {toast}
+        </div>
+      ) : null}
+
+      <div className="grid gap-3 md:grid-cols-2">
+        {recipes.map((recipe) => {
+          const canAfford = Object.entries(recipe.materials).every(([k, v]) => {
+            const key = k as ResourceKey;
+            const need = typeof v === "number" ? v : 0;
+            if (need <= 0) return true;
+            return (state.player.resources[key] ?? 0) >= need;
+          });
+
+          return (
+            <div
+              key={recipe.id}
+              className="rounded-2xl border border-white/12 bg-black/25 p-4"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-sm font-black uppercase tracking-[0.05em] text-white">
+                    {recipe.name}
+                  </div>
+                  <div className="mt-1 text-xs text-white/60">
+                    Success {Math.round(recipe.successChance * 100)}% · {recipe.craftTimeSeconds}s
+                  </div>
+                </div>
+                <div className="rounded-full border border-white/12 bg-white/5 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-white/75">
+                  {craftingCategoryLabels[recipe.category]}
+                </div>
+              </div>
+
+              <div className="mt-3 space-y-1 text-xs text-white/65">
+                {Object.entries(recipe.materials).map(([k, v]) => {
+                  const key = k as ResourceKey;
+                  const need = typeof v === "number" ? v : 0;
+                  const have = state.player.resources[key] ?? 0;
+                  const ok = have >= need;
+                  return (
+                    <div key={k} className="flex items-center justify-between gap-3">
+                      <span>{formatResource(k)}</span>
+                      <span className={ok ? "text-white/80" : "text-red-200"}>
+                        {have}/{need}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="mt-3 text-xs text-white/65">
+                Output:{" "}
+                {recipe.output.kind === "resources"
+                  ? Object.entries(recipe.output.grant)
+                      .map(([k, v]) => `+${v} ${formatResource(k)}`)
+                      .join(", ")
+                  : recipe.output.item.name}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  dispatch({ type: "CRAFT_RECIPE", payload: { recipeId: recipe.id } });
+                  setToast(`Craft attempt: ${recipe.name}. Check inventory/resources for output.`);
+                  window.setTimeout(() => setToast(null), 2500);
+                }}
+                disabled={!canAfford}
+                className="mt-4 w-full rounded-xl border border-cyan-400/25 bg-cyan-500/10 px-4 py-3 text-sm font-semibold text-cyan-100 transition hover:border-cyan-300/45 hover:bg-cyan-500/16 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Craft
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function CraftingDistrictPage() {
   const { state, dispatch } = useGame();
   const screenData = getCraftingDistrictScreenData(state);
@@ -116,8 +248,8 @@ export default function CraftingDistrictPage() {
   );
   const needMossBio =
     mossRecipeCost.bioSamples ?? MOSS_RATION_RECIPE_COST.bioSamples;
-  const needMossDust =
-    mossRecipeCost.runeDust ?? MOSS_RATION_RECIPE_COST.runeDust;
+  const needMossOre =
+    mossRecipeCost.ironOre ?? MOSS_RATION_RECIPE_COST.ironOre;
 
   const sigilCost = useMemo(
     () =>
@@ -142,7 +274,7 @@ export default function CraftingDistrictPage() {
     runeDust >= needSigilDust &&
     emberCore >= needSigilEmber;
   const canCraftMossRation =
-    bioSamples >= needMossBio && runeDust >= needMossDust;
+    ironOre >= needMossOre && bioSamples >= needMossBio;
 
   const careerCraftingHint = formatCareerFocusCraftingHint(
     state.player.careerFocus,
@@ -223,7 +355,7 @@ export default function CraftingDistrictPage() {
   function craftMossRation() {
     if (!canCraftMossRation) {
       setRationResult(
-        `Need ${needMossBio} biomass samples and ${needMossDust} Rune Dust to bind 1 Moss Ration.`,
+        `Need ${needMossBio} Bio Samples and ${needMossOre} Iron Ore to bind 1 Moss Ration.`,
       );
       return;
     }
@@ -342,7 +474,7 @@ export default function CraftingDistrictPage() {
             <h2 className="mt-2 text-xl font-black uppercase">Moss Binder</h2>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-white/72">
               This is the one clear M1 action here: turn recovered Bio Samples
-              and Rune Dust into a Moss Ration so hunger pressure does not break
+              and Iron Ore into a Moss Ration so hunger pressure does not break
               the next loop step.
             </p>
           </div>
@@ -394,6 +526,20 @@ export default function CraftingDistrictPage() {
         <section className="grid gap-4 xl:grid-cols-[1.3fr_0.7fr]">
           <div className="grid gap-4">
             <div className="rounded-2xl border border-white/10 bg-black/25 p-6">
+              <div className="text-[11px] uppercase tracking-[0.22em] text-cyan-300/70">
+                Crafting Console
+              </div>
+              <h2 className="mt-2 text-xl font-black uppercase">Working recipes</h2>
+              <p className="mt-2 text-sm text-white/65">
+                Five recipes are live in this build. Tabs group them by discipline.
+                Crafting spends materials immediately and outputs either resources or a
+                crafted item entry.
+              </p>
+
+              <CraftingConsole />
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-black/25 p-6">
               <div className="text-[11px] uppercase tracking-[0.22em] text-emerald-300/70">
                 Primary M1 Action
               </div>
@@ -404,7 +550,7 @@ export default function CraftingDistrictPage() {
                 </div>
                 <div className="mt-2 text-sm text-white/65">
                   Current utility proof: bind {needMossBio} Bio Samples and{" "}
-                  {needMossDust} Rune Dust into 1 Moss Ration.
+                  {needMossOre} Iron Ore into 1 Moss Ration.
                 </div>
                 <div className="mt-3 rounded-xl border border-cyan-400/20 bg-cyan-400/8 px-4 py-3 text-sm text-cyan-50/88">
                   Next Step: bind a ration when hunger is becoming the next blocker, then return to Feast Hall, contracts, or the field.
@@ -418,8 +564,8 @@ export default function CraftingDistrictPage() {
                 >
                   Bind Moss Ration
                   <div className="mt-1 text-xs text-white/60">
-                    Costs {needMossBio} Bio Samples + {needMossDust} Rune Dust /
-                    Produces 1 Moss Ration
+                    Costs {needMossBio} Bio Samples + {needMossOre} Iron Ore / Produces
+                    1 Moss Ration
                   </div>
                 </button>
 

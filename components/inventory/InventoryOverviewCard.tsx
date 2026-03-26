@@ -1,8 +1,14 @@
 "use client";
 
+import Link from "next/link";
 import { formatResourceLabel } from "@/features/game/gameFeedback";
 import type { ResourceKey } from "@/features/game/gameTypes";
 import { useGame } from "@/features/game/gameContext";
+import {
+  checkCapacity,
+  getOverflowPenalty,
+  INVENTORY_CAPACITY_MAX,
+} from "@/features/resources/inventoryLogic";
 
 const RESOURCE_SLOT_ORDER: ResourceKey[] = [
   "credits",
@@ -12,6 +18,13 @@ const RESOURCE_SLOT_ORDER: ResourceKey[] = [
   "emberCore",
   "bioSamples",
   "mossRations",
+];
+
+const DISCARDABLE_COMMON_KEYS: ResourceKey[] = [
+  "ironOre",
+  "scrapAlloy",
+  "runeDust",
+  "bioSamples",
 ];
 
 const RESOURCE_SLOT_TOOLTIPS: Partial<Record<ResourceKey, string>> = {
@@ -65,24 +78,15 @@ function getFactionAccent(faction: string) {
 }
 
 export default function InventoryOverviewCard() {
-  const { state } = useGame();
+  const { state, dispatch } = useGame();
   const { player } = state;
 
   const factionAccent = getFactionAccent(player.factionAlignment);
 
-  const totalStoredItems =
-    player.resources.ironOre +
-    player.resources.scrapAlloy +
-    player.resources.runeDust +
-    player.resources.emberCore +
-    player.resources.bioSamples;
-
-  const capacityUsed = totalStoredItems;
-  const capacityMax = 120;
-  const capacityPercent = Math.max(
-    0,
-    Math.min(100, (capacityUsed / capacityMax) * 100),
-  );
+  const capacity = checkCapacity(player.resources, INVENTORY_CAPACITY_MAX);
+  const penalty = getOverflowPenalty(capacity);
+  const capacityPercent = Math.max(0, Math.min(100, capacity.percent));
+  const isOverloaded = capacity.isOverloaded;
 
   return (
     <div
@@ -121,22 +125,47 @@ export default function InventoryOverviewCard() {
           <div className="text-[10px] uppercase tracking-[0.22em] text-white/40">
             Capacity Load
           </div>
-          <div className="text-sm font-bold text-white/85">
-            {capacityUsed} / {capacityMax}
+          <div
+            className={[
+              "text-sm font-bold",
+              isOverloaded ? "text-red-300" : "text-white/85",
+            ].join(" ")}
+          >
+            {capacity.used} / {capacity.max}
           </div>
         </div>
 
         <div className="mt-3 h-4 overflow-hidden rounded-full border border-white/10 bg-white/5">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-cyan-300 via-violet-400 to-emerald-300"
+            className={[
+              "h-full rounded-full",
+              isOverloaded
+                ? "bg-gradient-to-r from-red-500 via-red-400 to-orange-300"
+                : "bg-gradient-to-r from-cyan-300 via-violet-400 to-emerald-300",
+            ].join(" ")}
             style={{ width: `${capacityPercent}%` }}
           />
         </div>
 
-        <div className="mt-3 text-sm text-white/60">
-          Capacity sums salvage, biomass, and refined materials only. Credits and moss
-          rations are listed below but do not add to this bar.
-        </div>
+        {isOverloaded ? (
+          <div className="mt-3 rounded-xl border border-red-400/35 bg-red-500/12 px-4 py-3 text-sm text-red-100">
+            <div className="font-bold uppercase tracking-[0.12em]">Overloaded</div>
+            <div className="mt-1 text-red-100/90">{penalty.message}</div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Link
+                href="/bazaar/black-market/golden-bazaar"
+                className="rounded-lg border border-red-200/45 bg-black/30 px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-red-50 hover:border-red-100/70"
+              >
+                Sell Surplus
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="mt-3 text-sm text-white/60">
+            Capacity sums salvage, biomass, and refined materials only. Credits and moss
+            rations are listed below but do not add to this bar.
+          </div>
+        )}
       </div>
 
       <div className="mt-7 border-t border-white/10 pt-6">
@@ -148,6 +177,8 @@ export default function InventoryOverviewCard() {
             const amount = player.resources[key];
             const hasStock = amount > 0;
             const tooltip = RESOURCE_SLOT_TOOLTIPS[key];
+            const canDiscard =
+              DISCARDABLE_COMMON_KEYS.includes(key) && amount > 0;
 
             return (
               <div
@@ -155,9 +186,27 @@ export default function InventoryOverviewCard() {
                 title={tooltip}
                 className="flex min-h-[48px] items-center justify-between gap-4 rounded-xl border border-white/12 bg-black/35 px-4 py-3"
               >
-                <span className="text-sm font-semibold uppercase tracking-[0.08em] text-white/85">
-                  {formatResourceLabel(key)}
-                </span>
+                <div className="min-w-0">
+                  <span className="text-sm font-semibold uppercase tracking-[0.08em] text-white/85">
+                    {formatResourceLabel(key)}
+                  </span>
+                  {canDiscard ? (
+                    <div className="mt-1">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          dispatch({
+                            type: "SPEND_RESOURCE",
+                            payload: { key, amount: Math.min(10, amount) },
+                          })
+                        }
+                        className="rounded-md border border-white/15 bg-white/5 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-white/75 hover:border-white/30 hover:bg-white/10"
+                      >
+                        Discard {Math.min(10, amount)}
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
                 <span
                   className={[
                     "tabular-nums text-lg font-black tracking-tight",

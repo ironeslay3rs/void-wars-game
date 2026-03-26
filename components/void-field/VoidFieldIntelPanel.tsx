@@ -80,7 +80,9 @@ export default function VoidFieldIntelPanel({
 
   const canCraftMossRation =
     state.player.resources.bioSamples >= MOSS_RATION_RECIPE_COST.bioSamples &&
-    state.player.resources.runeDust >= MOSS_RATION_RECIPE_COST.runeDust;
+    state.player.resources.ironOre >= MOSS_RATION_RECIPE_COST.ironOre &&
+    MOSS_RATION_RECIPE_COST.bioSamples > 0 &&
+    MOSS_RATION_RECIPE_COST.ironOre > 0;
 
   const stabilizationSigilCrafted = hasStabilizationSigil(
     state.player.knownRecipes,

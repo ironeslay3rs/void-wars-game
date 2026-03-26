@@ -11,8 +11,8 @@ export const ACTIVITY_HUNGER_COST = {
 } as const;
 
 export const MOSS_RATION_RECIPE_COST = {
-  bioSamples: 2,
-  runeDust: 1,
+  bioSamples: 10,
+  ironOre: 5,
 } as const;
 
 export const MOSS_RATION_HUNGER_RESTORE = 25;
