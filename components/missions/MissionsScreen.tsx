@@ -331,6 +331,8 @@ export default function MissionsScreen() {
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(70,90,120,0.18),_rgba(5,8,20,0.96)_55%)] px-4 py-6 text-white md:px-6 md:py-8 xl:px-8">
       <div className="mx-auto flex max-w-6xl flex-col gap-6">
         <ScreenHeader
+          backHref="/home"
+          backLabel="Back to Home"
           eyebrow={missionsScreenData.eyebrow}
           title={missionsScreenData.title}
           subtitle={missionsScreenData.subtitle}

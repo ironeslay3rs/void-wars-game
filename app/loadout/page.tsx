@@ -23,6 +23,8 @@ export default function LoadoutPage() {
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(40,60,100,0.28),_rgba(5,8,18,1)_55%)] px-6 py-10 text-white md:px-10">
       <div className="mx-auto flex max-w-4xl flex-col gap-8">
         <ScreenHeader
+          backHref="/home"
+          backLabel="Back to Home"
           eyebrow="Operations / Field loadout"
           title="Combat loadout"
           subtitle="Rigs change posture pressure and expose damage on the void field (local shell drills). School passives unlock from path depth and Executional tier."

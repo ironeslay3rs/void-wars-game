@@ -39,6 +39,8 @@ export default function MailScreen({ embedded = false }: MailScreenProps) {
     <>
       {!embedded ? (
         <ScreenHeader
+          backHref="/home"
+          backLabel="Back to Home"
           eyebrow="Citadel Archive"
           title="Mail"
           subtitle="Delayed notices, field records, and placeholder rewards held apart from live contact traffic."

@@ -74,6 +74,15 @@ export default function StatusPage() {
               <div className="rounded-[26px] border border-white/10 bg-[linear-gradient(180deg,rgba(12,16,28,0.82),rgba(6,8,14,0.92))] px-5 py-5 shadow-[0_18px_48px_rgba(0,0,0,0.34)] md:px-6">
                 <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
                   <div className="max-w-2xl">
+                    <div className="mb-4">
+                      <Link
+                        href="/home"
+                        className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold uppercase tracking-[0.16em] text-white/80 transition hover:border-white/20 hover:bg-white/10"
+                      >
+                        <span aria-hidden>←</span>
+                        Back to Home
+                      </Link>
+                    </div>
                     <div className="text-[11px] uppercase tracking-[0.3em] text-red-200/55">
                       Operative Status
                     </div>

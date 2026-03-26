@@ -89,6 +89,8 @@ export default function FactionsScreen() {
       <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(70,40,110,0.24),_rgba(5,8,20,1)_55%)] px-6 py-10 text-white md:px-10">
         <div className="mx-auto flex max-w-7xl flex-col gap-8">
           <ScreenHeader
+            backHref="/home"
+            backLabel="Back to Home"
             eyebrow={factionsScreenData.eyebrow}
             title={factionsScreenData.title}
             subtitle={factionsScreenData.subtitle}

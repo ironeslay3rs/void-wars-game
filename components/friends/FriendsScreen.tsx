@@ -84,6 +84,8 @@ export default function FriendsScreen({
     <>
       {!embedded ? (
         <ScreenHeader
+          backHref="/home"
+          backLabel="Back to Home"
           eyebrow="Operative Network"
           title="Friends"
           subtitle="Track trusted contacts, check signal state, and keep a clean roster without building the full social stack yet."
