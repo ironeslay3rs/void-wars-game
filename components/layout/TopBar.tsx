@@ -1,12 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { Bell, Power, UserCircle2, Users } from "lucide-react";
+import { Bell, UserCircle2, Users } from "lucide-react";
 import IconBadge from "@/components/shared/IconBadge";
 import CharacterPortraitImage from "@/components/character/CharacterPortraitImage";
 import { homeSceneData } from "@/features/home/homeSceneData";
 import { useGame } from "@/features/game/gameContext";
-import { useAuth } from "@/features/auth/useAuth";
 import type { FactionAlignment } from "@/features/game/gameTypes";
 
 function shortFactionLabel(alignment: FactionAlignment): string {
@@ -24,7 +23,6 @@ function shortFactionLabel(alignment: FactionAlignment): string {
 
 export default function TopBar() {
   const { state } = useGame();
-  const { signOut } = useAuth();
   const p = state.player;
   const conditionPct = Math.max(0, Math.min(100, p.condition));
 
@@ -115,26 +113,16 @@ export default function TopBar() {
               <UserCircle2 className="h-4 w-4" />
             </Link>
           </IconBadge>
+          {/* Social hub — friends, guild, chat */}
           <IconBadge>
             <Link
-              href="/guild"
+              href="/social"
               className="flex h-full w-full items-center justify-center text-slate-200"
-              aria-label="Guild"
-              title="Guild & Social"
+              aria-label="Social"
+              title="Social — friends, guild, chat"
             >
               <Users className="h-4 w-4" />
             </Link>
-          </IconBadge>
-          <IconBadge>
-            <button
-              type="button"
-              onClick={() => void signOut()}
-              aria-label="Sign out"
-              title="Sign out"
-              className="flex h-full w-full items-center justify-center transition hover:text-red-300 active:scale-90"
-            >
-              <Power className="h-4 w-4 text-red-400" />
-            </button>
           </IconBadge>
         </div>
       </div>
