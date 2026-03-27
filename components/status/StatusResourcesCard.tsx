@@ -2,47 +2,25 @@
 
 import Image from "next/image";
 import { useGame } from "@/features/game/gameContext";
+import { getResourceLoopMeaning } from "@/features/game/gameFeedback";
+import type { ResourceKey } from "@/features/game/gameTypes";
 import { assets } from "@/lib/assets";
 
 export default function StatusResourcesCard() {
   const { state } = useGame();
   const { resources } = state.player;
 
-  const primaryResources = [
-    { label: "Credits", value: resources.credits, icon: assets.icons.voidOrb },
-    {
-      label: "Bio Samples",
-      value: resources.bioSamples,
-      icon: assets.icons.bioVial,
-    },
-    {
-      label: "Moss Rations",
-      value: resources.mossRations,
-      icon: assets.icons.alchemyFlask,
-    },
+  const primaryResources: Array<{ label: string; key: ResourceKey; value: number; icon: string }> = [
+    { label: "Credits", key: "credits", value: resources.credits, icon: assets.icons.voidOrb },
+    { label: "Bio Samples", key: "bioSamples", value: resources.bioSamples, icon: assets.icons.bioVial },
+    { label: "Moss Rations", key: "mossRations", value: resources.mossRations, icon: assets.icons.alchemyFlask },
   ];
 
-  const secondaryResources = [
-    {
-      label: "Iron Ore",
-      value: resources.ironOre,
-      icon: assets.icons.shatteredPlate,
-    },
-    {
-      label: "Scrap Alloy",
-      value: resources.scrapAlloy,
-      icon: assets.icons.shatteredSkull,
-    },
-    {
-      label: "Rune Dust",
-      value: resources.runeDust,
-      icon: assets.icons.voidCluster,
-    },
-    {
-      label: "Ember Core",
-      value: resources.emberCore,
-      icon: assets.icons.emberCoreDevice,
-    },
+  const secondaryResources: Array<{ label: string; key: ResourceKey; value: number; icon: string }> = [
+    { label: "Iron Ore", key: "ironOre", value: resources.ironOre, icon: assets.icons.shatteredPlate },
+    { label: "Scrap Alloy", key: "scrapAlloy", value: resources.scrapAlloy, icon: assets.icons.shatteredSkull },
+    { label: "Rune Dust", key: "runeDust", value: resources.runeDust, icon: assets.icons.voidCluster },
+    { label: "Ember Core", key: "emberCore", value: resources.emberCore, icon: assets.icons.emberCoreDevice },
   ];
 
   return (
@@ -78,6 +56,9 @@ export default function StatusResourcesCard() {
               <div className="mt-1 text-2xl font-black text-white">
                 {res.value}
               </div>
+              <div className="mt-1 text-[10px] leading-4 text-white/38">
+                {getResourceLoopMeaning(res.key)}
+              </div>
             </div>
           </div>
         ))}
@@ -87,23 +68,28 @@ export default function StatusResourcesCard() {
         {secondaryResources.map((res) => (
           <div
             key={res.label}
-            className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3"
+            className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3"
           >
-            <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-white/10 bg-black/20">
-              <Image
-                src={res.icon}
-                alt={res.label}
-                fill
-                className="object-contain p-2"
-              />
+            <div className="flex items-center gap-3">
+              <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-white/10 bg-black/20">
+                <Image
+                  src={res.icon}
+                  alt={res.label}
+                  fill
+                  className="object-contain p-2"
+                />
+              </div>
+              <div className="min-w-0">
+                <div className="text-[10px] uppercase tracking-[0.18em] text-white/42">
+                  {res.label}
+                </div>
+                <div className="mt-1 text-base font-black text-white">
+                  {res.value}
+                </div>
+              </div>
             </div>
-            <div className="min-w-0">
-              <div className="text-[10px] uppercase tracking-[0.18em] text-white/42">
-                {res.label}
-              </div>
-              <div className="mt-1 text-base font-black text-white">
-                {res.value}
-              </div>
+            <div className="mt-2 text-[10px] leading-4 text-white/35">
+              {getResourceLoopMeaning(res.key)}
             </div>
           </div>
         ))}
