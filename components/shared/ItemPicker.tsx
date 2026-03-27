@@ -5,6 +5,8 @@ import {
   LOADOUT_SLOT_LABELS,
   type LoadoutItem,
 } from "@/features/player/loadoutState";
+import { describeLoadoutItemCombatProfile } from "@/features/combat/loadoutCombatStats";
+import { itemRankLabel } from "@/features/inventory/itemRanks";
 
 function getRarityClass(rarity: string) {
   if (rarity === "Rare") {
@@ -67,7 +69,7 @@ export default function ItemPicker({
                       {item.name}
                     </div>
                     <div className="mt-1 text-[11px] uppercase tracking-[0.16em] text-white/45">
-                      {item.type}
+                      {item.type} · {itemRankLabel(item.rankTier)}
                     </div>
                   </div>
                   <div
@@ -82,6 +84,11 @@ export default function ItemPicker({
                 <div className="mt-2 text-xs leading-relaxed text-white/65">
                   {item.description}
                 </div>
+                {describeLoadoutItemCombatProfile(item.id) ? (
+                  <div className="mt-1 text-[11px] text-cyan-100/80">
+                    {describeLoadoutItemCombatProfile(item.id)}
+                  </div>
+                ) : null}
               </button>
             ))
           )}

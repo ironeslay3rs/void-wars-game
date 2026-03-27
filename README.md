@@ -38,5 +38,14 @@ npm run dev
 
 Then open [http://localhost:3000](http://localhost:3000).
 
+### Realtime WebSocket (field + social chat)
+
+The Next.js app does **not** expose a WebSocket server on Vercel. Chat and void-field realtime expect a separate process: `npm run dev:ws` (see `server/void-realtime/wsServer.ts`).
+
+- **Local:** run `npm run dev` and, in another terminal, `npm run dev:ws`. Clients default to `ws://localhost:3002`.
+- **Production:** host the WS server (Fly.io, Railway, your VPS, etc.), terminate TLS so the browser can use `wss://`, then set **`NEXT_PUBLIC_VOID_WS_URL`** on Vercel to that full URL. Optional server env: `VOID_WS_PORT`, `VOID_WS_HOST` (default bind `0.0.0.0`), and `REDIS_URL` for persisted auction listings/accounts/history across server restarts.
+
+See `.env.example` for variable names.
+
 ## Checks
 
