@@ -40,7 +40,7 @@ export default function BazaarTopHeader() {
           href="/market/black-market"
           className="inline-flex items-center rounded-[16px] border border-orange-300/25 bg-[linear-gradient(135deg,rgba(120,20,10,0.45),rgba(30,10,8,0.72))] px-6 py-3 text-sm font-black uppercase tracking-[0.16em] text-amber-100 shadow-[0_14px_40px_rgba(0,0,0,0.35)] transition hover:-translate-y-0.5 hover:border-orange-200/40"
         >
-          Enter Black Market
+          Access Black Market
         </Link>
       </div>
     </div>

@@ -10,7 +10,8 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
   {
     id: "bazaar",
     label: canonBazaar.routeLabel,
-    description: "Trade, contracts, and survivor exchanges inside the neutral Black Market citadel.",
+    description:
+      "Public market district for common trade and contracts. Black Market access is a separate hidden layer.",
   },
   {
     id: "forge",

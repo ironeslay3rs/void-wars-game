@@ -2,10 +2,10 @@ import type { FactionAlignment } from "@/features/game/gameTypes";
 
 export const canonBazaar = {
   id: "bazaar",
-  navLabel: "Black Market",
-  routeLabel: "Black Market",
-  headingLabel: "The Black Market",
-  districtPrefix: "Bazaar",
+  navLabel: "Market",
+  routeLabel: "Market",
+  headingLabel: "The Market",
+  districtPrefix: "Market",
 } as const;
 
 export const canonFactionHqs = {

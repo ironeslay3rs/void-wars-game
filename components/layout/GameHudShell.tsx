@@ -3,7 +3,7 @@ import ScreenLines from "@/components/chrome/ScreenLines";
 import CornerBrackets from "@/components/chrome/CornerBrackets";
 import CityHomeScene from "@/components/home/CityHomeScene";
 import TopBar from "@/components/layout/TopBar";
-import HomeHudClient from "@/components/layout/HomeHudClient";
+import HomeHudClient from "@/components/home/HomeHudClient";
 
 export default function GameHudShell() {
   return (
