@@ -3,6 +3,7 @@ import type {
   LoadoutSlotId,
   LoadoutSlotsState,
 } from "@/features/game/gameTypes";
+import type { ItemRankTier } from "@/features/inventory/itemRanks";
 import {
   getFactionStarterLoadout,
   type InventoryLoadoutItem,
@@ -59,6 +60,7 @@ type CraftedItemShape = {
   name: string;
   kind: string;
   rarity: string;
+  rankTier: ItemRankTier;
   description?: string;
 };
 
@@ -89,6 +91,14 @@ export function getOwnedLoadoutItems(
       id: craftedItem.id,
       name: craftedItem.name,
       type: craftedItem.kind,
+      itemType:
+        craftedItem.kind === "weapon" ||
+        craftedItem.kind === "armor" ||
+        craftedItem.kind === "rune-core" ||
+        craftedItem.kind === "consumable"
+          ? craftedItem.kind
+          : "consumable",
+      rankTier: craftedItem.rankTier,
       rarity: craftedItem.rarity,
       slot: slotType,
       description: craftedItem.description ?? `Crafted item (${qty} owned)`,

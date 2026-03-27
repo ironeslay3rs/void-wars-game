@@ -94,11 +94,77 @@ export type AttackMobMessage = {
   mobEntityId: string;
 };
 
+export type ChatChannel = "global" | "guild" | "dm";
+
+export type SendChatMessage = {
+  type: "send_chat";
+  clientId: VoidRealtimeClientId;
+  channel: ChatChannel;
+  text: string;
+  senderName: string;
+  guildId?: string;
+  toClientId?: VoidRealtimeClientId;
+};
+
+export type RegisterSocialMessage = {
+  type: "register_social";
+  clientId: VoidRealtimeClientId;
+  playerName: string;
+  guildId?: string | null;
+};
+
+export type AuctionItemTier = "T1" | "T2" | "T3" | "T4" | "T5";
+
+export type AuctionItemType = "weapon" | "armor" | "rune-core" | "consumable";
+
+export type AuctionItemSnapshot = {
+  itemId: string;
+  itemName: string;
+  itemType: AuctionItemType;
+  rarity: "Common" | "Uncommon" | "Rare";
+  tier: AuctionItemTier;
+};
+
+export type RegisterAuctionMessage = {
+  type: "register_auction";
+  clientId: VoidRealtimeClientId;
+  accountId: string;
+  playerName: string;
+  credits: number;
+  craftedInventory: Record<string, number>;
+};
+
+export type AuctionCreateListingMessage = {
+  type: "auction_create_listing";
+  clientId: VoidRealtimeClientId;
+  listing: AuctionItemSnapshot & {
+    priceCredits: number;
+  };
+};
+
+export type AuctionCancelListingMessage = {
+  type: "auction_cancel_listing";
+  clientId: VoidRealtimeClientId;
+  listingId: string;
+};
+
+export type AuctionBuyListingMessage = {
+  type: "auction_buy_listing";
+  clientId: VoidRealtimeClientId;
+  listingId: string;
+};
+
 export type ClientToServerMessage =
   | JoinSessionMessage
   | MoveInputMessage
   | AttackMobMessage
-  | HuntStatusMessage;
+  | HuntStatusMessage
+  | SendChatMessage
+  | RegisterSocialMessage
+  | RegisterAuctionMessage
+  | AuctionCreateListingMessage
+  | AuctionCancelListingMessage
+  | AuctionBuyListingMessage;
 
 /* =========================
  Server messages
@@ -187,6 +253,79 @@ export type HuntContributionResultMessage = {
   ts: number;
 };
 
+export type ChatBroadcastMessage = {
+  type: "chat_broadcast";
+  channel: ChatChannel;
+  fromClientId: VoidRealtimeClientId;
+  senderName: string;
+  text: string;
+  guildId?: string;
+  toClientId?: VoidRealtimeClientId;
+  ts: number;
+};
+
+export type SocialRosterMessage = {
+  type: "social_roster";
+  players: Array<{
+    clientId: VoidRealtimeClientId;
+    playerName: string;
+    guildId: string | null;
+  }>;
+  ts: number;
+};
+
+export type AuctionListingSnapshot = AuctionItemSnapshot & {
+  listingId: string;
+  sellerClientId: VoidRealtimeClientId;
+  sellerAccountId: string;
+  sellerName: string;
+  priceCredits: number;
+  createdAt: number;
+};
+
+export type AuctionListingsMessage = {
+  type: "auction_listings";
+  listings: AuctionListingSnapshot[];
+  ts: number;
+};
+
+export type AuctionTradeEventMessage = {
+  type: "auction_trade_event";
+  status: "created" | "cancelled" | "sold" | "error";
+  listingId?: string;
+  actorClientId: VoidRealtimeClientId;
+  reason?: string;
+  ts: number;
+};
+
+export type AuctionAccountStateMessage = {
+  type: "auction_account_state";
+  clientId: VoidRealtimeClientId;
+  credits: number;
+  craftedInventory: Record<string, number>;
+  ts: number;
+};
+
+export type AuctionHistoryEntry = {
+  id: string;
+  kind: "buy" | "sell" | "cancel" | "expire" | "error";
+  listingId?: string;
+  itemName?: string;
+  itemTier?: AuctionItemTier;
+  grossCredits?: number;
+  payoutCredits?: number;
+  counterpartName?: string;
+  message: string;
+  ts: number;
+};
+
+export type AuctionHistoryMessage = {
+  type: "auction_history";
+  clientId: VoidRealtimeClientId;
+  entries: AuctionHistoryEntry[];
+  ts: number;
+};
+
 export type ServerToClientMessage =
   | SessionStateMessage
   | PlayersUpdatedMessage
@@ -194,7 +333,13 @@ export type ServerToClientMessage =
   | MobHpUpdatedMessage
   | CombatEventMessage
   | MobDefeatedMessage
-  | HuntContributionResultMessage;
+  | HuntContributionResultMessage
+  | ChatBroadcastMessage
+  | SocialRosterMessage
+  | AuctionListingsMessage
+  | AuctionTradeEventMessage
+  | AuctionAccountStateMessage
+  | AuctionHistoryMessage;
 
 // (ClientToServerMessage declared above)
 

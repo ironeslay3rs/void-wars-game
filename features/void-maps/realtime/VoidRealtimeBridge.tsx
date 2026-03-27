@@ -29,6 +29,7 @@ import type {
 import { voidZoneById, type VoidZoneId } from "@/features/void-maps/zoneData";
 import { isVoidFieldShellBossMobId } from "@/features/void-maps/voidFieldShellMobs";
 import { getVoidFieldLootProfileIdFromMobId } from "@/features/void-maps/voidFieldLootTables";
+import { getVoidRealtimeWebSocketUrl } from "@/lib/voidRealtimeWsUrl";
 
 export type VoidRealtimeSessionApi = {
   connected: boolean;
@@ -204,12 +205,6 @@ export function VoidRealtimeBridge({
     state.player.zoneMastery,
   ]);
 
-  const wsUrl = useMemo(() => {
-    const port = process.env.NEXT_PUBLIC_VOID_WS_PORT ?? "3002";
-    const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
-    return `${proto}//${window.location.hostname}:${port}`;
-  }, []);
-
   const sendRaw = useCallback((msg: ClientToServerMessage) => {
     const ws = wsRef.current;
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
@@ -317,6 +312,17 @@ export function VoidRealtimeBridge({
       return () => window.clearTimeout(t);
     }
 
+    const wsUrl = getVoidRealtimeWebSocketUrl();
+    if (!wsUrl) {
+      const t = window.setTimeout(() => {
+        setConnected(false);
+        setError(
+          "Realtime WebSocket URL missing. Set NEXT_PUBLIC_VOID_WS_URL for production.",
+        );
+      }, 0);
+      return () => window.clearTimeout(t);
+    }
+
     let cancelled = false;
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
@@ -420,7 +426,7 @@ export function VoidRealtimeBridge({
         wsRef.current = null;
       }
     };
-  }, [binding, shouldConnect, wsUrl, flushJoin, flushHuntStatus]);
+  }, [binding, shouldConnect, flushJoin, flushHuntStatus]);
 
   useEffect(() => {
     if (!shouldConnect || !binding) return;

@@ -32,6 +32,7 @@ import {
   getDistrictCraftingCost,
 } from "@/features/crafting-district/craftingProfession";
 import { craftRecipes, craftingCategoryLabels, type CraftingCategory } from "@/features/crafting/recipeData";
+import { itemRankLabel } from "@/features/inventory/itemRanks";
 
 type BossRelicKey = "coil" | "ash" | "vault";
 
@@ -200,7 +201,7 @@ function CraftingConsole() {
                   ? Object.entries(recipe.output.grant)
                       .map(([k, v]) => `+${v} ${formatResource(k)}`)
                       .join(", ")
-                  : recipe.output.item.name}
+                  : `${recipe.output.item.name} (${itemRankLabel(recipe.output.item.rankTier)})`}
               </div>
 
               <button
@@ -540,6 +541,10 @@ export default function CraftingDistrictPage() {
                 Five recipes are live in this build. Tabs group them by discipline.
                 Crafting spends materials immediately and outputs either resources or a
                 crafted item entry.
+              </p>
+              <p className="mt-2 rounded-xl border border-cyan-300/20 bg-cyan-950/25 px-4 py-3 text-xs leading-relaxed text-cyan-100/85">
+                Item rank rules: T1 is entry gear, T2 is combat-ready, T3 is rare war-grade.
+                Upgrade recipes consume more refined materials and boss relic stock.
               </p>
 
               <CraftingConsole />

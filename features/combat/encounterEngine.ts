@@ -1,6 +1,7 @@
 import type { PlayerState, ResourcesState } from "@/features/game/gameTypes";
 import type { CreatureDefinition } from "@/features/combat/creatureData";
 import { rollVoidFieldLoot } from "@/features/void-maps/rollVoidFieldLoot";
+import { getPlayerLoadoutCombatModifiers } from "@/features/combat/loadoutCombatStats";
 
 export type EncounterOutcome = "victory" | "defeat" | "retreat";
 
@@ -18,11 +19,6 @@ export type EncounterResolution = {
 
 function clamp(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, n));
-}
-
-function loadoutPowerBonus(player: PlayerState) {
-  const equippedCount = Object.values(player.loadoutSlots ?? {}).filter(Boolean).length;
-  return equippedCount * 0.04; // 0..~0.2
 }
 
 function rigBonus(player: PlayerState) {
@@ -64,12 +60,13 @@ export function resolveEncounter(params: {
   }
 
   const conditionFactor = clamp(playerHpStart / 100, 0.25, 1);
+  const loadout = getPlayerLoadoutCombatModifiers(player);
   const careerBonus =
     player.careerFocus === "combat" ? 0.08 : player.careerFocus === "gathering" ? 0.03 : 0;
-  const power = 1 + rigBonus(player) + loadoutPowerBonus(player) + careerBonus;
+  const power = (1 + rigBonus(player) + careerBonus) * loadout.attackMultiplier;
 
   const playerAtk = 10 * power * conditionFactor;
-  const playerDef = 6 * power * conditionFactor;
+  const playerDef = 6 * power * conditionFactor * loadout.defenseMultiplier;
 
   const creatureThreat = creature.attack * 1.1 + creature.defense * 1.4 + creature.hp * 0.22;
   const playerThreat = playerAtk * 1.6 + playerDef * 1.1 + playerHpStart * 0.08;
@@ -85,7 +82,7 @@ export function resolveEncounter(params: {
 
   const baseCost = creature.rarity === "rare" ? 12 : creature.rarity === "uncommon" ? 8 : 5;
   const conditionCost = clamp(
-    Math.round(baseCost + (1 - conditionFactor) * 8),
+    Math.round((baseCost + (1 - conditionFactor) * 8) * loadout.conditionCostMultiplier),
     3,
     25,
   );

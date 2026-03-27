@@ -8,7 +8,6 @@ import {
   nextAttackCooldownMs,
 } from "@/features/combat/autoAttack";
 
-const STRIKE_RANGE_PCT = 10;
 // For autoplay movement, prefer targets inside this radius.
 // If nothing is nearby, we keep the current move target instead of picking something far.
 const AUTO_LOCAL_MOVE_RADIUS_PCT = 22;
@@ -72,6 +71,8 @@ export type UseVoidFieldControlsArgs = {
   targetedMobEntityIdRef: MutableRefObject<string | null>;
   /** M1 auto-strike: repeat strikes while true. */
   autoStrikeEnabled: boolean;
+  /** Effective range from equipped weapon profile. */
+  strikeRangePct: number;
 };
 
 /**
@@ -89,6 +90,7 @@ export function useVoidFieldControls({
   onShellStrike,
   targetedMobEntityIdRef,
   autoStrikeEnabled,
+  strikeRangePct,
 }: UseVoidFieldControlsArgs) {
   const mobsRef = useRef<MobEntity[]>(fieldMobs);
   const canAttackRef = useRef(isRunning);
@@ -111,7 +113,7 @@ export function useVoidFieldControls({
     const mobs = mobsRef.current;
     const selfPos = selfPositionPctRef.current;
     const preferred = targetedMobEntityIdRef.current;
-    const best = pickMobForStrike(mobs, selfPos, preferred, STRIKE_RANGE_PCT);
+    const best = pickMobForStrike(mobs, selfPos, preferred, strikeRangePct);
 
     if (!best) return;
 
@@ -136,6 +138,7 @@ export function useVoidFieldControls({
     sendAttack,
     selfPositionPctRef,
     targetedMobEntityIdRef,
+    strikeRangePct,
   ]);
 
   function pickNearestAliveMob(
@@ -200,7 +203,7 @@ export function useVoidFieldControls({
         mobs,
         selfPos,
         preferred,
-        STRIKE_RANGE_PCT,
+        strikeRangePct,
       );
 
       if (bestInRange) {
@@ -249,6 +252,7 @@ export function useVoidFieldControls({
     targetedMobEntityIdRef,
     setMoveTargetPct,
     performStrike,
+    strikeRangePct,
   ]);
 
   // When auto turns off, lock the local move target at the current position.
@@ -264,10 +268,16 @@ export function useVoidFieldControls({
   const tryDirectMobAttack = useCallback(
     (mobEntityId: string) => {
       if (Date.now() < attackCooldownUntilRef.current) return;
+      const selfPos = selfPositionPctRef.current;
+      const targetMob =
+        mobsRef.current.find((x) => x.mobEntityId === mobEntityId) ?? null;
+      if (!targetMob || targetMob.hp <= 0) return;
+      if (!mobInStrikeRange(targetMob, selfPos, strikeRangePct)) {
+        setMoveTargetPct(targetMob.x, targetMob.y);
+        return;
+      }
 
       if (isVoidFieldShellMobId(mobEntityId)) {
-        const m = mobsRef.current.find((x) => x.mobEntityId === mobEntityId);
-        if (!m || m.hp <= 0) return;
         onAttackCommittedRef.current?.(mobEntityId);
         onShellStrikeRef.current?.(mobEntityId);
         attackCooldownUntilRef.current =
@@ -281,7 +291,15 @@ export function useVoidFieldControls({
       attackCooldownUntilRef.current =
         Date.now() + nextAttackCooldownMs(autoStrikeEnabled);
     },
-    [isRunning, connected, sendAttack, autoStrikeEnabled],
+    [
+      isRunning,
+      connected,
+      sendAttack,
+      autoStrikeEnabled,
+      selfPositionPctRef,
+      setMoveTargetPct,
+      strikeRangePct,
+    ],
   );
 
   return {

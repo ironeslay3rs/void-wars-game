@@ -1,5 +1,6 @@
 import type { BossDefinition, BossLootEntry } from "@/features/combat/bossData";
 import type { PlayerState, ResourceKey, ResourcesState } from "@/features/game/gameTypes";
+import { getPlayerLoadoutCombatModifiers } from "@/features/combat/loadoutCombatStats";
 
 export type BossPhase = "normal" | "frenzy";
 
@@ -70,6 +71,7 @@ function playerDamagePerHit(
   state: BossFightState,
   now: number,
 ) {
+  const loadout = getPlayerLoadoutCombatModifiers(player);
   const rigBonus =
     player.fieldLoadoutProfile === "assault"
       ? 8
@@ -81,17 +83,32 @@ function playerDamagePerHit(
   const careerBonus = player.careerFocus === "combat" ? 6 : 2;
   const fearMult = state.fearDebuffUntil > now ? FEAR_DAMAGE_MULT : 1;
   const conditionMult = clamp(player.condition / 100, 0.4, 1);
-  return Math.max(6, Math.round((18 + rigBonus + loadoutBonus + careerBonus) * conditionMult * fearMult));
+  return Math.max(
+    6,
+    Math.round(
+      (18 + rigBonus + loadoutBonus + careerBonus) *
+        conditionMult *
+        fearMult *
+        loadout.attackMultiplier,
+    ),
+  );
 }
 
 function bossDamagePerHit(
   boss: BossDefinition,
   state: BossFightState,
   now: number,
+  player: PlayerState,
 ) {
+  const loadout = getPlayerLoadoutCombatModifiers(player);
   const phaseMult = state.phase === "frenzy" ? 1.15 : 1;
   const dodgeMult = now <= state.dodgeWindowUntil ? DODGE_REDUCTION : 1;
-  return Math.max(5, Math.round(boss.attack * phaseMult * dodgeMult));
+  return Math.max(
+    5,
+    Math.round(
+      boss.attack * phaseMult * dodgeMult * loadout.incomingDamageMultiplier,
+    ),
+  );
 }
 
 export function createBossFightState(
@@ -152,7 +169,7 @@ export function tickBossFight(params: {
     next.phase === "frenzy" ? FRENZY_BOSS_ATTACK_INTERVAL_MS : BOSS_ATTACK_INTERVAL_MS;
 
   if (now >= next.nextBossAttackAt) {
-    const dmg = bossDamagePerHit(boss, next, now);
+    const dmg = bossDamagePerHit(boss, next, now, player);
     next.playerCondition = clamp(next.playerCondition - dmg, 0, 100);
     next.nextBossAttackAt = now + bossAttackInterval;
   }

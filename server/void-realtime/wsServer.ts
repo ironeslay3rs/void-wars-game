@@ -1,4 +1,5 @@
 import { WebSocket, WebSocketServer } from "ws";
+import { createClient, type RedisClientType } from "redis";
 import { buildSpawnEncounter } from "../../features/void-maps/spawnSim";
 import { enrichRealtimeMobWithM4Traits } from "../../features/void-maps/realtimeMobTraits";
 import { resolveShellHitWithSnapshot } from "../../features/combat/shellHitResolution";
@@ -23,6 +24,20 @@ import type {
   HuntStatus,
   VoidRealtimeClientId,
   HuntContributionResultMessage,
+  SendChatMessage,
+  ChatBroadcastMessage,
+  RegisterSocialMessage,
+  SocialRosterMessage,
+  AuctionCreateListingMessage,
+  AuctionCancelListingMessage,
+  AuctionBuyListingMessage,
+  RegisterAuctionMessage,
+  AuctionListingSnapshot,
+  AuctionListingsMessage,
+  AuctionTradeEventMessage,
+  AuctionAccountStateMessage,
+  AuctionHistoryEntry,
+  AuctionHistoryMessage,
 } from "../../features/void-maps/realtime/voidRealtimeProtocol";
 
 type PlayerContributionLedger = {
@@ -161,8 +176,254 @@ const SESSION_TTL_MS = 2 * 60 * 1000;
 const CLEANUP_INTERVAL_MS = 15_000;
 
 const port = Number(process.env.VOID_WS_PORT ?? "3002");
+const bindHost = process.env.VOID_WS_HOST?.trim() || "0.0.0.0";
 
 const sessionsByKey = new Map<string, VoidSession>();
+
+type GlobalClientEntry = {
+  socket: WebSocket;
+  playerName: string;
+  guildId: string | null;
+  accountId?: string;
+};
+
+const globalClients = new Map<VoidRealtimeClientId, GlobalClientEntry>();
+const auctionClients = new Set<VoidRealtimeClientId>();
+const auctionListings = new Map<string, AuctionListingSnapshot>();
+const auctionAccounts = new Map<
+  VoidRealtimeClientId,
+  { accountId: string; credits: number; craftedInventory: Record<string, number> }
+>();
+const auctionHistoryByAccountId = new Map<string, AuctionHistoryEntry[]>();
+const AUCTION_LISTING_FEE_CREDITS = 5;
+const AUCTION_SELLER_PAYOUT_MULT = 0.9;
+const AUCTION_MAX_LISTINGS_PER_SELLER = 8;
+const AUCTION_MIN_PRICE_CREDITS = 25;
+const AUCTION_MAX_PRICE_CREDITS = 50_000;
+const AUCTION_LISTING_TTL_MS = 24 * 60 * 60 * 1000;
+const AUCTION_HISTORY_MAX = 100;
+const REDIS_AUCTION_KEY = "vw:auction:state:v1";
+
+let redisClient: RedisClientType | null = null;
+let redisReady = false;
+let persistTimer: ReturnType<typeof setTimeout> | null = null;
+
+function broadcastAuctionListings() {
+  const payload: AuctionListingsMessage = {
+    type: "auction_listings",
+    listings: Array.from(auctionListings.values()).sort(
+      (a, b) => b.createdAt - a.createdAt,
+    ),
+    ts: Date.now(),
+  };
+  const raw = JSON.stringify(payload);
+  for (const clientId of auctionClients) {
+    const entry = globalClients.get(clientId);
+    if (entry?.socket.readyState === WebSocket.OPEN) {
+      entry.socket.send(raw);
+    }
+  }
+}
+
+function sendAuctionEvent(params: {
+  actorClientId: VoidRealtimeClientId;
+  status: AuctionTradeEventMessage["status"];
+  listingId?: string;
+  reason?: string;
+}) {
+  const payload: AuctionTradeEventMessage = {
+    type: "auction_trade_event",
+    actorClientId: params.actorClientId,
+    status: params.status,
+    listingId: params.listingId,
+    reason: params.reason,
+    ts: Date.now(),
+  };
+  const raw = JSON.stringify(payload);
+  for (const clientId of auctionClients) {
+    const entry = globalClients.get(clientId);
+    if (entry?.socket.readyState === WebSocket.OPEN) {
+      entry.socket.send(raw);
+    }
+  }
+}
+
+function sendAuctionAccountState(clientId: VoidRealtimeClientId) {
+  const entry = globalClients.get(clientId);
+  const account = auctionAccounts.get(clientId);
+  if (!entry || !account || entry.socket.readyState !== WebSocket.OPEN) return;
+  const payload: AuctionAccountStateMessage = {
+    type: "auction_account_state",
+    clientId,
+    credits: account.credits,
+    craftedInventory: account.craftedInventory,
+    ts: Date.now(),
+  };
+  entry.socket.send(JSON.stringify(payload));
+}
+
+function sendAuctionHistory(clientId: VoidRealtimeClientId) {
+  const entry = globalClients.get(clientId);
+  const account = auctionAccounts.get(clientId);
+  if (!entry || !account || entry.socket.readyState !== WebSocket.OPEN) return;
+  const payload: AuctionHistoryMessage = {
+    type: "auction_history",
+    clientId,
+    entries: auctionHistoryByAccountId.get(account.accountId) ?? [],
+    ts: Date.now(),
+  };
+  entry.socket.send(JSON.stringify(payload));
+}
+
+function pushAuctionHistory(accountId: string, entry: AuctionHistoryEntry) {
+  const prev = auctionHistoryByAccountId.get(accountId) ?? [];
+  auctionHistoryByAccountId.set(accountId, [entry, ...prev].slice(0, AUCTION_HISTORY_MAX));
+}
+
+function serializeAuctionState() {
+  return JSON.stringify({
+    listings: Array.from(auctionListings.values()),
+    accounts: Array.from(auctionAccounts.entries()).map(([clientId, account]) => ({
+      clientId,
+      ...account,
+    })),
+    history: Array.from(auctionHistoryByAccountId.entries()).map(([accountId, entries]) => ({
+      accountId,
+      entries,
+    })),
+  });
+}
+
+function scheduleAuctionPersist() {
+  if (!redisReady || !redisClient) return;
+  if (persistTimer) {
+    clearTimeout(persistTimer);
+  }
+  persistTimer = setTimeout(async () => {
+    persistTimer = null;
+    try {
+      await redisClient!.set(REDIS_AUCTION_KEY, serializeAuctionState());
+    } catch {
+      // best effort
+    }
+  }, 300);
+}
+
+async function initAuctionPersistence() {
+  const url = process.env.REDIS_URL?.trim();
+  if (!url) return;
+  try {
+    redisClient = createClient({ url });
+    await redisClient.connect();
+    redisReady = true;
+    const raw = await redisClient.get(REDIS_AUCTION_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw) as {
+      listings?: AuctionListingSnapshot[];
+      accounts?: Array<{
+        clientId: string;
+        accountId: string;
+        credits: number;
+        craftedInventory: Record<string, number>;
+      }>;
+      history?: Array<{ accountId: string; entries: AuctionHistoryEntry[] }>;
+    };
+    if (Array.isArray(parsed.listings)) {
+      for (const listing of parsed.listings) {
+        auctionListings.set(listing.listingId, listing);
+      }
+    }
+    if (Array.isArray(parsed.accounts)) {
+      for (const account of parsed.accounts) {
+        auctionAccounts.set(account.clientId, {
+          accountId: account.accountId,
+          credits: account.credits,
+          craftedInventory: account.craftedInventory ?? {},
+        });
+      }
+    }
+    if (Array.isArray(parsed.history)) {
+      for (const history of parsed.history) {
+        auctionHistoryByAccountId.set(
+          history.accountId,
+          Array.isArray(history.entries) ? history.entries : [],
+        );
+      }
+    }
+  } catch {
+    redisReady = false;
+  }
+}
+
+function cleanupExpiredAuctionListings() {
+  const now = Date.now();
+  let changed = false;
+  for (const [listingId, listing] of auctionListings.entries()) {
+    if (now - listing.createdAt < AUCTION_LISTING_TTL_MS) continue;
+    const seller = auctionAccounts.get(listing.sellerClientId);
+    if (seller) {
+      seller.craftedInventory[listing.itemId] =
+        (seller.craftedInventory[listing.itemId] ?? 0) + 1;
+      sendAuctionAccountState(listing.sellerClientId);
+      pushAuctionHistory(seller.accountId, {
+        id: `hist-expire-${listingId}-${Date.now()}`,
+        kind: "expire",
+        listingId,
+        itemName: listing.itemName,
+        itemTier: listing.tier,
+        message: `${listing.itemName} expired and returned to inventory.`,
+        ts: Date.now(),
+      });
+      sendAuctionHistory(listing.sellerClientId);
+    }
+    auctionListings.delete(listingId);
+    changed = true;
+  }
+  if (changed) {
+    broadcastAuctionListings();
+    scheduleAuctionPersist();
+  }
+}
+
+function broadcastSocialRoster() {
+  const payload: SocialRosterMessage = {
+    type: "social_roster",
+    players: Array.from(globalClients.entries()).map(([clientId, entry]) => ({
+      clientId,
+      playerName: entry.playerName,
+      guildId: entry.guildId,
+    })),
+    ts: Date.now(),
+  };
+  const raw = JSON.stringify(payload);
+  for (const entry of globalClients.values()) {
+    if (entry.socket.readyState === WebSocket.OPEN) {
+      entry.socket.send(raw);
+    }
+  }
+}
+
+function broadcastChat(msg: ChatBroadcastMessage, senderClientId: VoidRealtimeClientId) {
+  const payload = JSON.stringify(msg);
+  if (msg.channel === "global") {
+    for (const entry of globalClients.values()) {
+      if (entry.socket.readyState === 1) {
+        entry.socket.send(payload);
+      }
+    }
+  } else if (msg.channel === "guild" && msg.guildId) {
+    for (const entry of globalClients.values()) {
+      if (entry.guildId === msg.guildId && entry.socket.readyState === 1) {
+        entry.socket.send(payload);
+      }
+    }
+  } else if (msg.channel === "dm" && msg.toClientId) {
+    const sender = globalClients.get(senderClientId);
+    const target = globalClients.get(msg.toClientId);
+    if (sender && sender.socket.readyState === 1) sender.socket.send(payload);
+    if (target && target.socket.readyState === 1) target.socket.send(payload);
+  }
+}
 
 function makeSessionKey(zoneId: VoidZoneId, sessionBucketId: number) {
   return `${zoneId}-${sessionBucketId}`;
@@ -394,6 +655,7 @@ function broadcastHuntContributionResult(session: VoidSession, resolvedAt: numbe
 
 function maybeCleanupSessions() {
   const now = Date.now();
+  cleanupExpiredAuctionListings();
   for (const [key, session] of sessionsByKey.entries()) {
     if (!session.emptySince) continue;
     if (now - session.emptySince < SESSION_TTL_MS) continue;
@@ -402,9 +664,14 @@ function maybeCleanupSessions() {
   }
 }
 
-console.log(`[VoidRealtime] starting ws server on :${port}`);
+console.log(`[VoidRealtime] starting ws server on ${bindHost}:${port}`);
 
-const wss = new WebSocketServer({ port });
+const wss = new WebSocketServer({ port, host: bindHost });
+void initAuctionPersistence().then(() => {
+  if (auctionListings.size > 0) {
+    console.log(`[VoidRealtime] restored ${auctionListings.size} auction listings from persistence`);
+  }
+});
 
 setInterval(() => {
   maybeCleanupSessions();
@@ -412,6 +679,8 @@ setInterval(() => {
 
 wss.on("connection", (ws) => {
   let joinedClientId: VoidRealtimeClientId | null = null;
+  let socialClientId: VoidRealtimeClientId | null = null;
+  let auctionClientId: VoidRealtimeClientId | null = null;
   let joinedSession: VoidSession | null = null;
 
   ws.on("message", (raw) => {
@@ -473,6 +742,13 @@ wss.on("connection", (ws) => {
       session.sockets.set(join.clientId, ws);
       session.emptySince = null;
 
+      globalClients.set(join.clientId, {
+        socket: ws,
+        playerName: join.playerName,
+        guildId: null,
+      });
+      broadcastSocialRoster();
+
       const payload: ServerToClientMessage = {
         type: "session_state",
         zoneId: session.zoneId,
@@ -490,6 +766,283 @@ wss.on("connection", (ws) => {
       };
 
       broadcastSession(session, playersUpdated);
+      return;
+    }
+
+    if (msg.type === "register_social") {
+      const social = msg as RegisterSocialMessage;
+      socialClientId = social.clientId;
+      globalClients.set(social.clientId, {
+        socket: ws,
+        playerName: social.playerName,
+        guildId: social.guildId ?? null,
+      });
+      broadcastSocialRoster();
+      return;
+    }
+
+    if (msg.type === "register_auction") {
+      const auction = msg as RegisterAuctionMessage;
+      auctionClientId = auction.clientId;
+      auctionClients.add(auction.clientId);
+      globalClients.set(auction.clientId, {
+        socket: ws,
+        playerName: auction.playerName,
+        guildId: null,
+        accountId: auction.accountId,
+      });
+      if (!auctionAccounts.has(auction.clientId)) {
+        auctionAccounts.set(auction.clientId, {
+          accountId: auction.accountId,
+          credits: Math.max(0, Math.floor(auction.credits)),
+          craftedInventory: { ...(auction.craftedInventory ?? {}) },
+        });
+        scheduleAuctionPersist();
+      }
+      broadcastSocialRoster();
+      broadcastAuctionListings();
+      sendAuctionAccountState(auction.clientId);
+      sendAuctionHistory(auction.clientId);
+      return;
+    }
+
+    if (msg.type === "send_chat") {
+      const chat = msg as SendChatMessage;
+      const activeClientId = joinedClientId ?? socialClientId;
+      if (!activeClientId) return;
+      if (chat.clientId !== activeClientId) return;
+      const broadcast: ChatBroadcastMessage = {
+        type: "chat_broadcast",
+        channel: chat.channel,
+        fromClientId: chat.clientId,
+        senderName: chat.senderName,
+        text: chat.text.slice(0, 400),
+        guildId: chat.guildId,
+        toClientId: chat.toClientId,
+        ts: Date.now(),
+      };
+      broadcastChat(broadcast, chat.clientId);
+      return;
+    }
+
+    if (msg.type === "auction_create_listing") {
+      const req = msg as AuctionCreateListingMessage;
+      const activeClientId = joinedClientId ?? socialClientId ?? auctionClientId;
+      if (!activeClientId || activeClientId !== req.clientId) return;
+      const actor = globalClients.get(req.clientId);
+      const account = auctionAccounts.get(req.clientId);
+      if (!account) return;
+      if (!actor) return;
+      const activeListingsBySeller = Array.from(auctionListings.values()).filter(
+        (x) => x.sellerClientId === req.clientId,
+      ).length;
+      if (activeListingsBySeller >= AUCTION_MAX_LISTINGS_PER_SELLER) {
+        sendAuctionEvent({
+          actorClientId: req.clientId,
+          status: "error",
+          reason: `Listing cap reached (${AUCTION_MAX_LISTINGS_PER_SELLER}).`,
+        });
+        return;
+      }
+      if (account.credits < AUCTION_LISTING_FEE_CREDITS) {
+        sendAuctionEvent({
+          actorClientId: req.clientId,
+          status: "error",
+          reason: `Need ${AUCTION_LISTING_FEE_CREDITS} credits to post listing.`,
+        });
+        return;
+      }
+      const owned = account.craftedInventory[req.listing.itemId] ?? 0;
+      if (owned < 1) {
+        sendAuctionEvent({
+          actorClientId: req.clientId,
+          status: "error",
+          reason: "You do not own this item in crafted inventory.",
+        });
+        return;
+      }
+      account.credits -= AUCTION_LISTING_FEE_CREDITS;
+      account.craftedInventory[req.listing.itemId] = owned - 1;
+      const listingId = `auc-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+      const listing: AuctionListingSnapshot = {
+        listingId,
+        sellerClientId: req.clientId,
+        sellerAccountId: account.accountId,
+        sellerName: actor.playerName,
+        itemId: req.listing.itemId,
+        itemName: req.listing.itemName,
+        itemType: req.listing.itemType,
+        rarity: req.listing.rarity,
+        tier: req.listing.tier,
+        priceCredits: clamp(
+          Math.floor(req.listing.priceCredits),
+          AUCTION_MIN_PRICE_CREDITS,
+          AUCTION_MAX_PRICE_CREDITS,
+        ),
+        createdAt: Date.now(),
+      };
+      auctionListings.set(listingId, listing);
+      sendAuctionAccountState(req.clientId);
+      pushAuctionHistory(account.accountId, {
+        id: `hist-create-${listingId}-${Date.now()}`,
+        kind: "sell",
+        listingId,
+        itemName: listing.itemName,
+        itemTier: listing.tier,
+        grossCredits: listing.priceCredits,
+        message: `Listed ${listing.itemName} for ${listing.priceCredits} credits.`,
+        ts: Date.now(),
+      });
+      sendAuctionHistory(req.clientId);
+      broadcastAuctionListings();
+      sendAuctionEvent({
+        actorClientId: req.clientId,
+        status: "created",
+        listingId,
+      });
+      scheduleAuctionPersist();
+      return;
+    }
+
+    if (msg.type === "auction_cancel_listing") {
+      const req = msg as AuctionCancelListingMessage;
+      const activeClientId = joinedClientId ?? socialClientId ?? auctionClientId;
+      if (!activeClientId || activeClientId !== req.clientId) return;
+      const listing = auctionListings.get(req.listingId);
+      if (!listing) {
+        sendAuctionEvent({
+          actorClientId: req.clientId,
+          status: "error",
+          reason: "Listing not found.",
+        });
+        return;
+      }
+      if (listing.sellerClientId !== req.clientId) {
+        sendAuctionEvent({
+          actorClientId: req.clientId,
+          status: "error",
+          reason: "Only seller can cancel listing.",
+        });
+        return;
+      }
+      const seller = auctionAccounts.get(req.clientId);
+      if (seller) {
+        seller.craftedInventory[listing.itemId] =
+          (seller.craftedInventory[listing.itemId] ?? 0) + 1;
+        sendAuctionAccountState(req.clientId);
+        pushAuctionHistory(seller.accountId, {
+          id: `hist-cancel-${req.listingId}-${Date.now()}`,
+          kind: "cancel",
+          listingId: req.listingId,
+          itemName: listing.itemName,
+          itemTier: listing.tier,
+          message: `Cancelled listing for ${listing.itemName}.`,
+          ts: Date.now(),
+        });
+        sendAuctionHistory(req.clientId);
+      }
+      auctionListings.delete(req.listingId);
+      broadcastAuctionListings();
+      sendAuctionEvent({
+        actorClientId: req.clientId,
+        status: "cancelled",
+        listingId: req.listingId,
+      });
+      scheduleAuctionPersist();
+      return;
+    }
+
+    if (msg.type === "auction_buy_listing") {
+      const req = msg as AuctionBuyListingMessage;
+      const activeClientId = joinedClientId ?? socialClientId ?? auctionClientId;
+      if (!activeClientId || activeClientId !== req.clientId) return;
+      const listing = auctionListings.get(req.listingId);
+      if (!listing) {
+        sendAuctionEvent({
+          actorClientId: req.clientId,
+          status: "error",
+          reason: "Listing already sold or expired.",
+        });
+        return;
+      }
+      if (listing.sellerClientId === req.clientId) {
+        sendAuctionEvent({
+          actorClientId: req.clientId,
+          status: "error",
+          reason: "Cannot buy your own listing.",
+        });
+        return;
+      }
+      const buyer = auctionAccounts.get(req.clientId);
+      const seller = auctionAccounts.get(listing.sellerClientId);
+      if (!buyer) return;
+      if (buyer.accountId === listing.sellerAccountId) {
+        sendAuctionEvent({
+          actorClientId: req.clientId,
+          status: "error",
+          reason: "Cannot buy listing from the same account.",
+        });
+        return;
+      }
+      if (buyer.credits < listing.priceCredits) {
+        sendAuctionEvent({
+          actorClientId: req.clientId,
+          status: "error",
+          reason: "Insufficient credits for this listing.",
+        });
+        return;
+      }
+      buyer.credits -= listing.priceCredits;
+      buyer.craftedInventory[listing.itemId] =
+        (buyer.craftedInventory[listing.itemId] ?? 0) + 1;
+      if (seller) {
+        const sellerPayout = Math.max(
+          1,
+          Math.floor(listing.priceCredits * AUCTION_SELLER_PAYOUT_MULT),
+        );
+        seller.credits += sellerPayout;
+        sendAuctionAccountState(listing.sellerClientId);
+        pushAuctionHistory(seller.accountId, {
+          id: `hist-sell-${req.listingId}-${Date.now()}`,
+          kind: "sell",
+          listingId: req.listingId,
+          itemName: listing.itemName,
+          itemTier: listing.tier,
+          grossCredits: listing.priceCredits,
+          payoutCredits: sellerPayout,
+          counterpartName: globalClients.get(req.clientId)?.playerName,
+          message: `${listing.itemName} sold for ${listing.priceCredits} credits.`,
+          ts: Date.now(),
+        });
+        sendAuctionHistory(listing.sellerClientId);
+        sendAuctionEvent({
+          actorClientId: listing.sellerClientId,
+          status: "sold",
+          listingId: req.listingId,
+          reason: `Sold for ${listing.priceCredits} credits. Payout: +${sellerPayout}.`,
+        });
+      }
+      sendAuctionAccountState(req.clientId);
+      pushAuctionHistory(buyer.accountId, {
+        id: `hist-buy-${req.listingId}-${Date.now()}`,
+        kind: "buy",
+        listingId: req.listingId,
+        itemName: listing.itemName,
+        itemTier: listing.tier,
+        grossCredits: listing.priceCredits,
+        counterpartName: listing.sellerName,
+        message: `Bought ${listing.itemName} for ${listing.priceCredits} credits.`,
+        ts: Date.now(),
+      });
+      sendAuctionHistory(req.clientId);
+      auctionListings.delete(req.listingId);
+      broadcastAuctionListings();
+      sendAuctionEvent({
+        actorClientId: req.clientId,
+        status: "sold",
+        listingId: req.listingId,
+      });
+      scheduleAuctionPersist();
       return;
     }
 
@@ -724,6 +1277,24 @@ wss.on("connection", (ws) => {
   });
 
   ws.on("close", () => {
+    if (joinedClientId) {
+      globalClients.delete(joinedClientId);
+    }
+    if (socialClientId && socialClientId !== joinedClientId) {
+      globalClients.delete(socialClientId);
+    }
+    if (
+      auctionClientId &&
+      auctionClientId !== joinedClientId &&
+      auctionClientId !== socialClientId
+    ) {
+      globalClients.delete(auctionClientId);
+    }
+    if (auctionClientId) {
+      auctionClients.delete(auctionClientId);
+      // Keep accounts/listings across disconnect for persistence + reconnect safety.
+    }
+    broadcastSocialRoster();
     if (!joinedSession || !joinedClientId) return;
     joinedSession.players.delete(joinedClientId);
     joinedSession.sockets.delete(joinedClientId);

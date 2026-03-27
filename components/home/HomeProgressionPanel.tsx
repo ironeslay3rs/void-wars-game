@@ -63,7 +63,7 @@ function getCareerLabel(focus: string | null): string {
   }
 }
 
-function getProgressionHint(rankLevel: number, path: string): string {
+function getProgressionHint(rankLevel: number): string {
   if (rankLevel <= 1) {
     return "Hour 0–3: Survive. Run your first loop, bank your first haul, make it back.";
   }
@@ -148,7 +148,7 @@ export default function HomeProgressionPanel() {
             Where you are
           </div>
           <p className="mt-1 text-xs leading-5 text-white/65">
-            {getProgressionHint(player.rankLevel, player.factionAlignment)}
+            {getProgressionHint(player.rankLevel)}
           </p>
         </div>
         <div>

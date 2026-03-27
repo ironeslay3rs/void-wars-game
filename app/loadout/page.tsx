@@ -21,7 +21,12 @@ import {
   LOADOUT_SLOT_LABELS,
   LOADOUT_SLOT_ORDER,
 } from "@/features/player/loadoutState";
+import {
+  describeLoadoutItemCombatProfile,
+  getPlayerLoadoutCombatModifiers,
+} from "@/features/combat/loadoutCombatStats";
 import { VOID_EXPEDITION_PATH } from "@/features/void-maps/voidRoutes";
+import { itemRankLabel } from "@/features/inventory/itemRanks";
 
 export default function LoadoutPage() {
   const { state, dispatch } = useGame();
@@ -29,6 +34,10 @@ export default function LoadoutPage() {
   const passives = getSchoolCombatPassives(player);
   const current = player.fieldLoadoutProfile;
   const [pickerSlot, setPickerSlot] = useState<LoadoutSlotId | null>(null);
+  const loadoutCombat = useMemo(
+    () => getPlayerLoadoutCombatModifiers(player),
+    [player],
+  );
 
   const pickerItems = useMemo(() => {
     if (!pickerSlot) return [];
@@ -79,6 +88,10 @@ export default function LoadoutPage() {
             {getFieldLoadoutStrikeMult(current).toFixed(2)}, posture fill ×
             {getFieldLoadoutPostureFillMult(current).toFixed(2)}, expose window ×
             {getFieldLoadoutExposeDamageMult(current).toFixed(2)}.
+          </p>
+          <p className="mt-2 rounded-xl border border-cyan-300/20 bg-cyan-950/25 px-4 py-3 text-xs leading-relaxed text-cyan-100/90">
+            Equipped weapon: {loadoutCombat.weaponFamily.toUpperCase()} ({loadoutCombat.strikeRangePct}% range)
+            · strike +{loadoutCombat.damageBonusPct}% · armor mitigation {loadoutCombat.armorMitigationPct}%.
           </p>
           <div className="mt-3 rounded-xl border border-amber-300/25 bg-amber-500/10 px-4 py-3 text-xs leading-relaxed text-amber-100/90">
             New operator prompt: if your combat kit feels empty, visit the Black
@@ -164,9 +177,14 @@ export default function LoadoutPage() {
                         {equipped.name}
                       </div>
                       <div className="mt-1 text-[11px] uppercase tracking-[0.16em] text-white/45">
-                        {equipped.rarity} / {equipped.type}
+                        {equipped.rarity} / {equipped.type} / {itemRankLabel(equipped.rankTier)}
                       </div>
                       <div className="mt-2 text-xs text-white/65">{equipped.description}</div>
+                      {describeLoadoutItemCombatProfile(equipped.id) ? (
+                        <div className="mt-1 text-[11px] text-cyan-100/80">
+                          {describeLoadoutItemCombatProfile(equipped.id)}
+                        </div>
+                      ) : null}
                       <button
                         type="button"
                         onClick={() =>

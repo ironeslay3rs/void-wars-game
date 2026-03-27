@@ -6,6 +6,8 @@ import {
   getFactionStarterLoadout,
   getUtilityItems,
 } from "@/features/inventory/inventoryLoadoutData";
+import { describeLoadoutItemCombatProfile } from "@/features/combat/loadoutCombatStats";
+import { itemRankLabel } from "@/features/inventory/itemRanks";
 
 function getRarityClass(rarity: string) {
   if (rarity === "Rare") {
@@ -62,7 +64,7 @@ export default function InventoryLoadoutCard() {
                     {item.name}
                   </div>
                   <div className="mt-1 text-[11px] uppercase tracking-[0.16em] text-white/45">
-                    {item.type} / {item.slot}
+                    {item.type} / {item.slot} / {itemRankLabel(item.rankTier)}
                   </div>
                 </div>
 
@@ -79,6 +81,11 @@ export default function InventoryLoadoutCard() {
               <div className="mt-3 text-sm leading-6 text-white/65">
                 {item.description}
               </div>
+              {describeLoadoutItemCombatProfile(item.id) ? (
+                <div className="mt-1 text-[11px] text-cyan-100/80">
+                  {describeLoadoutItemCombatProfile(item.id)}
+                </div>
+              ) : null}
             </div>
           ))}
         </div>

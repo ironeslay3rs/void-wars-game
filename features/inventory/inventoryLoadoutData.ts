@@ -1,9 +1,12 @@
 import type { FactionAlignment } from "@/features/game/gameTypes";
+import type { ItemRankTier } from "@/features/inventory/itemRanks";
 
 export type InventoryLoadoutItem = {
   id: string;
   name: string;
   type: string;
+  itemType: "weapon" | "armor" | "rune-core" | "consumable";
+  rankTier: ItemRankTier;
   rarity: string;
   slot: string;
   description: string;
@@ -22,6 +25,8 @@ export function getFactionStarterLoadout(
         id: "bio-sporeneedle-launcher",
         name: "Sporeneedle Launcher",
         type: "Primary Weapon",
+        itemType: "weapon",
+        rankTier: "T2",
         rarity: "Rare",
         slot: "Weapon Bay 01",
         description:
@@ -31,6 +36,8 @@ export function getFactionStarterLoadout(
         id: "bio-mirefang-sidearm",
         name: "Mirefang Sidearm",
         type: "Secondary Weapon",
+        itemType: "weapon",
+        rankTier: "T1",
         rarity: "Uncommon",
         slot: "Weapon Bay 02",
         description:
@@ -40,6 +47,8 @@ export function getFactionStarterLoadout(
         id: "bio-carapace-weave",
         name: "Carapace Weave",
         type: "Armor Core",
+        itemType: "armor",
+        rankTier: "T2",
         rarity: "Rare",
         slot: "Chest Frame",
         description:
@@ -54,6 +63,8 @@ export function getFactionStarterLoadout(
         id: "mecha-synod-railcarbine",
         name: "Synod Railcarbine",
         type: "Primary Weapon",
+        itemType: "weapon",
+        rankTier: "T2",
         rarity: "Rare",
         slot: "Weapon Bay 01",
         description:
@@ -63,6 +74,8 @@ export function getFactionStarterLoadout(
         id: "mecha-arc-welder-pistol",
         name: "Arc Welder Pistol",
         type: "Secondary Weapon",
+        itemType: "weapon",
+        rankTier: "T1",
         rarity: "Uncommon",
         slot: "Weapon Bay 02",
         description:
@@ -72,6 +85,8 @@ export function getFactionStarterLoadout(
         id: "mecha-servo-shell-harness",
         name: "Servo Shell Harness",
         type: "Armor Core",
+        itemType: "armor",
+        rankTier: "T2",
         rarity: "Rare",
         slot: "Chest Frame",
         description:
@@ -86,6 +101,8 @@ export function getFactionStarterLoadout(
         id: "pure-emberglass-pike",
         name: "Emberglass Pike",
         type: "Primary Weapon",
+        itemType: "weapon",
+        rankTier: "T2",
         rarity: "Rare",
         slot: "Weapon Bay 01",
         description:
@@ -95,6 +112,8 @@ export function getFactionStarterLoadout(
         id: "pure-whisper-coil",
         name: "Whisper Coil",
         type: "Secondary Weapon",
+        itemType: "weapon",
+        rankTier: "T1",
         rarity: "Uncommon",
         slot: "Weapon Bay 02",
         description:
@@ -104,6 +123,8 @@ export function getFactionStarterLoadout(
         id: "pure-ashen-mantle",
         name: "Ashen Mantle",
         type: "Armor Core",
+        itemType: "armor",
+        rankTier: "T2",
         rarity: "Rare",
         slot: "Chest Frame",
         description:
@@ -117,6 +138,8 @@ export function getFactionStarterLoadout(
       id: "unbound-rustline-carbine",
       name: "Rustline Carbine",
       type: "Primary Weapon",
+      itemType: "weapon",
+      rankTier: "T1",
       rarity: "Uncommon",
       slot: "Weapon Bay 01",
       description:
@@ -126,6 +149,8 @@ export function getFactionStarterLoadout(
       id: "unbound-scrapburst-repeater",
       name: "Scrapburst Repeater",
       type: "Secondary Weapon",
+      itemType: "weapon",
+      rankTier: "T1",
       rarity: "Common",
       slot: "Weapon Bay 02",
       description:
@@ -135,6 +160,8 @@ export function getFactionStarterLoadout(
       id: "unbound-patchwork-shell",
       name: "Patchwork Shell",
       type: "Armor Core",
+      itemType: "armor",
+      rankTier: "T1",
       rarity: "Uncommon",
       slot: "Chest Frame",
       description:
@@ -149,6 +176,8 @@ export function getUtilityItems(): UtilityItem[] {
       id: "utility-field-med-patch",
       name: "Field Med Patch",
       type: "Consumable",
+      itemType: "consumable",
+      rankTier: "T1",
       rarity: "Common",
       slot: "Quick Slot",
       quantity: 3,
@@ -159,6 +188,8 @@ export function getUtilityItems(): UtilityItem[] {
       id: "utility-signal-flare",
       name: "Signal Flare",
       type: "Utility",
+      itemType: "consumable",
+      rankTier: "T1",
       rarity: "Common",
       slot: "Quick Slot",
       quantity: 2,
@@ -169,6 +200,8 @@ export function getUtilityItems(): UtilityItem[] {
       id: "utility-field-toolkit",
       name: "Field Toolkit",
       type: "Utility",
+      itemType: "consumable",
+      rankTier: "T1",
       rarity: "Uncommon",
       slot: "Support Kit",
       quantity: 1,

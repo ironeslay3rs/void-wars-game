@@ -52,6 +52,10 @@ import {
   getVisibleStrikeSchool,
 } from "@/features/combat/fieldCombatIdentity";
 import { FIELD_LOADOUT_PROFILES } from "@/features/combat/fieldLoadout";
+import {
+  getPlayerLoadoutCombatModifiers,
+  getPlayerStrikeRangePct,
+} from "@/features/combat/loadoutCombatStats";
 
 export default function VoidFieldScreen() {
   const { state, dispatch } = useGame();
@@ -157,8 +161,14 @@ export default function VoidFieldScreen() {
       school === "neutral" ? "NEUTRAL" : school.toUpperCase();
     const passives = getSchoolCombatPassives(state.player);
     const on = passives.filter((x) => x.active).length;
-    return `${loadout} · ${s} · passives ${on}/${passives.length}`;
+    const combat = getPlayerLoadoutCombatModifiers(state.player);
+    return `${loadout} · ${s} · ${combat.weaponFamily.toUpperCase()} ${combat.strikeRangePct}% · passives ${on}/${passives.length}`;
   }, [state.player]);
+
+  const strikeRangePct = useMemo(
+    () => getPlayerStrikeRangePct(state.player),
+    [state.player],
+  );
 
   const encounterBrief = useMemo(() => {
     if (allocatedZone.id !== "howling-scar") return null;
@@ -274,8 +284,9 @@ export default function VoidFieldScreen() {
         state.player.careerFocus,
       );
       const boostPct = stimBoostPct + careerBoostPct;
+      const loadoutMult = getPlayerLoadoutCombatModifiers(state.player).attackMultiplier;
       const dmg = Math.round(
-        VOID_FIELD_SHELL_STRIKE_DAMAGE * (1 + boostPct / 100),
+        VOID_FIELD_SHELL_STRIKE_DAMAGE * (1 + boostPct / 100) * loadoutMult,
       );
       registerSlashForMob(mobEntityId);
       const dealt = applyShellMobDamage(mobEntityId, dmg);
@@ -331,6 +342,7 @@ export default function VoidFieldScreen() {
     onShellStrike: applyShellStrike,
     targetedMobEntityIdRef,
     autoStrikeEnabled: autoStrikeActive,
+    strikeRangePct,
   });
 
   const onFieldPointerDownWrapped = useCallback(
