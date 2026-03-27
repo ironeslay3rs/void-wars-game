@@ -1,23 +1,23 @@
 export const guildScreenData = {
-  eyebrow: "Collective Network",
+  eyebrow: "Mercenary Collective",
   title: "Guild",
   subtitle:
-    "Manage alliance structure, member coordination, and future cooperative systems across the Void Wars world.",
+    "The Black Market runs on organized pressure. Found or join a guild to post shared contracts, build contribution standing, and stake a collective claim in the war. Contribution drives everything — hunts, field work, and realtime void sessions all feed the ledger.",
   cards: [
     {
       label: "Guild Status",
       value: "None",
-      hint: "No guild has been joined or founded yet.",
+      hint: "Found a guild or join one by code to activate the collective loop.",
     },
     {
-      label: "Squad Capacity",
-      value: "0/0",
-      hint: "Guild unit limits will appear in later multiplayer systems.",
+      label: "Contribution",
+      value: "0",
+      hint: "Banked from hunts, field ops, and realtime void work. Feeds contract progress and standing.",
     },
     {
       label: "Standing",
-      value: "Neutral",
-      hint: "No collective influence has been established yet.",
+      value: "Probationary",
+      hint: "80+ contribution: Bonded contractor. 240+: Vanguard broker.",
     },
   ],
 };

@@ -1,23 +1,23 @@
 export const arenaScreenData = {
-  eyebrow: "Combat Trial",
+  eyebrow: "Arena of Blood",
   title: "Arena",
   subtitle:
-    "Enter structured combat spaces for ranked battles, test encounters, and future PvP progression systems.",
+    "Proof combat. Every school fights differently — bio hunts, mecha controls, pure burns. Victories earn materials, influence, and season standing. Defeat costs condition.",
   cards: [
     {
       label: "Ranked Tier",
       value: "Unranked",
-      hint: "No competitive placement has been recorded yet.",
+      hint: "Win ranked matches to push your Season 1 SR rating.",
     },
     {
       label: "Combat Mode",
-      value: "Locked",
-      hint: "Arena playlists will unlock in a later combat phase.",
+      value: "Open",
+      hint: "Ranked and Practice modes are live. Tournament brackets run on seasonal schedule.",
     },
     {
       label: "Win Record",
       value: "0-0",
-      hint: "Placeholder battle record for the skeleton build.",
+      hint: "Arena match history accumulates per save.",
     },
   ],
 };

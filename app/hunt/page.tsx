@@ -208,6 +208,7 @@ export default function HuntPage() {
             loot={loot}
             rankXpEarned={rankXpEarned}
             conditionCost={conditionCost}
+            conditionAfter={state.player.condition}
             contractResources={contractResources}
             contractConditionDelta={contractConditionDelta}
             returnHref={returnHref}
