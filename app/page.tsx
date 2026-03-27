@@ -1,11 +1,5 @@
-import MainBackgroundScene from "@/components/home/MainBackgroundScene";
-import HomeHudClient from "@/components/home/HomeHudClient";
+import { redirect } from "next/navigation";
 
-export default function HomePage() {
-  return (
-    <main className="relative min-h-screen overflow-hidden bg-black text-white">
-      <MainBackgroundScene />
-      <HomeHudClient />
-    </main>
-  );
+export default function RootPage() {
+  redirect("/home");
 }

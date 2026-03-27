@@ -90,7 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     if (status === "authenticated" && isPublicAuthRoute) {
-      router.replace("/");
+      router.replace("/home");
     }
   }, [isPublicAuthRoute, router, status]);
 
@@ -105,7 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     storeAuthSession(nextSession);
     setSession(nextSession);
     setStatus("authenticated");
-    router.replace("/");
+    router.replace("/home");
   }, [router]);
 
   const signUp = useCallback(async (email: string, password: string) => {
@@ -124,7 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     storeAuthSession(nextSession);
     setSession(nextSession);
     setStatus("authenticated");
-    router.replace("/");
+    router.replace("/home");
     return true;
   }, [router]);
 
