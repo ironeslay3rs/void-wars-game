@@ -20,7 +20,7 @@ export const mainMenuItems: MainMenuItem[] = [
   { label: "Career", href: "/career", icon: "briefcase" },
   { label: "Mastery", href: "/mastery", icon: "brain" },
   { label: "Professions", href: "/professions", icon: "wrench" },
-  { label: "Market", href: "/bazaar", icon: "store" },
+  { label: "Market", href: "/market", icon: "store" },
   { label: "Arena", href: "/arena", icon: "trophy" },
   { label: "Guild", href: "/guild", icon: "users" },
   { label: "Missions", href: "/missions", icon: "folder" },
