@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 type ScreenHeaderProps = {
   eyebrow?: string;
   title: string;
@@ -17,27 +19,27 @@ export default function ScreenHeader({
     <div className="space-y-2">
       {backHref ? (
         <div>
-          <a
+          <Link
             href={backHref}
-            className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold uppercase tracking-[0.16em] text-white/80 transition hover:border-white/20 hover:bg-white/10"
+            className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-xs font-bold uppercase tracking-[0.16em] text-white/80 transition hover:border-white/20 hover:bg-white/10 active:scale-[0.97]"
           >
             <span aria-hidden>←</span>
             {backLabel}
-          </a>
+          </Link>
         </div>
       ) : null}
       {eyebrow ? (
-        <p className="text-[11px] uppercase tracking-[0.35em] text-cyan-300/70">
+        <p className="text-[10px] font-bold uppercase tracking-[0.32em] text-white/45">
           {eyebrow}
         </p>
       ) : null}
 
-      <h1 className="text-3xl font-semibold tracking-[0.08em] text-white md:text-4xl">
+      <h1 className="text-2xl font-black uppercase tracking-[0.06em] text-white sm:text-3xl md:text-4xl">
         {title}
       </h1>
 
       {subtitle ? (
-        <p className="max-w-3xl text-sm text-white/60 md:text-base">
+        <p className="max-w-3xl text-sm leading-6 text-white/60">
           {subtitle}
         </p>
       ) : null}

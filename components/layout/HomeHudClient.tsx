@@ -38,7 +38,7 @@ export default function HomeHudClient() {
   return (
     <>
       {/* MOBILE (< lg): single scrollable column */}
-      <section className="fixed inset-x-4 top-[92px] bottom-[108px] z-30 overflow-y-auto lg:hidden">
+      <section className="fixed inset-x-3 top-[88px] z-30 overflow-y-auto lg:hidden" style={{ bottom: "calc(7rem + env(safe-area-inset-bottom))" }}>
         <div className="mx-auto flex w-full max-w-xl flex-col gap-4 pb-4">
           {centerContent}
           <MissionPanel />
@@ -92,14 +92,14 @@ export default function HomeHudClient() {
       </section>
 
       {/* Resource strip */}
-      <section className="fixed inset-x-0 bottom-[4.5rem] z-30 px-4 sm:px-6">
+      <section className="fixed inset-x-0 z-30 px-3 sm:px-4" style={{ bottom: "calc(4.75rem + env(safe-area-inset-bottom))" }}>
         <div className="mx-auto w-full max-w-4xl">
           <HomeResourceStrip />
         </div>
       </section>
 
       {/* Bottom nav */}
-      <section className="fixed inset-x-4 bottom-4 z-30 lg:inset-x-8">
+      <section className="fixed inset-x-3 z-30 lg:inset-x-6" style={{ bottom: "max(0.75rem, env(safe-area-inset-bottom))" }}>
         <BottomNav />
       </section>
     </>
