@@ -5,49 +5,68 @@ import { useGame } from "@/features/game/gameContext";
 import { getResourceIcon } from "@/features/game/resourceIconMap";
 import type { ResourceKey } from "@/features/game/gameTypes";
 
-const homeResources: Array<{ key: ResourceKey; label: string }> = [
+const PRIMARY: Array<{ key: ResourceKey; label: string }> = [
   { key: "credits", label: "Credits" },
-  { key: "bioSamples", label: "Bio" },
-  { key: "runeDust", label: "Rune" },
-  { key: "emberCore", label: "Ember" },
-  { key: "scrapAlloy", label: "Alloy" },
+  { key: "runeDust", label: "Void Crystals" },
+  { key: "bioSamples", label: "Bio Essence" },
+];
+
+const SECONDARY: Array<{ key: ResourceKey; label: string }> = [
+  { key: "ironOre", label: "Iron Ore" },
+  { key: "scrapAlloy", label: "Scrap Alloy" },
+  { key: "emberCore", label: "Ember Core" },
   { key: "mossRations", label: "Rations" },
 ];
 
+function ResourceChip({ label, value, resourceKey }: { label: string; value: number; resourceKey: ResourceKey }) {
+  return (
+    <div className="flex items-center gap-2 px-3 py-2">
+      <div className="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-md border border-white/10 bg-black/30 p-0.5">
+        <Image
+          src={getResourceIcon(resourceKey)}
+          alt={label}
+          width={18}
+          height={18}
+          className="h-[18px] w-[18px] object-contain"
+        />
+      </div>
+      <div className="min-w-0">
+        <div className="text-[9px] font-semibold uppercase tracking-[0.16em] text-white/40 sm:text-[10px]">
+          {label}
+        </div>
+        <div className="text-xs font-black tabular-nums text-white sm:text-sm">
+          {value.toLocaleString()}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function HomeResourceStrip() {
   const { state } = useGame();
+  const r = state.player.resources;
 
   return (
-    <section className="rounded-2xl border border-white/12 bg-[linear-gradient(180deg,rgba(10,18,30,0.92),rgba(6,10,18,0.96))] px-3 py-2.5 text-white shadow-[0_12px_32px_rgba(0,0,0,0.28)] backdrop-blur-md">
-      <div className="mb-1.5 text-[9px] font-bold uppercase tracking-[0.26em] text-white/38">
-        Field Stock
+    <div className="flex items-stretch rounded-2xl border border-white/10 bg-[linear-gradient(90deg,rgba(8,12,20,0.96),rgba(12,16,26,0.94))] shadow-[0_8px_28px_rgba(0,0,0,0.4)] backdrop-blur-md">
+      <div className="px-3 py-2 text-[9px] font-bold uppercase tracking-[0.28em] text-white/30 [writing-mode:vertical-rl] flex items-center">
+        Resources
       </div>
-      <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-        {homeResources.map((resource) => (
-          <div
-            key={resource.key}
-            className="flex items-center gap-2 rounded-xl border border-white/8 bg-white/[0.04] px-2.5 py-2"
-          >
-            <div className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-black/20 p-1">
-              <Image
-                src={getResourceIcon(resource.key)}
-                alt={resource.label}
-                width={22}
-                height={22}
-                className="h-[22px] w-[22px] object-contain"
-              />
-            </div>
-            <div className="min-w-0">
-              <div className="text-[9px] uppercase tracking-[0.14em] text-white/40">
-                {resource.label}
-              </div>
-              <div className="text-sm font-bold tabular-nums text-white">
-                {state.player.resources[resource.key]}
-              </div>
-            </div>
-          </div>
+
+      <div className="h-px w-px self-stretch bg-white/8" />
+
+      {/* Primary resources — always visible */}
+      <div className="flex flex-1 divide-x divide-white/8">
+        {PRIMARY.map((res) => (
+          <ResourceChip key={res.key} label={res.label} value={r[res.key]} resourceKey={res.key} />
         ))}
       </div>
-    </section>
+
+      {/* Secondary resources — hidden on small screens */}
+      <div className="hidden divide-x divide-white/8 sm:flex">
+        {SECONDARY.map((res) => (
+          <ResourceChip key={res.key} label={res.label} value={r[res.key]} resourceKey={res.key} />
+        ))}
+      </div>
+    </div>
   );
 }

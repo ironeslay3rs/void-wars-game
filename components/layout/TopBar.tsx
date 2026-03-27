@@ -6,6 +6,7 @@ import IconBadge from "@/components/shared/IconBadge";
 import CharacterPortraitImage from "@/components/character/CharacterPortraitImage";
 import { homeSceneData } from "@/features/home/homeSceneData";
 import { useGame } from "@/features/game/gameContext";
+import { useAuth } from "@/features/auth/useAuth";
 import type { FactionAlignment } from "@/features/game/gameTypes";
 
 function shortFactionLabel(alignment: FactionAlignment): string {
@@ -23,8 +24,16 @@ function shortFactionLabel(alignment: FactionAlignment): string {
 
 export default function TopBar() {
   const { state } = useGame();
+  const { signOut } = useAuth();
   const p = state.player;
   const conditionPct = Math.max(0, Math.min(100, p.condition));
+
+  const condBar =
+    p.condition >= 65
+      ? "from-emerald-600/95 via-teal-500/90 to-cyan-500/85"
+      : p.condition >= 40
+        ? "from-amber-500/90 via-yellow-500/80 to-amber-400/85"
+        : "from-red-600/95 via-red-500/85 to-red-400/80";
 
   return (
     <header className="absolute inset-x-0 top-0 z-30 px-4 pt-3 sm:px-6">
@@ -58,7 +67,7 @@ export default function TopBar() {
                 aria-label="Condition"
               >
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-emerald-600/95 via-teal-500/90 to-cyan-500/85 transition-[width] duration-300"
+                  className={`h-full rounded-full bg-gradient-to-r transition-[width] duration-300 ${condBar}`}
                   style={{ width: `${conditionPct}%` }}
                 />
               </div>
@@ -107,10 +116,25 @@ export default function TopBar() {
             </Link>
           </IconBadge>
           <IconBadge>
-            <Users className="h-4 w-4" />
+            <Link
+              href="/guild"
+              className="flex h-full w-full items-center justify-center text-slate-200"
+              aria-label="Guild"
+              title="Guild & Social"
+            >
+              <Users className="h-4 w-4" />
+            </Link>
           </IconBadge>
           <IconBadge>
-            <Power className="h-4 w-4 text-red-400" />
+            <button
+              type="button"
+              onClick={() => void signOut()}
+              aria-label="Sign out"
+              title="Sign out"
+              className="flex h-full w-full items-center justify-center transition hover:text-red-300 active:scale-90"
+            >
+              <Power className="h-4 w-4 text-red-400" />
+            </button>
           </IconBadge>
         </div>
       </div>
