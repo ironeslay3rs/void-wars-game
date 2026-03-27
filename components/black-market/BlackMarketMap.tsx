@@ -33,7 +33,7 @@ const ZONES: ZoneDef[] = [
     top: "58%",
     width: "48%",
     height: "28%",
-    href: "/bazaar/black-market/feast-hall",
+    href: "/market/black-market/feast-hall",
   },
   {
     id: "arena-of-blood",
@@ -55,7 +55,7 @@ const ZONES: ZoneDef[] = [
     top: "14%",
     width: "40%",
     height: "36%",
-    href: "/bazaar/black-market/mirror-house",
+    href: "/market/black-market/mirror-house",
   },
   {
     id: "velvet-den",
@@ -66,7 +66,7 @@ const ZONES: ZoneDef[] = [
     top: "54%",
     width: "40%",
     height: "30%",
-    href: "/bazaar/black-market/velvet-den",
+    href: "/market/black-market/velvet-den",
   },
   {
     id: "golden-bazaar",
@@ -77,7 +77,7 @@ const ZONES: ZoneDef[] = [
     top: "52%",
     width: "16%",
     height: "14%",
-    href: "/bazaar/black-market/golden-bazaar",
+    href: "/market/black-market/golden-bazaar",
   },
   {
     id: "ivory-tower",
@@ -88,7 +88,7 @@ const ZONES: ZoneDef[] = [
     top: "4%",
     width: "22%",
     height: "24%",
-    href: "/bazaar/black-market/ivory-tower",
+    href: "/market/black-market/ivory-tower",
   },
   {
     id: "silent-garden",
@@ -99,7 +99,7 @@ const ZONES: ZoneDef[] = [
     top: "56%",
     width: "18%",
     height: "20%",
-    href: "/bazaar/black-market/silent-garden",
+    href: "/market/black-market/silent-garden",
   },
 ];
 
