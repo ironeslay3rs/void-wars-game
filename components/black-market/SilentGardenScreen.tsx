@@ -82,7 +82,7 @@ export default function SilentGardenScreen() {
       <div className="mx-auto flex max-w-[1200px] flex-col gap-8">
         <BazaarSubpageNav
           accentClassName="hover:border-green-300/40"
-          backHref="/bazaar/black-market"
+          backHref="/market/black-market"
           backLabel="Back to Black Market"
         />
 

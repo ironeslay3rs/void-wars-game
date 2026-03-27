@@ -135,7 +135,7 @@ function VoidExpeditionScreenInner() {
     <>
       Mission queue full —{" "}
       <Link
-        href="/bazaar/mercenary-guild"
+        href="/market/mercenary-guild"
         className="font-semibold text-amber-100 underline decoration-amber-400/40 underline-offset-2 hover:text-white"
       >
         open the contract board

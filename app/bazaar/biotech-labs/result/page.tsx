@@ -194,7 +194,7 @@ export default function BiotechLabsResultPage() {
       });
 
   let nextStepHref = shouldRouteToFeastHall
-    ? "/bazaar/black-market/feast-hall"
+    ? "/market/black-market/feast-hall"
     : "/home";
   let nextStepLabel = shouldRouteToFeastHall
     ? "Open Feast Hall and Stabilize"
@@ -204,14 +204,14 @@ export default function BiotechLabsResultPage() {
 
   if (isFieldContractResult) {
     if (shouldRouteToFeastHall) {
-      nextStepHref = "/bazaar/black-market/feast-hall";
+      nextStepHref = "/market/black-market/feast-hall";
       nextStepLabel = "Open Feast Hall and Stabilize";
       secondaryFieldStep = {
-        href: "/bazaar/mercenary-guild",
+        href: "/market/mercenary-guild",
         label: "Return to Hunting Ground",
       };
     } else {
-      nextStepHref = "/bazaar/mercenary-guild";
+      nextStepHref = "/market/mercenary-guild";
       nextStepLabel = "Return to Hunting Ground";
       secondaryFieldStep = {
         href: "/home",
@@ -233,7 +233,7 @@ export default function BiotechLabsResultPage() {
     : [];
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(30,120,80,0.22),_rgba(5,8,20,1)_55%)] px-6 py-10 text-white md:px-10">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(30,120,80,0.22),rgba(5,8,20,1)_55%)] px-6 py-10 text-white md:px-10">
       <div className="mx-auto flex max-w-5xl flex-col gap-8">
         <BazaarSubpageNav accentClassName="hover:border-emerald-300/40" />
 
@@ -255,7 +255,7 @@ export default function BiotechLabsResultPage() {
           }
         />
 
-        <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 sm:flex-row sm:items-center sm:gap-5">
+        <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/4 px-4 py-3 sm:flex-row sm:items-center sm:gap-5">
           <div className="relative mx-auto h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-emerald-400/25 bg-black/45 shadow-[0_0_20px_rgba(16,185,129,0.12)] sm:mx-0 md:h-[72px] md:w-[72px]">
             <CharacterPortraitImage
               portraitId={state.player.characterPortraitId}
@@ -291,7 +291,7 @@ export default function BiotechLabsResultPage() {
         </div>
 
         {latestHuntResult ? (
-          <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4">
+          <div className="rounded-2xl border border-white/10 bg-white/4 px-4 py-4">
             <div className="text-[10px] uppercase tracking-[0.2em] text-white/45">
               Progression — how this run paid out
             </div>
@@ -669,7 +669,7 @@ export default function BiotechLabsResultPage() {
                     </div>
                   ) : null}
 
-                  <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
+                  <div className="rounded-xl border border-white/10 bg-white/4 p-4">
                     <div className="text-[10px] uppercase tracking-[0.18em] text-white/45">
                       Rank XP Recorded
                     </div>
@@ -681,7 +681,7 @@ export default function BiotechLabsResultPage() {
                     </div>
                   </div>
 
-                  <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
+                  <div className="rounded-xl border border-white/10 bg-white/4 p-4">
                     <div className="text-[10px] uppercase tracking-[0.18em] text-white/45">
                       Mastery Recorded
                     </div>
@@ -693,7 +693,7 @@ export default function BiotechLabsResultPage() {
                     </div>
                   </div>
 
-                  <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4 sm:col-span-2">
+                  <div className="rounded-xl border border-white/10 bg-white/4 p-4 sm:col-span-2">
                     <div className="text-[10px] uppercase tracking-[0.18em] text-white/45">
                       Influence Recorded
                     </div>
@@ -778,7 +778,7 @@ export default function BiotechLabsResultPage() {
                       {resourceEntries.slice(2).map(([key, value]) => (
                         <div
                           key={key}
-                          className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3"
+                          className="rounded-xl border border-white/10 bg-white/4 px-4 py-3"
                         >
                           <div className="flex items-center justify-between gap-4">
                             <div className="flex min-w-0 items-center gap-3">
@@ -933,13 +933,13 @@ export default function BiotechLabsResultPage() {
                           Redeploy — Void Expedition
                         </Link>
                         <Link
-                          href="/bazaar/black-market"
+                          href="/market/black-market"
                           className="inline-flex rounded-xl border border-emerald-300/25 bg-emerald-300/10 px-4 py-2 text-sm font-semibold text-emerald-50 transition hover:border-emerald-200/40 hover:bg-emerald-300/16"
                         >
                           Black Market (Hub)
                         </Link>
                         <Link
-                          href="/bazaar/black-market/feast-hall"
+                          href="/market/black-market/feast-hall"
                           className="inline-flex rounded-xl border border-amber-300/25 bg-amber-500/10 px-4 py-2 text-sm font-semibold text-amber-50 transition hover:border-amber-200/40 hover:bg-amber-500/16"
                         >
                           Recover — Feast Hall

@@ -113,7 +113,7 @@ export default function FactionsScreen() {
               citadel bazaar.
             </p>
             <Link
-              href="/bazaar/faction-hqs"
+              href="/market/faction-hqs"
               className="shrink-0 rounded-lg border border-fuchsia-400/35 bg-fuchsia-500/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-fuchsia-100 transition hover:bg-fuchsia-500/20"
             >
               Faction HQs

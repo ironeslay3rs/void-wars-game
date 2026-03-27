@@ -24,7 +24,7 @@ export default function OverloadWarning({
       <div className="mt-1 text-red-100/90">{message}</div>
       <div className="mt-3 flex flex-wrap gap-2">
         <Link
-          href="/bazaar/war-exchange"
+          href="/market/war-exchange"
           className="rounded-lg border border-red-200/45 bg-black/30 px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-red-50 hover:border-red-100/70"
         >
           Sell Surplus

@@ -1,5 +1,6 @@
 import { WebSocket, WebSocketServer } from "ws";
 import { createClient, type RedisClientType } from "redis";
+import { Pool } from "pg";
 import { buildSpawnEncounter } from "../../features/void-maps/spawnSim";
 import { enrichRealtimeMobWithM4Traits } from "../../features/void-maps/realtimeMobTraits";
 import { resolveShellHitWithSnapshot } from "../../features/combat/shellHitResolution";
@@ -203,10 +204,14 @@ const AUCTION_MAX_PRICE_CREDITS = 50_000;
 const AUCTION_LISTING_TTL_MS = 24 * 60 * 60 * 1000;
 const AUCTION_HISTORY_MAX = 100;
 const REDIS_AUCTION_KEY = "vw:auction:state:v1";
+const PG_AUCTION_SNAPSHOT_TABLE = "auction_state_snapshots";
+const PG_AUCTION_HISTORY_TABLE = "auction_trade_history";
 
 let redisClient: RedisClientType | null = null;
 let redisReady = false;
 let persistTimer: ReturnType<typeof setTimeout> | null = null;
+let pgPool: Pool | null = null;
+let pgReady = false;
 
 function broadcastAuctionListings() {
   const payload: AuctionListingsMessage = {
@@ -278,6 +283,29 @@ function sendAuctionHistory(clientId: VoidRealtimeClientId) {
 function pushAuctionHistory(accountId: string, entry: AuctionHistoryEntry) {
   const prev = auctionHistoryByAccountId.get(accountId) ?? [];
   auctionHistoryByAccountId.set(accountId, [entry, ...prev].slice(0, AUCTION_HISTORY_MAX));
+  if (pgReady && pgPool) {
+    void pgPool.query(
+      `INSERT INTO ${PG_AUCTION_HISTORY_TABLE}
+        (entry_id, account_id, kind, listing_id, item_name, item_tier, gross_credits, payout_credits, counterpart_name, message, ts_ms)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+       ON CONFLICT (entry_id) DO NOTHING`,
+      [
+        entry.id,
+        accountId,
+        entry.kind,
+        entry.listingId ?? null,
+        entry.itemName ?? null,
+        entry.itemTier ?? null,
+        typeof entry.grossCredits === "number" ? entry.grossCredits : null,
+        typeof entry.payoutCredits === "number" ? entry.payoutCredits : null,
+        entry.counterpartName ?? null,
+        entry.message,
+        entry.ts,
+      ],
+    ).catch(() => {
+      // best effort history persistence
+    });
+  }
 }
 
 function serializeAuctionState() {
@@ -295,18 +323,102 @@ function serializeAuctionState() {
 }
 
 function scheduleAuctionPersist() {
-  if (!redisReady || !redisClient) return;
+  if (!redisReady && !pgReady) return;
   if (persistTimer) {
     clearTimeout(persistTimer);
   }
   persistTimer = setTimeout(async () => {
     persistTimer = null;
-    try {
-      await redisClient!.set(REDIS_AUCTION_KEY, serializeAuctionState());
-    } catch {
-      // best effort
+    const payload = serializeAuctionState();
+    if (redisReady && redisClient) {
+      try {
+        await redisClient.set(REDIS_AUCTION_KEY, payload);
+      } catch {
+        // best effort
+      }
+    }
+    if (pgReady && pgPool) {
+      try {
+        await pgPool.query(
+          `INSERT INTO ${PG_AUCTION_SNAPSHOT_TABLE} (snapshot_json) VALUES ($1::jsonb)`,
+          [payload],
+        );
+      } catch {
+        // best effort
+      }
     }
   }, 300);
+}
+
+async function initPostgresPersistence() {
+  const url = process.env.DATABASE_URL?.trim();
+  if (!url) return;
+  try {
+    pgPool = new Pool({ connectionString: url });
+    await pgPool.query(
+      `CREATE TABLE IF NOT EXISTS ${PG_AUCTION_SNAPSHOT_TABLE} (
+        id BIGSERIAL PRIMARY KEY,
+        snapshot_json JSONB NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )`,
+    );
+    await pgPool.query(
+      `CREATE TABLE IF NOT EXISTS ${PG_AUCTION_HISTORY_TABLE} (
+        entry_id TEXT PRIMARY KEY,
+        account_id TEXT NOT NULL,
+        kind TEXT NOT NULL,
+        listing_id TEXT NULL,
+        item_name TEXT NULL,
+        item_tier TEXT NULL,
+        gross_credits INTEGER NULL,
+        payout_credits INTEGER NULL,
+        counterpart_name TEXT NULL,
+        message TEXT NOT NULL,
+        ts_ms BIGINT NOT NULL
+      )`,
+    );
+    pgReady = true;
+
+    const result = await pgPool.query<{ snapshot_json: unknown }>(
+      `SELECT snapshot_json FROM ${PG_AUCTION_SNAPSHOT_TABLE} ORDER BY id DESC LIMIT 1`,
+    );
+    const row = result.rows[0];
+    if (!row?.snapshot_json) return;
+    const parsed = row.snapshot_json as {
+      listings?: AuctionListingSnapshot[];
+      accounts?: Array<{
+        clientId: string;
+        accountId: string;
+        credits: number;
+        craftedInventory: Record<string, number>;
+      }>;
+      history?: Array<{ accountId: string; entries: AuctionHistoryEntry[] }>;
+    };
+    if (Array.isArray(parsed.listings)) {
+      for (const listing of parsed.listings) {
+        auctionListings.set(listing.listingId, listing);
+      }
+    }
+    if (Array.isArray(parsed.accounts)) {
+      for (const account of parsed.accounts) {
+        auctionAccounts.set(account.clientId, {
+          accountId: account.accountId,
+          credits: account.credits,
+          craftedInventory: account.craftedInventory ?? {},
+        });
+      }
+    }
+    if (Array.isArray(parsed.history)) {
+      for (const history of parsed.history) {
+        auctionHistoryByAccountId.set(
+          history.accountId,
+          Array.isArray(history.entries) ? history.entries : [],
+        );
+      }
+    }
+  } catch {
+    pgReady = false;
+  }
 }
 
 async function initAuctionPersistence() {
@@ -670,6 +782,13 @@ const wss = new WebSocketServer({ port, host: bindHost });
 void initAuctionPersistence().then(() => {
   if (auctionListings.size > 0) {
     console.log(`[VoidRealtime] restored ${auctionListings.size} auction listings from persistence`);
+  }
+});
+void initPostgresPersistence().then(() => {
+  if (pgReady && auctionListings.size > 0) {
+    console.log(
+      `[VoidRealtime] restored ${auctionListings.size} auction listings from postgres snapshot`,
+    );
   }
 });
 

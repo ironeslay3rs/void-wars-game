@@ -195,6 +195,9 @@ export function appendStoredMessage(params: {
   if (params.channel === "guild" && params.guildId) key = keyGuild(params.guildId);
   if (params.channel === "dm" && params.friendId) key = keyDm(params.playerId, params.friendId);
   const existing = safeParse<SocialChatMessage[]>(storage.getItem(key), []);
+  if (existing.some((entry) => entry.id === params.message.id)) {
+    return existing;
+  }
   const next = [...existing, params.message].slice(-MAX_MESSAGES_PER_CHANNEL);
   storage.setItem(key, JSON.stringify(next));
   return next;

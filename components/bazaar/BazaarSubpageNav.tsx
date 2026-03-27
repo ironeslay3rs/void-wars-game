@@ -11,8 +11,8 @@ type BazaarSubpageNavProps = {
 
 export default function BazaarSubpageNav({
   accentClassName = "hover:border-white/30",
-  backHref = "/bazaar",
-  backLabel = "Back to Bazaar",
+  backHref = "/market",
+  backLabel = "Back to Market",
 }: BazaarSubpageNavProps) {
   return (
     <div className="flex justify-end">

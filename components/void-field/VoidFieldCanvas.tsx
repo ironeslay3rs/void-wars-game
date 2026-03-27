@@ -72,6 +72,7 @@ export default function VoidFieldCanvas({
   onLootConsumed,
   lootCollectPulse,
   extractionPositionPct,
+  strikeRangePct,
 }: {
   zoneId: VoidZoneId;
   fieldMapSrc: string | null;
@@ -100,6 +101,7 @@ export default function VoidFieldCanvas({
   onLootConsumed: (id: string) => void;
   lootCollectPulse: number;
   extractionPositionPct: { x: number; y: number };
+  strikeRangePct: number;
 }) {
   const spawnIntervalMs =
     threatBand === "high" ? 2800 : threatBand === "medium" ? 4000 : 5500;
@@ -152,7 +154,7 @@ export default function VoidFieldCanvas({
       )}
 
       <div
-        className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-black/35"
+        className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/55 via-black/10 to-black/35"
         aria-hidden
       />
       <div
@@ -164,7 +166,7 @@ export default function VoidFieldCanvas({
         aria-hidden
       />
       <div
-        className="pointer-events-none absolute z-[12] -translate-x-1/2 -translate-y-1/2"
+        className="pointer-events-none absolute z-12 -translate-x-1/2 -translate-y-1/2"
         style={{
           left: `${extractionPositionPct.x}%`,
           top: `${extractionPositionPct.y}%`,
@@ -212,6 +214,17 @@ export default function VoidFieldCanvas({
             factionAlignment={selfFactionAlignment}
             lootCollectPulse={lootCollectPulse}
           />
+          <div
+            className="pointer-events-none absolute z-11 -translate-x-1/2 -translate-y-1/2 rounded-full border border-cyan-300/30 bg-cyan-300/5"
+            style={{
+              left: `${localPlayerNorm.x * 100}%`,
+              top: `${localPlayerNorm.y * 100}%`,
+              width: `${strikeRangePct * 2}%`,
+              height: `${strikeRangePct * 2}%`,
+              boxShadow: "0 0 18px rgba(34,211,238,0.18)",
+            }}
+            aria-hidden
+          />
         </>
       ) : (
         <>
@@ -231,7 +244,7 @@ export default function VoidFieldCanvas({
             return (
               <div
                 key={`${entry.spawnedAt}-${entry.mobId}-${idx}-off`}
-                className={`absolute z-[5] -translate-x-1/2 -translate-y-1/2 rounded-full border ${om}`}
+                className={`absolute z-5 -translate-x-1/2 -translate-y-1/2 rounded-full border ${om}`}
                 style={{ left: `${x}%`, top: `${y}%` }}
                 title={`${entry.mobLabel} (x${entry.packSize})`}
               >
@@ -247,7 +260,7 @@ export default function VoidFieldCanvas({
       )}
 
       {!isRunning ? (
-        <div className="pointer-events-none absolute inset-0 z-[28] flex items-center justify-center p-6">
+        <div className="pointer-events-none absolute inset-0 z-28 flex items-center justify-center p-6">
           <div
             className={`max-w-md rounded-xl border px-4 py-4 text-center backdrop-blur-sm ${
               huntStatus === "complete"
@@ -270,7 +283,7 @@ export default function VoidFieldCanvas({
                   totals tied to this run.
                 </p>
                 <Link
-                  href="/bazaar/biotech-labs/result"
+                  href="/market/biotech-labs/result"
                   className="mt-4 inline-flex rounded-lg border border-emerald-400/35 bg-emerald-950/40 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.14em] text-emerald-100 hover:border-emerald-300/50 hover:bg-emerald-950/55"
                 >
                   Open Hunt Result

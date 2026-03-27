@@ -98,7 +98,7 @@ export default function LoadoutPage() {
             Market loop first, then return here to finalize your field setup.
             <div className="mt-2 flex flex-wrap gap-2">
               <Link
-                href="/bazaar"
+                href="/market"
                 className="rounded-lg border border-amber-200/45 bg-black/25 px-2 py-1 font-semibold uppercase tracking-[0.08em] text-amber-50 hover:border-amber-100/60"
               >
                 Visit Black Market

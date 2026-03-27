@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import {
   addFriend,
@@ -43,7 +43,7 @@ function SocialSection({
   return (
     <div className="rounded-2xl border border-white/10 bg-black/30 p-5">
       <div className="flex items-center gap-3">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.06]">
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/6">
           <Icon className="h-4 w-4 text-white/70" />
         </div>
         <div className="flex flex-1 items-center justify-between">
@@ -71,7 +71,7 @@ function ChatPane({
 }) {
   if (messages.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-white/12 bg-white/[0.02] px-4 py-8 text-center text-white/30">
+      <div className="rounded-xl border border-dashed border-white/12 bg-white/2 px-4 py-8 text-center text-white/30">
         <MessageCircle className="mx-auto mb-2 h-8 w-8 opacity-30" />
         <div className="text-xs uppercase tracking-[0.18em]">{emptyText}</div>
       </div>
@@ -80,7 +80,7 @@ function ChatPane({
   return (
     <div className="max-h-72 space-y-2 overflow-y-auto rounded-xl border border-white/10 bg-black/25 p-3">
       {messages.map((m) => (
-        <div key={m.id} className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2">
+        <div key={m.id} className="rounded-lg border border-white/10 bg-white/4 px-3 py-2">
           <div className="flex items-center justify-between gap-3 text-[10px] uppercase tracking-[0.12em]">
             <span className="font-bold text-white/75">{m.senderName}</span>
             <span className="text-white/35">{new Date(m.ts).toLocaleTimeString()}</span>
@@ -130,6 +130,9 @@ export default function SocialPage() {
   const hasGuild = guildId !== null;
   const wsRef = useRef<WebSocket | null>(null);
   const selectedFriendKeyRef = useRef<string | null>(null);
+  const reconnectAttemptRef = useRef(0);
+  const reconnectTimerRef = useRef<number | null>(null);
+  const shouldReconnectRef = useRef(true);
 
   const [tab, setTab] = useState<SocialTab>("friends");
   const [friends, setFriends] = useState<FriendContact[]>(() => loadFriends(playerStoreId));
@@ -157,6 +160,10 @@ export default function SocialPage() {
     const seedFriend = loadFriends(playerStoreId)[0];
     return loadDmThread(playerStoreId, seedFriend ?? null);
   });
+  const friendsRef = useRef(friends);
+  const friendBindingsRef = useRef(friendBindings);
+  const guildIdRef = useRef(guildId);
+  const playerNameRef = useRef(player.playerName);
 
   const selectedFriend = useMemo(
     () => friends.find((f) => f.id === selectedFriendId) ?? null,
@@ -186,6 +193,22 @@ export default function SocialPage() {
   }, [selectedFriendKey]);
 
   useEffect(() => {
+    friendsRef.current = friends;
+  }, [friends]);
+
+  useEffect(() => {
+    friendBindingsRef.current = friendBindings;
+  }, [friendBindings]);
+
+  useEffect(() => {
+    guildIdRef.current = guildId;
+  }, [guildId]);
+
+  useEffect(() => {
+    playerNameRef.current = player.playerName;
+  }, [player.playerName]);
+
+  useEffect(() => {
     function onStorage(ev: StorageEvent) {
       if (!ev.key || !ev.key.startsWith("vw-social:")) return;
       setGlobalMessages(loadMessages({ channel: "global", playerId: playerStoreId }));
@@ -204,40 +227,57 @@ export default function SocialPage() {
     return () => window.removeEventListener("storage", onStorage);
   }, [playerStoreId, guildId, selectedFriend]);
 
+  const sendRegisterSocial = useCallback((ws: WebSocket) => {
+    const register: RegisterSocialMessage = {
+      type: "register_social",
+      clientId: socialClientId,
+      playerName: playerNameRef.current,
+      guildId: guildIdRef.current,
+    };
+    ws.send(JSON.stringify(register));
+  }, [socialClientId]);
+
   useEffect(() => {
-    const wsUrl = getVoidRealtimeWebSocketUrl();
-    if (!wsUrl) {
-      const t = window.setTimeout(() => {
+    function scheduleReconnect() {
+      if (!shouldReconnectRef.current) return;
+      if (reconnectTimerRef.current !== null) return;
+      const attempt = reconnectAttemptRef.current + 1;
+      reconnectAttemptRef.current = attempt;
+      const delayMs = Math.min(8000, 500 * 2 ** Math.min(attempt, 4));
+      reconnectTimerRef.current = window.setTimeout(() => {
+        reconnectTimerRef.current = null;
+        connect();
+      }, delayMs);
+    }
+
+    function connect() {
+      if (!shouldReconnectRef.current) return;
+      const wsUrl = getVoidRealtimeWebSocketUrl();
+      if (!wsUrl) {
         setSocketConnected(false);
         setChatNotice(
           "HTTPS: set NEXT_PUBLIC_VOID_WS_URL to your hosted websocket (wss://…).",
         );
-      }, 0);
-      return () => window.clearTimeout(t);
-    }
-    const ws = new WebSocket(wsUrl);
-    wsRef.current = ws;
-
-    ws.onopen = () => {
-      setSocketConnected(true);
-      const register: RegisterSocialMessage = {
-        type: "register_social",
-        clientId: socialClientId,
-        playerName: player.playerName,
-        guildId,
-      };
-      ws.send(JSON.stringify(register));
-    };
-
-    ws.onmessage = (event) => {
-      const msg = JSON.parse(event.data) as ServerToClientMessage;
-      if (msg.type === "social_roster") {
-        const roster = (msg as SocialRosterMessage).players;
-        setSocialRoster(roster);
         return;
       }
-      if (msg.type !== "chat_broadcast") return;
-      const chat = msg as ChatBroadcastMessage;
+      const ws = new WebSocket(wsUrl);
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        reconnectAttemptRef.current = 0;
+        setSocketConnected(true);
+        sendRegisterSocial(ws);
+      };
+
+      ws.onmessage = (event) => {
+        const msg = JSON.parse(event.data) as ServerToClientMessage;
+        if (msg.type === "social_roster") {
+          const roster = (msg as SocialRosterMessage).players;
+          setSocialRoster(roster);
+          return;
+        }
+        if (msg.type !== "chat_broadcast") return;
+        const chat = msg as ChatBroadcastMessage;
 
       if (chat.channel === "global") {
         const stored = appendStoredMessage({
@@ -256,11 +296,12 @@ export default function SocialPage() {
         return;
       }
 
-      if (chat.channel === "guild" && guildId && chat.guildId === guildId) {
+      const guildIdForThread = guildIdRef.current;
+      if (chat.channel === "guild" && guildIdForThread && chat.guildId === guildIdForThread) {
         const stored = appendStoredMessage({
           channel: "guild",
           playerId: playerStoreId,
-          guildId,
+          guildId: guildIdForThread,
           message: {
             id: `${chat.ts}-${chat.fromClientId}`,
             channel: "guild",
@@ -285,20 +326,23 @@ export default function SocialPage() {
         if (chat.fromClientId === socialClientId) {
           return;
         }
-        let resolvedFriend = friends.find(
-          (f) => friendBindings[f.id] === chat.fromClientId,
+        const currentFriends = friendsRef.current;
+        const currentBindings = friendBindingsRef.current;
+        let resolvedFriend = currentFriends.find(
+          (f) => currentBindings[f.id] === chat.fromClientId,
         );
         if (!resolvedFriend) {
-          const matchesByName = friends.filter(
+          const matchesByName = currentFriends.filter(
             (f) => f.callsign.toLowerCase() === chat.senderName.toLowerCase(),
           );
           if (matchesByName.length === 1) {
             resolvedFriend = matchesByName[0];
             const nextBindings = {
-              ...friendBindings,
+              ...currentBindings,
               [resolvedFriend.id]: chat.fromClientId,
             };
             saveFriendBindings(playerStoreId, nextBindings);
+            friendBindingsRef.current = nextBindings;
             setFriendBindings(nextBindings);
           }
         }
@@ -324,16 +368,37 @@ export default function SocialPage() {
           setDmMessages(stored);
         }
       }
-    };
+      };
 
-    ws.onclose = () => setSocketConnected(false);
-    ws.onerror = () => setSocketConnected(false);
+      ws.onclose = () => {
+        setSocketConnected(false);
+        scheduleReconnect();
+      };
+      ws.onerror = () => {
+        setSocketConnected(false);
+      };
+    }
+
+    shouldReconnectRef.current = true;
+    connect();
 
     return () => {
-      ws.close();
+      shouldReconnectRef.current = false;
+      if (reconnectTimerRef.current !== null) {
+        window.clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = null;
+      }
+      const ws = wsRef.current;
       wsRef.current = null;
+      ws?.close();
     };
-  }, [friendBindings, friends, guildId, player.playerName, playerStoreId, socialClientId]);
+  }, [playerStoreId, sendRegisterSocial, socialClientId]);
+
+  useEffect(() => {
+    const ws = wsRef.current;
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    sendRegisterSocial(ws);
+  }, [guildId, player.playerName, sendRegisterSocial]);
 
   function handleAddFriend() {
     const next = addFriend(playerStoreId, newFriendName, newFriendNote);
@@ -484,7 +549,7 @@ export default function SocialPage() {
           subtitle="Websocket-backed chat: global, guild, and friend direct messages."
         />
 
-        <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-white/65">
+        <div className="rounded-xl border border-white/10 bg-white/3 px-3 py-2 text-xs text-white/65">
           Socket:{" "}
           <span className={socketConnected ? "text-emerald-300" : "text-red-300"}>
             {socketConnected ? "Connected" : "Disconnected"}
@@ -528,7 +593,7 @@ export default function SocialPage() {
               </div>
               <div className="max-h-72 space-y-2 overflow-y-auto">
                 {friends.length === 0 ? (
-                  <div className="rounded-xl border border-dashed border-white/12 bg-white/[0.02] px-4 py-8 text-center text-white/35">
+                  <div className="rounded-xl border border-dashed border-white/12 bg-white/2 px-4 py-8 text-center text-white/35">
                     <UserRound className="mx-auto mb-2 h-8 w-8 opacity-30" />
                     No friends added yet.
                   </div>
@@ -540,7 +605,7 @@ export default function SocialPage() {
                         "rounded-xl border px-3 py-2",
                         selectedFriendId === f.id
                           ? "border-cyan-400/35 bg-cyan-500/10"
-                          : "border-white/10 bg-white/[0.03]",
+                          : "border-white/10 bg-white/3",
                       ].join(" ")}
                     >
                       {(() => {
@@ -571,7 +636,7 @@ export default function SocialPage() {
                                     ? "border-amber-300/35 bg-amber-500/12 text-amber-100"
                                     : status === "unlinked-online"
                                       ? "border-cyan-300/35 bg-cyan-500/12 text-cyan-100"
-                                      : "border-white/15 bg-white/[0.04] text-white/60",
+                                      : "border-white/15 bg-white/4 text-white/60",
                               ].join(" ")}
                             >
                               {status === "linked-online"
@@ -607,7 +672,7 @@ export default function SocialPage() {
                           <button
                             type="button"
                             onClick={() => handleUnlinkFriend(f.id)}
-                            className="rounded-lg border border-white/15 bg-white/[0.06] px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-white/80 transition hover:border-white/25 hover:bg-white/[0.09]"
+                            className="rounded-lg border border-white/15 bg-white/6 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-white/80 transition hover:border-white/25 hover:bg-white/9"
                           >
                             Unlink
                           </button>
@@ -648,7 +713,7 @@ export default function SocialPage() {
                       "rounded-xl border px-2 py-2 text-[11px] font-bold uppercase tracking-[0.12em]",
                       tab === id
                         ? "border-cyan-300/40 bg-cyan-500/12 text-cyan-100"
-                        : "border-white/10 bg-white/[0.03] text-white/60",
+                        : "border-white/10 bg-white/3 text-white/60",
                     ].join(" ")}
                   >
                     {label}
@@ -657,7 +722,7 @@ export default function SocialPage() {
               </div>
 
               {tab === "friends" ? (
-                <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3 text-sm text-white/70">
+                <div className="rounded-xl border border-white/10 bg-white/3 p-3 text-sm text-white/70">
                   Pick a friend to open direct chat.
                 </div>
               ) : null}
@@ -668,7 +733,7 @@ export default function SocialPage() {
                 hasGuild ? (
                   <ChatPane messages={guildMessages} emptyText="Guild channel is quiet" />
                 ) : (
-                  <div className="rounded-xl border border-dashed border-white/12 bg-white/[0.02] px-4 py-8 text-center text-white/30">
+                  <div className="rounded-xl border border-dashed border-white/12 bg-white/2 px-4 py-8 text-center text-white/30">
                     <Shield className="mx-auto mb-2 h-8 w-8 opacity-30" />
                     Join a guild to access guild chat.
                   </div>
@@ -677,7 +742,7 @@ export default function SocialPage() {
               {tab === "dm" ? (
                 selectedFriend ? (
                   <div className="space-y-2">
-                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-white/65">
+                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/10 bg-white/3 px-3 py-2 text-xs text-white/65">
                       <div>
                         Link status:{" "}
                         {selectedFriendBindingClientId ? (
@@ -700,7 +765,7 @@ export default function SocialPage() {
                         <button
                           type="button"
                           onClick={() => handleUnlinkFriend(selectedFriend.id)}
-                          className="shrink-0 rounded-lg border border-white/15 bg-white/[0.06] px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-white/80 hover:border-white/25 hover:bg-white/[0.09]"
+                          className="shrink-0 rounded-lg border border-white/15 bg-white/6 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-white/80 hover:border-white/25 hover:bg-white/9"
                         >
                           Unlink
                         </button>
@@ -725,7 +790,7 @@ export default function SocialPage() {
                               "rounded-lg border px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em]",
                               selectedFriendBindingClientId === candidate.clientId
                                 ? "border-emerald-300/40 bg-emerald-500/15 text-emerald-100"
-                                : "border-white/15 bg-white/[0.04] text-white/75",
+                                : "border-white/15 bg-white/4 text-white/75",
                             ].join(" ")}
                           >
                             Link Online
@@ -743,7 +808,7 @@ export default function SocialPage() {
                     />
                   </div>
                 ) : (
-                  <div className="rounded-xl border border-dashed border-white/12 bg-white/[0.02] px-4 py-8 text-center text-white/30">
+                  <div className="rounded-xl border border-dashed border-white/12 bg-white/2 px-4 py-8 text-center text-white/30">
                     <UserRound className="mx-auto mb-2 h-8 w-8 opacity-30" />
                     Select a friend to start direct chat.
                   </div>
@@ -787,7 +852,7 @@ export default function SocialPage() {
         <div className="grid gap-4 md:grid-cols-3">
           <Link
             href="/guild"
-            className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white/75 hover:bg-white/[0.08]"
+            className="rounded-xl border border-white/10 bg-white/4 px-4 py-3 text-sm text-white/75 hover:bg-white/8"
           >
             <div className="flex items-center gap-2">
               <Shield className="h-4 w-4 text-white/65" />
@@ -797,7 +862,7 @@ export default function SocialPage() {
           <button
             type="button"
             onClick={() => setTab("global")}
-            className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-left text-sm text-white/75 hover:bg-white/[0.08]"
+            className="rounded-xl border border-white/10 bg-white/4 px-4 py-3 text-left text-sm text-white/75 hover:bg-white/8"
           >
             <div className="flex items-center gap-2">
               <Globe2 className="h-4 w-4 text-white/65" />
@@ -807,7 +872,7 @@ export default function SocialPage() {
           <button
             type="button"
             onClick={() => setTab("guild")}
-            className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-left text-sm text-white/75 hover:bg-white/[0.08]"
+            className="rounded-xl border border-white/10 bg-white/4 px-4 py-3 text-left text-sm text-white/75 hover:bg-white/8"
           >
             <div className="flex items-center gap-2">
               <MessageCircle className="h-4 w-4 text-white/65" />

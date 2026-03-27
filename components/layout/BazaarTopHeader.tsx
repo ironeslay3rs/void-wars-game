@@ -16,9 +16,9 @@ export default function BazaarTopHeader() {
       </div>
 
       <div className="relative inline-block px-12 py-3">
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
-        <div className="absolute left-0 top-3 h-px w-24 bg-gradient-to-r from-transparent to-white/15" />
-        <div className="absolute right-0 top-3 h-px w-24 bg-gradient-to-l from-transparent to-white/15" />
+        <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-white/15 to-transparent" />
+        <div className="absolute left-0 top-3 h-px w-24 bg-linear-to-r from-transparent to-white/15" />
+        <div className="absolute right-0 top-3 h-px w-24 bg-linear-to-l from-transparent to-white/15" />
 
         <h1 className="text-5xl font-black uppercase tracking-[0.12em] text-amber-100 drop-shadow-[0_6px_16px_rgba(0,0,0,0.45)] md:text-6xl">
           Void Wars
@@ -37,7 +37,7 @@ export default function BazaarTopHeader() {
 
       <div className="mt-4 flex justify-center">
         <Link
-          href="/bazaar/black-market"
+          href="/market/black-market"
           className="inline-flex items-center rounded-[16px] border border-orange-300/25 bg-[linear-gradient(135deg,rgba(120,20,10,0.45),rgba(30,10,8,0.72))] px-6 py-3 text-sm font-black uppercase tracking-[0.16em] text-amber-100 shadow-[0_14px_40px_rgba(0,0,0,0.35)] transition hover:-translate-y-0.5 hover:border-orange-200/40"
         >
           Access Black Market

@@ -7,11 +7,9 @@ function isProbablyValidAccessToken(token: string): boolean {
   const trimmed = token.trim();
   if (!trimmed || trimmed === "undefined" || trimmed === "null") return false;
 
-  // Basic JWT shape check.
   const parts = trimmed.split(".");
   if (parts.length !== 3) return false;
 
-  // Best-effort exp validation (no signature verification here).
   try {
     const payloadB64 = parts[1]
       .replace(/-/g, "+")
@@ -20,20 +18,18 @@ function isProbablyValidAccessToken(token: string): boolean {
     const json = JSON.parse(atob(payloadB64)) as { exp?: unknown };
     if (typeof json.exp === "number") {
       const expMs = json.exp * 1000;
-      // Treat tokens expiring within 30s as invalid for navigation gating.
       return expMs > Date.now() + 30_000;
     }
   } catch {
-    // If decoding fails, still treat as a token-shaped value.
+    // If decoding fails, still treat as token-shaped value.
   }
 
   return true;
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Ignore Next internals & static assets
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon") ||
@@ -59,4 +55,3 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: ["/((?!api).*)"],
 };
-

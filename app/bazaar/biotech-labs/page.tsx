@@ -39,7 +39,7 @@ export default function BiotechLabsPage() {
       `/hunt?missionId=${encodeURIComponent(
         "bio-hunt-specimen",
       )}&zone=${encodeURIComponent("howling-scar")}&return=${encodeURIComponent(
-        "/bazaar/biotech-labs/result",
+        "/market/biotech-labs/result",
       )}`,
     );
   }
@@ -80,7 +80,7 @@ export default function BiotechLabsPage() {
           </Link>
           <span className="text-white/35">·</span>
           <Link
-            href="/bazaar/mercenary-guild"
+            href="/market/mercenary-guild"
             className="font-semibold text-amber-200/95 underline decoration-amber-400/35 underline-offset-2 hover:text-white"
           >
             Hunting Ground

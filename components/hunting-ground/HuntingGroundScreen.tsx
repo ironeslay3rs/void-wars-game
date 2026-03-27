@@ -375,7 +375,7 @@ export default function HuntingGroundScreen({
             </Link>{" "}
             queues a short contract and lands here. Full payout readout lives on{" "}
             <Link
-              href="/bazaar/biotech-labs/result"
+              href="/market/biotech-labs/result"
               className="text-amber-200 underline decoration-amber-400/40 underline-offset-2 hover:text-white"
             >
               Hunt Result
@@ -473,7 +473,7 @@ export default function HuntingGroundScreen({
                   settle).
                 </p>
                 <Link
-                  href="/bazaar/biotech-labs/result"
+                  href="/market/biotech-labs/result"
                   className="mt-3 inline-flex text-sm font-semibold text-cyan-200/95 underline decoration-cyan-400/35 underline-offset-2 hover:text-white"
                 >
                   Open Hunt Result (after timer)
@@ -615,7 +615,7 @@ export default function HuntingGroundScreen({
                 </div>
               </div>
               <Link
-                href="/bazaar/biotech-labs/result"
+                href="/market/biotech-labs/result"
                 className="inline-flex w-fit rounded-2xl border border-cyan-400/35 bg-cyan-500/12 px-4 py-2 text-sm font-semibold text-cyan-50 transition hover:border-cyan-300/50 hover:bg-cyan-500/18"
               >
                 Open full Hunt Result readout

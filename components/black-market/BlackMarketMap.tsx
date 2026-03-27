@@ -107,14 +107,14 @@ function ZoneChrome({ label, sin, desc }: { label: string; sin: string; desc: st
   return (
     <>
       <span
-        className="pointer-events-none absolute inset-0 rounded-xl bg-gradient-to-t from-black/25 via-transparent to-white/[0.04] opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100"
+        className="pointer-events-none absolute inset-0 rounded-xl bg-linear-to-t from-black/25 via-transparent to-white/4 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100"
         aria-hidden
       />
       <span
-        className="pointer-events-none absolute inset-0 rounded-xl ring-0 ring-amber-200/0 transition-[box-shadow] duration-150 group-hover:shadow-[0_0_28px_rgba(251,191,36,0.18)] group-hover:ring-2 group-hover:ring-amber-200/35 group-focus-visible:shadow-[0_0_28px_rgba(251,191,36,0.22)] group-focus-visible:ring-2 group-focus-visible:ring-amber-200/45"
+        className="pointer-events-none absolute inset-0 rounded-xl ring-0 ring-amber-200/0 transition-shadow duration-150 group-hover:shadow-[0_0_28px_rgba(251,191,36,0.18)] group-hover:ring-2 group-hover:ring-amber-200/35 group-focus-visible:shadow-[0_0_28px_rgba(251,191,36,0.22)] group-focus-visible:ring-2 group-focus-visible:ring-amber-200/45"
         aria-hidden
       />
-      <span className="pointer-events-none absolute bottom-2 left-1/2 z-[1] flex max-w-[92%] -translate-x-1/2 flex-col items-center gap-0.5 text-center">
+      <span className="pointer-events-none absolute bottom-2 left-1/2 z-1 flex max-w-[92%] -translate-x-1/2 flex-col items-center gap-0.5 text-center">
         <span className="rounded-md border border-white/15 bg-black/65 px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-white/90 backdrop-blur-sm md:text-[11px]">
           {label}
         </span>
@@ -151,7 +151,7 @@ export default function BlackMarketMap() {
         sizes="100vw"
       />
       <div
-        className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/25"
+        className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/55 via-transparent to-black/25"
         aria-hidden
       />
 
@@ -179,7 +179,7 @@ export default function BlackMarketMap() {
               type="button"
               title={`${zone.label} — ${zone.desc} (opening soon)`}
               aria-label={`${zone.label}, ${zone.sin} — not available yet`}
-              className="group absolute z-[2] cursor-pointer rounded-xl border border-transparent bg-transparent text-left transition-colors hover:border-white/10 focus:outline-none focus-visible:border-amber-300/50 focus-visible:ring-2 focus-visible:ring-amber-400/40"
+              className="group absolute z-2 cursor-pointer rounded-xl border border-transparent bg-transparent text-left transition-colors hover:border-white/10 focus:outline-none focus-visible:border-amber-300/50 focus-visible:ring-2 focus-visible:ring-amber-400/40"
               style={style}
             >
               <ZoneChrome label={zone.label} sin={zone.sin} desc={zone.desc} />
@@ -194,7 +194,7 @@ export default function BlackMarketMap() {
             href={href}
             title={`${zone.label} — ${zone.desc}`}
             aria-label={`${zone.label}, ${zone.sin}`}
-            className="group absolute z-[2] rounded-xl border border-transparent bg-transparent transition-colors hover:border-white/12 focus:outline-none focus-visible:border-amber-300/50 focus-visible:ring-2 focus-visible:ring-amber-400/40"
+            className="group absolute z-2 rounded-xl border border-transparent bg-transparent transition-colors hover:border-white/12 focus:outline-none focus-visible:border-amber-300/50 focus-visible:ring-2 focus-visible:ring-amber-400/40"
             style={style}
           >
             <ZoneChrome label={zone.label} sin={zone.sin} desc={zone.desc} />

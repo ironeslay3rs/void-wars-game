@@ -36,6 +36,9 @@ export default function AuctionHousePage() {
   const { player } = state;
   const [clientId] = useState(() => getOrCreateAuctionClientId());
   const wsRef = useRef<WebSocket | null>(null);
+  const shouldReconnectRef = useRef(true);
+  const reconnectAttemptRef = useRef(0);
+  const reconnectTimerRef = useRef<number | null>(null);
   const stateRef = useRef(state);
   const playerRef = useRef(player);
   const [connected, setConnected] = useState(false);
@@ -55,17 +58,7 @@ export default function AuctionHousePage() {
   }, [state]);
 
   useEffect(() => {
-    const wsUrl = getVoidRealtimeWebSocketUrl();
-    if (!wsUrl) {
-      const t = window.setTimeout(() => {
-        setNotice("HTTPS: set NEXT_PUBLIC_VOID_WS_URL to your hosted websocket (wss://…).");
-      }, 0);
-      return () => window.clearTimeout(t);
-    }
-    const ws = new WebSocket(wsUrl);
-    wsRef.current = ws;
-    ws.onopen = () => {
-      setConnected(true);
+    function sendRegister(ws: WebSocket) {
       const snapshot = playerRef.current;
       const msg: RegisterAuctionMessage = {
         type: "register_auction",
@@ -76,57 +69,113 @@ export default function AuctionHousePage() {
         craftedInventory: snapshot.craftedInventory,
       };
       ws.send(JSON.stringify(msg));
-    };
-    ws.onclose = () => setConnected(false);
-    ws.onerror = () => {
-      setConnected(false);
-      setNotice("Auction websocket disconnected.");
-    };
-    ws.onmessage = (ev) => {
-      const msg = JSON.parse(ev.data) as ServerToClientMessage;
-      if (msg.type === "auction_listings") {
-        setListings((msg as AuctionListingsMessage).listings);
+    }
+
+    function scheduleReconnect() {
+      if (!shouldReconnectRef.current) return;
+      if (reconnectTimerRef.current !== null) return;
+      const nextAttempt = reconnectAttemptRef.current + 1;
+      reconnectAttemptRef.current = nextAttempt;
+      const delayMs = Math.min(8000, 500 * 2 ** Math.min(nextAttempt, 4));
+      reconnectTimerRef.current = window.setTimeout(() => {
+        reconnectTimerRef.current = null;
+        connect();
+      }, delayMs);
+    }
+
+    function connect() {
+      if (!shouldReconnectRef.current) return;
+      const wsUrl = getVoidRealtimeWebSocketUrl();
+      if (!wsUrl) {
+        setConnected(false);
+        setNotice("HTTPS: set NEXT_PUBLIC_VOID_WS_URL to your hosted websocket (wss://…).");
         return;
       }
-      if (msg.type === "auction_account_state") {
-        const acct = msg as AuctionAccountStateMessage;
-        if (acct.clientId !== clientId) return;
-        const currentState = stateRef.current;
-        const currentPlayer = playerRef.current;
-        dispatch({
-          type: "HYDRATE_STATE",
-          payload: {
-            ...currentState,
-            player: {
-              ...currentPlayer,
-              resources: {
-                ...currentPlayer.resources,
-                credits: acct.credits,
+      const ws = new WebSocket(wsUrl);
+      wsRef.current = ws;
+      ws.onopen = () => {
+        reconnectAttemptRef.current = 0;
+        setConnected(true);
+        sendRegister(ws);
+      };
+      ws.onclose = () => {
+        setConnected(false);
+        scheduleReconnect();
+      };
+      ws.onerror = () => {
+        setConnected(false);
+        setNotice("Auction websocket disconnected.");
+      };
+      ws.onmessage = (ev) => {
+        const msg = JSON.parse(ev.data) as ServerToClientMessage;
+        if (msg.type === "auction_listings") {
+          setListings((msg as AuctionListingsMessage).listings);
+          return;
+        }
+        if (msg.type === "auction_account_state") {
+          const acct = msg as AuctionAccountStateMessage;
+          if (acct.clientId !== clientId) return;
+          const currentState = stateRef.current;
+          const currentPlayer = playerRef.current;
+          dispatch({
+            type: "HYDRATE_STATE",
+            payload: {
+              ...currentState,
+              player: {
+                ...currentPlayer,
+                resources: {
+                  ...currentPlayer.resources,
+                  credits: acct.credits,
+                },
+                craftedInventory: acct.craftedInventory,
               },
-              craftedInventory: acct.craftedInventory,
             },
-          },
-        });
-        return;
-      }
-      if (msg.type === "auction_history") {
-        const payload = msg as AuctionHistoryMessage;
-        if (payload.clientId !== clientId) return;
-        setHistory(payload.entries);
-        return;
-      }
-      if (msg.type !== "auction_trade_event") return;
-      const evt = msg as AuctionTradeEventMessage;
-      if (evt.reason) setNotice(evt.reason);
-      if (evt.status === "created") setNotice("Listing posted.");
-      if (evt.status === "cancelled") setNotice("Listing cancelled.");
-      if (evt.status === "sold") setNotice("Trade completed.");
-    };
+          });
+          return;
+        }
+        if (msg.type === "auction_history") {
+          const payload = msg as AuctionHistoryMessage;
+          if (payload.clientId !== clientId) return;
+          setHistory(payload.entries);
+          return;
+        }
+        if (msg.type !== "auction_trade_event") return;
+        const evt = msg as AuctionTradeEventMessage;
+        if (evt.reason) setNotice(evt.reason);
+        if (evt.status === "created") setNotice("Listing posted.");
+        if (evt.status === "cancelled") setNotice("Listing cancelled.");
+        if (evt.status === "sold") setNotice("Trade completed.");
+      };
+    }
+
+    shouldReconnectRef.current = true;
+    connect();
+
     return () => {
-      ws.close();
+      shouldReconnectRef.current = false;
+      if (reconnectTimerRef.current !== null) {
+        window.clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = null;
+      }
+      wsRef.current?.close();
       wsRef.current = null;
     };
   }, [clientId, dispatch, user?.id]);
+
+  useEffect(() => {
+    const ws = wsRef.current;
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    const snapshot = playerRef.current;
+    const msg: RegisterAuctionMessage = {
+      type: "register_auction",
+      clientId,
+      accountId: user?.id ?? `local-${snapshot.playerName.toLowerCase()}`,
+      playerName: snapshot.playerName,
+      credits: snapshot.resources.credits,
+      craftedInventory: snapshot.craftedInventory,
+    };
+    ws.send(JSON.stringify(msg));
+  }, [clientId, player.playerName, player.resources.credits, player.craftedInventory, user?.id]);
 
   function sendMsg(
     msg:
@@ -209,7 +258,7 @@ export default function AuctionHousePage() {
 
         <BazaarSubpageNav accentClassName="hover:border-amber-400/40" />
 
-        <div className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-xs text-white/70">
+        <div className="rounded-xl border border-white/10 bg-white/3 px-4 py-3 text-xs text-white/70">
           Socket:{" "}
           <span className={connected ? "text-emerald-300" : "text-red-300"}>
             {connected ? "linked" : "offline"}
@@ -265,7 +314,7 @@ export default function AuctionHousePage() {
             </div>
             <div className="mt-3 max-h-[60vh] space-y-2 overflow-y-auto">
               {listings.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-white/12 bg-white/[0.02] px-4 py-8 text-center text-white/40">
+                <div className="rounded-xl border border-dashed border-white/12 bg-white/2 px-4 py-8 text-center text-white/40">
                   No listings live.
                 </div>
               ) : (
@@ -274,7 +323,7 @@ export default function AuctionHousePage() {
                   return (
                     <div
                       key={listing.listingId}
-                      className="rounded-xl border border-white/10 bg-white/[0.03] p-3"
+                      className="rounded-xl border border-white/10 bg-white/3 p-3"
                     >
                       <div className="flex items-center justify-between gap-3">
                         <div>
@@ -323,14 +372,14 @@ export default function AuctionHousePage() {
           </div>
           <div className="mt-3 max-h-[34vh] space-y-2 overflow-y-auto">
             {history.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-white/12 bg-white/[0.02] px-4 py-6 text-center text-white/40">
+              <div className="rounded-xl border border-dashed border-white/12 bg-white/2 px-4 py-6 text-center text-white/40">
                 No trade history yet.
               </div>
             ) : (
               history.map((entry) => (
                 <div
                   key={entry.id}
-                  className="rounded-xl border border-white/10 bg-white/[0.03] p-3"
+                  className="rounded-xl border border-white/10 bg-white/3 p-3"
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div className="text-sm text-white/85">{entry.message}</div>

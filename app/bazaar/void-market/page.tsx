@@ -57,7 +57,7 @@ export default function VoidMarketPage() {
             </p>
             <div className="mt-4">
               <Link
-                href="/bazaar/black-market"
+                href="/market/black-market"
                 className="inline-flex rounded-xl border border-amber-400/35 bg-amber-500/10 px-4 py-2 text-sm font-semibold text-amber-100 transition hover:border-amber-300/45 hover:bg-amber-500/16"
               >
                 Black Market map

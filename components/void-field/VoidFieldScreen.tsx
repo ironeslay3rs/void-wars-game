@@ -9,7 +9,7 @@ import {
   useState,
   type PointerEvent,
 } from "react";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useGame } from "@/features/game/gameContext";
 import type { ResourceKey } from "@/features/game/gameTypes";
 import { getMissionById } from "@/features/game/gameMissionUtils";
@@ -59,6 +59,8 @@ import {
 
 export default function VoidFieldScreen() {
   const { state, dispatch } = useGame();
+  const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const zoneQuery = searchParams.get("zone");
   const bucketQuery = searchParams.get("bucket");
@@ -81,6 +83,14 @@ export default function VoidFieldScreen() {
     const t = window.setTimeout(() => setShowDeployIntro(false), 5200);
     return () => window.clearTimeout(t);
   }, [deployIntroFlag]);
+
+  useEffect(() => {
+    if (deployIntroFlag !== "1") return;
+    const q = new URLSearchParams(searchParams.toString());
+    q.delete("deployIntro");
+    const next = q.toString();
+    router.replace(next ? `${pathname}?${next}` : pathname, { scroll: false });
+  }, [deployIntroFlag, pathname, router, searchParams]);
 
   const allocatedZone = voidZoneById[initialZoneId];
   const zone = allocatedZone;
@@ -478,6 +488,7 @@ export default function VoidFieldScreen() {
           onLootConsumed={onLootConsumed}
           lootCollectPulse={lootCollectPulse}
           extractionPositionPct={zone.extractionPositionPct}
+          strikeRangePct={strikeRangePct}
         />
       </div>
 

@@ -33,13 +33,13 @@ export default function TeleportGateScreen() {
               Void Expedition — realm path & field
             </Link>
             <Link
-              href="/bazaar/mercenary-guild"
+              href="/market/mercenary-guild"
               className={`${linkClass} border-amber-400/35 bg-amber-500/10 text-amber-50 hover:border-amber-300/50 hover:bg-amber-500/16`}
             >
               Hunting Ground — contract board
             </Link>
             <Link
-              href="/bazaar/biotech-labs/result"
+              href="/market/biotech-labs/result"
               className={`${linkClass} border-cyan-400/30 bg-cyan-500/10 text-cyan-100 hover:border-cyan-300/45 hover:bg-cyan-500/16`}
             >
               Hunt result
