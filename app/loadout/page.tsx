@@ -15,6 +15,7 @@ import {
 } from "@/features/combat/fieldLoadout";
 import { getSchoolCombatPassives } from "@/features/combat/fieldCombatIdentity";
 import {
+  autoEquipStarterKit,
   getAvailableItemsForSlot,
   getEquippedItem,
   LOADOUT_SLOT_LABELS,
@@ -35,8 +36,24 @@ export default function LoadoutPage() {
       player.loadoutSlots,
       pickerSlot,
       player.factionAlignment,
+      player.craftedInventory,
     );
-  }, [pickerSlot, player.factionAlignment, player.loadoutSlots]);
+  }, [pickerSlot, player.factionAlignment, player.loadoutSlots, player.craftedInventory]);
+
+  const allSlotsEmpty = LOADOUT_SLOT_ORDER.every((s) => !player.loadoutSlots[s]);
+
+  function handleQuickEquip() {
+    const filled = autoEquipStarterKit(player.loadoutSlots, player.factionAlignment);
+    for (const slotKey of LOADOUT_SLOT_ORDER) {
+      const id = filled[slotKey];
+      if (id && !player.loadoutSlots[slotKey]) {
+        dispatch({
+          type: "EQUIP_LOADOUT_ITEM",
+          payload: { slot: slotKey, itemId: id },
+        });
+      }
+    }
+  }
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(40,60,100,0.28),_rgba(5,8,18,1)_55%)] px-6 py-10 text-white md:px-10">
@@ -107,9 +124,20 @@ export default function LoadoutPage() {
         </section>
 
         <section className="rounded-2xl border border-white/12 bg-white/[0.04] p-6">
-          <h2 className="text-lg font-black uppercase tracking-[0.06em] text-white">
-            Active loadout slots
-          </h2>
+          <div className="flex items-center justify-between gap-4">
+            <h2 className="text-lg font-black uppercase tracking-[0.06em] text-white">
+              Active loadout slots
+            </h2>
+            {allSlotsEmpty && (
+              <button
+                type="button"
+                onClick={handleQuickEquip}
+                className="rounded-xl border border-cyan-400/40 bg-cyan-500/15 px-4 py-2 text-xs font-black uppercase tracking-[0.14em] text-cyan-200 transition hover:bg-cyan-500/25"
+              >
+                Quick Equip Kit
+              </button>
+            )}
+          </div>
           <p className="mt-2 text-sm text-white/60">
             Equip items from owned inventory into your combat slots. Unequip returns the
             item to your available inventory list.

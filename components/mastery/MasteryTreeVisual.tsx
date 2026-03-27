@@ -41,19 +41,22 @@ const RAIL: Record<
   },
 };
 
-/** Vertical seven-node rail per school — reads as one “branch” of the mastery tree. */
 function SchoolRail({
   school,
   depth,
   tier,
   minors,
   isPrimary,
+  canInstall,
+  onInstall,
 }: {
   school: RuneSchool;
   depth: number;
   tier: 0 | 1 | 2;
   minors: number;
   isPrimary: boolean;
+  canInstall: boolean;
+  onInstall: (school: RuneSchool) => void;
 }) {
   const rail = RAIL[school];
   const levels = Array.from({ length: RUNE_DEPTH_MAX }, (_, i) => RUNE_DEPTH_MAX - i);
@@ -128,6 +131,16 @@ function SchoolRail({
           Exec {tier === 2 ? "L3" : "L2"}
         </div>
       )}
+
+      <button
+        type="button"
+        disabled={!canInstall}
+        onClick={() => onInstall(school)}
+        className="mt-2 h-7 w-full rounded-lg border border-white/15 bg-white/5 text-[9px] font-bold uppercase tracking-[0.16em] text-white/60 transition hover:border-white/25 hover:bg-white/10 hover:text-white/90 disabled:cursor-not-allowed disabled:opacity-30"
+        title={canInstall ? `Install minor rune — ${LABEL[school]}` : "No mastery points available"}
+      >
+        + Install
+      </button>
     </div>
   );
 }
@@ -135,29 +148,48 @@ function SchoolRail({
 export default function MasteryTreeVisual({
   runeMastery,
   primarySchool,
+  masteryPoints,
+  onInstallMinor,
 }: {
   runeMastery: PlayerRuneMasteryState;
   primarySchool: RuneSchool | null;
+  masteryPoints?: number;
+  onInstallMinor?: (school: RuneSchool) => void;
 }) {
+  const available = masteryPoints ?? 0;
+
   return (
     <div
       className="rounded-xl border border-white/[0.08] bg-gradient-to-b from-black/35 to-black/20 px-3 py-4 md:px-6"
       aria-label="Mastery tree, three schools"
     >
-      <div className="mb-3 text-center text-[9px] font-bold uppercase tracking-[0.2em] text-white/40">
-        Tri-rail tree · L1 root → L7 apex
+      <div className="mb-3 flex items-center justify-between">
+        <div className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/40">
+          Tri-rail tree · L1 root → L7 apex
+        </div>
+        {available > 0 && (
+          <div className="rounded-md border border-cyan-400/30 bg-cyan-500/10 px-2 py-0.5 text-[9px] font-bold text-cyan-200">
+            {available} mastery pt{available !== 1 ? "s" : ""} available
+          </div>
+        )}
       </div>
       <div className="flex justify-between gap-1 md:gap-4">
-        {RUNE_SCHOOLS.map((school) => (
-          <SchoolRail
-            key={school}
-            school={school}
-            depth={runeMastery.depthBySchool[school]}
-            tier={getExecutionalTier(runeMastery, school)}
-            minors={runeMastery.minorCountBySchool[school]}
-            isPrimary={primarySchool === school}
-          />
-        ))}
+        {RUNE_SCHOOLS.map((school) => {
+          const minors = runeMastery.minorCountBySchool[school];
+          const canInstall = available > 0 && minors < MAX_MINORS_PER_SCHOOL;
+          return (
+            <SchoolRail
+              key={school}
+              school={school}
+              depth={runeMastery.depthBySchool[school]}
+              tier={getExecutionalTier(runeMastery, school)}
+              minors={minors}
+              isPrimary={primarySchool === school}
+              canInstall={canInstall}
+              onInstall={onInstallMinor ?? (() => {})}
+            />
+          );
+        })}
       </div>
     </div>
   );

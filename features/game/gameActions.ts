@@ -313,7 +313,26 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         },
       };
 
-    case "ADD_RESOURCE":
+    case "ADD_RESOURCE": {
+      const { key, amount } = action.payload;
+      if (amount > 0) {
+        const { accepted } = enforceCapacity(state.player.resources, {
+          [key]: amount,
+        });
+        const acceptedAmt = accepted[key] ?? 0;
+        if (acceptedAmt <= 0) return state;
+        return {
+          ...state,
+          player: {
+            ...state.player,
+            resources: updateSingleResource(
+              state.player.resources,
+              key,
+              acceptedAmt,
+            ),
+          },
+        };
+      }
       return {
         ...state,
         player: {
@@ -325,6 +344,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           ),
         },
       };
+    }
 
     case "ADD_FIELD_LOOT": {
       const { accepted } = enforceCapacity(state.player.resources, {

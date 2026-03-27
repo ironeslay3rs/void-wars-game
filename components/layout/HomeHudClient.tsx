@@ -22,7 +22,7 @@ export default function HomeHudClient() {
   return (
     <>
       {/* MOBILE STACK (single column, scrollable) */}
-      <section className="fixed inset-x-4 top-[92px] bottom-[176px] z-30 overflow-y-auto lg:hidden">
+      <section className="fixed inset-x-4 top-[92px] bottom-[108px] z-30 overflow-y-auto lg:hidden">
         <div className="mx-auto flex w-full max-w-xl flex-col gap-4 pb-4">
           <MissionPanel />
 
@@ -73,11 +73,6 @@ export default function HomeHudClient() {
           nextStepLabel={guidance.nextStepLabel}
           progressionMeaning={progressionMeaning}
         />
-      </section>
-
-      {/* RESOURCE BAR */}
-      <section className="absolute inset-x-4 bottom-[104px] z-[15] lg:inset-x-8 lg:bottom-20">
-        <ResourceBar values={state.player.resources} />
       </section>
 
       {/* BOTTOM NAV */}

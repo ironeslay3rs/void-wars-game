@@ -153,6 +153,14 @@ export default function MasteryDepthPanel() {
         <MasteryTreeVisual
           runeMastery={runeMastery}
           primarySchool={primary}
+          masteryPoints={
+            runeMastery.capacity.blood +
+            runeMastery.capacity.frame +
+            runeMastery.capacity.resonance
+          }
+          onInstallMinor={(school) =>
+            dispatch({ type: "INSTALL_MINOR_RUNE", payload: { school } })
+          }
         />
       </div>
 

@@ -285,6 +285,10 @@ export default function MissionsScreen() {
     (mission) => mission.category !== "hunting-ground",
   );
 
+  const huntingGroundMissions = state.missions.filter(
+    (mission) => mission.category === "hunting-ground",
+  );
+
   const availableMissions = standardMissions.filter((mission) => {
     if (mission.path === "neutral") return true;
     return state.player.factionAlignment === mission.path;
@@ -308,18 +312,6 @@ export default function MissionsScreen() {
 
     previousQueuedEntriesRef.current = queuedEntries;
   }, [queuedEntries]);
-
-  useEffect(() => {
-    if (!completionFeedback) {
-      return;
-    }
-
-    const timeout = window.setTimeout(() => {
-      setCompletionFeedback(null);
-    }, 6000);
-
-    return () => window.clearTimeout(timeout);
-  }, [completionFeedback]);
 
   useEffect(() => {
     if (!boardFeedback) {
@@ -391,6 +383,55 @@ export default function MissionsScreen() {
             />
           </SectionCard>
         ) : null}
+
+        {huntingGroundMissions.length > 0 && (
+          <SectionCard
+            title="Hunting Grounds"
+            description="Deploy into creature-rich void zones for direct encounter rewards. These missions route to the interactive Hunt screen."
+          >
+            <div className="grid gap-3 sm:grid-cols-2">
+              {huntingGroundMissions.map((mission) => {
+                const resourceRewards = Object.entries(
+                  mission.reward.resources ?? {},
+                ).filter(([, v]) => typeof v === "number" && v !== 0);
+                return (
+                  <div
+                    key={mission.id}
+                    className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4"
+                  >
+                    <h3 className="text-base font-semibold text-white">
+                      {mission.title}
+                    </h3>
+                    <p className="mt-1 text-sm text-white/60">
+                      {mission.description}
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      {resourceRewards.map(([k, v]) => (
+                        <span
+                          key={k}
+                          className="rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 text-[10px] text-emerald-200"
+                        >
+                          +{v} {formatRewardLabel(k)}
+                        </span>
+                      ))}
+                      {mission.reward.rankXp > 0 && (
+                        <span className="rounded-full border border-amber-500/25 bg-amber-500/10 px-2.5 py-1 text-[10px] text-amber-200">
+                          +{mission.reward.rankXp} XP
+                        </span>
+                      )}
+                    </div>
+                    <Link
+                      href={`/hunt?missionId=${mission.id}&zone=${(mission as { deployZoneId?: string }).deployZoneId ?? "void"}&return=/missions`}
+                      className="mt-4 flex h-10 w-full items-center justify-center rounded-xl border border-emerald-400/40 bg-emerald-500/15 text-xs font-black uppercase tracking-[0.14em] text-emerald-200 transition hover:bg-emerald-500/25"
+                    >
+                      Deploy Hunt
+                    </Link>
+                  </div>
+                );
+              })}
+            </div>
+          </SectionCard>
+        )}
 
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_360px]">
           <SectionCard

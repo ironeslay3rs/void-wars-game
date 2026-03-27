@@ -55,7 +55,7 @@ const ZONES: ZoneDef[] = [
     top: "14%",
     width: "40%",
     height: "36%",
-    placeholder: true,
+    href: "/bazaar/black-market/mirror-house",
   },
   {
     id: "velvet-den",
@@ -66,7 +66,7 @@ const ZONES: ZoneDef[] = [
     top: "54%",
     width: "40%",
     height: "30%",
-    placeholder: true,
+    href: "/bazaar/black-market/velvet-den",
   },
   {
     id: "golden-bazaar",
@@ -88,7 +88,7 @@ const ZONES: ZoneDef[] = [
     top: "4%",
     width: "22%",
     height: "24%",
-    placeholder: true,
+    href: "/bazaar/black-market/ivory-tower",
   },
   {
     id: "silent-garden",
@@ -99,7 +99,7 @@ const ZONES: ZoneDef[] = [
     top: "56%",
     width: "18%",
     height: "20%",
-    placeholder: true,
+    href: "/bazaar/black-market/silent-garden",
   },
 ];
 

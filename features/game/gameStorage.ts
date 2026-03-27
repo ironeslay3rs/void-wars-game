@@ -31,6 +31,8 @@ import {
   normalizeGuildRoster,
 } from "@/features/social/guildLiveLogic";
 
+export const SAVE_VERSION = 4;
+
 const STORAGE_KEY_PREFIX = "void-wars-oblivion-game-state";
 
 function isRecord(value: unknown): value is Record<string, unknown> {

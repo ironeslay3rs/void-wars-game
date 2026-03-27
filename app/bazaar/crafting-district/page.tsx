@@ -207,8 +207,14 @@ function CraftingConsole() {
                 type="button"
                 onClick={() => {
                   dispatch({ type: "CRAFT_RECIPE", payload: { recipeId: recipe.id } });
-                  setToast(`Craft attempt: ${recipe.name}. Check inventory/resources for output.`);
-                  window.setTimeout(() => setToast(null), 2500);
+                  const outputDesc =
+                    recipe.output.kind === "resources"
+                      ? Object.entries(recipe.output.grant)
+                          .map(([k, v]) => `+${v} ${formatResource(k)}`)
+                          .join(", ")
+                      : recipe.output.item.name;
+                  setToast(`Crafted: ${recipe.name} → ${outputDesc}`);
+                  window.setTimeout(() => setToast(null), 3500);
                 }}
                 disabled={!canAfford}
                 className="mt-4 w-full rounded-xl border border-cyan-400/25 bg-cyan-500/10 px-4 py-3 text-sm font-semibold text-cyan-100 transition hover:border-cyan-300/45 hover:bg-cyan-500/16 disabled:cursor-not-allowed disabled:opacity-40"

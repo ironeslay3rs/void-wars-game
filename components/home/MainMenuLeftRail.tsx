@@ -43,7 +43,7 @@ export default function MainMenuLeftRail() {
   }
 
   return (
-    <div className="rounded-[28px] border border-white/10 bg-black/45 p-3 shadow-[0_18px_60px_rgba(0,0,0,0.45)] backdrop-blur-md">
+    <div className="max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-[28px] border border-white/10 bg-black/45 p-3 shadow-[0_18px_60px_rgba(0,0,0,0.45)] backdrop-blur-md">
       <button
         type="button"
         onClick={handleStartVoidHunt}

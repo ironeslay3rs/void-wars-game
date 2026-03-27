@@ -6,9 +6,13 @@ import SectionCard from "@/components/shared/SectionCard";
 import PlaceholderPanel from "@/components/shared/PlaceholderPanel";
 import MasteryDepthPanel from "@/components/career/MasteryDepthPanel";
 import MythicAscensionPanel from "@/components/mastery/MythicAscensionPanel";
+import RuneCapacityDisplay from "@/components/mastery/RuneCapacityDisplay";
 import { masteryScreenData } from "@/features/mastery/masteryScreenData";
+import { useGame } from "@/features/game/gameContext";
 
 export default function MasteryScreen() {
+  const { state } = useGame();
+
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(70,60,120,0.22),_rgba(5,8,20,1)_55%)] px-6 py-10 text-white md:px-10">
       <div className="mx-auto flex max-w-7xl flex-col gap-8">
@@ -32,6 +36,8 @@ export default function MasteryScreen() {
         </p>
 
         <MasteryDepthPanel />
+
+        <RuneCapacityDisplay runeMastery={state.player.runeMastery} />
 
         <MythicAscensionPanel />
 

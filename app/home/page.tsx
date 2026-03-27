@@ -1,4 +1,5 @@
 import GameHudShell from "@/components/layout/GameHudShell";
+import HomeOnboardingGuard from "@/components/home/HomeOnboardingGuard";
 import ExplorationPanel from "@/components/exploration/ExplorationPanel";
 import ExplorationScreenSummary from "@/components/exploration/ExplorationScreenSummary";
 import FirstSessionObjective from "@/components/guidance/FirstSessionObjective";
@@ -8,10 +9,11 @@ import HomeResourceStrip from "@/components/home/HomeResourceStrip";
 export default function HomePage() {
   return (
     <div className="relative min-h-screen">
+      <HomeOnboardingGuard />
       <GameHudShell />
 
-      <section className="pointer-events-none fixed inset-x-0 top-20 z-20 px-4 sm:px-6">
-        <div className="mx-auto flex w-full max-w-xl flex-col gap-4">
+      <section className="pointer-events-none fixed inset-x-0 top-20 bottom-[calc(6rem+env(safe-area-inset-bottom))] z-20 overflow-y-auto px-4 sm:px-6">
+        <div className="mx-auto flex w-full max-w-xl flex-col gap-4 pb-4">
           <div className="pointer-events-auto">
             <ExplorationScreenSummary />
           </div>
