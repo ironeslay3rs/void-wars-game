@@ -19,6 +19,7 @@ export default function VoidExpeditionHUD({
   mastery,
   nextLockLine,
   deployDisabled,
+  deployLabel,
   deployHint,
   onDeploy,
   playerName,
@@ -31,6 +32,7 @@ export default function VoidExpeditionHUD({
   mastery: number;
   nextLockLine: string;
   deployDisabled: boolean;
+  deployLabel?: string;
   deployHint: ReactNode;
   onDeploy: () => void;
   playerName: string;
@@ -131,7 +133,7 @@ export default function VoidExpeditionHUD({
                 : "border-cyan-400/45 bg-cyan-500/20 text-cyan-50 hover:border-cyan-300/55 hover:bg-cyan-500/28",
             ].join(" ")}
           >
-            Deploy into {selectedZone.label}
+            {deployLabel ?? `Deploy into ${selectedZone.label}`}
           </button>
           {deployHint ? (
             <div className="max-w-md text-right text-xs text-amber-200/85 md:text-left">

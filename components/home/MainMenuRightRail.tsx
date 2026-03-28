@@ -1,5 +1,16 @@
 import FactionPathPanel from "@/components/home/FactionPathPanel";
+import { useEffect, useState } from "react";
 import type { FactionAlignment, GameState } from "@/features/game/gameTypes";
+import {
+  getAfkExpeditionRead,
+  getCultivationRead,
+  getFusionContractModifiers,
+  getFormationDoctrine,
+} from "@/features/progression/fusionProgression";
+import { getLaunchDirectives } from "@/features/progression/launchReadiness";
+import {
+  getDoctrineQueueGate,
+} from "@/features/progression/launchDoctrine";
 
 type PathSelection = Exclude<FactionAlignment, "unbound">;
 
@@ -21,6 +32,7 @@ export default function MainMenuRightRail({
   onSelectPath,
   state,
 }: MainMenuRightRailProps) {
+  const [now, setNow] = useState(() => Date.now());
   const condition = state.player.condition;
   const mastery = state.player.masteryProgress;
   const hasMeaningfulCondition = condition > 0 || state.player.rankLevel > 1;
@@ -28,6 +40,26 @@ export default function MainMenuRightRail({
     state.player.factionAlignment === "unbound"
       ? "UNBOUND"
       : state.player.factionAlignment.toUpperCase();
+  const cultivation = getCultivationRead(state.player);
+  const afkRead = getAfkExpeditionRead(state.player, now);
+  const fusionContract = getFusionContractModifiers(
+    state.player,
+    now,
+    afkRead.queueLoad,
+  );
+  const doctrine = getFormationDoctrine(state.player);
+  const launchDirectives = getLaunchDirectives(state.player, now);
+  const doctrineQueueGate = getDoctrineQueueGate(state.player, now);
+  const launchReadiness = doctrineQueueGate.readiness;
+  const doctrineQueueCap = doctrineQueueGate.cap;
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setNow(Date.now());
+    }, 60000);
+
+    return () => window.clearInterval(interval);
+  }, []);
 
   return (
     <div className="space-y-4">
@@ -84,6 +116,141 @@ export default function MainMenuRightRail({
               {mastery}%
             </div>
           </div>
+        </div>
+      </section>
+
+      <section className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(18,14,30,0.88),rgba(8,8,16,0.96))] p-5 shadow-[0_18px_60px_rgba(0,0,0,0.45)] backdrop-blur-md">
+        <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-violet-200/65">
+          Fusion Directive
+        </div>
+        <div className="mt-1 text-xs text-white/55">
+          Ascension discipline, contract cadence, and doctrine pressure tuned
+          for live-launch survival operations.
+        </div>
+
+        <div className="mt-4 space-y-3">
+          <div className="rounded-[18px] border border-violet-300/20 bg-violet-500/10 p-3">
+            <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-violet-100/70">
+              Cultivation Stage
+            </div>
+            <div className="mt-2 text-lg font-black uppercase text-white">
+              {cultivation.stage.label}
+            </div>
+            <div className="mt-1 text-xs text-white/70">
+              {cultivation.stage.doctrine}
+            </div>
+            <div className="mt-2 text-[11px] text-violet-100/80">
+              {cultivation.nextStage
+                ? `${cultivation.progressToNext}% toward ${cultivation.nextStage.label}`
+                : "Top stage reached under current launch ladder"}
+            </div>
+          </div>
+
+          <div className="rounded-[18px] border border-cyan-300/20 bg-cyan-500/10 p-3">
+            <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-cyan-100/70">
+              AFK Contract Read
+            </div>
+            <div className="mt-2 text-sm font-semibold text-white">
+              {afkRead.rhythmLabel}
+            </div>
+            <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-cyan-50/85">
+              <div className="rounded-md border border-white/10 bg-black/25 px-2 py-1">
+                Idle window: {afkRead.idleMinutes}m
+              </div>
+              <div className="rounded-md border border-white/10 bg-black/25 px-2 py-1">
+                Queue load: {afkRead.queueLoad}/{doctrineQueueCap}
+              </div>
+              <div className="rounded-md border border-white/10 bg-black/25 px-2 py-1">
+                Forecast +{afkRead.estimatedCredits} credits
+              </div>
+              <div className="rounded-md border border-white/10 bg-black/25 px-2 py-1">
+                Forecast +{afkRead.estimatedMastery}% mastery
+              </div>
+            </div>
+            <div className="mt-2 rounded-md border border-cyan-200/20 bg-cyan-500/10 px-2 py-1 text-[11px] text-cyan-50/90">
+              Live modulation: x{fusionContract.rewardMultiplier.toFixed(2)}{" "}
+              payout · condition{" "}
+              {fusionContract.conditionDeltaOffset > 0
+                ? `+${fusionContract.conditionDeltaOffset}`
+                : fusionContract.conditionDeltaOffset}
+            </div>
+            {!doctrineQueueGate.canQueue && doctrineQueueGate.reason ? (
+              <div className="mt-2 rounded-md border border-red-300/20 bg-red-500/10 px-2 py-1 text-[11px] text-red-100/90">
+                {doctrineQueueGate.reason}
+              </div>
+            ) : null}
+          </div>
+
+          <div className="rounded-[18px] border border-amber-300/20 bg-amber-500/10 p-3">
+            <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-amber-100/70">
+              Formation Doctrine
+            </div>
+            <div className="mt-2 text-xs text-white/75">{doctrine}</div>
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(18,18,22,0.86),rgba(10,10,14,0.94))] p-5 shadow-[0_18px_60px_rgba(0,0,0,0.45)] backdrop-blur-md">
+        <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-emerald-200/70">
+          Launch Directive
+        </div>
+        <div className="mt-1 text-xs text-white/55">
+          Priority actions to keep your public-release loop understandable and
+          moving.
+        </div>
+        <div className="mt-3 rounded-[14px] border border-white/10 bg-black/25 p-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/45">
+              Loop readiness
+            </div>
+            <div
+              className={[
+                "rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em]",
+                launchReadiness.status === "critical"
+                  ? "border-red-300/30 bg-red-500/15 text-red-100"
+                  : launchReadiness.status === "at-risk"
+                    ? "border-amber-300/35 bg-amber-500/15 text-amber-100"
+                    : launchReadiness.status === "stable"
+                      ? "border-cyan-300/30 bg-cyan-500/15 text-cyan-100"
+                      : "border-emerald-300/30 bg-emerald-500/15 text-emerald-100",
+              ].join(" ")}
+            >
+              {launchReadiness.status}
+            </div>
+          </div>
+          <div className="mt-2 text-2xl font-black text-white">
+            {launchReadiness.score}
+            <span className="ml-1 text-sm text-white/55">/100</span>
+          </div>
+          <div className="mt-2 text-xs text-white/70">{launchReadiness.summary}</div>
+          {launchReadiness.blockers.length > 0 ? (
+            <ul className="mt-2 space-y-1 text-[11px] text-white/65">
+              {launchReadiness.blockers.map((blocker) => (
+                <li key={blocker}>• {blocker}</li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+
+        <div className="mt-4 space-y-2.5">
+          {launchDirectives.map((directive) => (
+            <div
+              key={`${directive.id}-${directive.label}`}
+              className={[
+                "rounded-[14px] border px-3 py-2.5",
+                directive.tone === "critical"
+                  ? "border-red-300/30 bg-red-500/10"
+                  : directive.tone === "warning"
+                    ? "border-amber-300/30 bg-amber-500/10"
+                    : "border-emerald-300/25 bg-emerald-500/10",
+              ].join(" ")}
+            >
+              <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-white">
+                {directive.label}
+              </div>
+              <div className="mt-1 text-xs text-white/72">{directive.detail}</div>
+            </div>
+          ))}
         </div>
       </section>
     </div>

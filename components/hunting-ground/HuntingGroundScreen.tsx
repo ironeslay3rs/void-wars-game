@@ -21,6 +21,13 @@ import type {
   MissionDefinition,
   MissionQueueEntry,
 } from "@/features/game/gameTypes";
+import {
+  getDoctrineQueueGate,
+} from "@/features/progression/launchDoctrine";
+import {
+  getCanonBookLockReason,
+  isCanonBookMissionUnlocked,
+} from "@/features/progression/canonBookGate";
 
 type HuntingGroundScreenHeader = {
   eyebrow: string;
@@ -72,6 +79,29 @@ function formatDuration(durationHours: number) {
   const remainingMinutes = minutes % 60;
 
   return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
+}
+
+function formatCanonBookLabel(book: MissionDefinition["canonBook"]) {
+  switch (book) {
+    case "book-1":
+      return "Book 1";
+    case "book-2":
+      return "Book 2";
+    case "book-3":
+      return "Book 3";
+    case "book-4":
+      return "Book 4";
+    case "book-5":
+      return "Book 5";
+    case "book-6":
+      return "Book 6";
+    case "book-7":
+      return "Book 7";
+    case "system":
+      return "System";
+    default:
+      return "Book 1";
+  }
 }
 
 function formatRewardLabel(key: string) {
@@ -228,6 +258,13 @@ export default function HuntingGroundScreen({
   const queue = Array.isArray(state.player.missionQueue)
     ? state.player.missionQueue
     : [];
+  const doctrineQueueGate = getDoctrineQueueGate(state.player, now);
+  const doctrineQueueCap = doctrineQueueGate.cap;
+  const launchReadiness = doctrineQueueGate.readiness;
+  const hasLaunchQueueLock =
+    !doctrineQueueGate.canQueue &&
+    queue.length < doctrineQueueCap &&
+    doctrineQueueGate.reason !== null;
 
   const queuedEntries: QueuedMissionView[] = queue.reduce<QueuedMissionView[]>(
     (acc, entry) => {
@@ -312,7 +349,7 @@ export default function HuntingGroundScreen({
     },
     {
       label: "Queue",
-      value: `${queue.length}/${state.player.maxMissionQueueSlots}`,
+      value: `${queue.length}/${doctrineQueueCap}`,
       hint: "Deploy a contract, let the queue run, then return here to read the payout and decide what comes next.",
     },
     {
@@ -389,6 +426,17 @@ export default function HuntingGroundScreen({
             </Link>
             .
           </div>
+          {launchReadiness.status === "critical" ? (
+            <div className="rounded-xl border border-red-500/25 bg-red-500/10 px-3 py-2 text-xs text-red-100">
+              Launch doctrine critical: queue cap reduced to {doctrineQueueCap}.
+              Stabilize before chaining hunts.
+            </div>
+          ) : null}
+          {hasLaunchQueueLock ? (
+            <div className="rounded-xl border border-red-500/25 bg-red-500/10 px-3 py-2 text-xs text-red-100">
+              {doctrineQueueGate.reason}
+            </div>
+          ) : null}
         </div>
 
         <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4">
@@ -649,6 +697,15 @@ export default function HuntingGroundScreen({
               ) : (
                 huntingGroundMissions.map((mission) => {
                   const isQueued = queuedMissionIds.has(mission.id);
+                  const isCanonUnlocked = isCanonBookMissionUnlocked(
+                    mission.canonBook,
+                  );
+                  const canonLockReason = getCanonBookLockReason(
+                    mission.canonBook,
+                  );
+                  const isQueueBlocked = !doctrineQueueGate.canQueue;
+                  const isDeployDisabled =
+                    isQueued || isQueueBlocked || !isCanonUnlocked;
                   const resourceRewards = Object.entries(
                     mission.reward.resources ?? {},
                   ).filter(([, value]) => typeof value === "number" && value !== 0);
@@ -669,6 +726,10 @@ export default function HuntingGroundScreen({
                               Contract
                             </span>
 
+                            <span className="rounded-full border border-violet-500/25 bg-violet-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-violet-100">
+                              {formatCanonBookLabel(mission.canonBook)}
+                            </span>
+
                             <span className="rounded-full border border-cyan-500/20 bg-cyan-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-cyan-100">
                               {getContractTierLabel(mission.durationHours)}
                             </span>
@@ -682,10 +743,22 @@ export default function HuntingGroundScreen({
                                 In Queue
                               </span>
                             ) : null}
+
+                            {!isCanonUnlocked ? (
+                              <span className="rounded-full border border-amber-500/25 bg-amber-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-100">
+                                Future Book
+                              </span>
+                            ) : null}
                           </div>
 
                           <p className="mt-2 text-sm leading-6 text-white/65">
                             {mission.description}
+                          </p>
+
+                          <p className="mt-2 text-xs uppercase tracking-[0.14em] text-white/40">
+                            {isCanonUnlocked
+                              ? `${formatCanonBookLabel(mission.canonBook)} contract`
+                              : canonLockReason}
                           </p>
 
                           <div className="mt-3 flex flex-wrap gap-2">
@@ -716,29 +789,33 @@ export default function HuntingGroundScreen({
                         <div className="w-full lg:w-[176px]">
                           <button
                             type="button"
-                            onClick={() =>
+                            onClick={() => {
+                              if (isDeployDisabled) {
+                                return;
+                              }
+
                               dispatch({
                                 type: "QUEUE_MISSION",
                                 payload: { missionId: mission.id },
-                              })
-                            }
-                            disabled={
-                              isQueued ||
-                              queue.length >= state.player.maxMissionQueueSlots
-                            }
+                              });
+                            }}
+                            disabled={isDeployDisabled}
                             className={[
                               "w-full rounded-2xl border px-4 py-3 text-sm font-semibold uppercase tracking-[0.12em] transition",
-                              isQueued ||
-                              queue.length >= state.player.maxMissionQueueSlots
+                              isDeployDisabled
                                 ? "cursor-not-allowed border-white/10 bg-white/5 text-white/35"
                                 : "border-amber-500/30 bg-amber-500/10 text-amber-100 hover:border-amber-400/45 hover:bg-amber-500/15",
                             ].join(" ")}
                           >
                             {isQueued
                               ? "Deployed"
-                              : queue.length >= state.player.maxMissionQueueSlots
-                                ? "Queue Full"
-                                : "Deploy"}
+                              : !isCanonUnlocked
+                                ? "Future Book"
+                                : queue.length >= doctrineQueueCap
+                                  ? "Queue Full"
+                                  : hasLaunchQueueLock
+                                    ? "Stabilize First"
+                                    : "Deploy"}
                           </button>
                         </div>
                       </div>

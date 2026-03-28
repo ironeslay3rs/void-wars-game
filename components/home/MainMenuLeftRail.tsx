@@ -72,22 +72,22 @@ export default function MainMenuLeftRail() {
         </div>
 
         <div className="mt-2 text-[34px] font-black uppercase leading-[0.92] text-white">
-          Deploy
+          Enter
           <br />
-          Into the Void
+          The Void
         </div>
 
         <p className="mt-2 text-xs font-semibold uppercase tracking-[0.14em] text-white/70">
-          Ready
+          Expedition Gate
         </p>
 
         <p className="mt-1.5 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/42">
-          Get Into The Void · realm path · shared mission queue
+          Deploy · Hunt · Extract
         </p>
 
         <p className="mt-3 max-w-[260px] text-sm leading-6 text-white/72">
-          Opens the normal realm selection flow so you can deploy from Void
-          Expedition as before.
+          Step out from the Black Market and enter field routes where condition
+          loss, salvage, and mission pressure decide survival.
         </p>
       </button>
 
@@ -102,7 +102,7 @@ export default function MainMenuLeftRail() {
               className={[
                 "group flex min-h-[56px] items-center gap-3 rounded-[18px] border px-4 transition duration-200",
                 item.isPrimary
-                  ? "border-red-500/35 bg-[linear-gradient(135deg,rgba(80,12,12,0.88),rgba(22,10,10,0.94))] text-white shadow-[0_0_24px_rgba(255,60,60,0.10)]"
+                  ? "border-cyan-300/30 bg-[linear-gradient(135deg,rgba(24,38,56,0.92),rgba(10,16,26,0.95))] text-cyan-50 shadow-[0_0_24px_rgba(90,180,255,0.16)]"
                   : "border-white/10 bg-[linear-gradient(135deg,rgba(18,20,30,0.86),rgba(8,10,18,0.94))] text-white/88 hover:border-white/20 hover:bg-[linear-gradient(135deg,rgba(24,27,40,0.92),rgba(10,12,20,0.96))]",
               ].join(" ")}
             >

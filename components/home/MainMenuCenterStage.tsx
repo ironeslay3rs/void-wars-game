@@ -57,12 +57,14 @@ export default function MainMenuCenterStage({
         />
 
         <div className="relative w-[420px] rounded-[34px] border border-white/12 bg-[linear-gradient(180deg,rgba(10,10,18,0.82),rgba(6,6,12,0.92))] px-8 py-10 text-center shadow-[0_24px_80px_rgba(0,0,0,0.5)] backdrop-blur-md">
-          <div className="mx-auto flex h-28 w-28 items-center justify-center rounded-full border border-white/10 bg-[radial-gradient(circle_at_center,rgba(110,80,255,0.22),rgba(12,12,18,0.15)_62%,rgba(0,0,0,0)_100%)] shadow-[0_0_40px_rgba(120,90,255,0.18)]">
-            <div className="h-14 w-14 rounded-full border border-white/15 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.45),rgba(104,74,255,0.24),rgba(22,12,40,0.9))]" />
+          <div className="relative mx-auto h-32 w-32">
+            <div className="absolute left-1/2 top-1/2 h-20 w-20 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/15 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.62),rgba(100,120,255,0.25),rgba(20,16,50,0.95))] shadow-[0_0_30px_rgba(130,120,255,0.3)]" />
+            <div className="absolute left-0 top-1/2 h-11 w-11 -translate-y-1/2 rounded-full border border-red-300/30 bg-[radial-gradient(circle_at_center,rgba(255,110,110,0.85),rgba(120,30,30,0.2),rgba(0,0,0,0.2))]" />
+            <div className="absolute right-0 top-1/2 h-11 w-11 -translate-y-1/2 rounded-full border border-violet-300/35 bg-[radial-gradient(circle_at_center,rgba(180,110,255,0.85),rgba(70,40,150,0.2),rgba(0,0,0,0.2))]" />
           </div>
 
           <div className="mt-8 text-[12px] font-semibold uppercase tracking-[0.42em] text-white/55">
-            Central Interface
+            Central Crest
           </div>
 
           <div className="mt-4 text-[30px] font-black uppercase tracking-[0.12em] text-white">
@@ -71,6 +73,11 @@ export default function MainMenuCenterStage({
 
           <p className="mx-auto mt-4 max-w-[280px] text-sm leading-6 text-white/65">
             {description}
+          </p>
+
+          <p className="mx-auto mt-4 max-w-[280px] text-[11px] font-semibold uppercase tracking-[0.18em] text-white/40">
+            Cultivation ascent · AFK contract cadence · survival-first return
+            loop through the Black Market.
           </p>
         </div>
       </div>
