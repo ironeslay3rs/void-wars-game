@@ -20,6 +20,7 @@ import {
   withWorldProgressAfterHunt,
 } from "@/features/factions/factionWorldLogic";
 import { enforceCapacity } from "@/features/resources/inventoryLogic";
+import { getFusionContractModifiers } from "@/features/progression/fusionProgression";
 
 export function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
@@ -89,6 +90,25 @@ export function addPartialResources(
       current.vaultLatticeShard + (accepted.vaultLatticeShard ?? 0),
     ironHeart: current.ironHeart + (accepted.ironHeart ?? 0),
   };
+}
+
+function getAppliedResourceGain(
+  before: ResourcesState,
+  after: ResourcesState,
+): Partial<ResourcesState> {
+  const gained: Partial<ResourcesState> = {};
+
+  for (const [key, afterValue] of Object.entries(after)) {
+    const resourceKey = key as keyof ResourcesState;
+    const beforeValue = before[resourceKey] ?? 0;
+    const delta = afterValue - beforeValue;
+
+    if (delta > 0) {
+      gained[resourceKey] = delta;
+    }
+  }
+
+  return gained;
 }
 
 export function getResolvedConditionDelta(
@@ -467,13 +487,76 @@ export function processMissionQueue(state: GameState, now: number): GameState {
               : undefined,
           };
 
+    const queueLoadAtSettlement = safeQueue.filter(
+      (queueEntry) =>
+        queueEntry.completedAt === null && queueEntry.endsAt >= entry.endsAt,
+    ).length;
+
+    const fusionModifiers =
+      mission.category === "hunting-ground"
+        ? getFusionContractModifiers(nextPlayer, now, queueLoadAtSettlement)
+        : null;
+
+    const rewardWithFusionMods =
+      mission.category !== "hunting-ground" || fusionModifiers === null
+        ? rewardWithNextRunMods
+        : {
+            ...rewardWithNextRunMods,
+            conditionDelta:
+              rewardWithNextRunMods.conditionDelta +
+              fusionModifiers.conditionDeltaOffset,
+            rankXp: Math.max(
+              0,
+              Math.round(
+                rewardWithNextRunMods.rankXp * fusionModifiers.rewardMultiplier,
+              ),
+            ),
+            masteryProgress: Math.max(
+              0,
+              Math.round(
+                rewardWithNextRunMods.masteryProgress *
+                  fusionModifiers.rewardMultiplier,
+              ),
+            ),
+            influence:
+              typeof rewardWithNextRunMods.influence === "number"
+                ? Math.max(
+                    0,
+                    Math.round(
+                      rewardWithNextRunMods.influence *
+                        fusionModifiers.rewardMultiplier,
+                    ),
+                  )
+                : undefined,
+            resources: rewardWithNextRunMods.resources
+              ? (Object.fromEntries(
+                  Object.entries(rewardWithNextRunMods.resources).map(
+                    ([key, value]) => [
+                      key,
+                      Math.max(
+                        0,
+                        Math.round(value * fusionModifiers.rewardMultiplier),
+                      ),
+                    ],
+                  ),
+                ) as typeof rewardWithNextRunMods.resources)
+              : undefined,
+          };
+
     const resolvedConditionDelta = getResolvedConditionDelta(
       nextPlayer,
-      rewardWithNextRunMods,
+      rewardWithFusionMods,
+    );
+
+    const playerBeforeReward = nextPlayer;
+    const playerAfterReward = applyMissionReward(nextPlayer, rewardWithFusionMods);
+    const appliedResourceGain = getAppliedResourceGain(
+      playerBeforeReward.resources,
+      playerAfterReward.resources,
     );
 
     nextPlayer = applyActivityHungerCost(
-      applyMissionReward(nextPlayer, rewardWithNextRunMods),
+      playerAfterReward,
       mission.category === "hunting-ground" ? "hunt" : "mission",
     );
     playerChanged = true;
@@ -493,19 +576,23 @@ export function processMissionQueue(state: GameState, now: number): GameState {
         resolvedAt: entry.endsAt,
         conditionDelta: resolvedConditionDelta,
         conditionAfter: nextPlayer.condition,
-        rankXpGained: rewardWithNextRunMods.rankXp,
-        masteryProgressGained: rewardWithNextRunMods.masteryProgress,
-        influenceGained: rewardWithNextRunMods.influence ?? 0,
-        resourcesGained: rewardWithNextRunMods.resources ?? {},
+        rankXpGained: rewardWithFusionMods.rankXp,
+        masteryProgressGained: rewardWithFusionMods.masteryProgress,
+        influenceGained: rewardWithFusionMods.influence ?? 0,
+        resourcesGained: appliedResourceGain,
         fieldLootGained: fieldLoot,
         hungerPressureLabel: hungerEffects?.label,
         hungerRewardPenaltyPct: hungerEffects?.rewardPenaltyPct,
         hungerConditionDrainPenalty: hungerEffects?.conditionDrainPenalty,
+        fusionRewardMultiplier: fusionModifiers?.rewardMultiplier ?? null,
+        fusionConditionDeltaOffset: fusionModifiers?.conditionDeltaOffset ?? 0,
+        fusionCadenceLabel: fusionModifiers?.cadenceLabel ?? null,
+        fusionPressureLabel: fusionModifiers?.pressureLabel ?? null,
 
-        baseRankXpGained: rewardWithNextRunMods.rankXp,
-        baseMasteryProgressGained: rewardWithNextRunMods.masteryProgress,
-        baseInfluenceGained: rewardWithNextRunMods.influence ?? 0,
-        baseResourcesGained: rewardWithNextRunMods.resources ?? {},
+        baseRankXpGained: rewardWithFusionMods.rankXp,
+        baseMasteryProgressGained: rewardWithFusionMods.masteryProgress,
+        baseInfluenceGained: rewardWithFusionMods.influence ?? 0,
+        baseResourcesGained: appliedResourceGain,
 
         realtimeContributionBonusMultiplier: null,
         realtimeContributionAppliedForResolvedAt: null,
@@ -525,8 +612,8 @@ export function processMissionQueue(state: GameState, now: number): GameState {
         nextPlayer = withWorldProgressAfterHunt(nextPlayer, {
           zoneId: mission.deployZoneId,
           intensity: huntIntensityFromMissionRankReward(
-            rewardWithNextRunMods.rankXp,
-            rewardWithNextRunMods.influence ?? 0,
+            rewardWithFusionMods.rankXp,
+            rewardWithFusionMods.influence ?? 0,
           ),
           reason: `Contract resolved — ${mission.title}`,
         });

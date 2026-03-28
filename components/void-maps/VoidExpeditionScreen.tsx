@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import VoidExpeditionHUD from "@/components/void-expedition/VoidExpeditionHUD";
 import VoidExpeditionMap from "@/components/void-expedition/VoidExpeditionMap";
@@ -17,6 +17,11 @@ import {
   getZoneMasteryGateFailureLines,
   playerMeetsAllZoneMasteryGates,
 } from "@/features/mastery/runeMasteryGates";
+import {
+  getCanonBookLockReason,
+  isCanonBookMissionUnlocked,
+} from "@/features/progression/canonBookGate";
+import { getDoctrineQueueGate } from "@/features/progression/launchDoctrine";
 
 const DEFAULT_DEPLOY_HG_MISSION_ID = "hg-rustfang-prowl";
 
@@ -36,12 +41,22 @@ function VoidExpeditionScreenInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const hintZone = searchParams.get("zone");
+  const [now, setNow] = useState(() => Date.now());
 
   const missionQueue = Array.isArray(state.player.missionQueue)
     ? state.player.missionQueue
     : [];
-  const isQueueFull =
-    missionQueue.length >= state.player.maxMissionQueueSlots;
+  const doctrineQueueGate = getDoctrineQueueGate(state.player, now);
+  const isQueueFull = missionQueue.length >= doctrineQueueGate.cap;
+  const deployMission = state.missions.find(
+    (mission) => mission.id === DEFAULT_DEPLOY_HG_MISSION_ID,
+  );
+  const isDeployMissionCanonUnlocked = isCanonBookMissionUnlocked(
+    deployMission?.canonBook,
+  );
+  const canonLockReason = isDeployMissionCanonUnlocked
+    ? null
+    : getCanonBookLockReason(deployMission?.canonBook);
   const activeHunt =
     state.player.activeProcess?.kind === "hunt"
       ? state.player.activeProcess
@@ -58,6 +73,14 @@ function VoidExpeditionScreenInner() {
 
   const [selectedZoneId, setSelectedZoneId] =
     useState<VoidZoneId>(initialPick);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setNow(Date.now());
+    }, 30_000);
+
+    return () => window.clearInterval(interval);
+  }, []);
 
   const selected = voidZoneById[selectedZoneId];
   const playerCondition = state.player.condition;
@@ -79,7 +102,16 @@ function VoidExpeditionScreenInner() {
     : "All realms unlocked by rank.";
 
   function handleDeployThisZone() {
-    if (!isUnlocked || !masteryGatesOk || isQueueFull || activeHunt) return;
+    if (
+      !isUnlocked ||
+      !masteryGatesOk ||
+      !isDeployMissionCanonUnlocked ||
+      !doctrineQueueGate.canQueue ||
+      activeHunt
+    ) {
+      return;
+    }
+
     const SESSION_BUCKET_MS = 2 * 60 * 1000;
     const sessionBucketId = Math.floor(Date.now() / SESSION_BUCKET_MS);
     const voidClientId =
@@ -117,7 +149,25 @@ function VoidExpeditionScreenInner() {
   }
 
   const deployDisabled =
-    !isUnlocked || !masteryGatesOk || isQueueFull || !!activeHunt;
+    !isUnlocked ||
+    !masteryGatesOk ||
+    !isDeployMissionCanonUnlocked ||
+    !doctrineQueueGate.canQueue ||
+    !!activeHunt;
+
+  const deployLabel = !isUnlocked
+    ? "Locked Zone"
+    : !masteryGatesOk
+      ? "Mastery Locked"
+      : !isDeployMissionCanonUnlocked
+        ? "Future Book"
+        : !doctrineQueueGate.canQueue && isQueueFull
+          ? "Queue Full"
+          : !doctrineQueueGate.canQueue
+            ? "Stabilize First"
+            : activeHunt
+              ? "Hunt Active"
+              : `Deploy into ${selected.label}`;
 
   const masteryGateFailures = getZoneMasteryGateFailureLines(
     state.player,
@@ -131,17 +181,21 @@ function VoidExpeditionScreenInner() {
       {masteryGateFailures.join(" ")} Open Career or Mastery to deepen runes,
       then return.
     </span>
-  ) : isQueueFull ? (
+  ) : !isDeployMissionCanonUnlocked && canonLockReason ? (
+    <span>{canonLockReason}</span>
+  ) : !doctrineQueueGate.canQueue && isQueueFull ? (
     <>
-      Mission queue full —{" "}
+      Queue gate reached ({missionQueue.length}/{doctrineQueueGate.cap}) —{" "}
       <Link
         href="/market/mercenary-guild"
         className="font-semibold text-amber-100 underline decoration-amber-400/40 underline-offset-2 hover:text-white"
       >
         open the contract board
       </Link>{" "}
-      to clear a slot.
+      to clear or resolve a contract.
     </>
+  ) : !doctrineQueueGate.canQueue && doctrineQueueGate.reason ? (
+    <span>{doctrineQueueGate.reason}</span>
   ) : activeHunt ? (
     <span>Finish or open the active hunt before deploying again.</span>
   ) : null;
@@ -195,6 +249,7 @@ function VoidExpeditionScreenInner() {
         mastery={mastery}
         nextLockLine={nextLockLine}
         deployDisabled={deployDisabled}
+        deployLabel={deployLabel}
         deployHint={deployHint}
         onDeploy={handleDeployThisZone}
         playerName={state.player.playerName}

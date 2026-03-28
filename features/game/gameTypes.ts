@@ -112,6 +112,10 @@ export type LatestHuntResult = {
   hungerPressureLabel?: "Fed" | "Low" | "Starving";
   hungerRewardPenaltyPct?: number; // 0..20
   hungerConditionDrainPenalty?: number; // extra condition drain applied to this run
+  fusionRewardMultiplier?: number | null;
+  fusionConditionDeltaOffset?: number;
+  fusionCadenceLabel?: string | null;
+  fusionPressureLabel?: string | null;
   // Base AFK reward snapshot (source of truth before realtime contribution bonus)
   baseRankXpGained?: number;
   baseMasteryProgressGained?: number;
@@ -205,12 +209,24 @@ export type MissionReward = {
 
 export type MissionCategory = "operation" | "hunting-ground";
 
+export type CanonBookRung =
+  | "book-1"
+  | "book-2"
+  | "book-3"
+  | "book-4"
+  | "book-5"
+  | "book-6"
+  | "book-7"
+  | "system";
+
 export type MissionDefinition = {
   id: string;
   category: MissionCategory;
   title: string;
   description: string;
   path: PathType | "neutral";
+  /** Canon expansion rung for safe roadmap sequencing (Book 1-7). */
+  canonBook?: CanonBookRung;
   durationHours: number;
   reward: MissionReward;
   /** Void theatre for hunting contracts — drives doctrine pressure drift. */

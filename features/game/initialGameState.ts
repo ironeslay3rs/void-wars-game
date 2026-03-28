@@ -113,6 +113,7 @@ export const initialGameState: GameState = {
       description:
         "Send a short-range hunt beyond the citadel perimeter and return with salvage, residue, and whatever survived the pass.",
       path: "neutral",
+      canonBook: "book-1",
       durationHours: 0.0125,
       reward: {
         rankXp: 30,
@@ -133,6 +134,7 @@ export const initialGameState: GameState = {
       description:
         "Search broken trade routes and ruined outskirts for salvage, loose credits, and old alloy fragments.",
       path: "neutral",
+      canonBook: "book-1",
       durationHours: 0.0028,
       reward: {
         rankXp: 25,
@@ -153,6 +155,7 @@ export const initialGameState: GameState = {
       description:
         "Hunt an unstable creature beyond the district wall and recover viable tissue samples.",
       path: "bio",
+      canonBook: "book-1",
       durationHours: 0.0042,
       reward: {
         rankXp: 40,
@@ -173,6 +176,7 @@ export const initialGameState: GameState = {
       description:
         "Strip usable parts from a ruined convoy and return with alloys, cores, and market-grade scrap.",
       path: "mecha",
+      canonBook: "book-1",
       durationHours: 0.0042,
       reward: {
         rankXp: 40,
@@ -193,6 +197,7 @@ export const initialGameState: GameState = {
       description:
         "Enter a guided memory rite to sharpen attunement and gather refined rune residue.",
       path: "pure",
+      canonBook: "book-1",
       durationHours: 0.0028,
       reward: {
         rankXp: 38,
@@ -213,6 +218,7 @@ export const initialGameState: GameState = {
       description:
         "Deploy a mercenary field team into the outer trenchline to bring back alloy scrap, credits, and stripped ore.",
       path: "neutral",
+      canonBook: "book-1",
       deployZoneId: "ash-relay",
       durationHours: 0.0042,
       reward: {
@@ -234,6 +240,7 @@ export const initialGameState: GameState = {
       description:
         "Send a containment squad through the growth pits to recover raw tissue, saleable residue, and viable biotech samples.",
       path: "neutral",
+      canonBook: "book-1",
       deployZoneId: "howling-scar",
       durationHours: 0.0056,
       reward: {
@@ -255,6 +262,7 @@ export const initialGameState: GameState = {
       description:
         "Track a burrowing scavenger through ruined machine nests and return with alloy fragments, ore, and bounty credit.",
       path: "neutral",
+      canonBook: "book-1",
       deployZoneId: "rift-maw",
       durationHours: 0.007,
       reward: {

@@ -17,6 +17,13 @@ import {
   onMissionComplete,
   queueMission,
 } from "@/features/missions/missionRunner";
+import {
+  getDoctrineQueueGate,
+} from "@/features/progression/launchDoctrine";
+import {
+  getCanonBookLockReason,
+  isCanonBookMissionUnlocked,
+} from "@/features/progression/canonBookGate";
 
 type QueuedMissionView = MissionQueueEntry & {
   mission: MissionDefinition;
@@ -32,7 +39,13 @@ type CompletionFeedback = {
   resources: Array<[string, number]>;
 };
 
-type MissionBlockReason = "path-locked" | "already-queued" | "queue-full" | null;
+type MissionBlockReason =
+  | "path-locked"
+  | "already-queued"
+  | "queue-full"
+  | "launch-lock"
+  | "canon-locked"
+  | null;
 
 function formatDuration(durationHours: number) {
   const totalSeconds = Math.max(1, Math.round(durationHours * 60 * 60));
@@ -52,6 +65,29 @@ function formatDuration(durationHours: number) {
   const remainingMinutes = minutes % 60;
 
   return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
+}
+
+function formatCanonBookLabel(book: MissionDefinition["canonBook"]) {
+  switch (book) {
+    case "book-1":
+      return "Book 1";
+    case "book-2":
+      return "Book 2";
+    case "book-3":
+      return "Book 3";
+    case "book-4":
+      return "Book 4";
+    case "book-5":
+      return "Book 5";
+    case "book-6":
+      return "Book 6";
+    case "book-7":
+      return "Book 7";
+    case "system":
+      return "System";
+    default:
+      return "Book 1";
+  }
 }
 
 function formatPathLabel(path: "neutral" | "bio" | "mecha" | "pure") {
@@ -253,9 +289,16 @@ export default function MissionsScreen() {
   const missionQueue = Array.isArray(state.player.missionQueue)
     ? state.player.missionQueue
     : [];
+  const doctrineQueueGate = getDoctrineQueueGate(state.player, now);
+  const doctrineQueueCap = doctrineQueueGate.cap;
+  const launchReadiness = doctrineQueueGate.readiness;
 
   const queuedMissionIds = new Set(missionQueue.map((entry) => entry.missionId));
-  const isQueueFull = missionQueue.length >= state.player.maxMissionQueueSlots;
+  const isQueueFull = !doctrineQueueGate.canQueue && missionQueue.length >= doctrineQueueCap;
+  const hasLaunchQueueLock =
+    !doctrineQueueGate.canQueue &&
+    missionQueue.length < doctrineQueueCap &&
+    doctrineQueueGate.reason !== null;
 
   const queuedEntries: QueuedMissionView[] = missionQueue.reduce<QueuedMissionView[]>(
     (acc, entry) => {
@@ -344,7 +387,7 @@ export default function MissionsScreen() {
           />
           <StatCard
             label="Queue"
-            value={`${missionQueue.length}/${state.player.maxMissionQueueSlots}`}
+            value={`${missionQueue.length}/${doctrineQueueCap}`}
             hint="Operations currently running or waiting in line."
           />
           <StatCard
@@ -394,6 +437,7 @@ export default function MissionsScreen() {
                 const resourceRewards = Object.entries(
                   mission.reward.resources ?? {},
                 ).filter(([, v]) => typeof v === "number" && v !== 0);
+                const isCanonUnlocked = isCanonBookMissionUnlocked(mission.canonBook);
                 return (
                   <div
                     key={mission.id}
@@ -420,12 +464,18 @@ export default function MissionsScreen() {
                         </span>
                       )}
                     </div>
-                    <Link
-                      href={`/hunt?missionId=${mission.id}&zone=${(mission as { deployZoneId?: string }).deployZoneId ?? "void"}&return=/missions`}
-                      className="mt-4 flex h-10 w-full items-center justify-center rounded-xl border border-emerald-400/40 bg-emerald-500/15 text-xs font-black uppercase tracking-[0.14em] text-emerald-200 transition hover:bg-emerald-500/25"
-                    >
-                      Deploy Hunt
-                    </Link>
+                    {isCanonUnlocked ? (
+                      <Link
+                        href={`/hunt?missionId=${mission.id}&zone=${(mission as { deployZoneId?: string }).deployZoneId ?? "void"}&return=/missions`}
+                        className="mt-4 flex h-10 w-full items-center justify-center rounded-xl border border-emerald-400/40 bg-emerald-500/15 text-xs font-black uppercase tracking-[0.14em] text-emerald-200 transition hover:bg-emerald-500/25"
+                      >
+                        Deploy Hunt
+                      </Link>
+                    ) : (
+                      <div className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-center text-[11px] font-semibold uppercase tracking-[0.14em] text-amber-100">
+                        {getCanonBookLockReason(mission.canonBook)}
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -447,7 +497,20 @@ export default function MissionsScreen() {
 
               {isQueueFull ? (
                 <div className="rounded-2xl border border-amber-500/25 bg-amber-500/10 p-4 text-sm text-amber-100">
-                  Mission queue is full. Remove or finish an active operation before deploying another one.
+                  Queue cap reached ({missionQueue.length}/{doctrineQueueCap}).
+                  Recover or finish an active operation before deploying another
+                  one.
+                </div>
+              ) : null}
+              {launchReadiness.status === "critical" ? (
+                <div className="rounded-2xl border border-red-500/25 bg-red-500/10 p-4 text-sm text-red-100">
+                  Launch doctrine is critical. Queue cap is temporarily reduced
+                  until condition and stores stabilize.
+                </div>
+              ) : null}
+              {hasLaunchQueueLock ? (
+                <div className="rounded-2xl border border-red-500/25 bg-red-500/10 p-4 text-sm text-red-100">
+                  {doctrineQueueGate.reason}
                 </div>
               ) : null}
 
@@ -476,12 +539,17 @@ export default function MissionsScreen() {
                   state.player.factionAlignment === mission.path;
 
                 const isQueued = queuedMissionIds.has(mission.id);
+                const isCanonUnlocked = isCanonBookMissionUnlocked(mission.canonBook);
                 const blockReason: MissionBlockReason = !isAccessible
                   ? "path-locked"
+                  : !isCanonUnlocked
+                    ? "canon-locked"
                   : isQueued
                     ? "already-queued"
                     : isQueueFull
                       ? "queue-full"
+                      : hasLaunchQueueLock
+                        ? "launch-lock"
                       : null;
 
                 const resourceRewards = Object.entries(
@@ -514,6 +582,10 @@ export default function MissionsScreen() {
                             {formatPathLabel(mission.path)}
                           </span>
 
+                          <span className="rounded-full border border-violet-500/25 bg-violet-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-violet-100">
+                            {formatCanonBookLabel(mission.canonBook)}
+                          </span>
+
                           <span className="rounded-full border border-white/10 bg-black/20 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/60">
                             {formatDuration(mission.durationHours)}
                           </span>
@@ -521,6 +593,12 @@ export default function MissionsScreen() {
                           {!isAccessible && (
                             <span className="rounded-full border border-red-500/25 bg-red-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-red-200">
                               Locked
+                            </span>
+                          )}
+
+                          {isAccessible && !isCanonUnlocked && (
+                            <span className="rounded-full border border-amber-500/25 bg-amber-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-100">
+                              Future Book
                             </span>
                           )}
 
@@ -536,7 +614,9 @@ export default function MissionsScreen() {
                         </p>
 
                         <p className="mt-2 text-xs uppercase tracking-[0.14em] text-white/40">
-                          {getPathRequirementLabel(mission.path)}
+                          {isCanonUnlocked
+                            ? `${formatCanonBookLabel(mission.canonBook)} contract · ${getPathRequirementLabel(mission.path)}`
+                            : getCanonBookLockReason(mission.canonBook)}
                         </p>
 
                         <div className="mt-3 flex flex-wrap gap-2">
@@ -585,9 +665,21 @@ export default function MissionsScreen() {
                               return;
                             }
 
+                            if (blockReason === "canon-locked") {
+                              setBoardFeedback(getCanonBookLockReason(mission.canonBook));
+                              return;
+                            }
+
                             if (blockReason === "queue-full") {
                               setBoardFeedback(
-                                "Mission queue is full. Clear a slot to deploy another operation.",
+                                `Queue cap reached (${missionQueue.length}/${doctrineQueueCap}). Recover or clear a slot to deploy another operation.`,
+                              );
+                              return;
+                            }
+                            if (blockReason === "launch-lock") {
+                              setBoardFeedback(
+                                doctrineQueueGate.reason ??
+                                  "Launch doctrine lock is preventing queue extension.",
                               );
                               return;
                             }
@@ -609,9 +701,13 @@ export default function MissionsScreen() {
                             ? "Queued"
                             : isQueueFull
                               ? "Queue Full"
-                              : !isAccessible
-                                ? "Locked"
-                                : "Queue Mission"}
+                              : hasLaunchQueueLock
+                                ? "Stabilize First"
+                                : !isAccessible
+                                  ? "Locked"
+                                  : !isCanonUnlocked
+                                    ? "Future Book"
+                                    : "Queue Mission"}
                         </button>
                       </div>
                     </div>

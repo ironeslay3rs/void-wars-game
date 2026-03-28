@@ -72,6 +72,10 @@ import {
   normalizeMythicAscension,
 } from "@/features/progression/mythicAscensionLogic";
 import { getMasteryAlignedContractResourceMultiplier } from "@/features/mastery/masteryGameplayEffects";
+import { getDoctrineQueueGate } from "@/features/progression/launchDoctrine";
+import {
+  isCanonBookMissionUnlocked,
+} from "@/features/progression/canonBookGate";
 import {
   addGuildMember,
   createGuild,
@@ -1326,7 +1330,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         ? state.player.missionQueue
         : [];
 
-      if (missionQueue.length >= state.player.maxMissionQueueSlots) {
+      const queuedAt = action.payload.queuedAt ?? Date.now();
+      const queueGate = getDoctrineQueueGate(state.player, queuedAt);
+      if (!queueGate.canQueue) {
         return state;
       }
 
@@ -1342,7 +1348,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         return state;
       }
 
-      const queuedAt = action.payload.queuedAt ?? Date.now();
+      if (!isCanonBookMissionUnlocked(mission.canonBook)) {
+        return state;
+      }
+
       const lastEntry = missionQueue[missionQueue.length - 1] ?? null;
       const anchorTime = lastEntry
         ? Math.max(queuedAt, lastEntry.endsAt)

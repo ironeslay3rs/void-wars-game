@@ -265,6 +265,41 @@ function normalizeLatestHuntResult(value: unknown): LatestHuntResult | null {
       .hungerConditionDrainPenalty as number;
   }
 
+  if ((value as Record<string, unknown>).fusionRewardMultiplier === null) {
+    result.fusionRewardMultiplier = null;
+  } else if (
+    typeof (value as Record<string, unknown>).fusionRewardMultiplier === "number"
+  ) {
+    result.fusionRewardMultiplier = (value as Record<string, unknown>)
+      .fusionRewardMultiplier as number;
+  }
+
+  if (
+    typeof (value as Record<string, unknown>).fusionConditionDeltaOffset ===
+    "number"
+  ) {
+    result.fusionConditionDeltaOffset = (value as Record<string, unknown>)
+      .fusionConditionDeltaOffset as number;
+  }
+
+  if ((value as Record<string, unknown>).fusionCadenceLabel === null) {
+    result.fusionCadenceLabel = null;
+  } else if (
+    typeof (value as Record<string, unknown>).fusionCadenceLabel === "string"
+  ) {
+    result.fusionCadenceLabel = (value as Record<string, unknown>)
+      .fusionCadenceLabel as string;
+  }
+
+  if ((value as Record<string, unknown>).fusionPressureLabel === null) {
+    result.fusionPressureLabel = null;
+  } else if (
+    typeof (value as Record<string, unknown>).fusionPressureLabel === "string"
+  ) {
+    result.fusionPressureLabel = (value as Record<string, unknown>)
+      .fusionPressureLabel as string;
+  }
+
   if (typeof value.baseRankXpGained === "number") {
     result.baseRankXpGained = value.baseRankXpGained;
   }

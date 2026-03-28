@@ -28,6 +28,7 @@ import {
 } from "@/features/void-maps/realtime/contributionScoring";
 import { getEmergingRoleHint } from "@/features/player/playerIdentity";
 import { VOID_EXPEDITION_PATH } from "@/features/void-maps/voidRoutes";
+import { getDoctrineQueueGate } from "@/features/progression/launchDoctrine";
 
 function formatResolvedAt(timestamp: number) {
   return new Date(timestamp).toLocaleString();
@@ -161,6 +162,12 @@ export default function BiotechLabsResultPage() {
   const finalMastery = latestHuntResult?.masteryProgressGained ?? baseMastery;
   const finalInfluence = latestHuntResult?.influenceGained ?? baseInfluence;
   const finalCredits = latestHuntResult?.resourcesGained?.credits ?? baseCredits;
+  const fusionRewardMultiplier =
+    latestHuntResult?.fusionRewardMultiplier ?? null;
+  const fusionConditionDeltaOffset =
+    latestHuntResult?.fusionConditionDeltaOffset ?? 0;
+  const fusionCadenceLabel = latestHuntResult?.fusionCadenceLabel ?? null;
+  const fusionPressureLabel = latestHuntResult?.fusionPressureLabel ?? null;
 
   const realtimeTotalDamageDealt = isRealtimeBonusApplied
     ? latestHuntResult!.realtimeTotalDamageDealt ?? 0
@@ -192,6 +199,10 @@ export default function BiotechLabsResultPage() {
         mobsContributedTo: realtimeMobsContributedTo,
         mobsKilled: realtimeMobsKilled,
       });
+  const doctrineQueueGate = getDoctrineQueueGate(
+    state.player,
+    latestHuntResult?.resolvedAt ?? state.player.lastConditionTickAt,
+  );
 
   let nextStepHref = shouldRouteToFeastHall
     ? "/market/black-market/feast-hall"
@@ -298,8 +309,8 @@ export default function BiotechLabsResultPage() {
             <p className="mt-2 text-sm text-white/65">
               {isFieldContractResult
                 ? isRealtimeBonusApplied
-                  ? "Base is the AFK contract timer. Bonus is extra from realtime contribution on the void field. Final is what was applied to your operative."
-                  : "Base is the AFK contract timer. Bonus from the void field links shortly after settlement — refresh Hunt Result if totals are still updating."
+                  ? "Base is the contract settlement (including cadence and doctrine modulation). Bonus is extra from realtime contribution on the void field. Final is what was applied to your operative."
+                  : "Base is the contract settlement (including cadence and doctrine modulation). Realtime bonus links shortly after settlement — refresh Hunt Result if totals are still updating."
                 : "Final payout is logged below — progression matches what you secured on this sortie."}
             </p>
             <div className="mt-4 overflow-x-auto">
@@ -414,6 +425,76 @@ export default function BiotechLabsResultPage() {
             <span className="rounded-full border border-emerald-400/25 bg-emerald-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-100">
               {fieldRunFeedback.extractionLabel}
             </span>
+          </div>
+        ) : null}
+
+        {latestHuntResult &&
+        isFieldContractResult &&
+        fusionRewardMultiplier !== null ? (
+          <div className="rounded-2xl border border-violet-300/25 bg-violet-500/10 px-4 py-4">
+            <div className="text-[10px] uppercase tracking-[0.2em] text-violet-100/70">
+              Fusion settlement read
+            </div>
+            <div className="mt-2 grid gap-2 text-sm text-white/80 sm:grid-cols-2">
+              <div className="rounded-lg border border-white/10 bg-black/25 px-3 py-2">
+                Contract cadence:{" "}
+                <span className="font-semibold text-violet-50">
+                  {fusionCadenceLabel ?? "No cadence label"}
+                </span>
+              </div>
+              <div className="rounded-lg border border-white/10 bg-black/25 px-3 py-2">
+                Reward multiplier:{" "}
+                <span className="font-semibold text-violet-50">
+                  x{fusionRewardMultiplier.toFixed(2)}
+                </span>
+              </div>
+              <div className="rounded-lg border border-white/10 bg-black/25 px-3 py-2 sm:col-span-2">
+                Condition offset:{" "}
+                <span className="font-semibold text-violet-50">
+                  {fusionConditionDeltaOffset > 0
+                    ? `+${fusionConditionDeltaOffset}`
+                    : fusionConditionDeltaOffset}
+                </span>{" "}
+                · {fusionPressureLabel ?? "Pressure read unavailable."}
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {latestHuntResult && isFieldContractResult ? (
+          <div
+            className={[
+              "rounded-2xl border px-4 py-4",
+              doctrineQueueGate.canQueue
+                ? "border-emerald-400/25 bg-emerald-500/10"
+                : "border-red-400/25 bg-red-500/10",
+            ].join(" ")}
+          >
+            <div
+              className={[
+                "text-[10px] uppercase tracking-[0.2em]",
+                doctrineQueueGate.canQueue
+                  ? "text-emerald-100/70"
+                  : "text-red-100/75",
+              ].join(" ")}
+            >
+              Launch doctrine check
+            </div>
+            <p className="mt-2 text-sm text-white/80">
+              Queue status:{" "}
+              <span className="font-semibold text-white">
+                {doctrineQueueGate.canQueue
+                  ? `Open (${state.player.missionQueue.length}/${doctrineQueueGate.cap})`
+                  : `Locked (${state.player.missionQueue.length}/${doctrineQueueGate.cap})`}
+              </span>
+              .
+            </p>
+            <p className="mt-1 text-xs text-white/75">
+              {doctrineQueueGate.canQueue
+                ? "You can safely chain another contract if you want to maintain tempo."
+                : doctrineQueueGate.reason ??
+                  "Launch doctrine requires stabilization before extending the contract chain."}
+            </p>
           </div>
         ) : null}
 
