@@ -54,7 +54,7 @@ export default function GoldenBazaarExchange() {
       <p className="mt-3 text-xs text-white/45">
         Looking for recovery instead of trades? Open{" "}
         <Link
-          href="/market/black-market/feast-hall"
+          href="/bazaar/black-market/feast-hall"
           className="text-amber-200/90 underline decoration-amber-400/35 underline-offset-2 hover:text-white"
         >
           Feast Hall
@@ -179,4 +179,3 @@ export default function GoldenBazaarExchange() {
     </div>
   );
 }
-

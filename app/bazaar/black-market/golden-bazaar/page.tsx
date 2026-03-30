@@ -8,7 +8,7 @@ export default function GoldenBazaarPage() {
       <div className="mx-auto flex max-w-[1400px] flex-col gap-8">
         <BazaarSubpageNav
           accentClassName="hover:border-amber-300/40"
-          backHref="/market/black-market"
+          backHref="/bazaar/black-market"
           backLabel="Back to Black Market"
         />
 

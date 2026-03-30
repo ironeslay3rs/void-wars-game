@@ -408,7 +408,7 @@ export default function FeastHallScreen({
       <div className="mx-auto flex max-w-7xl flex-col gap-8">
         <div className="flex justify-end">
           <Link
-            href="/market/black-market"
+            href="/bazaar/black-market"
             className="inline-flex items-center gap-2 self-start rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:border-amber-300/40 hover:bg-white/10"
           >
             <ArrowLeft className="h-4 w-4" />

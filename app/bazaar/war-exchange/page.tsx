@@ -10,7 +10,11 @@ import {
   RESOURCE_BASE_PRICES,
   SELLABLE_RESOURCE_KEYS,
 } from "@/features/market/marketData";
-import { checkCapacity, getOverflowPenalty } from "@/features/resources/inventoryLogic";
+import {
+  checkCapacity,
+  enforceCapacity,
+  getOverflowPenalty,
+} from "@/features/resources/inventoryLogic";
 import { quoteSellPriceCredits } from "@/features/market/marketActions";
 import { formatResourceLabel } from "@/features/game/gameFeedback";
 
@@ -54,6 +58,10 @@ export default function WarExchangePage() {
       return { key, owned, base };
     });
   }, [player.resources]);
+
+  const fieldMedPatchListing = listings.find(
+    (listing) => listing.id === "field-med-patch",
+  );
 
   function pushToast(message: string) {
     setToast(message);
@@ -114,6 +122,35 @@ export default function WarExchangePage() {
             Credits: {player.resources.credits}
           </div>
         </div>
+
+        {fieldMedPatchListing ? (
+          <div className="rounded-2xl border border-emerald-300/25 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100/90">
+            <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-100/75">
+              Step 6 Gate Check
+            </div>
+            <div className="mt-1">
+              Buy <span className="font-black text-emerald-50">Field Med Patch</span>{" "}
+              ({fieldMedPatchListing.priceCredits} credits) and confirm stock
+              decreases + item grant applies.
+            </div>
+            <button
+              type="button"
+              disabled={
+                fieldMedPatchListing.stockLeft <= 0 ||
+                player.resources.credits < fieldMedPatchListing.priceCredits
+              }
+              onClick={() =>
+                setConfirm({
+                  kind: "buy",
+                  listingId: fieldMedPatchListing.id,
+                })
+              }
+              className="mt-2 rounded-lg border border-emerald-200/45 bg-black/30 px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-emerald-50 hover:border-emerald-100/60 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Buy Field Med Patch
+            </button>
+          </div>
+        ) : null}
 
         {tab === "buy" ? (
           <section className="grid gap-3 md:grid-cols-2">
@@ -331,13 +368,55 @@ export default function WarExchangePage() {
                     const listing = MARKET_LISTINGS.find(
                       (l) => l.id === confirm.listingId,
                     );
+                    const stockLeft = listing
+                      ? player.market.stockByListingId[listing.id] ?? listing.stock
+                      : 0;
+                    if (!listing) {
+                      pushToast("Listing unavailable.");
+                      setConfirm(null);
+                      return;
+                    }
+                    if (stockLeft <= 0) {
+                      pushToast("Listing out of stock.");
+                      setConfirm(null);
+                      return;
+                    }
+                    if (player.resources.credits < listing.priceCredits) {
+                      pushToast("Insufficient credits.");
+                      setConfirm(null);
+                      return;
+                    }
+                    const { accepted, blocked } = enforceCapacity(
+                      player.resources,
+                      listing.grant,
+                    );
+                    if (Object.keys(accepted).length === 0) {
+                      const cap = checkCapacity(player.resources);
+                      pushToast(
+                        cap.isOverloaded
+                          ? "Storage overloaded. Sell or discard surplus."
+                          : "No storage space for this purchase.",
+                      );
+                      setConfirm(null);
+                      return;
+                    }
                     dispatch({ type: "MARKET_BUY", payload: { listingId: confirm.listingId } });
+                    const nextCredits = player.resources.credits - listing.priceCredits;
+                    const nextStock = Math.max(0, stockLeft - 1);
                     pushToast(
-                      listing
-                        ? `Purchased ${listing.name}.`
-                        : "Purchase submitted.",
+                      listing.id === "field-med-patch"
+                        ? `Purchased ${listing.name}. Credits ${nextCredits}. Stock ${nextStock}.`
+                        : blocked
+                          ? `Purchased ${listing.name}. Partial storage accepted.`
+                          : `Purchased ${listing.name}.`,
                     );
                   } else {
+                    const owned = player.resources[confirm.key] ?? 0;
+                    if (owned < confirm.amount) {
+                      pushToast("Insufficient stock.");
+                      setConfirm(null);
+                      return;
+                    }
                     dispatch({
                       type: "MARKET_SELL",
                       payload: { key: confirm.key, amount: confirm.amount },

@@ -24,7 +24,6 @@ export type CapacityReport = {
 
 export type OverflowPenalty = {
   missionSpeedPenalty: number;
-  fieldMovePenalty: number;
   missionRewardPenaltyPct: number;
   movementPenaltyPct: number;
   message: string;
@@ -52,7 +51,6 @@ export function getOverflowPenalty(report: CapacityReport): OverflowPenalty {
   if (!report.isOverloaded) {
     return {
       missionSpeedPenalty: 1,
-      fieldMovePenalty: 1,
       missionRewardPenaltyPct: 0,
       movementPenaltyPct: 0,
       message: "Within carry limits.",
@@ -61,16 +59,14 @@ export function getOverflowPenalty(report: CapacityReport): OverflowPenalty {
 
   // Step 17 baseline penalties.
   const missionSpeedPenalty = 1.5; // 50% longer mission timers
-  const fieldMovePenalty = 0.7; // 30% slower field movement
   const missionRewardPenaltyPct = 20;
   const movementPenaltyPct = 30;
 
   return {
     missionSpeedPenalty,
-    fieldMovePenalty,
     missionRewardPenaltyPct,
     movementPenaltyPct,
-    message: `Overloaded by ${report.overflow}. Mission timers run at x${missionSpeedPenalty.toFixed(1)}, field movement at x${fieldMovePenalty.toFixed(1)}, rewards reduced by ${missionRewardPenaltyPct}%.`,
+    message: `Overloaded by ${report.overflow}. Mission timers run at x${missionSpeedPenalty.toFixed(1)}, movement speed reduced by ${movementPenaltyPct}%, rewards reduced by ${missionRewardPenaltyPct}%.`,
   };
 }
 
@@ -133,8 +129,31 @@ export function enforcePickup(
   incoming?: Partial<ResourcesState>,
   max = INVENTORY_CAPACITY_MAX,
 ): { accepted: Partial<ResourcesState>; blocked: boolean } {
-  if (isOverloaded(current, max)) {
-    return { accepted: {}, blocked: true };
+  if (!incoming) {
+    return { accepted: {}, blocked: false };
   }
+
+  if (isOverloaded(current, max)) {
+    const accepted: Partial<ResourcesState> = {};
+    let blocked = false;
+
+    for (const [k, rawAmount] of Object.entries(incoming)) {
+      const key = k as ResourceKey;
+      const amount = typeof rawAmount === "number" ? rawAmount : 0;
+      if (!Number.isFinite(amount) || amount === 0) continue;
+
+      const isTracked = CAPACITY_RESOURCE_KEYS.includes(key);
+
+      if (isTracked && amount > 0) {
+        blocked = true;
+        continue;
+      }
+
+      accepted[key] = amount;
+    }
+
+    return { accepted, blocked };
+  }
+
   return enforceCapacity(current, incoming, max);
 }

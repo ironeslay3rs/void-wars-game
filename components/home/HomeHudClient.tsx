@@ -13,6 +13,12 @@ import FactionPathPanel from "@/components/home/FactionPathPanel";
 import HomeResourceStrip from "@/components/home/HomeResourceStrip";
 import { getFirstSessionGuidance } from "@/features/guidance/firstSessionGuidance";
 import { getProgressionMeaning } from "@/features/game/gameSelectors";
+import {
+  HOME_BOTTOM_NAV_BOTTOM,
+  HOME_CENTER_STAGE_BOTTOM_CLEARANCE,
+  HOME_MOBILE_PANEL_BOTTOM_CLEARANCE,
+  HOME_RESOURCE_STRIP_BOTTOM,
+} from "@/config/layout";
 
 type PathSelection = Exclude<FactionAlignment, "unbound">;
 
@@ -28,7 +34,10 @@ export default function HomeHudClient() {
 
   return (
     <>
-      <section className="fixed inset-x-3 top-[84px] bottom-[104px] z-30 overflow-y-auto lg:hidden">
+      <section
+        className="fixed inset-x-3 top-[84px] z-30 overflow-y-auto lg:hidden"
+        style={{ bottom: HOME_MOBILE_PANEL_BOTTOM_CLEARANCE }}
+      >
         <div className="mx-auto flex w-full max-w-xl flex-col gap-3 pb-4">
           <ConditionWidget
             path={selectedPath}
@@ -50,13 +59,13 @@ export default function HomeHudClient() {
           <MissionPanel />
           <div className="grid grid-cols-3 gap-2">
             <Link
-              href="/market"
+              href="/bazaar/war-exchange"
               className="rounded-xl border border-white/15 bg-black/45 px-3 py-2 text-center text-[11px] font-bold uppercase tracking-[0.14em] text-white/85"
             >
               Market
             </Link>
             <Link
-              href="/market/black-market"
+              href="/bazaar/black-market"
               className="rounded-xl border border-orange-300/25 bg-[linear-gradient(135deg,rgba(96,20,16,0.56),rgba(24,10,12,0.82))] px-3 py-2 text-center text-[11px] font-bold uppercase tracking-[0.12em] text-amber-100/90"
             >
               Black Market
@@ -75,7 +84,10 @@ export default function HomeHudClient() {
         <MainMenuLeftRail />
       </section>
 
-      <section className="absolute inset-x-[300px] top-5 z-20 hidden h-[78vh] xl:block">
+      <section
+        className="absolute inset-x-[300px] top-5 z-20 hidden xl:block"
+        style={{ bottom: HOME_CENTER_STAGE_BOTTOM_CLEARANCE }}
+      >
         <MainMenuCenterStage selectedPath={selectedPath} />
       </section>
 
@@ -87,13 +99,19 @@ export default function HomeHudClient() {
         />
       </section>
 
-      <section className="pointer-events-none fixed inset-x-0 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-30 px-3 sm:px-6">
+      <section
+        className="pointer-events-none fixed inset-x-0 z-30 px-3 sm:px-6"
+        style={{ bottom: HOME_RESOURCE_STRIP_BOTTOM }}
+      >
         <div className="pointer-events-auto mx-auto w-full max-w-4xl">
           <HomeResourceStrip />
         </div>
       </section>
 
-      <section className="absolute inset-x-3 bottom-3 z-30 xl:inset-x-7">
+      <section
+        className="absolute inset-x-3 z-30 xl:inset-x-7"
+        style={{ bottom: HOME_BOTTOM_NAV_BOTTOM }}
+      >
         <BottomNav />
       </section>
     </>

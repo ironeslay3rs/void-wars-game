@@ -204,7 +204,7 @@ export default function VoidMarketExchange() {
         Boss iron / phase‑2 mats (Ironheart, lattice, relic, shard) are not listed here — break
         them down in the{" "}
         <Link
-          href="/market/crafting-district"
+          href="/bazaar/crafting-district"
           className="text-cyan-200/80 underline decoration-cyan-400/30 underline-offset-2 hover:text-white"
         >
           Crafting District

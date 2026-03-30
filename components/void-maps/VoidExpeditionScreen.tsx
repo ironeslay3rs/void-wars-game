@@ -187,7 +187,7 @@ function VoidExpeditionScreenInner() {
     <>
       Queue gate reached ({missionQueue.length}/{doctrineQueueGate.cap}) —{" "}
       <Link
-        href="/market/mercenary-guild"
+        href="/bazaar/mercenary-guild"
         className="font-semibold text-amber-100 underline decoration-amber-400/40 underline-offset-2 hover:text-white"
       >
         open the contract board

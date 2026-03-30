@@ -148,7 +148,12 @@ export default function InventoryOverviewCard() {
         </div>
 
         {isOverloaded ? (
-          <OverloadWarning message={penalty.message} />
+          <OverloadWarning
+            message={penalty.message}
+            missionSpeedPenalty={penalty.missionSpeedPenalty}
+            missionRewardPenaltyPct={penalty.missionRewardPenaltyPct}
+            movementPenaltyPct={penalty.movementPenaltyPct}
+          />
         ) : (
           <div className="mt-3 text-sm text-white/60">
             Capacity sums salvage, biomass, and refined materials only. Credits and moss

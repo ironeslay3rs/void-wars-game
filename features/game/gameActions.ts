@@ -89,7 +89,7 @@ import {
   setGuildPledge,
 } from "@/features/social/guildLiveLogic";
 import type { SharedGuildContract } from "@/features/social/guildLiveTypes";
-import { enforceCapacity } from "@/features/resources/inventoryLogic";
+import { enforcePickup } from "@/features/resources/inventoryLogic";
 import {
   equipItem,
   sanitizeLoadoutForFaction,
@@ -320,7 +320,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     case "ADD_RESOURCE": {
       const { key, amount } = action.payload;
       if (amount > 0) {
-        const { accepted } = enforceCapacity(state.player.resources, {
+        const { accepted } = enforcePickup(state.player.resources, {
           [key]: amount,
         });
         const acceptedAmt = accepted[key] ?? 0;
@@ -351,7 +351,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     }
 
     case "ADD_FIELD_LOOT": {
-      const { accepted } = enforceCapacity(state.player.resources, {
+      const { accepted } = enforcePickup(state.player.resources, {
         [action.payload.key]: action.payload.amount,
       });
       const acceptedAmount = accepted[action.payload.key] ?? 0;
@@ -1361,6 +1361,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         mission,
         queuedAt,
         anchorTime,
+        player: state.player,
       });
 
       const queuedPlayer: PlayerState = {
@@ -1398,6 +1399,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         queue: filteredQueue,
         missions: state.missions,
         now: removedAt,
+        player: state.player,
       });
 
       const removedPlayer: PlayerState = {

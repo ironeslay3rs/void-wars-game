@@ -19,7 +19,11 @@ import {
   huntIntensityFromMissionRankReward,
   withWorldProgressAfterHunt,
 } from "@/features/factions/factionWorldLogic";
-import { enforceCapacity } from "@/features/resources/inventoryLogic";
+import {
+  checkCapacity,
+  enforcePickup,
+  getOverflowPenalty,
+} from "@/features/resources/inventoryLogic";
 import { getFusionContractModifiers } from "@/features/progression/fusionProgression";
 
 export function clamp(value: number, min: number, max: number) {
@@ -73,7 +77,7 @@ export function addPartialResources(
   incoming?: Partial<ResourcesState>,
 ): ResourcesState {
   if (!incoming) return current;
-  const { accepted } = enforceCapacity(current, incoming);
+  const { accepted } = enforcePickup(current, incoming);
 
   return {
     credits: current.credits + (accepted.credits ?? 0),
@@ -147,6 +151,40 @@ export function applyMissionReward(
   };
 }
 
+function applyOverloadPenaltyToReward(
+  player: PlayerState,
+  reward: MissionReward,
+): MissionReward {
+  const capacity = checkCapacity(player.resources);
+  if (!capacity.isOverloaded) {
+    return reward;
+  }
+
+  const penalty = getOverflowPenalty(capacity);
+  const rewardMultiplier = Math.max(0, 1 - penalty.missionRewardPenaltyPct / 100);
+
+  return {
+    ...reward,
+    rankXp: Math.max(0, Math.round(reward.rankXp * rewardMultiplier)),
+    masteryProgress: Math.max(
+      0,
+      Math.round(reward.masteryProgress * rewardMultiplier),
+    ),
+    influence:
+      typeof reward.influence === "number"
+        ? Math.max(0, Math.round(reward.influence * rewardMultiplier))
+        : undefined,
+    resources: reward.resources
+      ? (Object.fromEntries(
+          Object.entries(reward.resources).map(([key, value]) => [
+            key,
+            Math.max(0, Math.round(value * rewardMultiplier)),
+          ]),
+        ) as typeof reward.resources)
+      : undefined,
+  };
+}
+
 export function applyActivityHungerCost(
   player: PlayerState,
   activity: "exploration" | "mission" | "hunt",
@@ -161,6 +199,16 @@ export function getMissionDurationMs(mission: MissionDefinition) {
   return mission.durationHours * 60 * 60 * 1000;
 }
 
+function getMissionDurationWithLoadPenaltyMs(
+  mission: MissionDefinition,
+  player: PlayerState,
+) {
+  const capacity = checkCapacity(player.resources);
+  const penalty = getOverflowPenalty(capacity);
+  const durationMultiplier = Math.max(1, penalty.missionSpeedPenalty);
+  return Math.round(getMissionDurationMs(mission) * durationMultiplier);
+}
+
 export function getMissionById(
   missions: MissionDefinition[],
   missionId: string,
@@ -172,10 +220,11 @@ export function buildMissionQueueEntry(params: {
   mission: MissionDefinition;
   queuedAt: number;
   anchorTime: number;
+  player: PlayerState;
 }): MissionQueueEntry {
-  const { mission, queuedAt, anchorTime } = params;
+  const { mission, queuedAt, anchorTime, player } = params;
   const startsAt = anchorTime;
-  const endsAt = startsAt + getMissionDurationMs(mission);
+  const endsAt = startsAt + getMissionDurationWithLoadPenaltyMs(mission, player);
 
   return {
     queueId: `${mission.id}-${queuedAt}-${Math.random().toString(36).slice(2, 8)}`,
@@ -191,8 +240,9 @@ export function rebuildMissionQueueSchedule(params: {
   queue: MissionQueueEntry[];
   missions: MissionDefinition[];
   now: number;
+  player: PlayerState;
 }) {
-  const { queue, missions, now } = params;
+  const { queue, missions, now, player } = params;
 
   let anchorTime = now;
 
@@ -212,7 +262,7 @@ export function rebuildMissionQueueSchedule(params: {
     }
 
     const startsAt = Math.max(anchorTime, now);
-    const endsAt = startsAt + getMissionDurationMs(mission);
+    const endsAt = startsAt + getMissionDurationWithLoadPenaltyMs(mission, player);
 
     const nextEntry: MissionQueueEntry = {
       ...entry,
@@ -547,9 +597,16 @@ export function processMissionQueue(state: GameState, now: number): GameState {
       nextPlayer,
       rewardWithFusionMods,
     );
+    const rewardWithOverloadPenalty = applyOverloadPenaltyToReward(
+      nextPlayer,
+      rewardWithFusionMods,
+    );
 
     const playerBeforeReward = nextPlayer;
-    const playerAfterReward = applyMissionReward(nextPlayer, rewardWithFusionMods);
+    const playerAfterReward = applyMissionReward(
+      nextPlayer,
+      rewardWithOverloadPenalty,
+    );
     const appliedResourceGain = getAppliedResourceGain(
       playerBeforeReward.resources,
       playerAfterReward.resources,
@@ -576,9 +633,9 @@ export function processMissionQueue(state: GameState, now: number): GameState {
         resolvedAt: entry.endsAt,
         conditionDelta: resolvedConditionDelta,
         conditionAfter: nextPlayer.condition,
-        rankXpGained: rewardWithFusionMods.rankXp,
-        masteryProgressGained: rewardWithFusionMods.masteryProgress,
-        influenceGained: rewardWithFusionMods.influence ?? 0,
+        rankXpGained: rewardWithOverloadPenalty.rankXp,
+        masteryProgressGained: rewardWithOverloadPenalty.masteryProgress,
+        influenceGained: rewardWithOverloadPenalty.influence ?? 0,
         resourcesGained: appliedResourceGain,
         fieldLootGained: fieldLoot,
         hungerPressureLabel: hungerEffects?.label,
@@ -589,9 +646,9 @@ export function processMissionQueue(state: GameState, now: number): GameState {
         fusionCadenceLabel: fusionModifiers?.cadenceLabel ?? null,
         fusionPressureLabel: fusionModifiers?.pressureLabel ?? null,
 
-        baseRankXpGained: rewardWithFusionMods.rankXp,
-        baseMasteryProgressGained: rewardWithFusionMods.masteryProgress,
-        baseInfluenceGained: rewardWithFusionMods.influence ?? 0,
+        baseRankXpGained: rewardWithOverloadPenalty.rankXp,
+        baseMasteryProgressGained: rewardWithOverloadPenalty.masteryProgress,
+        baseInfluenceGained: rewardWithOverloadPenalty.influence ?? 0,
         baseResourcesGained: appliedResourceGain,
 
         realtimeContributionBonusMultiplier: null,
@@ -612,8 +669,8 @@ export function processMissionQueue(state: GameState, now: number): GameState {
         nextPlayer = withWorldProgressAfterHunt(nextPlayer, {
           zoneId: mission.deployZoneId,
           intensity: huntIntensityFromMissionRankReward(
-            rewardWithFusionMods.rankXp,
-            rewardWithFusionMods.influence ?? 0,
+            rewardWithOverloadPenalty.rankXp,
+            rewardWithOverloadPenalty.influence ?? 0,
           ),
           reason: `Contract resolved — ${mission.title}`,
         });
