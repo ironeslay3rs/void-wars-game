@@ -283,7 +283,7 @@ export default function VoidFieldCanvas({
                   totals tied to this run.
                 </p>
                 <Link
-                  href="/market/biotech-labs/result"
+                  href="/bazaar/biotech-labs/result"
                   className="mt-4 inline-flex rounded-lg border border-emerald-400/35 bg-emerald-950/40 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.14em] text-emerald-100 hover:border-emerald-300/50 hover:bg-emerald-950/55"
                 >
                   Open Hunt Result

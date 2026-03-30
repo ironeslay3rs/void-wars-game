@@ -128,7 +128,7 @@ export default function VoidFieldHud({
           <p className="mt-2 max-w-xl text-[11px] font-semibold normal-case leading-snug text-emerald-100/95">
             Run complete — open{" "}
             <Link
-              href="/market/biotech-labs/result"
+              href="/bazaar/biotech-labs/result"
               className="text-cyan-200/95 underline decoration-cyan-400/40 underline-offset-2 hover:text-white"
             >
               Hunt Result
@@ -140,7 +140,7 @@ export default function VoidFieldHud({
           <p className="mt-1 text-[10px] font-medium normal-case tracking-normal text-white/45">
             Timer end → full breakdown on{" "}
             <Link
-              href="/market/biotech-labs/result"
+              href="/bazaar/biotech-labs/result"
               className="text-cyan-200/90 underline decoration-cyan-400/35 underline-offset-2 hover:text-white"
             >
               Hunt Result
@@ -152,7 +152,7 @@ export default function VoidFieldHud({
 
       <div className="pointer-events-auto flex flex-shrink-0 flex-wrap items-center gap-2 md:justify-end md:pt-0.5">
         <Link
-          href="/market/biotech-labs/result"
+          href="/bazaar/biotech-labs/result"
           className="rounded-lg border border-emerald-400/25 bg-emerald-950/30 px-3 py-2 text-[11px] font-bold uppercase tracking-[0.12em] text-emerald-100/90 hover:border-emerald-300/40 hover:bg-emerald-950/45"
         >
           Hunt Result

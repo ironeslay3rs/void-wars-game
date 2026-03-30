@@ -205,7 +205,7 @@ export default function BiotechLabsResultPage() {
   );
 
   let nextStepHref = shouldRouteToFeastHall
-    ? "/market/black-market/feast-hall"
+    ? "/bazaar/black-market/feast-hall"
     : "/home";
   let nextStepLabel = shouldRouteToFeastHall
     ? "Open Feast Hall and Stabilize"
@@ -215,14 +215,14 @@ export default function BiotechLabsResultPage() {
 
   if (isFieldContractResult) {
     if (shouldRouteToFeastHall) {
-      nextStepHref = "/market/black-market/feast-hall";
+      nextStepHref = "/bazaar/black-market/feast-hall";
       nextStepLabel = "Open Feast Hall and Stabilize";
       secondaryFieldStep = {
-        href: "/market/mercenary-guild",
+        href: "/bazaar/mercenary-guild",
         label: "Return to Hunting Ground",
       };
     } else {
-      nextStepHref = "/market/mercenary-guild";
+      nextStepHref = "/bazaar/mercenary-guild";
       nextStepLabel = "Return to Hunting Ground";
       secondaryFieldStep = {
         href: "/home",
@@ -1014,13 +1014,13 @@ export default function BiotechLabsResultPage() {
                           Redeploy — Void Expedition
                         </Link>
                         <Link
-                          href="/market/black-market"
+                          href="/bazaar/black-market"
                           className="inline-flex rounded-xl border border-emerald-300/25 bg-emerald-300/10 px-4 py-2 text-sm font-semibold text-emerald-50 transition hover:border-emerald-200/40 hover:bg-emerald-300/16"
                         >
                           Black Market (Hub)
                         </Link>
                         <Link
-                          href="/market/black-market/feast-hall"
+                          href="/bazaar/black-market/feast-hall"
                           className="inline-flex rounded-xl border border-amber-300/25 bg-amber-500/10 px-4 py-2 text-sm font-semibold text-amber-50 transition hover:border-amber-200/40 hover:bg-amber-500/16"
                         >
                           Recover — Feast Hall

@@ -62,7 +62,7 @@ export default function GuildPage() {
             Regional stakes
           </Link>
           <Link
-            href="/market/faction-hqs"
+            href="/bazaar/faction-hqs"
             className="rounded-lg border border-fuchsia-400/30 bg-fuchsia-500/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-fuchsia-100 transition hover:bg-fuchsia-500/15"
           >
             Faction HQs

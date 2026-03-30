@@ -119,7 +119,7 @@ export const canonNavigationItems = {
   bazaar: {
     id: canonBazaar.id,
     label: canonBazaar.navLabel,
-    href: "/market",
+    href: "/bazaar",
   },
   arena: {
     id: "arena",

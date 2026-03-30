@@ -10,6 +10,7 @@ import {
   hasMeaningfulProgress,
 } from "@/features/game/gameProgress";
 import { VOID_EXPEDITION_PATH } from "@/features/void-maps/voidRoutes";
+import { HOME_LEFT_MENU_BOTTOM_CLEARANCE } from "@/config/layout";
 
 export default function LeftCommandMenu() {
   const router = useRouter();
@@ -20,7 +21,10 @@ export default function LeftCommandMenu() {
   const sideNavItems = getNavigationItemsByPlacement("side");
 
   return (
-    <aside className="absolute bottom-[calc(5.5rem+env(safe-area-inset-bottom))] left-6 top-20 z-30 w-[290px] overflow-y-auto overscroll-contain pr-1 pb-6 xl:w-[320px]">
+    <aside
+      className="absolute left-6 top-20 z-30 w-[290px] overflow-y-auto overscroll-contain pr-1 pb-8 xl:w-[320px]"
+      style={{ bottom: HOME_LEFT_MENU_BOTTOM_CLEARANCE }}
+    >
       <div className="relative rounded-[22px] border border-white/8 bg-black/24 p-2 shadow-[0_20px_50px_rgba(0,0,0,0.35)] backdrop-blur-[3px]">
         <div className="pointer-events-none absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
         <div className="pointer-events-none absolute inset-y-6 left-0 w-px bg-gradient-to-b from-transparent via-red-500/20 to-transparent" />

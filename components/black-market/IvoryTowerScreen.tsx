@@ -80,7 +80,7 @@ export default function IvoryTowerScreen() {
       <div className="mx-auto flex max-w-[1200px] flex-col gap-8">
         <BazaarSubpageNav
           accentClassName="hover:border-yellow-300/40"
-          backHref="/market/black-market"
+          backHref="/bazaar/black-market"
           backLabel="Back to Black Market"
         />
 

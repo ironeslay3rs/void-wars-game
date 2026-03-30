@@ -65,11 +65,13 @@ export default function MenuButton({
         ].join(" ")}
       />
 
-      <span className="relative z-10">{label}</span>
+      <span className="relative z-10 min-w-0 flex-1 truncate pr-2 leading-tight">
+        {label}
+      </span>
 
       <span
         className={[
-          "ml-auto relative z-10 text-[11px] tracking-[0.2em] transition duration-200",
+          "relative z-10 shrink-0 text-[11px] tracking-[0.2em] transition duration-200",
           isActive
             ? "text-white/70"
             : "text-white/25 group-hover:text-white/45",
@@ -82,14 +84,19 @@ export default function MenuButton({
 
   if (href) {
     return (
-      <Link href={href} className={className} aria-current={isActive ? "page" : undefined}>
+      <Link
+        href={href}
+        className={className}
+        aria-current={isActive ? "page" : undefined}
+        title={label}
+      >
         {content}
       </Link>
     );
   }
 
   return (
-    <button type="button" className={className} onClick={onClick}>
+    <button type="button" className={className} onClick={onClick} title={label}>
       {content}
     </button>
   );

@@ -282,7 +282,7 @@ export default function VoidFieldIntelPanel({
                   <div className="mt-2 flex flex-wrap gap-2">
                     {canCraftMossRation ? (
                       <Link
-                        href="/market/crafting-district"
+                        href="/bazaar/crafting-district"
                         className="text-[11px] font-semibold text-emerald-200 underline"
                       >
                         Moss Ration
@@ -290,7 +290,7 @@ export default function VoidFieldIntelPanel({
                     ) : null}
                     {canCraftStabilizationSigil ? (
                       <Link
-                        href="/market/crafting-district"
+                        href="/bazaar/crafting-district"
                         className="text-[11px] font-semibold text-cyan-200 underline"
                       >
                         Sigil
@@ -311,19 +311,19 @@ export default function VoidFieldIntelPanel({
 
         <div className="mt-4 space-y-2 border-t border-white/10 pt-3">
           <Link
-            href="/market/mercenary-guild"
+            href="/bazaar/mercenary-guild"
             className="block rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white/85"
           >
             Hunting Ground
           </Link>
           <Link
-            href="/market/biotech-labs/result"
+            href="/bazaar/biotech-labs/result"
             className="block rounded-lg border border-cyan-400/25 bg-cyan-500/10 px-3 py-2 text-xs font-semibold text-cyan-100"
           >
             Hunt result
           </Link>
           <Link
-            href="/market/teleport-gate"
+            href="/bazaar/teleport-gate"
             className="block rounded-lg border border-sky-400/25 bg-sky-500/10 px-3 py-2 text-xs font-semibold text-sky-100"
           >
             Teleport Gate

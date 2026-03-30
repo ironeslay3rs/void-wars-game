@@ -49,6 +49,23 @@ export default function LoadoutPage() {
     );
   }, [pickerSlot, player.factionAlignment, player.loadoutSlots, player.craftedInventory]);
 
+  const availableWeaponItems = useMemo(
+    () =>
+      getAvailableItemsForSlot(
+        player.loadoutSlots,
+        "weapon",
+        player.factionAlignment,
+        player.craftedInventory,
+      ),
+    [player.factionAlignment, player.loadoutSlots, player.craftedInventory],
+  );
+
+  const mirefangSidearm = availableWeaponItems.find(
+    (item) => item.id === "bio-mirefang-sidearm",
+  );
+  const isMirefangEquipped =
+    player.loadoutSlots.weapon === "bio-mirefang-sidearm";
+
   const allSlotsEmpty = LOADOUT_SLOT_ORDER.every((s) => !player.loadoutSlots[s]);
 
   function handleQuickEquip() {
@@ -98,7 +115,7 @@ export default function LoadoutPage() {
             Market loop first, then return here to finalize your field setup.
             <div className="mt-2 flex flex-wrap gap-2">
               <Link
-                href="/market"
+                href="/bazaar/black-market"
                 className="rounded-lg border border-amber-200/45 bg-black/25 px-2 py-1 font-semibold uppercase tracking-[0.08em] text-amber-50 hover:border-amber-100/60"
               >
                 Visit Black Market
@@ -141,15 +158,39 @@ export default function LoadoutPage() {
             <h2 className="text-lg font-black uppercase tracking-[0.06em] text-white">
               Active loadout slots
             </h2>
-            {allSlotsEmpty && (
-              <button
-                type="button"
-                onClick={handleQuickEquip}
-                className="rounded-xl border border-cyan-400/40 bg-cyan-500/15 px-4 py-2 text-xs font-black uppercase tracking-[0.14em] text-cyan-200 transition hover:bg-cyan-500/25"
-              >
-                Quick Equip Kit
-              </button>
-            )}
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              {mirefangSidearm && !isMirefangEquipped ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    dispatch({
+                      type: "EQUIP_LOADOUT_ITEM",
+                      payload: {
+                        slot: "weapon",
+                        itemId: mirefangSidearm.id,
+                      },
+                    })
+                  }
+                  className="rounded-xl border border-emerald-400/45 bg-emerald-500/15 px-4 py-2 text-xs font-black uppercase tracking-[0.14em] text-emerald-100 transition hover:bg-emerald-500/25"
+                >
+                  Equip Mirefang Sidearm
+                </button>
+              ) : null}
+              {isMirefangEquipped ? (
+                <span className="rounded-xl border border-emerald-400/35 bg-emerald-500/10 px-4 py-2 text-xs font-black uppercase tracking-[0.14em] text-emerald-100/90">
+                  Mirefang Equipped
+                </span>
+              ) : null}
+              {allSlotsEmpty ? (
+                <button
+                  type="button"
+                  onClick={handleQuickEquip}
+                  className="rounded-xl border border-cyan-400/40 bg-cyan-500/15 px-4 py-2 text-xs font-black uppercase tracking-[0.14em] text-cyan-200 transition hover:bg-cyan-500/25"
+                >
+                  Quick Equip Kit
+                </button>
+              ) : null}
+            </div>
           </div>
           <p className="mt-2 text-sm text-white/60">
             Equip items from owned inventory into your combat slots. Unequip returns the
@@ -162,6 +203,7 @@ export default function LoadoutPage() {
                 player.loadoutSlots,
                 slot,
                 player.factionAlignment,
+                player.craftedInventory,
               );
               return (
                 <div
@@ -196,6 +238,13 @@ export default function LoadoutPage() {
                         className="mt-3 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-white/80 hover:border-white/30 hover:bg-white/10"
                       >
                         Unequip
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPickerSlot(slot)}
+                        className="mt-2 rounded-lg border border-cyan-400/35 bg-cyan-500/12 px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-cyan-100 hover:border-cyan-300/55 hover:bg-cyan-500/18"
+                      >
+                        Change Item
                       </button>
                     </>
                   ) : (
