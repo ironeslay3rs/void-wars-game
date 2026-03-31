@@ -62,15 +62,15 @@ export default function HomeResourceStrip() {
       : "bg-gradient-to-r from-cyan-500/90 to-emerald-500/80";
 
   return (
-    <div className="flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-[linear-gradient(90deg,rgba(8,12,20,0.96),rgba(12,16,26,0.94))] shadow-[0_8px_28px_rgba(0,0,0,0.4)] backdrop-blur-md">
-      <div className="flex items-stretch">
-        <div className="px-3 py-2 text-[9px] font-bold uppercase tracking-[0.28em] text-white/30 [writing-mode:vertical-rl] flex items-center">
+    <div className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-white/10 bg-[linear-gradient(90deg,rgba(8,12,20,0.96),rgba(12,16,26,0.94))] shadow-[0_8px_28px_rgba(0,0,0,0.4)] backdrop-blur-md">
+      <div className="flex min-w-0 items-stretch">
+        <div className="flex items-center px-2 py-2 text-[8px] font-bold uppercase tracking-[0.22em] text-white/25 [writing-mode:vertical-rl] sm:px-3 sm:text-[9px] sm:tracking-[0.28em] sm:text-white/30">
           Resources
         </div>
 
-        <div className="h-px w-px self-stretch bg-white/8" />
+        <div className="h-px w-px shrink-0 self-stretch bg-white/8" />
 
-        <div className="flex flex-1 divide-x divide-white/8">
+        <div className="flex min-w-0 flex-1 divide-x divide-white/8">
           {PRIMARY.map((res) => (
             <ResourceChip key={res.key} label={res.label} value={r[res.key]} resourceKey={res.key} />
           ))}

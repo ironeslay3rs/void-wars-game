@@ -46,8 +46,8 @@ export default function BottomNav() {
   const items = getNavigationItemsByPlacement("bottom");
 
   return (
-    <nav className="relative w-full">
-      <div className="grid grid-cols-5 gap-2 sm:gap-3">
+    <nav className="relative w-full min-w-0" aria-label="Primary navigation">
+      <div className="grid grid-cols-5 gap-1 sm:gap-2 md:gap-3">
         {items.map((item) => {
           const Icon = item.icon;
           const isActive = isRouteActive(pathname, item.href);
@@ -58,9 +58,10 @@ export default function BottomNav() {
               href={item.href}
               aria-current={isActive ? "page" : undefined}
               className={[
-                "group relative flex min-h-[72px] flex-col items-center justify-center gap-1.5 overflow-hidden rounded-[16px] border px-2 py-2.5 sm:min-h-[92px] sm:gap-2 sm:rounded-[18px] sm:px-3 sm:py-3",
+                "group relative flex min-h-[72px] flex-col items-center justify-center gap-1 overflow-hidden rounded-[14px] border px-1.5 py-2 sm:min-h-[92px] sm:gap-2 sm:rounded-[18px] sm:px-3 sm:py-3",
                 "transition duration-200",
                 "backdrop-blur-sm",
+                "active:opacity-95",
                 getAccentClasses(item.accent, isActive),
               ].join(" ")}
             >
@@ -75,14 +76,14 @@ export default function BottomNav() {
 
               <Icon
                 className={[
-                  "relative z-10 h-5 w-5 transition duration-200 sm:h-6 sm:w-6",
+                  "relative z-10 h-5 w-5 shrink-0 transition duration-200 sm:h-6 sm:w-6",
                   isActive ? "scale-110" : "group-hover:scale-105",
                 ].join(" ")}
               />
 
               <span
                 className={[
-                  "relative z-10 text-center text-[11px] font-extrabold uppercase tracking-[0.08em] sm:text-[13px]",
+                  "relative z-10 max-w-[4.2rem] truncate text-center text-[9px] font-extrabold uppercase leading-tight tracking-[0.06em] sm:max-w-none sm:text-[11px] sm:tracking-[0.08em] md:text-[13px]",
                   isActive ? "text-white" : "",
                 ].join(" ")}
               >

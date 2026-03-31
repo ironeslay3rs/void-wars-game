@@ -11,6 +11,7 @@ export function initialMythicAscension(): MythicAscensionState {
     convergencePrimed: false,
     runeKnightValor: 0,
     arenaRankedSeason1Rating: 1180,
+    arenaEdgeSigils: 0,
   };
 }
 
@@ -31,6 +32,10 @@ export function normalizeMythicAscension(raw: unknown): MythicAscensionState {
       Number.isFinite(o.arenaRankedSeason1Rating)
         ? Math.max(0, Math.floor(o.arenaRankedSeason1Rating))
         : base.arenaRankedSeason1Rating,
+    arenaEdgeSigils:
+      typeof o.arenaEdgeSigils === "number" && Number.isFinite(o.arenaEdgeSigils)
+        ? Math.max(0, Math.min(12, Math.floor(o.arenaEdgeSigils)))
+        : base.arenaEdgeSigils,
   };
 }
 

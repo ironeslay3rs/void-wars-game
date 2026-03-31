@@ -28,9 +28,9 @@ export default function VoidFieldControls({
   return (
     <div
       className={[
-        "relative z-50 flex shrink-0 items-center justify-center gap-2 border-t border-white/15 bg-black/75 px-3 py-3 backdrop-blur-md",
-        "pb-[calc(0.75rem+env(safe-area-inset-bottom))]",
-        "md:gap-3 md:px-6",
+        "relative z-50 flex shrink-0 flex-wrap items-center justify-center gap-2 border-t border-white/15 bg-black/75 px-2 py-2 backdrop-blur-md",
+        "pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:px-3 sm:py-3",
+        "md:flex-nowrap md:gap-3 md:px-6",
       ].join(" ")}
     >
       <button
@@ -104,7 +104,7 @@ export default function VoidFieldControls({
         type="button"
         disabled
         title="Placeholder — not wired in M1"
-        className="min-h-[48px] min-w-[88px] cursor-not-allowed rounded-xl border border-white/10 bg-black/25 px-3 py-2 text-xs font-bold uppercase tracking-[0.1em] text-white/30"
+        className="hidden min-h-[48px] min-w-[88px] cursor-not-allowed rounded-xl border border-white/10 bg-black/25 px-3 py-2 text-xs font-bold uppercase tracking-[0.1em] text-white/30 min-[480px]:inline-flex"
       >
         Spore lash
       </button>
@@ -112,7 +112,7 @@ export default function VoidFieldControls({
         type="button"
         disabled
         title="Placeholder — not wired in M1"
-        className="min-h-[48px] min-w-[88px] cursor-not-allowed rounded-xl border border-white/10 bg-black/25 px-3 py-2 text-xs font-bold uppercase tracking-[0.1em] text-white/30"
+        className="hidden min-h-[48px] min-w-[88px] cursor-not-allowed rounded-xl border border-white/10 bg-black/25 px-3 py-2 text-xs font-bold uppercase tracking-[0.1em] text-white/30 min-[480px]:inline-flex"
       >
         Veil step
       </button>

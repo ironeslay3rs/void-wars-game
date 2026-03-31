@@ -15,4 +15,6 @@ export type MythicAscensionState = {
   runeKnightValor: number;
   /** Arena ranked Season 1 skill rating (display + future matchmaking). */
   arenaRankedSeason1Rating: number;
+  /** Consumable prestige charge: one ranked/tournament edge for the next match. */
+  arenaEdgeSigils: number;
 };

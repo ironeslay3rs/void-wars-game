@@ -1,0 +1,28 @@
+# Dependencies & build output
+node_modules
+.next
+out
+dist
+
+# Git / IDE / docs (not needed in images)
+.git
+.gitignore
+.cursor
+.github
+project-docs
+03-Docs
+*.md
+!README.md
+
+# Local secrets (never bake into images)
+.env
+.env.*
+!.env.example
+
+# Test / misc
+coverage
+*.log
+.turbo
+.vercel
+public/assets/incoming
+public/assets/_incoming

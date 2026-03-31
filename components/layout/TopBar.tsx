@@ -29,7 +29,7 @@ export default function TopBar() {
   const conditionPct = Math.max(0, Math.min(100, p.condition));
 
   return (
-    <header className="absolute inset-x-0 top-0 z-30 px-4 pt-3 sm:px-6">
+    <header className="absolute inset-x-0 top-0 z-30 px-4 pt-[max(0.75rem,env(safe-area-inset-top,0px))] sm:px-6">
       <div className="relative mx-auto flex h-20 max-w-[1700px] items-start justify-between gap-3 sm:h-24 sm:gap-4">
         <div className="flex min-w-0 flex-1 items-start gap-2 pt-1 sm:gap-3">
           <Link

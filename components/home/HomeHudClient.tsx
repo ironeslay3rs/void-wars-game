@@ -17,6 +17,7 @@ import {
   HOME_BOTTOM_NAV_BOTTOM,
   HOME_CENTER_STAGE_BOTTOM_CLEARANCE,
   HOME_MOBILE_PANEL_BOTTOM_CLEARANCE,
+  HOME_MOBILE_SCROLL_TOP,
   HOME_RESOURCE_STRIP_BOTTOM,
 } from "@/config/layout";
 
@@ -35,8 +36,11 @@ export default function HomeHudClient() {
   return (
     <>
       <section
-        className="fixed inset-x-3 top-[84px] z-30 overflow-y-auto lg:hidden"
-        style={{ bottom: HOME_MOBILE_PANEL_BOTTOM_CLEARANCE }}
+        className="fixed inset-x-3 z-30 overflow-y-auto overscroll-y-contain lg:hidden"
+        style={{
+          top: HOME_MOBILE_SCROLL_TOP,
+          bottom: HOME_MOBILE_PANEL_BOTTOM_CLEARANCE,
+        }}
       >
         <div className="mx-auto flex w-full max-w-xl flex-col gap-3 pb-4">
           <ConditionWidget
@@ -60,19 +64,19 @@ export default function HomeHudClient() {
           <div className="grid grid-cols-3 gap-2">
             <Link
               href="/bazaar/war-exchange"
-              className="rounded-xl border border-white/15 bg-black/45 px-3 py-2 text-center text-[11px] font-bold uppercase tracking-[0.14em] text-white/85"
+              className="flex min-h-[44px] items-center justify-center rounded-xl border border-white/15 bg-black/45 px-2 py-2 text-center text-[10px] font-bold uppercase leading-tight tracking-[0.12em] text-white/85 sm:px-3 sm:text-[11px] sm:tracking-[0.14em]"
             >
               Market
             </Link>
             <Link
               href="/bazaar/black-market"
-              className="rounded-xl border border-orange-300/25 bg-[linear-gradient(135deg,rgba(96,20,16,0.56),rgba(24,10,12,0.82))] px-3 py-2 text-center text-[11px] font-bold uppercase tracking-[0.12em] text-amber-100/90"
+              className="flex min-h-[44px] items-center justify-center rounded-xl border border-orange-300/25 bg-[linear-gradient(135deg,rgba(96,20,16,0.56),rgba(24,10,12,0.82))] px-2 py-2 text-center text-[10px] font-bold uppercase leading-tight tracking-[0.1em] text-amber-100/90 sm:px-3 sm:text-[11px] sm:tracking-[0.12em]"
             >
               Black Market
             </Link>
             <Link
               href="/social"
-              className="rounded-xl border border-cyan-300/25 bg-black/45 px-3 py-2 text-center text-[11px] font-bold uppercase tracking-[0.14em] text-cyan-100/90"
+              className="flex min-h-[44px] items-center justify-center rounded-xl border border-cyan-300/25 bg-black/45 px-2 py-2 text-center text-[10px] font-bold uppercase leading-tight tracking-[0.12em] text-cyan-100/90 sm:px-3 sm:text-[11px] sm:tracking-[0.14em]"
             >
               Social
             </Link>
@@ -100,16 +104,16 @@ export default function HomeHudClient() {
       </section>
 
       <section
-        className="pointer-events-none fixed inset-x-0 z-30 px-3 sm:px-6"
+        className="pointer-events-none fixed inset-x-0 z-30 px-3 pr-[max(0.75rem,env(safe-area-inset-right,0px))] pl-[max(0.75rem,env(safe-area-inset-left,0px))] sm:px-6"
         style={{ bottom: HOME_RESOURCE_STRIP_BOTTOM }}
       >
-        <div className="pointer-events-auto mx-auto w-full max-w-4xl">
+        <div className="pointer-events-auto mx-auto w-full min-w-0 max-w-4xl">
           <HomeResourceStrip />
         </div>
       </section>
 
       <section
-        className="absolute inset-x-3 z-30 xl:inset-x-7"
+        className="absolute inset-x-3 z-30 pr-[max(0.25rem,env(safe-area-inset-right,0px))] pl-[max(0.25rem,env(safe-area-inset-left,0px))] xl:inset-x-7"
         style={{ bottom: HOME_BOTTOM_NAV_BOTTOM }}
       >
         <BottomNav />

@@ -515,6 +515,15 @@ export type GameAction =
         | "rune-crafter-license"
         | "convergence-prime";
     }
+  | {
+      type: "REDEEM_RUNE_KNIGHT_VALOR";
+      payload:
+        | "mastery-boon"
+        | "influence-seal"
+        | "ivory-prestige-rite"
+        | "arena-edge-sigil";
+    }
+  | { type: "CONSUME_ARENA_EDGE_SIGIL" }
   | { type: "GUILD_CREATE"; payload: { guildName: string } }
   | { type: "GUILD_JOIN"; payload: { guildCode: string } }
   | { type: "GUILD_LEAVE" }

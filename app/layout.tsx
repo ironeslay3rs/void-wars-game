@@ -4,13 +4,27 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Void Wars: Oblivion",
-  description: "A layered web game prototype for Void Wars: Oblivion",
+  description:
+    "Survival-first RPG — Black Market hub, void hunts, extraction. Play in browser or install as an app.",
+  applicationName: "Void Wars: Oblivion",
+  formatDetection: {
+    telephone: false,
+  },
+  appleWebApp: {
+    capable: true,
+    title: "Void Wars: Oblivion",
+    statusBarStyle: "black-translucent",
+  },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+    { color: "#0a0a0a" },
+  ],
 };
 
 export default function RootLayout({

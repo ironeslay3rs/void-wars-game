@@ -263,7 +263,9 @@ export default function VoidFieldScreen() {
   );
 
   useEffect(() => {
-    setServerLootDrops([]);
+    queueMicrotask(() => {
+      setServerLootDrops([]);
+    });
   }, [initialZoneId, sessionBucketId]);
 
   useEffect(() => {
@@ -288,7 +290,11 @@ export default function VoidFieldScreen() {
         );
       });
     }
-    setServerLootDrops((d) => [...additions, ...d].slice(0, 15));
+    queueMicrotask(() => {
+      setServerLootDrops((d) => [...additions, ...d].slice(0, 15));
+    });
+    /* `realtime` identity churns; loot advances on authoritativeMobLootSeq + stable drain. */
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     realtime.authoritativeMobLootSeq,
     fieldLootAmountMultiplier,
@@ -648,7 +654,7 @@ export default function VoidFieldScreen() {
         />
       </div>
 
-      <div className="pointer-events-none absolute right-4 top-24 z-30 rounded-full border border-emerald-300/45 bg-emerald-500/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-100">
+      <div className="pointer-events-none absolute right-[max(1rem,env(safe-area-inset-right,0px))] top-[calc(6.25rem+env(safe-area-inset-top,0px))] z-30 max-w-[min(200px,calc(100vw-2rem))] rounded-full border border-emerald-300/45 bg-emerald-500/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-100 md:top-24">
         Extraction
       </div>
 

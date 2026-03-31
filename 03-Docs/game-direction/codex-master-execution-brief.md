@@ -435,6 +435,8 @@ Only after the product earns it:
 - NAS deployment path
 - self-hosted studio platform
 
+**Repo (scaffold):** `Dockerfile` (Next `standalone`) + `Dockerfile.realtime` + `docker-compose.yml` (web, WS, Redis, Postgres); `deploy/caddy/Caddyfile.example`; `scripts/ops/backup-postgres.sh`; runbook `project-docs/ops/PHASE10_SELF_HOSTED_RUNBOOK.md`. Default prod path remains Vercel + managed WS until you choose self-host.
+
 ### Exit gate
 Retention and product value justify ops complexity.
 

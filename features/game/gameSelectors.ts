@@ -76,6 +76,7 @@ function pickMax2Chips(candidates: Array<ProgressionMeaningChip | null>) {
 
 export function getProgressionMeaning(state: GameState): ProgressionMeaning {
   const { player } = state;
+  const mythic = player.mythicAscension;
   const hungerEffects = getHungerPressureEffects(player.hunger);
   const hasHungerPressure = hungerEffects.tier !== "fed";
 
@@ -93,7 +94,9 @@ export function getProgressionMeaning(state: GameState): ProgressionMeaning {
 
   const nextUnlockChip: ProgressionMeaningChip = {
     id: "next-unlock",
-    label: `Next Unlock: Rank ${player.rankLevel + 1}`,
+    label: mythic.convergencePrimed
+      ? `Knight Valor: ${mythic.runeKnightValor}/99`
+      : `Next Unlock: Rank ${player.rankLevel + 1}`,
   };
 
   const chips = pickMax2Chips([hungerChip, primedChip, nextUnlockChip]);
@@ -134,11 +137,21 @@ export function getProgressionMeaning(state: GameState): ProgressionMeaning {
     enablement.unshift(`Primed kit ready: ${primed.effectKey}.`);
   }
 
+  const objectiveLine = mythic.convergencePrimed
+    ? mythic.runeKnightValor < 3
+      ? "Win ranked or tournament arena rounds to bank Knight valor."
+      : "Spend Knight valor on Mythic ladder boons or Arena Edge Sigils."
+    : "Prime convergence on the Mythic ladder, then start banking Knight valor.";
+
+  const whyLine = mythic.convergencePrimed
+    ? "Valor spend converts prestige into immediate power and progression pressure."
+    : "Convergence unlocks Phase 9 prestige loops and valor-backed spend decisions.";
+
   return {
     objectiveTitle: "Progression Objective",
-    objectiveLine: "Prime one next-run kit before your next deployment.",
+    objectiveLine,
     whyTitle: "Why it matters",
-    whyLine: "A primed kit converts this haul into visible field advantage.",
+    whyLine,
     chips,
     huntResultEnablement: enablement.slice(0, 3),
   };

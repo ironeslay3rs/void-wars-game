@@ -1899,6 +1899,97 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return state;
     }
 
+    case "REDEEM_RUNE_KNIGHT_VALOR": {
+      const p = state.player;
+      const m = p.mythicAscension;
+      if (!m.convergencePrimed) return state;
+
+      if (action.payload === "mastery-boon") {
+        const cost = 5;
+        if (m.runeKnightValor < cost) return state;
+        return {
+          ...state,
+          player: {
+            ...p,
+            masteryProgress: p.masteryProgress + 12,
+            mythicAscension: {
+              ...m,
+              runeKnightValor: m.runeKnightValor - cost,
+            },
+          },
+        };
+      }
+
+      if (action.payload === "influence-seal") {
+        const cost = 3;
+        if (m.runeKnightValor < cost) return state;
+        return {
+          ...state,
+          player: {
+            ...p,
+            influence: Math.max(0, p.influence + 2),
+            mythicAscension: {
+              ...m,
+              runeKnightValor: m.runeKnightValor - cost,
+            },
+          },
+        };
+      }
+
+      if (action.payload === "ivory-prestige-rite") {
+        const valorCost = 4;
+        const creditsCost = 120;
+        if (m.runeKnightValor < valorCost) return state;
+        if ((p.resources.credits ?? 0) < creditsCost) return state;
+        return {
+          ...state,
+          player: {
+            ...p,
+            resources: updateSingleResource(p.resources, "credits", -creditsCost),
+            condition: clamp(p.condition + 15, 0, 100),
+            mythicAscension: {
+              ...m,
+              runeKnightValor: m.runeKnightValor - valorCost,
+            },
+          },
+        };
+      }
+
+      if (action.payload === "arena-edge-sigil") {
+        const cost = 2;
+        if (m.runeKnightValor < cost) return state;
+        return {
+          ...state,
+          player: {
+            ...p,
+            mythicAscension: {
+              ...m,
+              runeKnightValor: m.runeKnightValor - cost,
+              arenaEdgeSigils: Math.min(12, m.arenaEdgeSigils + 1),
+            },
+          },
+        };
+      }
+
+      return state;
+    }
+
+    case "CONSUME_ARENA_EDGE_SIGIL": {
+      const p = state.player;
+      const m = p.mythicAscension;
+      if (m.arenaEdgeSigils <= 0) return state;
+      return {
+        ...state,
+        player: {
+          ...p,
+          mythicAscension: {
+            ...m,
+            arenaEdgeSigils: m.arenaEdgeSigils - 1,
+          },
+        },
+      };
+    }
+
     case "CLAIM_FACTION_HQ_STIPEND": {
       const now = Date.now();
       const p = state.player;

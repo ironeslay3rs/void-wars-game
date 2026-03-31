@@ -2,7 +2,7 @@
 
 ## Current approved task
 
-- **M1 consolidation pass:** war **sell** demand surfaced on War Exchange (`getWarExchangeSellDemandMultiplier` per row); **regional doctrine strip** on Home `MissionPanel` + `MissionsScreen` (`missionDoctrineStrip.ts`); void-field **extraction** banks via `ADD_FIELD_LOOT` (hunt `fieldLootGained` parity + pickup strain; extraction bulk strain omits duplicate lootUnits); **Phase 9** Knight `runeKnightValor` + Golden Bazaar **convergence sell bonus** (`warEconomy.ts`); **Convergence** +2% field pickup mult (`pathGatheringYield.ts`). Hunt ledger settlement: dev `[void-wars:hunt-field-loot]` + `npm test` (`huntLootLedgerResolution.test.ts`). Next: deeper arena prestige spend sinks.
+- **M1 consolidation pass:** war **sell** demand surfaced on War Exchange (`getWarExchangeSellDemandMultiplier` per row); **regional doctrine strip** on Home `MissionPanel` + `MissionsScreen` (`missionDoctrineStrip.ts`); void-field **extraction** banks via `ADD_FIELD_LOOT` (hunt `fieldLootGained` parity + pickup strain; extraction bulk strain omits duplicate lootUnits); **Phase 9** Knight `runeKnightValor` + Golden Bazaar **convergence sell bonus** (`warEconomy.ts`); **Convergence** +2% field pickup mult (`pathGatheringYield.ts`). Hunt ledger settlement: dev `[void-wars:hunt-field-loot]` + `npm test` (`huntLootLedgerResolution.test.ts`). **Valor spend:** `REDEEM_RUNE_KNIGHT_VALOR` — Mythic ladder (mastery / influence) + Ivory Tower “Knight prestige rite” (valor + credits → condition); tests: `runeKnightValorRedemption.test.ts`. Next: deeper arena-tied sinks optional.
 
 ## Recently closed (March 28, 2026)
 
@@ -23,6 +23,9 @@
 
 ## Next suggested slices
 
+- **Steam / full release track:** checklist and ops gates — `project-docs/workflow/STEAM_RELEASE_READINESS.md` (store promise vs browser build, WS/auth health, smoke path, EA disclaimer).
+- **Mobile:** PWA manifest + icons in app; Play/App strategy — `project-docs/workflow/MOBILE_APP_STRATEGY.md` (next: viewport QA, optional Capacitor shell).
+- **Phase 10 (scaffold):** Docker `web` + `realtime`, compose + Redis/Postgres, Caddy example, backup script — `project-docs/ops/PHASE10_SELF_HOSTED_RUNBOOK.md` (ops when product justifies it; Vercel path remains default).
 - **Phase 8 (closed for vertical slice):** guild board, contracts, pledge theater, capacity-safe claims — see `app/guild`, `factionWorldLogic`.
 - **Phase 9:** spend sinks for `runeKnightValor`; empire-scale copy on War Front; optional `getMasteryAligned*` cap bump (avoid stacking explosion).
 - **Hunt timing / E2E:** `VOID_FIELD_ORB_COLLECTED` fills `fieldLootGainedThisRun` on pickup; extraction `ADD_FIELD_LOOT` uses `skipRunLedger` to avoid double-counting. Dev settlement logs: `[void-wars:hunt-field-loot]` (`gameMissionUtils` / `NODE_ENV=development`). Unit coverage: `npm test` → `features/game/huntLootLedgerResolution.test.ts` (queue resolves before extract + `skipRunLedger`). Full-browser E2E + authoritative double-roll checks still optional.

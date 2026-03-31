@@ -67,7 +67,7 @@ export default function MythicAscensionPanel() {
                     payload: "l3-rare-rune-set",
                   })
                 }
-                className="rounded-lg border border-cyan-400/40 bg-cyan-500/15 px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-cyan-100 disabled:cursor-not-allowed disabled:opacity-40"
+                className="min-h-[44px] w-full rounded-lg border border-cyan-400/40 bg-cyan-500/15 px-4 py-2.5 text-xs font-semibold uppercase tracking-[0.12em] text-cyan-100 touch-manipulation disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
               >
                 Unlock
               </button>
@@ -97,7 +97,7 @@ export default function MythicAscensionPanel() {
                     payload: "rune-crafter-license",
                   })
                 }
-                className="rounded-lg border border-violet-400/40 bg-violet-500/15 px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-violet-100 disabled:cursor-not-allowed disabled:opacity-40"
+                className="min-h-[44px] w-full rounded-lg border border-violet-400/40 bg-violet-500/15 px-4 py-2.5 text-xs font-semibold uppercase tracking-[0.12em] text-violet-100 touch-manipulation disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
               >
                 Earn license
               </button>
@@ -128,23 +128,56 @@ export default function MythicAscensionPanel() {
                     payload: "convergence-prime",
                   })
                 }
-                className="rounded-lg border border-cyan-400/40 bg-cyan-500/15 px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-cyan-100 disabled:cursor-not-allowed disabled:opacity-40"
+                className="min-h-[44px] w-full rounded-lg border border-cyan-400/40 bg-cyan-500/15 px-4 py-2.5 text-xs font-semibold uppercase tracking-[0.12em] text-cyan-100 touch-manipulation disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
               >
                 File convergence
               </button>
             ) : null}
           </div>
           {m.convergencePrimed ? (
-            <div className="mt-3 rounded-lg border border-cyan-400/20 bg-cyan-950/20 px-3 py-2">
-              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-200/80">
-                Rune Knight valor
-              </p>
-              <p className="mt-1 font-mono text-sm text-white/90">
-                {m.runeKnightValor}
-                <span className="text-white/45">/99</span>
-              </p>
-              <p className="mt-1 text-[11px] text-white/55">
-                +1 on each ranked or tournament win (SR gain). Display ladder until full Knighthood ships.
+            <div className="mt-3 space-y-3 rounded-lg border border-cyan-400/20 bg-cyan-950/20 px-3 py-3">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-200/80">
+                  Rune Knight valor
+                </p>
+                <p className="mt-1 font-mono text-sm text-white/90">
+                  {m.runeKnightValor}
+                  <span className="text-white/45">/99</span>
+                </p>
+                <p className="mt-1 text-[11px] text-white/55">
+                  Earn +1 on ranked or tournament wins (SR gain). Spend below — prestige should cost.
+                </p>
+              </div>
+              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                <button
+                  type="button"
+                  disabled={m.runeKnightValor < 5}
+                  onClick={() =>
+                    dispatch({
+                      type: "REDEEM_RUNE_KNIGHT_VALOR",
+                      payload: "mastery-boon",
+                    })
+                  }
+                  className="min-h-[44px] flex-1 rounded-lg border border-cyan-400/45 bg-cyan-500/15 px-3 py-2.5 text-center text-[11px] font-bold uppercase tracking-[0.1em] text-cyan-100 touch-manipulation disabled:cursor-not-allowed disabled:opacity-40 sm:min-w-[9rem]"
+                >
+                  Mastery boon — 5 valor (+12 progress)
+                </button>
+                <button
+                  type="button"
+                  disabled={m.runeKnightValor < 3}
+                  onClick={() =>
+                    dispatch({
+                      type: "REDEEM_RUNE_KNIGHT_VALOR",
+                      payload: "influence-seal",
+                    })
+                  }
+                  className="min-h-[44px] flex-1 rounded-lg border border-amber-400/40 bg-amber-500/12 px-3 py-2.5 text-center text-[11px] font-bold uppercase tracking-[0.1em] text-amber-100 touch-manipulation disabled:cursor-not-allowed disabled:opacity-40 sm:min-w-[9rem]"
+                >
+                  Influence seal — 3 valor (+2 influence)
+                </button>
+              </div>
+              <p className="text-[10px] text-white/40">
+                Ivory Tower hosts a pride rite that also taxes credits — see Black Market → Ivory Tower.
               </p>
             </div>
           ) : null}

@@ -255,6 +255,55 @@ function arenaModeLabel(mode: ArenaMatchModeId): string {
   return "Practice";
 }
 
+function getArenaArchetypeRigRecommendation(
+  archetype: ArenaEnemyArchetypeId,
+  profile: ReturnType<typeof getPlayerLoadoutCombatModifiers>,
+) {
+  const make = (
+    tone: "good" | "caution" | "warning",
+    text: string,
+  ): { tone: "good" | "caution" | "warning"; text: string } => ({ tone, text });
+
+  if (archetype === "bulwark") {
+    return profile.weaponFamily === "ranged"
+      ? make(
+          "good",
+          "Bulwark read: keep range, chip steadily, avoid long counter trades.",
+        )
+      : make(
+          "caution",
+          "Bulwark read: consider ranged pressure or armor-heavy pacing before commit.",
+        );
+  }
+  if (archetype === "skirmisher") {
+    return profile.armorMitigationPct >= 12
+      ? make(
+          "good",
+          "Skirmisher read: your armor can absorb spikes; punish during telegraph windows.",
+        )
+      : make(
+          "warning",
+          "Skirmisher read: equip more mitigation if possible; skirmisher punishes low armor.",
+        );
+  }
+  return profile.damageBonusPct >= 12
+    ? make(
+        "good",
+        "Warden read: your current rig can race this duel; press clean burst windows.",
+      )
+    : make("caution", "Warden read: add strike damage in Loadout for faster closes.");
+}
+
+function arenaRecommendationToneClasses(tone: "good" | "caution" | "warning") {
+  if (tone === "good") {
+    return "border-emerald-300/25 bg-emerald-500/10 text-emerald-100/90";
+  }
+  if (tone === "warning") {
+    return "border-rose-300/30 bg-rose-500/15 text-rose-100/90";
+  }
+  return "border-amber-300/25 bg-amber-500/10 text-amber-100/90";
+}
+
 const TOURNAMENT_ROUNDS_M1 = 3;
 
 export default function ArenaMatchPage() {
@@ -275,6 +324,7 @@ export default function ArenaMatchPage() {
   const [enemyArchetype, setEnemyArchetype] = useState<ArenaEnemyArchetypeId>(
     () => rollArenaEnemyArchetype(),
   );
+  const [edgeSigilActive, setEdgeSigilActive] = useState(false);
 
   useEffect(() => {
     setTournamentRound(1);
@@ -295,8 +345,8 @@ export default function ArenaMatchPage() {
         player.factionAlignment,
         player.rankLevel,
         player.condition,
-        loadoutMods.attackMultiplier,
-        loadoutMods.armorMitigationPct,
+        loadoutMods.attackMultiplier * (edgeSigilActive ? 1.1 : 1),
+        loadoutMods.armorMitigationPct + (edgeSigilActive ? 10 : 0),
       ),
     [
       player.factionAlignment,
@@ -304,12 +354,17 @@ export default function ArenaMatchPage() {
       player.condition,
       loadoutMods.attackMultiplier,
       loadoutMods.armorMitigationPct,
+      edgeSigilActive,
     ],
   );
 
   const enemyProfile = useMemo(
     () => getArenaEnemyProfile(player.rankLevel, enemyArchetype),
     [player.rankLevel, enemyArchetype],
+  );
+  const rigRecommendation = useMemo(
+    () => getArenaArchetypeRigRecommendation(enemyArchetype, loadoutMods),
+    [enemyArchetype, loadoutMods],
   );
 
   const rewards = useMemo(() => {
@@ -361,9 +416,22 @@ export default function ArenaMatchPage() {
         text: `Combat link established. ${player.playerName} enters against ${enemyProfile.name}. ${enemyProfile.tagline}`,
       },
     ]);
+    if (rankedStakes && player.mythicAscension.arenaEdgeSigils > 0) {
+      dispatch({ type: "CONSUME_ARENA_EDGE_SIGIL" });
+      setEdgeSigilActive(true);
+      setCombatLog((current) => [
+        {
+          id: getNextLogId(),
+          text: "Arena Edge Sigil burns on entry — offense +10%, mitigation +10% this match.",
+        },
+        ...current,
+      ]);
+    } else {
+      setEdgeSigilActive(false);
+    }
     // Opening line only; further entries come from combat + resetCombat.
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- seed once on mount
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- match seed on mode/entry changes only
+  }, [arenaMode]);
 
   useEffect(() => {
     if (!lastHitTarget) return;
@@ -399,6 +467,12 @@ export default function ArenaMatchPage() {
     const nextArchetype = rollArenaEnemyArchetype();
     const nextEnemy = getArenaEnemyProfile(player.rankLevel, nextArchetype);
     setEnemyArchetype(nextArchetype);
+    let sigilApplied = false;
+    if (rankedStakes && player.mythicAscension.arenaEdgeSigils > 0) {
+      dispatch({ type: "CONSUME_ARENA_EDGE_SIGIL" });
+      sigilApplied = true;
+    }
+    setEdgeSigilActive(sigilApplied);
     setPlayerHp(playerProfile.maxHp);
     setEnemyHp(nextEnemy.maxHp);
     setPhase("ready");
@@ -414,7 +488,9 @@ export default function ArenaMatchPage() {
     setCombatLog([
       {
         id: getNextLogId(),
-        text: `Arena reset complete. ${nextEnemy.name} steps in — ${nextEnemy.tagline}`,
+        text: sigilApplied
+          ? `Arena reset complete. Edge Sigil burns — ${nextEnemy.name} steps in (${nextEnemy.tagline}).`
+          : `Arena reset complete. ${nextEnemy.name} steps in — ${nextEnemy.tagline}`,
       },
     ]);
   }
@@ -611,6 +687,14 @@ export default function ArenaMatchPage() {
               </Link>{" "}
               screen before ranked stakes.
             </p>
+            <p
+              className={[
+                "mt-2 max-w-2xl rounded-lg border px-3 py-2 text-xs",
+                arenaRecommendationToneClasses(rigRecommendation.tone),
+              ].join(" ")}
+            >
+              Tactical read: {rigRecommendation.text}
+            </p>
           </div>
 
           <div className="flex flex-col items-end gap-3">
@@ -622,6 +706,14 @@ export default function ArenaMatchPage() {
                 <div className="mt-1 font-black text-lg text-white">
                   {player.mythicAscension.arenaRankedSeason1Rating}
                 </div>
+                <div className="mt-1 text-[11px] text-amber-100/80">
+                  Edge sigils: {player.mythicAscension.arenaEdgeSigils}
+                </div>
+                {edgeSigilActive ? (
+                  <div className="mt-1 rounded-md border border-violet-300/35 bg-violet-500/15 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-violet-100">
+                    Edge active
+                  </div>
+                ) : null}
               </div>
             ) : null}
             <button

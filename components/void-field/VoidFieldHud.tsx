@@ -53,7 +53,7 @@ export default function VoidFieldHud({
 }) {
   return (
     <header
-      className={`pointer-events-none z-40 flex shrink-0 flex-col gap-1.5 border-b border-white/10 bg-gradient-to-b from-black/80 via-black/45 to-transparent px-3 py-3 backdrop-blur-[2px] md:flex-row md:items-start md:justify-between md:px-5 ${className}`}
+      className={`pointer-events-none z-40 flex shrink-0 flex-col gap-1.5 border-b border-white/10 bg-gradient-to-b from-black/80 via-black/45 to-transparent px-3 pb-3 pt-[max(0.75rem,env(safe-area-inset-top,0px))] backdrop-blur-[2px] md:flex-row md:items-start md:justify-between md:px-5 md:pb-3 ${className}`}
     >
       <div className="pointer-events-auto min-w-0">
         <div className="text-[10px] uppercase tracking-[0.22em] text-cyan-200/65">
@@ -161,13 +161,13 @@ export default function VoidFieldHud({
       <div className="pointer-events-auto flex flex-shrink-0 flex-wrap items-center gap-2 md:justify-end md:pt-0.5">
         <Link
           href="/bazaar/biotech-labs/result"
-          className="rounded-lg border border-emerald-400/25 bg-emerald-950/30 px-3 py-2 text-[11px] font-bold uppercase tracking-[0.12em] text-emerald-100/90 hover:border-emerald-300/40 hover:bg-emerald-950/45"
+          className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border border-emerald-400/25 bg-emerald-950/30 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.1em] text-emerald-100/90 hover:border-emerald-300/40 hover:bg-emerald-950/45 sm:text-[11px] sm:tracking-[0.12em]"
         >
           Hunt Result
         </Link>
         <Link
           href={VOID_EXPEDITION_PATH}
-          className="rounded-lg border border-white/20 bg-black/50 px-3 py-2 text-[11px] font-bold uppercase tracking-[0.14em] text-white/85 hover:border-white/35 hover:bg-black/60"
+          className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border border-white/20 bg-black/50 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-white/85 hover:border-white/35 hover:bg-black/60 sm:text-[11px] sm:tracking-[0.14em]"
         >
           Expedition
         </Link>

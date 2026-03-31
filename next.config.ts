@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  /** Self-hosted / Phase 10 — slim Node image via `Dockerfile` (`output: "standalone"`). */
+  output: "standalone",
   async redirects() {
     return [
       {

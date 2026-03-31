@@ -23,7 +23,7 @@ export default function VoidFieldCombatTicker({
   if (rows.length === 0) return null;
 
   return (
-    <div className="pointer-events-none absolute bottom-24 left-3 z-20 max-w-[min(280px,88vw)] rounded-lg border border-white/12 bg-black/55 px-3 py-2 text-[11px] text-white/80 backdrop-blur-sm md:bottom-28 md:left-4">
+    <div className="pointer-events-none absolute bottom-[calc(6.75rem+env(safe-area-inset-bottom,0px))] left-[max(0.75rem,env(safe-area-inset-left,0px))] z-20 max-w-[min(280px,calc(100vw-1.5rem))] rounded-lg border border-white/12 bg-black/55 px-3 py-2 text-[11px] text-white/80 backdrop-blur-sm md:bottom-28 md:left-4">
       <div className="text-[9px] font-bold uppercase tracking-[0.18em] text-white/45">
         Impacts
       </div>
