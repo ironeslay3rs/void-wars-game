@@ -10,7 +10,8 @@ import { createInitialMarketState } from "@/features/market/marketActions";
 
 export const initialGameState: GameState = {
   player: {
-    playerName: "Iron",
+    playerName: "",
+    characterCreated: false,
     factionAlignment: "unbound",
     characterPortraitId: DEFAULT_CHARACTER_PORTRAIT_ID,
     careerFocus: null,
@@ -26,7 +27,7 @@ export const initialGameState: GameState = {
     nextRunModifiers: null,
     nextRunModifiersAppliedForProcessId: null,
 
-    rank: "Initiate",
+    rank: "Unmarked",
     rankLevel: 1,
     rankXp: 0,
     rankXpToNext: 100,
@@ -34,15 +35,16 @@ export const initialGameState: GameState = {
     masteryProgress: 0,
     influence: 0,
     hasBiotechSpecimenLead: false,
+    voidInstability: 0,
 
     resources: {
-      credits: 250,
-      ironOre: 20,
-      scrapAlloy: 15,
-      runeDust: 10,
-      emberCore: 2,
+      credits: 0,
+      ironOre: 0,
+      scrapAlloy: 0,
+      runeDust: 0,
+      emberCore: 0,
       bioSamples: 0,
-      mossRations: 2,
+      mossRations: 0,
       coilboundLattice: 0,
       ashSynodRelic: 0,
       vaultLatticeShard: 0,
@@ -51,6 +53,10 @@ export const initialGameState: GameState = {
     fieldLootGainedThisRun: {},
     market: createInitialMarketState(),
     craftedInventory: {},
+    craftWorkOrder: null,
+
+    lastStallRentResolvedAt: Date.now(),
+    stallArrearsCount: 0,
 
     knownRecipes: [],
     unlockedRoutes: ["home", "bazaar"],

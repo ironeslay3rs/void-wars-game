@@ -1,5 +1,6 @@
 import type { PlayerState } from "@/features/game/gameTypes";
 import type { VoidZoneId } from "@/features/void-maps/zoneData";
+import type { GuildContributionLogEntry } from "@/features/factions/factionWorldTypes";
 import type {
   GuildMember,
   GuildPledge,
@@ -276,6 +277,36 @@ export function postGuildContract(player: PlayerState, templateId: string): Shar
   };
 }
 
+/** Phase 8 — visible contribution ranks (extends standing chips on Guild + Home). */
+export function getGuildMercenaryRank(total: number): {
+  label: string;
+  hint: string;
+} {
+  const t = Math.max(0, Math.floor(total));
+  if (t >= 520) {
+    return {
+      label: "Warden-Syndic",
+      hint: "Co-guarantor weight on broker paper — the collective is treated as strategic, not casual labor.",
+    };
+  }
+  if (t >= 240) {
+    return {
+      label: "Vanguard broker",
+      hint: "Front-weighted cadence; theater and contract lines pay premium attention to your file.",
+    };
+  }
+  if (t >= 80) {
+    return {
+      label: "Bonded contractor",
+      hint: "Default trust tier for shared objectives, split payouts, and HQ stipend flavor.",
+    };
+  }
+  return {
+    label: "Probationary",
+    hint: "Prove tempo on the ledger to unlock tighter coordination and rivalry relevance.",
+  };
+}
+
 export function getContractProgressPct(player: PlayerState, c: SharedGuildContract): number {
   const cur = player.guildContributionTotal ?? 0;
   const delta = Math.max(0, cur - c.startContribution);
@@ -314,5 +345,46 @@ export function buildLocalRivalTable(player: PlayerState): LocalGuildRivalSnapsh
     });
   }
   return rivals.sort((a, b) => b.contribution - a.contribution);
+}
+
+/** Phase 8 — dependency copy for the local board (no server authority). */
+/** Mission queue end times and client `resolvedAt` can differ slightly. */
+const HUNT_GUILD_LEDGER_WINDOW_MS = 8_000;
+
+/** Log lines tied to one hunt settlement (contract + optional realtime void supplement). */
+export function getGuildLedgerSliceForHuntResult(
+  player: PlayerState,
+  huntResolvedAt: number,
+): { entries: GuildContributionLogEntry[]; total: number } {
+  if (!Number.isFinite(huntResolvedAt)) {
+    return { entries: [], total: 0 };
+  }
+  const log = player.guildContributionLog ?? [];
+  const entries = log.filter(
+    (e) => Math.abs(e.at - huntResolvedAt) <= HUNT_GUILD_LEDGER_WINDOW_MS,
+  );
+  const total = entries.reduce((s, e) => s + e.amount, 0);
+  return { entries, total };
+}
+
+export function getGuildRivalInsight(player: PlayerState): string | null {
+  const roster = player.guild;
+  if (roster.kind !== "inGuild") return null;
+  const rows = buildLocalRivalTable(player);
+  const idx = rows.findIndex((r) => r.guildId === roster.guildId);
+  if (idx < 0) return null;
+  const myContrib = player.guildContributionTotal ?? 0;
+  if (idx === 0) {
+    return "Local board: your guild holds #1 — rival cells are hunting for a slip.";
+  }
+  const ahead = rows[idx - 1];
+  const gap = ahead.contribution - myContrib;
+  if (gap <= 0) {
+    return `Local board: tied or ahead on paper with ${ahead.guildName} — next payout stretch may reshuffle.`;
+  }
+  if (gap <= 22) {
+    return `Local board: #${idx + 1} — only ${gap} contribution separates you from overtaking ${ahead.guildName}.`;
+  }
+  return `Local board: #${idx + 1} of ${rows.length}. ${ahead.guildName} leads your stack by ${gap} points.`;
 }
 

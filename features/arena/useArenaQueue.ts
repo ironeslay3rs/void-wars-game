@@ -2,19 +2,21 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { ArenaMode, QueueState } from "@/features/arena/arenaTypes";
+import { canEnterArenaQueue } from "@/features/arena/arenaView";
 
 type UseArenaQueueOptions = {
   battleModes: ArenaMode[];
-  arenaEligibility: string;
+  condition: number;
 };
 
 export function useArenaQueue({
   battleModes,
-  arenaEligibility,
+  condition,
 }: UseArenaQueueOptions) {
   const [selectedMode, setSelectedMode] = useState<ArenaMode>(battleModes[0]);
   const [queueState, setQueueState] = useState<QueueState>("idle");
   const matchmakingTimerRef = useRef<number | null>(null);
+  const canQueueSelectedMode = canEnterArenaQueue(selectedMode.id, condition);
 
   useEffect(() => {
     return () => {
@@ -39,7 +41,7 @@ export function useArenaQueue({
   }
 
   function handleQueue() {
-    if (arenaEligibility !== "Eligible") return;
+    if (!canQueueSelectedMode) return;
 
     resetQueue();
     setQueueState("searching");
@@ -53,6 +55,7 @@ export function useArenaQueue({
   return {
     queueState,
     selectedMode,
+    canQueueSelectedMode,
     handleSelectMode,
     handleQueue,
     handleCancelQueue: resetQueue,

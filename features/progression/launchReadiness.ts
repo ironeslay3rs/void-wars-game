@@ -8,7 +8,12 @@ import {
 export type LaunchDirectiveTone = "critical" | "warning" | "ready";
 
 export type LaunchDirective = {
-  id: "stabilize" | "queue-contract" | "claim-payout" | "deploy";
+  id:
+    | "stabilize"
+    | "queue-contract"
+    | "claim-payout"
+    | "deploy"
+    | "void-strain";
   label: string;
   detail: string;
   tone: LaunchDirectiveTone;
@@ -26,6 +31,20 @@ export function getLaunchDirectives(player: PlayerState, now: number): LaunchDir
       detail:
         "Condition or stores are critical. Recover before queueing another contract.",
       tone: "critical",
+    });
+  }
+
+  if (
+    !snapshot.hasCriticalVitals &&
+    player.voidInstability >= 58 &&
+    player.condition >= 45
+  ) {
+    directives.push({
+      id: "void-strain",
+      label: "Bleed Void strain",
+      detail:
+        "Instability is high — paid recovery, rations, and stable vitals pull it down. Check Status for the full readout.",
+      tone: "warning",
     });
   }
 

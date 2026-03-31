@@ -6,6 +6,7 @@ import { enrichRealtimeMobWithM4Traits } from "../../features/void-maps/realtime
 import { resolveShellHitWithSnapshot } from "../../features/combat/shellHitResolution";
 import { strikeSnapshotFromPresence } from "../../features/combat/strikeSnapshot";
 import { voidZoneById, type VoidZoneId } from "../../features/void-maps/zoneData";
+import { rollVoidFieldLoot } from "../../features/void-maps/rollVoidFieldLoot";
 import type {
   FactionAlignment,
   ResourcesState,
@@ -1328,29 +1329,26 @@ wss.on("connection", (ws) => {
       broadcastSession(joinedSession, combatEvent);
 
       if (nextMob.hp <= 0) {
+        const zoneMeta = voidZoneById[nextMob.zoneId];
+        const isBossMob = nextMob.mobLabel === "Void Boss";
+        const rolled = rollVoidFieldLoot({
+          zoneLootTheme: zoneMeta.lootTheme,
+          mobId: nextMob.mobId,
+          isBoss: isBossMob,
+          seed: `ws-defeat-${nextMob.mobEntityId}-${nextMob.spawnedAt}`,
+        });
+        const lootLines = rolled.map((r) => ({
+          resource: r.resource,
+          amount: r.amount,
+        }));
+        const rewards: Partial<ResourcesState> = {};
+        for (const line of rolled) {
+          rewards[line.resource] =
+            (rewards[line.resource] ?? 0) + line.amount;
+        }
+
         if (!mobLedger.finalized) {
           mobLedger.finalized = true;
-
-          const isBossMob = nextMob.mobLabel === "Void Boss";
-          const zone = getZoneById(nextMob.zoneId);
-          const rewards: Partial<ResourcesState> = {};
-
-          if (isBossMob) {
-            switch (zone.dropType) {
-              case "bio":
-                rewards.bioSamples =
-                  (rewards.bioSamples ?? 0) + getRandomInt(2, 6);
-                break;
-              case "mecha":
-                rewards.scrapAlloy =
-                  (rewards.scrapAlloy ?? 0) + getRandomInt(2, 6);
-                break;
-              case "spirit":
-                rewards.runeDust =
-                  (rewards.runeDust ?? 0) + getRandomInt(2, 6);
-                break;
-            }
-          }
 
           for (const [clientId, dealtDamage] of mobLedger.damageByClientId) {
             if (dealtDamage <= 0) continue;
@@ -1387,6 +1385,7 @@ wss.on("connection", (ws) => {
           type: "mob_defeated",
           mobEntityId: nextMob.mobEntityId,
           ts: Date.now(),
+          lootLines,
         };
         broadcastSession(joinedSession, defeated);
       }

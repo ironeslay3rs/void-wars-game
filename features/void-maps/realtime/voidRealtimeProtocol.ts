@@ -1,6 +1,7 @@
 import type {
   FactionAlignment,
   FieldLoadoutProfile,
+  ResourceKey,
   ResourcesState,
 } from "@/features/game/gameTypes";
 import type { RuneSchool } from "@/features/mastery/runeMasteryTypes";
@@ -215,10 +216,25 @@ export type CombatEventMessage = {
   ts: number;
 };
 
+/** Authoritative void-field drops (server `rollVoidFieldLoot` — client applies path/mastery mult on pickup only). */
+export type MobAuthoritativeLootLine = {
+  resource: ResourceKey;
+  amount: number;
+};
+
+export type AuthoritativeMobLootEvent = {
+  mobEntityId: string;
+  lines: MobAuthoritativeLootLine[];
+  x: number;
+  y: number;
+};
+
 export type MobDefeatedMessage = {
   type: "mob_defeated";
   mobEntityId: string;
   ts: number;
+  /** Present for realtime mobs — replaces client-side death roll. */
+  lootLines?: MobAuthoritativeLootLine[];
 };
 
 export type HuntStatus = "running" | "complete" | "paused";

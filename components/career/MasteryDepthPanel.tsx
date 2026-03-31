@@ -4,7 +4,9 @@ import Link from "next/link";
 import { useGame } from "@/features/game/gameContext";
 import {
   computeInstallCost,
+  effectiveHybridReliefFromMythic,
   getEffectiveCapacityMax,
+  getEffectiveHybridDrainStackCount,
   getExecutionalTier,
   HYBRID_CAP_SHRINK_PER_STACK,
   MAX_MINORS_PER_SCHOOL,
@@ -12,6 +14,7 @@ import {
 } from "@/features/mastery/runeMasteryLogic";
 import {
   getMasteryAlignedPickupYieldMultiplier,
+  getSchoolMasterySystemsReadout,
   MAX_ALIGNED_PICKUP_YIELD_MULT,
 } from "@/features/mastery/masteryGameplayEffects";
 import {
@@ -67,8 +70,13 @@ function CapacityBar({
 
 export default function MasteryDepthPanel() {
   const { state, dispatch } = useGame();
-  const { runeMastery, factionAlignment } = state.player;
-  const effCap = getEffectiveCapacityMax(runeMastery);
+  const { runeMastery, factionAlignment, mythicAscension } = state.player;
+  const hybridRelief = effectiveHybridReliefFromMythic(mythicAscension);
+  const effCap = getEffectiveCapacityMax(runeMastery, hybridRelief);
+  const effectiveHybridStacks = getEffectiveHybridDrainStackCount(
+    runeMastery,
+    hybridRelief,
+  );
   const primary = getPrimaryRuneSchool(factionAlignment);
 
   return (
@@ -97,6 +105,18 @@ export default function MasteryDepthPanel() {
         </Link>{" "}
         on Character for field and district modifiers.
       </p>
+      {mythicAscension.runeCrafterLicense ? (
+        <p className="mt-2 text-xs text-violet-200/80">
+          Rune Crafter license: one hybrid drain stack is forgiven for capacity
+          ceilings (late hybrid stability — Phase 7).
+        </p>
+      ) : null}
+      {mythicAscension.convergencePrimed ? (
+        <p className="mt-2 text-xs text-cyan-200/85">
+          Convergence filed (Phase 9): one additional hybrid stack is forgiven for
+          ceiling math — stacks with the Crafter relief when you hold both.
+        </p>
+      ) : null}
 
       <div className="mt-5 grid gap-3 sm:grid-cols-3">
         <CapacityBar
@@ -139,9 +159,12 @@ export default function MasteryDepthPanel() {
 
       {runeMastery.hybridDrainStacks > 0 ? (
         <p className="mt-1 text-xs text-amber-200/80">
-          Hybrid drain stacks: {runeMastery.hybridDrainStacks} (−
-          {runeMastery.hybridDrainStacks * HYBRID_CAP_SHRINK_PER_STACK} effective
-          max per pool vs baseline ceilings)
+          Hybrid drain stacks: {runeMastery.hybridDrainStacks}
+          {effectiveHybridStacks !== runeMastery.hybridDrainStacks
+            ? ` → ${effectiveHybridStacks} count toward ceilings after mythic relief`
+            : ""}{" "}
+          (−{effectiveHybridStacks * HYBRID_CAP_SHRINK_PER_STACK} effective max per
+          pool vs baseline ceilings)
         </p>
       ) : null}
 
@@ -237,6 +260,20 @@ export default function MasteryDepthPanel() {
                   zones
                 </div>
               ) : null}
+              <div className="mt-3 space-y-1 rounded-lg border border-white/10 bg-black/25 px-2 py-2">
+                {getSchoolMasterySystemsReadout(
+                  runeMastery,
+                  school,
+                  factionAlignment,
+                ).map((line, i) => (
+                  <p
+                    key={`${school}-sys-${i}`}
+                    className="text-[9px] leading-snug text-white/52"
+                  >
+                    {line}
+                  </p>
+                ))}
+              </div>
               <div className="mt-3 flex-1" />
               <div className="text-[10px] text-white/40">
                 Next cost · Blood {cost.blood} / Frame {cost.frame} / Resonance{" "}

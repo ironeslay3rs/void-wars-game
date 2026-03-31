@@ -1,9 +1,28 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import DamagePopup from "@/components/combat/DamagePopup";
 import { useGame } from "@/features/game/gameContext";
+import { getPlayerLoadoutCombatModifiers } from "@/features/combat/loadoutCombatStats";
+import {
+  ARENA_ENEMY_TELEGRAPH_DAMAGE_MULT,
+  ARENA_ENEMY_TELEGRAPH_INTERVAL,
+  getArenaArchetypePayoutMult,
+  getArenaDefeatSrDelta,
+  getArenaEnemyProfile,
+  getArenaVictorySrDelta,
+  rollArenaEnemyArchetype,
+  type ArenaEnemyArchetypeId,
+} from "@/features/arena/arenaEncounterProfiles";
+import {
+  ARENA_PRACTICE_REWARD_MULT,
+  arenaModeAppliesRankedStakes,
+  parseArenaMatchModeParam,
+  scaleArenaRewardsForMode,
+  type ArenaMatchModeId,
+} from "@/features/arena/arenaMatchModes";
 
 type CombatPhase = "ready" | "victory" | "defeat";
 
@@ -76,15 +95,24 @@ function getPlayerCombatProfile(
   faction: string,
   rankLevel: number,
   condition: number,
+  attackMultiplier: number,
+  armorMitigationPct: number,
 ) {
   const levelBonus = rankLevel * 14;
   const conditionScale = 0.75 + condition / 400;
+  const hpScale = 1 + armorMitigationPct / 250;
 
   if (faction === "bio") {
     return {
-      maxHp: Math.round((340 + levelBonus * 2.2) * conditionScale),
-      minDamage: Math.round((28 + rankLevel * 4) * conditionScale),
-      maxDamage: Math.round((42 + rankLevel * 5) * conditionScale),
+      maxHp: Math.round((340 + levelBonus * 2.2) * conditionScale * hpScale),
+      minDamage: Math.max(
+        1,
+        Math.round((28 + rankLevel * 4) * conditionScale * attackMultiplier),
+      ),
+      maxDamage: Math.max(
+        1,
+        Math.round((42 + rankLevel * 5) * conditionScale * attackMultiplier),
+      ),
       critChance: 0.16,
       critMultiplier: 1.45,
       title: "Adaptive Hunter",
@@ -93,9 +121,15 @@ function getPlayerCombatProfile(
 
   if (faction === "mecha") {
     return {
-      maxHp: Math.round((360 + levelBonus * 2.4) * conditionScale),
-      minDamage: Math.round((24 + rankLevel * 4) * conditionScale),
-      maxDamage: Math.round((46 + rankLevel * 5) * conditionScale),
+      maxHp: Math.round((360 + levelBonus * 2.4) * conditionScale * hpScale),
+      minDamage: Math.max(
+        1,
+        Math.round((24 + rankLevel * 4) * conditionScale * attackMultiplier),
+      ),
+      maxDamage: Math.max(
+        1,
+        Math.round((46 + rankLevel * 5) * conditionScale * attackMultiplier),
+      ),
       critChance: 0.14,
       critMultiplier: 1.5,
       title: "Synod Duelist",
@@ -104,9 +138,15 @@ function getPlayerCombatProfile(
 
   if (faction === "pure") {
     return {
-      maxHp: Math.round((320 + levelBonus * 2.1) * conditionScale),
-      minDamage: Math.round((30 + rankLevel * 4) * conditionScale),
-      maxDamage: Math.round((48 + rankLevel * 5) * conditionScale),
+      maxHp: Math.round((320 + levelBonus * 2.1) * conditionScale * hpScale),
+      minDamage: Math.max(
+        1,
+        Math.round((30 + rankLevel * 4) * conditionScale * attackMultiplier),
+      ),
+      maxDamage: Math.max(
+        1,
+        Math.round((48 + rankLevel * 5) * conditionScale * attackMultiplier),
+      ),
       critChance: 0.18,
       critMultiplier: 1.4,
       title: "Ember Channeler",
@@ -114,23 +154,18 @@ function getPlayerCombatProfile(
   }
 
   return {
-    maxHp: Math.round((330 + levelBonus * 2.1) * conditionScale),
-    minDamage: Math.round((22 + rankLevel * 3) * conditionScale),
-    maxDamage: Math.round((36 + rankLevel * 4) * conditionScale),
+    maxHp: Math.round((330 + levelBonus * 2.1) * conditionScale * hpScale),
+    minDamage: Math.max(
+      1,
+      Math.round((22 + rankLevel * 3) * conditionScale * attackMultiplier),
+    ),
+    maxDamage: Math.max(
+      1,
+      Math.round((36 + rankLevel * 4) * conditionScale * attackMultiplier),
+    ),
     critChance: 0.1,
     critMultiplier: 1.35,
     title: "Unbound Drifter",
-  };
-}
-
-function getEnemyCombatProfile(rankLevel: number) {
-  return {
-    name: "Arena Warden",
-    maxHp: 360 + rankLevel * 34,
-    minDamage: 20 + rankLevel * 4,
-    maxDamage: 34 + rankLevel * 5,
-    critChance: 0.08,
-    critMultiplier: 1.35,
   };
 }
 
@@ -214,12 +249,45 @@ function getMatchRewards(
   };
 }
 
+function arenaModeLabel(mode: ArenaMatchModeId): string {
+  if (mode === "ranked") return "Ranked";
+  if (mode === "tournament") return "Tournament";
+  return "Practice";
+}
+
+const TOURNAMENT_ROUNDS_M1 = 3;
+
 export default function ArenaMatchPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { state, dispatch } = useGame();
   const { player } = state;
 
+  const modeParam = searchParams.get("mode");
+  const arenaMode = useMemo(
+    () => parseArenaMatchModeParam(modeParam),
+    [modeParam],
+  );
+  const rankedStakes = arenaModeAppliesRankedStakes(arenaMode);
+
+  const [tournamentRound, setTournamentRound] = useState(1);
+
+  const [enemyArchetype, setEnemyArchetype] = useState<ArenaEnemyArchetypeId>(
+    () => rollArenaEnemyArchetype(),
+  );
+
+  useEffect(() => {
+    setTournamentRound(1);
+  }, [arenaMode]);
+
   const accent = getFactionAccent(player.factionAlignment);
+
+  /* eslint-disable react-hooks/exhaustive-deps -- granular loadout deps only */
+  const loadoutMods = useMemo(
+    () => getPlayerLoadoutCombatModifiers(player),
+    [player.loadoutSlots, player.craftedInventory, player.factionAlignment],
+  );
+  /* eslint-enable react-hooks/exhaustive-deps */
 
   const playerProfile = useMemo(
     () =>
@@ -227,38 +295,57 @@ export default function ArenaMatchPage() {
         player.factionAlignment,
         player.rankLevel,
         player.condition,
+        loadoutMods.attackMultiplier,
+        loadoutMods.armorMitigationPct,
       ),
-    [player.factionAlignment, player.rankLevel, player.condition],
+    [
+      player.factionAlignment,
+      player.rankLevel,
+      player.condition,
+      loadoutMods.attackMultiplier,
+      loadoutMods.armorMitigationPct,
+    ],
   );
 
   const enemyProfile = useMemo(
-    () => getEnemyCombatProfile(player.rankLevel),
-    [player.rankLevel],
+    () => getArenaEnemyProfile(player.rankLevel, enemyArchetype),
+    [player.rankLevel, enemyArchetype],
   );
 
-  const rewards = useMemo(
-    () =>
-      getMatchRewards(
-        player.factionAlignment,
-        player.rankLevel,
-        player.condition,
-      ),
-    [player.factionAlignment, player.rankLevel, player.condition],
-  );
+  const rewards = useMemo(() => {
+    const base = getMatchRewards(
+      player.factionAlignment,
+      player.rankLevel,
+      player.condition,
+    );
+    const scaled = scaleArenaRewardsForMode(base, arenaMode);
+    const m = getArenaArchetypePayoutMult(enemyArchetype);
+    return {
+      credits: Math.floor(scaled.credits * m),
+      rankXp: Math.floor(scaled.rankXp * m),
+      influence: Math.max(0, Math.floor(scaled.influence * m)),
+      scrapAlloy: Math.floor(scaled.scrapAlloy * m),
+      runeDust: Math.floor(scaled.runeDust * m),
+      bioSamples: Math.floor(scaled.bioSamples * m),
+      emberCore: Math.floor(scaled.emberCore * m),
+    };
+  }, [
+    player.factionAlignment,
+    player.rankLevel,
+    player.condition,
+    arenaMode,
+    enemyArchetype,
+  ]);
 
   const logIdRef = useRef(2);
   const matchResolutionAppliedRef = useRef(false);
+  const enemyExchangeCountRef = useRef(0);
 
   const [playerHp, setPlayerHp] = useState(playerProfile.maxHp);
   const [enemyHp, setEnemyHp] = useState(enemyProfile.maxHp);
   const [phase, setPhase] = useState<CombatPhase>("ready");
   const [rewardsClaimed, setRewardsClaimed] = useState(false);
-  const [combatLog, setCombatLog] = useState<CombatLogEntry[]>([
-    {
-      id: 1,
-      text: `Combat link established. ${player.playerName} enters the arena against ${enemyProfile.name}.`,
-    },
-  ]);
+  const [combatLog, setCombatLog] = useState<CombatLogEntry[]>([]);
 
   const [lastHitTarget, setLastHitTarget] = useState<HitTarget>(null);
   const [lastHitValue, setLastHitValue] = useState(0);
@@ -266,6 +353,17 @@ export default function ArenaMatchPage() {
 
   const playerHpPercent = clamp((playerHp / playerProfile.maxHp) * 100, 0, 100);
   const enemyHpPercent = clamp((enemyHp / enemyProfile.maxHp) * 100, 0, 100);
+
+  useEffect(() => {
+    setCombatLog([
+      {
+        id: 1,
+        text: `Combat link established. ${player.playerName} enters against ${enemyProfile.name}. ${enemyProfile.tagline}`,
+      },
+    ]);
+    // Opening line only; further entries come from combat + resetCombat.
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- seed once on mount
+  }, []);
 
   useEffect(() => {
     if (!lastHitTarget) return;
@@ -298,18 +396,25 @@ export default function ArenaMatchPage() {
   }
 
   function resetCombat() {
+    const nextArchetype = rollArenaEnemyArchetype();
+    const nextEnemy = getArenaEnemyProfile(player.rankLevel, nextArchetype);
+    setEnemyArchetype(nextArchetype);
     setPlayerHp(playerProfile.maxHp);
-    setEnemyHp(enemyProfile.maxHp);
+    setEnemyHp(nextEnemy.maxHp);
     setPhase("ready");
     setRewardsClaimed(false);
     matchResolutionAppliedRef.current = false;
+    enemyExchangeCountRef.current = 0;
+    if (arenaMode === "tournament") {
+      setTournamentRound(1);
+    }
     setLastHitTarget(null);
     setLastHitValue(0);
     setLastHitCrit(false);
     setCombatLog([
       {
         id: getNextLogId(),
-        text: `Arena reset complete. ${enemyProfile.name} re-enters the combat shard.`,
+        text: `Arena reset complete. ${nextEnemy.name} steps in — ${nextEnemy.tagline}`,
       },
     ]);
   }
@@ -341,8 +446,23 @@ export default function ArenaMatchPage() {
 
     if (nextEnemyHp <= 0) {
       if (!matchResolutionAppliedRef.current) {
-        dispatch({ type: "ADJUST_CONDITION", payload: -6 });
-        pushLog("Condition -6 (combat strain)");
+        if (arenaMode !== "practice") {
+          dispatch({ type: "ADJUST_CONDITION", payload: -6 });
+          pushLog("Condition -6 (combat strain)");
+        } else {
+          pushLog("Practice — condition unchanged.");
+        }
+        if (rankedStakes) {
+          const srWin = getArenaVictorySrDelta(enemyArchetype);
+          dispatch({ type: "APPLY_ARENA_RANKED_SR_DELTA", payload: srWin });
+          pushLog(`Season SR +${srWin} (${enemyProfile.id} opponent).`);
+        }
+        if (arenaMode === "tournament") {
+          setTournamentRound((r) => Math.min(TOURNAMENT_ROUNDS_M1, r + 1));
+          pushLog(
+            `Tournament bracket — win banked toward round cap (${TOURNAMENT_ROUNDS_M1} max, M1 shell).`,
+          );
+        }
         matchResolutionAppliedRef.current = true;
       }
 
@@ -351,6 +471,10 @@ export default function ArenaMatchPage() {
       return;
     }
 
+    enemyExchangeCountRef.current += 1;
+    const telegraphedCounter =
+      enemyExchangeCountRef.current % ARENA_ENEMY_TELEGRAPH_INTERVAL === 0;
+
     const enemyHit = rollDamage(
       enemyProfile.minDamage,
       enemyProfile.maxDamage,
@@ -358,25 +482,58 @@ export default function ArenaMatchPage() {
       enemyProfile.critMultiplier,
     );
 
+    if (telegraphedCounter) {
+      pushLog(
+        `${enemyProfile.name} telegraphs a heavy counter — +${Math.round((ARENA_ENEMY_TELEGRAPH_DAMAGE_MULT - 1) * 100)}% impact incoming.`,
+      );
+    }
+
+    let rawEnemyDamage = enemyHit.damage;
+    if (telegraphedCounter) {
+      rawEnemyDamage = Math.round(rawEnemyDamage * ARENA_ENEMY_TELEGRAPH_DAMAGE_MULT);
+    }
+    const damageTaken = Math.max(
+      1,
+      Math.round(rawEnemyDamage * loadoutMods.incomingDamageMultiplier),
+    );
+    const mitigated = Math.max(0, rawEnemyDamage - damageTaken);
+
     const nextPlayerHp = clamp(
-      playerHp - enemyHit.damage,
+      playerHp - damageTaken,
       0,
       playerProfile.maxHp,
     );
 
-    pushLog(
-      enemyHit.isCrit
-        ? `${enemyProfile.name} lands a critical counter for ${enemyHit.damage} damage.`
-        : `${enemyProfile.name} counters for ${enemyHit.damage} damage.`,
-    );
+    if (enemyHit.isCrit) {
+      pushLog(
+        mitigated > 0
+          ? `${enemyProfile.name} critical counter — ${damageTaken} damage through armor (${mitigated} mitigated).`
+          : `${enemyProfile.name} lands a critical counter for ${damageTaken} damage.`,
+      );
+    } else {
+      pushLog(
+        mitigated > 0
+          ? `${enemyProfile.name} counters for ${damageTaken} damage (${mitigated} mitigated).`
+          : `${enemyProfile.name} counters for ${damageTaken} damage.`,
+      );
+    }
 
     setPlayerHp(nextPlayerHp);
-    showHit("player", enemyHit.damage, enemyHit.isCrit);
+    showHit("player", damageTaken, enemyHit.isCrit);
 
     if (nextPlayerHp <= 0) {
       if (!matchResolutionAppliedRef.current) {
-        dispatch({ type: "ADJUST_CONDITION", payload: -10 });
-        pushLog("Condition -10 (combat strain)");
+        if (arenaMode !== "practice") {
+          dispatch({ type: "ADJUST_CONDITION", payload: -10 });
+          pushLog("Condition -10 (combat strain)");
+        } else {
+          pushLog("Practice — condition unchanged.");
+        }
+        if (rankedStakes) {
+          const srLoss = getArenaDefeatSrDelta(enemyArchetype);
+          dispatch({ type: "APPLY_ARENA_RANKED_SR_DELTA", payload: srLoss });
+          pushLog(`Season SR ${srLoss} (${enemyProfile.id} opponent).`);
+        }
         matchResolutionAppliedRef.current = true;
       }
 
@@ -437,18 +594,36 @@ export default function ArenaMatchPage() {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="text-[11px] uppercase tracking-[0.3em] text-white/40">
-              Arena Combat Prototype
+              Phase 5 · Arena encounter (M1 slice)
             </div>
             <h1 className="mt-3 text-4xl font-black uppercase tracking-[0.06em] text-white">
               Match Instance
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-white/60">
-              First playable combat loop for Void Wars: Oblivion. This scene now
-              includes arena victory rewards and a return-to-arena payout flow.
+              Preparation matters: loadout weapon and armor modify your strike
+              band and how much counter damage you actually take. Each reset rolls
+              a different opponent archetype. Equip on the{" "}
+              <Link
+                href="/loadout"
+                className="font-semibold text-cyan-200/90 underline-offset-4 hover:text-cyan-100 hover:underline"
+              >
+                Loadout
+              </Link>{" "}
+              screen before ranked stakes.
             </p>
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex flex-col items-end gap-3">
+            {rankedStakes ? (
+              <div className="rounded-xl border border-amber-300/30 bg-amber-500/10 px-4 py-2 text-right text-xs text-amber-100/90">
+                <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-amber-200/75">
+                  Season 1 SR
+                </div>
+                <div className="mt-1 font-black text-lg text-white">
+                  {player.mythicAscension.arenaRankedSeason1Rating}
+                </div>
+              </div>
+            ) : null}
             <button
               type="button"
               onClick={() => router.push("/arena")}
@@ -456,6 +631,90 @@ export default function ArenaMatchPage() {
             >
               Return to Arena
             </button>
+          </div>
+        </div>
+
+        <div
+          className={[
+            "rounded-[20px] border px-5 py-4 text-sm",
+            arenaMode === "practice"
+              ? "border-sky-400/25 bg-sky-950/25 text-sky-100/90"
+              : arenaMode === "tournament"
+                ? "border-violet-400/25 bg-violet-950/20 text-violet-100/88"
+                : "border-rose-400/25 bg-rose-950/20 text-rose-100/88",
+          ].join(" ")}
+        >
+          <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/50">
+            Active stakes · {arenaModeLabel(arenaMode)}
+          </div>
+          <p className="mt-2 leading-relaxed">
+            {arenaMode === "practice" ? (
+              <>
+                <span className="font-semibold text-white/95">Practice lane.</span> Rewards
+                run at ~{Math.round(ARENA_PRACTICE_REWARD_MULT * 100)}% of ranked values, then an
+                archetype payout tweak. No condition loss and no SR change on win or loss.
+                Telegraph counters still apply for training muscle memory.
+              </>
+            ) : arenaMode === "tournament" ? (
+              <>
+                <span className="font-semibold text-white/95">Tournament shell (M1).</span>{" "}
+                Same stakes as ranked: −6 / −10 condition; SR +12–+18 on wins and −14–−10 on
+                losses by opponent archetype; every 3rd enemy counter is a{" "}
+                <span className="italic text-white/85">telegraphed</span> surge (+22% raw
+                before armor).
+              </>
+            ) : (
+              <>
+                <span className="font-semibold text-white/95">Ranked lane.</span> Victory
+                imposes light strain (−6 condition); SR +12 (skirmisher) → +18 (bulwark).
+                Defeat: −10 condition; SR −14 (skirmisher) → −10 (bulwark). Telegraph
+                rhythm: every 3rd counter hits harder (+22% raw). Payouts include a light
+                archetype multiplier (bulwark slightly richer).
+              </>
+            )}
+          </p>
+          {arenaMode === "tournament" ? (
+            <div className="mt-3 rounded-xl border border-violet-400/25 bg-black/30 px-4 py-3 text-xs text-violet-100/88">
+              <span className="font-bold uppercase tracking-[0.14em] text-violet-200/80">
+                Bracket (M1)
+              </span>
+              <div className="mt-1.5">
+                Display round <span className="font-black text-white">{tournamentRound}</span> of{" "}
+                <span className="font-black text-white">{TOURNAMENT_ROUNDS_M1}</span> — wins
+                advance the counter; reset combat clears the shell.
+              </div>
+              {tournamentRound >= TOURNAMENT_ROUNDS_M1 && phase === "victory" ? (
+                <div className="mt-2 font-semibold text-emerald-200/90">
+                  Round cap reached for this session (display-only progression).
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+
+        <div className="rounded-[20px] border border-cyan-400/20 bg-cyan-950/20 px-5 py-4 text-sm text-cyan-100/85">
+          <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-200/70">
+            Loadout snapshot
+          </div>
+          <div className="mt-2 flex flex-wrap gap-x-6 gap-y-2 text-xs">
+            <span>
+              Weapon doctrine:{" "}
+              <span className="font-bold text-white/90">
+                {loadoutMods.weaponFamily === "ranged" ? "Ranged" : "Melee"}
+              </span>
+            </span>
+            <span>
+              Strike scaling:{" "}
+              <span className="font-bold text-emerald-200/90">
+                ×{loadoutMods.attackMultiplier.toFixed(2)}
+              </span>
+            </span>
+            <span>
+              Armor mitigation:{" "}
+              <span className="font-bold text-sky-200/90">
+                {loadoutMods.armorMitigationPct}%
+              </span>
+            </span>
           </div>
         </div>
 
@@ -568,8 +827,13 @@ export default function ArenaMatchPage() {
                       {enemyProfile.name}
                     </div>
                     <div className="mt-2 text-sm text-white/70">
-                      Arena enforcement construct
+                      {enemyProfile.tagline}
                     </div>
+                    <p className="mt-3 text-[11px] leading-relaxed text-amber-200/78">
+                      Telegraph cadence: every {ARENA_ENEMY_TELEGRAPH_INTERVAL}rd enemy counter
+                      is flagged in the log and hits +{Math.round((ARENA_ENEMY_TELEGRAPH_DAMAGE_MULT - 1) * 100)}% raw before
+                      armor.
+                    </p>
                   </div>
 
                   <div className="rounded-full border border-red-500/30 bg-red-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-red-100">
@@ -685,6 +949,13 @@ export default function ArenaMatchPage() {
                   <div className="text-[10px] uppercase tracking-[0.22em] text-emerald-200/80">
                     Victory Rewards
                   </div>
+
+                  {arenaMode === "practice" ? (
+                    <p className="mt-2 text-[11px] leading-relaxed text-emerald-200/75">
+                      Practice tier — values are ~{Math.round(ARENA_PRACTICE_REWARD_MULT * 100)}% of
+                      ranked payouts (see stakes banner).
+                    </p>
+                  ) : null}
 
                   <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     <div className="rounded-xl border border-emerald-500/15 bg-black/15 px-4 py-3 text-sm text-emerald-100">

@@ -6,7 +6,7 @@ import { VOID_EXPEDITION_PATH } from "@/features/void-maps/voidRoutes";
 
 export type BazaarDistrictId =
   | "biotech-labs"
-  | "spirit-enclave"
+  | "pure-enclave"
   | "crafting-district"
   | "arena"
   | "mecha-foundry"
@@ -49,12 +49,12 @@ export const bazaarDistrictData: BazaarDistrict[] = [
     widthClass: "w-[260px]",
   },
   {
-    id: "spirit-enclave",
+    id: "pure-enclave",
     title: "Ember Vault Enclave",
     subtitle: "Ritual Sanctum",
     description:
       "Pure-path soul rites, resonance chambers, and Ember Vault progression.",
-    route: "/bazaar/spirit-enclave",
+    route: "/bazaar/pure-enclave",
     themeKey: "pure",
     positionClass: "left-[8%] top-[40%]",
     widthClass: "w-[280px]",

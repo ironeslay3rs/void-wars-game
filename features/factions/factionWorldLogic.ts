@@ -7,6 +7,7 @@ import {
   voidZoneById,
   type VoidZoneId,
 } from "@/features/void-maps/zoneData";
+import { getContestedZoneMeta } from "@/features/world/contestedZone";
 
 const ZONE_IDS: VoidZoneId[] = [
   "howling-scar",
@@ -232,6 +233,70 @@ export function guildPointsFromIntensity(intensity: number) {
 }
 
 /**
+ * Stacks contested-sector + guild-contract multipliers on a base mercenary award (Phase 6–8).
+ */
+export function applyTheaterGuildBonusesToBase(
+  player: PlayerState,
+  zoneId: string | null | undefined,
+  baseDelta: number,
+  nowMs: number,
+): { delta: number; reasonTags: string[] } {
+  let guildDelta = clampInt(baseDelta, 1, 22);
+  const reasonTags: string[] = [];
+
+  if (zoneId && isVoidZoneId(zoneId)) {
+    const contested = getContestedZoneMeta(nowMs);
+    if (zoneId === contested.zoneId) {
+      const extra = Math.max(1, Math.ceil(guildDelta * 0.35));
+      guildDelta += extra;
+      reasonTags.push("contested sector");
+    }
+    const activeContract = (player.guildContracts ?? []).find(
+      (c) => c.status === "active",
+    );
+    if (activeContract && zoneId === activeContract.zoneId) {
+      const extra = Math.max(2, Math.ceil(guildDelta * 0.22));
+      guildDelta += extra;
+      reasonTags.push("guild contract zone");
+    }
+    if (
+      player.guild.kind === "inGuild" &&
+      player.guild.pledge !== "unbound" &&
+      contested.school === player.guild.pledge &&
+      zoneId === contested.zoneId
+    ) {
+      const extra = Math.max(1, Math.ceil(guildDelta * 0.12));
+      guildDelta += extra;
+      reasonTags.push("pledge theater");
+    }
+  }
+
+  guildDelta = clampInt(guildDelta, 1, 22);
+  return { delta: guildDelta, reasonTags };
+}
+
+/** Ledger-only (no doctrine drift) — use for supplemental awards after the main hunt settlement. */
+export function appendGuildLedgerEntry(
+  player: PlayerState,
+  entry: { amount: number; reason: string; at?: number },
+): PlayerState {
+  const at = entry.at ?? Date.now();
+  const amt = clampInt(entry.amount, 0, 22);
+  if (amt <= 0) return player;
+
+  const nextLog: GuildContributionLogEntry[] = [
+    { at, amount: amt, reason: entry.reason },
+    ...(player.guildContributionLog ?? []),
+  ].slice(0, MAX_GUILD_LOG);
+
+  return {
+    ...player,
+    guildContributionTotal: (player.guildContributionTotal ?? 0) + amt,
+    guildContributionLog: nextLog,
+  };
+}
+
+/**
  * Apply doctrine drift + mercenary guild ledger after a hunt slice resolves.
  */
 export function withWorldProgressAfterHunt(
@@ -240,16 +305,27 @@ export function withWorldProgressAfterHunt(
     zoneId?: string | null;
     intensity: number;
     reason: string;
+    nowMs?: number;
   },
 ): PlayerState {
   const { zoneId, intensity, reason } = args;
-  const guildDelta = guildPointsFromIntensity(intensity);
+  const now = args.nowMs ?? Date.now();
+  const baseGp = guildPointsFromIntensity(intensity);
+  const { delta: guildDelta, reasonTags } = applyTheaterGuildBonusesToBase(
+    player,
+    zoneId ?? null,
+    baseGp,
+    now,
+  );
+
+  const logReason =
+    reasonTags.length > 0 ? `${reason} · ${reasonTags.join(", ")}` : reason;
 
   const nextLog: GuildContributionLogEntry[] = [
     {
-      at: Date.now(),
+      at: now,
       amount: guildDelta,
-      reason,
+      reason: logReason,
     },
     ...(player.guildContributionLog ?? []),
   ].slice(0, MAX_GUILD_LOG);

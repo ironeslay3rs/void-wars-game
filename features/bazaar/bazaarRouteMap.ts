@@ -2,7 +2,7 @@ import { VOID_EXPEDITION_PATH } from "@/features/void-maps/voidRoutes";
 
 export const bazaarRouteMap = {
   "biotech-labs": "/bazaar/biotech-labs",
-  "spirit-enclave": "/bazaar/spirit-enclave",
+  "pure-enclave": "/bazaar/pure-enclave",
   "crafting-district": "/bazaar/crafting-district",
   arena: "/bazaar/arena",
   "mecha-foundry": "/bazaar/mecha-foundry",

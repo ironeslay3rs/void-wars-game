@@ -16,6 +16,7 @@ import { getMissionById } from "@/features/game/gameMissionUtils";
 import type { GameAction, GameState } from "@/features/game/gameTypes";
 import type {
   AttackMobMessage,
+  AuthoritativeMobLootEvent,
   ClientToServerMessage,
   CombatEventMessage,
   HuntContributionResultMessage,
@@ -39,6 +40,8 @@ export type VoidRealtimeSessionApi = {
   mobs: MobEntity[];
   recentCombatEvents: CombatEventMessage[];
   huntContributionResult: HuntContributionResultMessage | null;
+  authoritativeMobLootSeq: number;
+  drainAuthoritativeMobLootEvents: () => AuthoritativeMobLootEvent[];
   sendMove: (x: number, y: number) => void;
   sendAttack: (mobEntityId: string) => void;
 };
@@ -133,6 +136,18 @@ export function VoidRealtimeBridge({
   const [error, setError] = useState<string | null>(null);
   const [players, setPlayers] = useState<PlayerPresence[]>([]);
   const [mobs, setMobs] = useState<MobEntity[]>([]);
+  const mobsRef = useRef<MobEntity[]>([]);
+  useLayoutEffect(() => {
+    mobsRef.current = mobs;
+  }, [mobs]);
+  const authoritativeLootQueueRef = useRef<AuthoritativeMobLootEvent[]>([]);
+  const [authoritativeMobLootSeq, setAuthoritativeMobLootSeq] = useState(0);
+
+  const drainAuthoritativeMobLootEvents = useCallback(() => {
+    const out = authoritativeLootQueueRef.current;
+    authoritativeLootQueueRef.current = [];
+    return out;
+  }, []);
   const [recentCombatEvents, setRecentCombatEvents] = useState<
     CombatEventMessage[]
   >([]);
@@ -381,7 +396,19 @@ export function VoidRealtimeBridge({
               }),
             );
             break;
-          case "mob_defeated":
+          case "mob_defeated": {
+            const victim = mobsRef.current.find(
+              (m) => m.mobEntityId === msg.mobEntityId,
+            );
+            if (msg.lootLines && msg.lootLines.length > 0) {
+              authoritativeLootQueueRef.current.push({
+                mobEntityId: msg.mobEntityId,
+                lines: msg.lootLines,
+                x: victim?.x ?? 50,
+                y: victim?.y ?? 50,
+              });
+              setAuthoritativeMobLootSeq((n) => n + 1);
+            }
             setMobs((prev) =>
               prev.map((m) =>
                 m.mobEntityId === msg.mobEntityId
@@ -395,6 +422,7 @@ export function VoidRealtimeBridge({
               ),
             );
             break;
+          }
           case "combat_event":
             setRecentCombatEvents((prev) => [msg, ...prev].slice(0, 6));
             break;
@@ -506,6 +534,8 @@ export function VoidRealtimeBridge({
       mobs,
       recentCombatEvents,
       huntContributionResult,
+      authoritativeMobLootSeq,
+      drainAuthoritativeMobLootEvents,
       sendMove,
       sendAttack,
     }),
@@ -517,6 +547,8 @@ export function VoidRealtimeBridge({
       mobs,
       recentCombatEvents,
       huntContributionResult,
+      authoritativeMobLootSeq,
+      drainAuthoritativeMobLootEvents,
       sendMove,
       sendAttack,
     ],

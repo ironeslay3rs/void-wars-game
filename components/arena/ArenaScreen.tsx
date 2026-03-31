@@ -34,13 +34,14 @@ export default function ArenaScreen() {
   const {
     queueState,
     selectedMode,
+    canQueueSelectedMode,
     handleCancelQueue,
     handleQueue,
     handleSelectMode,
     resetQueue,
   } = useArenaQueue({
     battleModes,
-    arenaEligibility,
+    condition: player.condition,
   });
 
   const liveCards = [
@@ -68,7 +69,7 @@ export default function ArenaScreen() {
 
   function handleEnterMatch() {
     resetQueue();
-    router.push("/arena/match");
+    router.push(`/arena/match?mode=${encodeURIComponent(selectedMode.id)}`);
   }
 
   return (
@@ -102,7 +103,7 @@ export default function ArenaScreen() {
               battleModes={battleModes}
               chipClassName={factionAccent.chip}
               panelClassName={`${factionAccent.ring} ${factionAccent.glow}`}
-              selectedModeTitle={selectedMode.title}
+              selectedModeId={selectedMode.id}
               onSelectMode={handleSelectMode}
             />
           </SectionCard>
@@ -113,10 +114,10 @@ export default function ArenaScreen() {
               description="Live readiness, queue state, and match-entry checkpoint."
             >
               <ArenaConsoleCard
-                arenaEligibility={arenaEligibility}
                 condition={player.condition}
                 barClassName={factionAccent.bar}
                 selectedMode={selectedMode}
+                canQueueSelectedMode={canQueueSelectedMode}
                 queueState={queueState}
                 onQueue={handleQueue}
                 onCancelQueue={handleCancelQueue}

@@ -3,7 +3,10 @@
 import { useGame } from "@/features/game/gameContext";
 import {
   canGrantRuneCrafterLicense,
+  canPrimeConvergence,
   canUnlockL3RareRuneSet,
+  getConvergenceArcBrief,
+  getRuneKnightReadiness,
   getSaintRuneL5Panel,
 } from "@/features/progression/mythicAscensionLogic";
 import SectionCard from "@/components/shared/SectionCard";
@@ -13,8 +16,11 @@ export default function MythicAscensionPanel() {
   const p = state.player;
   const m = p.mythicAscension;
   const saint = getSaintRuneL5Panel(m);
+  const knight = getRuneKnightReadiness(p);
+  const convergence = getConvergenceArcBrief(m, p);
   const l3Ok = canUnlockL3RareRuneSet(p);
   const crafterOk = canGrantRuneCrafterLicense(p);
+  const convergenceOk = canPrimeConvergence(p);
 
   return (
     <SectionCard
@@ -99,11 +105,63 @@ export default function MythicAscensionPanel() {
           </div>
         </div>
 
+        <div className="rounded-xl border border-white/10 bg-black/30 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-xs uppercase tracking-[0.14em] text-white/45">
+                Phase 9 · Convergence filing
+              </p>
+              <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-200/75">
+                {convergence.title}
+              </p>
+              <p className="mt-2 text-sm leading-relaxed text-white/75">
+                {convergence.body}
+              </p>
+            </div>
+            {!m.convergencePrimed ? (
+              <button
+                type="button"
+                disabled={!convergenceOk}
+                onClick={() =>
+                  dispatch({
+                    type: "ATTEMPT_MYTHIC_UNLOCK",
+                    payload: "convergence-prime",
+                  })
+                }
+                className="rounded-lg border border-cyan-400/40 bg-cyan-500/15 px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-cyan-100 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                File convergence
+              </button>
+            ) : null}
+          </div>
+          {m.convergencePrimed ? (
+            <div className="mt-3 rounded-lg border border-cyan-400/20 bg-cyan-950/20 px-3 py-2">
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-200/80">
+                Rune Knight valor
+              </p>
+              <p className="mt-1 font-mono text-sm text-white/90">
+                {m.runeKnightValor}
+                <span className="text-white/45">/99</span>
+              </p>
+              <p className="mt-1 text-[11px] text-white/55">
+                +1 on each ranked or tournament win (SR gain). Display ladder until full Knighthood ships.
+              </p>
+            </div>
+          ) : null}
+        </div>
+
         <div className="rounded-xl border border-violet-400/25 bg-violet-950/20 px-4 py-3">
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-violet-200/80">
             {saint.title}
           </p>
           <p className="mt-2 text-sm leading-relaxed text-white/70">{saint.body}</p>
+        </div>
+
+        <div className="rounded-xl border border-rose-400/22 bg-rose-950/18 px-4 py-3">
+          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-rose-200/80">
+            {knight.title}
+          </p>
+          <p className="mt-2 text-sm leading-relaxed text-white/70">{knight.body}</p>
         </div>
       </div>
     </SectionCard>

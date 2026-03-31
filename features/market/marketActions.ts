@@ -1,4 +1,4 @@
-import type { GameState, ResourceKey } from "@/features/game/gameTypes";
+import type { FactionAlignment, GameState, ResourceKey } from "@/features/game/gameTypes";
 import { enforceCapacity, checkCapacity } from "@/features/resources/inventoryLogic";
 import {
   MARKET_LISTINGS,
@@ -6,6 +6,14 @@ import {
   SELLABLE_RESOURCE_KEYS,
   type MarketListing,
 } from "@/features/market/marketData";
+import { getStallBrokerBuyMarkupMultiplier } from "@/features/economy/stallUpkeep";
+import {
+  getWarExchangeBuyDemandMultiplier,
+  getWarExchangeSellDemandMultiplier,
+} from "@/features/world/warDemandMarket";
+
+/** Brokers take a flat cut on War Exchange sales (Phase 4 — market / tax visibility). */
+export const WAR_EXCHANGE_SELL_BROKER_CUT = 0.1;
 
 export type MarketState = {
   stockByListingId: Record<string, number>;
@@ -27,12 +35,26 @@ export function canSellResource(key: ResourceKey) {
   return SELLABLE_RESOURCE_KEYS.includes(key);
 }
 
-export function quoteSellPriceCredits(key: ResourceKey, amount: number) {
+export type QuoteSellPriceOpts = {
+  playerFaction: FactionAlignment;
+  nowMs: number;
+};
+
+export function quoteSellPriceCredits(
+  key: ResourceKey,
+  amount: number,
+  opts?: QuoteSellPriceOpts,
+) {
   const base = RESOURCE_BASE_PRICES[key] ?? 0;
   const n = Math.max(0, Math.floor(amount));
   const gross = base * n;
-  const net = Math.floor(gross * 0.9); // 10% cut
-  return { base, gross, net };
+  const demandMult =
+    opts != null
+      ? getWarExchangeSellDemandMultiplier(key, opts.playerFaction, opts.nowMs)
+      : 1;
+  const adjustedGross = gross * demandMult;
+  const net = Math.floor(adjustedGross * (1 - WAR_EXCHANGE_SELL_BROKER_CUT));
+  return { base, gross, net, demandMult };
 }
 
 export function applyMarketBuy(state: GameState, listingId: string) {
@@ -45,7 +67,16 @@ export function applyMarketBuy(state: GameState, listingId: string) {
     return { next: state, ok: false, reason: "Out of stock." };
   }
 
-  if (state.player.resources.credits < listing.priceCredits) {
+  const arrears = state.player.stallArrearsCount ?? 0;
+  const buyMult = getStallBrokerBuyMarkupMultiplier(arrears);
+  const demandMult = getWarExchangeBuyDemandMultiplier(
+    listing,
+    state.player.factionAlignment,
+    Date.now(),
+  );
+  const priceCredits = Math.ceil(listing.priceCredits * buyMult * demandMult);
+
+  if (state.player.resources.credits < priceCredits) {
     return { next: state, ok: false, reason: "Insufficient credits." };
   }
 
@@ -64,7 +95,7 @@ export function applyMarketBuy(state: GameState, listingId: string) {
   }
 
   const nextResources = { ...state.player.resources };
-  nextResources.credits = Math.max(0, nextResources.credits - listing.priceCredits);
+  nextResources.credits = Math.max(0, nextResources.credits - priceCredits);
   for (const [k, v] of Object.entries(accepted)) {
     const key = k as ResourceKey;
     const amount = typeof v === "number" ? v : 0;
@@ -100,7 +131,10 @@ export function applyMarketSell(state: GameState, key: ResourceKey, amount: numb
     return { next: state, ok: false, reason: "Insufficient stock." };
   }
 
-  const quote = quoteSellPriceCredits(key, n);
+  const quote = quoteSellPriceCredits(key, n, {
+    playerFaction: state.player.factionAlignment,
+    nowMs: Date.now(),
+  });
   if (quote.net <= 0) {
     return { next: state, ok: false, reason: "No value." };
   }

@@ -7,7 +7,10 @@ import SchoolSelector from "@/components/onboarding/SchoolSelector";
 import { useGame } from "@/features/game/gameContext";
 import type { CareerFocus, PathType } from "@/features/game/gameTypes";
 import { initialGameState } from "@/features/game/initialGameState";
-import { createNewPlayer } from "@/features/player/playerFactory";
+import {
+  createNewPlayer,
+  SCHOOL_STARTER_PACK_SUMMARY,
+} from "@/features/player/playerFactory";
 
 type Step = 1 | 2 | 3 | 4;
 
@@ -71,7 +74,19 @@ export default function NewGamePage() {
                   Step {step} / 4
                 </div>
                 <div className="text-xs text-white/55">
-                  Starter pack: 500 credits · 20 iron ore · 10 bio samples · 2 moss rations
+                  {selectedSchool ? (
+                    <>
+                      Starter pack ({selectedSchool}):{" "}
+                      {SCHOOL_STARTER_PACK_SUMMARY[selectedSchool]}
+                    </>
+                  ) : (
+                    <>
+                      Every path starts with <span className="text-white/75">500 credits</span>{" "}
+                      plus school-weighted salvage (ores, alloy, samples, rune dust, moss
+                      rations; Pure adds ember cores). Pick a school in step 2 for exact
+                      tallies.
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -225,10 +240,7 @@ export default function NewGamePage() {
               )}
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-white/55">
-              <Link className="hover:text-white" href="/home">
-                Skip to Home →
-              </Link>
+            <div className="flex flex-wrap items-center justify-end gap-3 text-xs text-white/55">
               <Link className="hover:text-white" href="/character">
                 Character screen →
               </Link>

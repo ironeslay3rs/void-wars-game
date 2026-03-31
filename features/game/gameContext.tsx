@@ -29,6 +29,7 @@ import type {
   GameState,
 } from "@/features/game/gameTypes";
 import { VoidRealtimeBridge } from "@/features/void-maps/realtime/VoidRealtimeBridge";
+import { usePathname, useRouter } from "next/navigation";
 
 type PathSelection = Exclude<FactionAlignment, "unbound">;
 
@@ -40,6 +41,21 @@ type GameContextValue = {
 };
 
 const GameContext = createContext<GameContextValue | null>(null);
+
+function GameOnboardingRouteGuard({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const game = useContext(GameContext);
+  const characterCreated = game?.state.player.characterCreated ?? true;
+
+  useEffect(() => {
+    if (characterCreated) return;
+    if (pathname?.startsWith("/new-game")) return;
+    router.replace("/new-game");
+  }, [characterCreated, pathname, router]);
+
+  return children;
+}
 
 export function GameProvider({ children }: { children: ReactNode }) {
   const { status, user, session, setBeforeLogoutHandler } = useAuth();
@@ -284,7 +300,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   return (
     <GameContext.Provider value={value}>
       <VoidRealtimeBridge state={state} dispatch={dispatch}>
-        {children}
+        <GameOnboardingRouteGuard>{children}</GameOnboardingRouteGuard>
       </VoidRealtimeBridge>
     </GameContext.Provider>
   );

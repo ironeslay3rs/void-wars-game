@@ -1,6 +1,9 @@
 import type { PlayerState } from "@/features/game/gameTypes";
 
 export function hasMeaningfulProgress(player: PlayerState): boolean {
+  if (!player.characterCreated) {
+    return false;
+  }
   const hasChosenPath = player.factionAlignment !== "unbound";
   const hasAdvancedLevel = player.rankLevel > 1;
   const hasInfluence = player.influence > 0;
@@ -21,6 +24,9 @@ export function hasMeaningfulProgress(player: PlayerState): boolean {
 }
 
 export function getContinueRoute(player: PlayerState): string {
+  if (!player.characterCreated) {
+    return "/new-game";
+  }
   if (player.missionQueue.length > 0) {
     return "/missions";
   }

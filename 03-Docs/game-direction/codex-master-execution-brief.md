@@ -10,7 +10,9 @@ It turns the approved game vision into:
 - scope guardrails,
 - implementation-safe delivery rules.
 
-This brief is canon-locked and architecture-aware.
+This brief is canon-locked and architecture-aware. **Treat this file as the Codex master execution brief** — milestone order, phase gates, and team split live here (especially §8–§9); keep them aligned with the running app.
+
+**See also:** `fusion-doctrine.md` (borrowed-pattern merge rules), `docs/game-canon-registry.md`, `docs/black-market-law.md`, `project-docs/visuals/UI_MOCKUP_REFERENCE.md` (layout / tone reference mockups; Pure not Spirit in shipped UI).
 
 ---
 
@@ -188,6 +190,8 @@ The final screen pillars are:
 - Inventory / Status — loadout, materials, condition, corruption, readiness
 - Missions / Factions — chapter pressure, return loop, war stakes
 
+Concept coverage (existing art / mock direction already maps here): main menu, mastery, professions, Black Market UI, hunt rewards, crafting, inventory, PvP ruleset, city hub map, status pages, Hollowfang boss sheet — use these as the visual spine while systems catch up; do not block shell work waiting for final art.
+
 Screen law:
 - state must be readable,
 - next action must be obvious,
@@ -277,15 +281,17 @@ Before more feature work:
 - No player-facing `Spirit`
 - `app/` thin, `components/` UI, `features/` logic
 - no god files
+- Puppy-first entry: new saves complete **New Game** (`characterCreated`) before hub play; no parallel Home stacks — canonical **`GameHudShell` + `components/home/HomeHudClient`**
+- Shipped bazaar ids/URLs use **Pure** naming (e.g. `pure-enclave`, `/bazaar/pure-enclave`; legacy `spirit-enclave` redirects only)
 
 ## Phase 1 — Homepage shell v1
 
 Build:
 - `page.tsx`
-- `HomeShell`
+- `GameHudShell` + `components/home/HomeHudClient` (canonical home stack)
 - chrome frame
 - top bar
-- command menu
+- command menu / left rail (live: `MainMenuLeftRail` + center/right rails)
 - path cards
 - condition widget
 - resource bar
@@ -322,6 +328,8 @@ Build:
 - doctrine/readiness/gating systems
 - path-shaped growth rhythm
 
+**Repo (M1):** Void instability (strain) tracks mission/hunt/exploration payouts, extra condition drain on resolve, survival decay when stable, exploration credit tithe, path-aligned mastery bonus, recovery/ration relief, void field extraction + broker field loot pickup strain, Home + Status + field HUD surfacing, launch directive when strain is high.
+
 ### Exit gate
 Growth feels meaningful, not cosmetic.
 
@@ -336,6 +344,8 @@ Build:
 - profession value
 - school-shaped harvest outcomes
 - item sinks / taxes / upkeep
+
+**Repo (M1):** `refining` recipe category; path-aligned +1 staple on successful refine (`pathRefiningYield.ts`); War Exchange sell tithe `WAR_EXCHANGE_SELL_BROKER_CUT` + **stall arrears buy markup** (`stallUpkeep.ts`, `marketActions.ts`, `StallArrearsCallout`). **Gathering:** `pathGatheringYield.ts` — path-themed loot bias (void field / encounter / realtime). **Contracts:** `craftWorkOrder` + rotating 3-offer board (`getRotatingWorkOrderCatalog`, 7-day epoch). **Upkeep:** wall-clock stall rent, arrears, payoff action — wired through survival ticks and bazaar UI.
 
 ### Exit gate
 A crafter-focused player has a compelling playstyle.
@@ -352,6 +362,8 @@ Build:
 
 Combat stays system-resolved and preparation-driven, not twitch-first.
 
+**Repo (M1 — closed):** Arena match: loadout modifiers, archetypes, `?mode=` stakes, practice scaling, **SR + payout** by archetype, **telegraph** cadence, **tournament bracket round shell** (display + win counter / reset). Shell void strikes use loadout attack mult. Optional later: deeper enemy AI, PvE incoming parity.
+
 ### Exit gate
 Preparation materially improves outcomes.
 
@@ -367,6 +379,8 @@ Build:
 
 ### Exit gate
 The world feels alive and larger than the individual player.
+
+**Repo (M1 start):** Weekly-rotating **contested void sector** (`contestedZone.ts`) drives a **War Exchange buy demand** multiplier on tagged listings (`warDemandMarket.ts`, wired in `applyMarketBuy`). `WarFrontDemandCallout` on **War Exchange** and **Void Expedition** (highlights deploy into hot sector). Next: sell-side war pricing, faction contribution pressure, scripted regional events.
 
 ## Phase 7 — High-end crafting and rune hierarchy
 
@@ -394,6 +408,8 @@ Build:
 ### Exit gate
 Guild participation creates real dependence, not just chat presence.
 
+**Repo (M1 — Phase 8 closed for vertical slice):** Local guild roster (`gameActions` GUILD_*), contribution ledger + mercenary rank (`guildLiveLogic`, Home `MissionPanel`), shared contracts with zone/contested stacking, pledge-theater bonuses (`applyTheaterGuildBonusesToBase`), hunt result ledger slice, **capacity-safe** `GUILD_CLAIM_CONTRACT` + Guild page carry-trim toast.
+
 ## Phase 9 — Mythic late game
 
 Build:
@@ -406,6 +422,8 @@ Build:
 
 ### Exit gate
 Fusion lands as earned late truth: body + frame + soul.
+
+**Repo (M1 — Phase 9 started):** `mythicAscension.convergencePrimed` + **File convergence** on Mastery Mythic ladder (Rune Crafter license, rank 5+, two schools at rune depth 3+); `ATTEMPT_MYTHIC_UNLOCK` payload `convergence-prime`; Rune Knight + Professions copy when primed. **Gameplay:** `convergenceHybridRelief` stacks with Crafter in `getEffectiveCapacityMax` / installs / save hydration (`effectiveHybridReliefFromMythic`). Further prestige / empire stakes / revelations remain gated.
 
 ## Phase 10 — Self-hosted platform path
 
@@ -456,7 +474,7 @@ Forbidden:
 
 - Favor Writs = play-earned standing
 - premium = comfort / continuity / protection / faster recovery
-- cosmetics = prestige expressions of truth, not species-breaking fake skins
+- cosmetics = prestige expressions of truth — not fake skin-swaps that break species identity or canon tone
 
 ---
 

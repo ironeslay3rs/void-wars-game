@@ -1,4 +1,5 @@
 import type { CareerFocus, ResourceKey } from "@/features/game/gameTypes";
+import { PATH_ALIGNED_FIELD_LOOT_MULT } from "@/features/economy/pathGatheringYield";
 
 /** Shell-only practice damage on the void field (local drills). */
 export const CAREER_COMBAT_SHELL_DAMAGE_BONUS_PCT = 12;
@@ -45,4 +46,18 @@ export function getCraftingCostForCareerFocus(
 export function formatCareerFocusCraftingHint(focus: CareerFocus | null): string {
   if (focus !== "crafting") return "";
   return `Crafting focus: −${Math.round((1 - CAREER_CRAFTING_COST_MULT) * 100)}% material costs on district recipes below.`;
+}
+
+/** One-line summary for Home / identity panels (matches constants above). */
+export function getCareerFocusHomeEffectLine(focus: CareerFocus | null): string {
+  if (focus === "combat") {
+    return `Combat focus: +${CAREER_COMBAT_SHELL_DAMAGE_BONUS_PCT}% shell drill damage on the void field.`;
+  }
+  if (focus === "gathering") {
+    return `Gathering focus: +${Math.round((CAREER_GATHERING_FIELD_LOOT_MULT - 1) * 100)}% void field pickups; +${Math.round((PATH_ALIGNED_FIELD_LOOT_MULT - 1) * 100)}% more when your path matches the zone loot theme.`;
+  }
+  if (focus === "crafting") {
+    return `Crafting focus: −${Math.round((1 - CAREER_CRAFTING_COST_MULT) * 100)}% resource costs on eligible district recipes; Refining tab adds path staple on success.`;
+  }
+  return "Career focus applies after New Game — combat, gathering, or crafting.";
 }

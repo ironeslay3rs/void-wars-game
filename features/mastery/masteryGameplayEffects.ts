@@ -1,12 +1,15 @@
+import type { FactionAlignment } from "@/features/game/gameTypes";
 import type { VoidZoneLootTheme } from "@/features/void-maps/zoneData";
 import type {
   PlayerRuneMasteryState,
   RuneSchool,
 } from "@/features/mastery/runeMasteryTypes";
 import {
+  computeInstallCost,
   getExecutionalTier,
   hasExecutionalSet,
 } from "@/features/mastery/runeMasteryLogic";
+import { getPrimaryRuneSchool } from "@/features/mastery/runeMasteryTypes";
 
 /** Zone loot theme → school runway for mastery alignment. */
 export function lootThemeToRuneSchool(theme: VoidZoneLootTheme): RuneSchool {
@@ -41,4 +44,33 @@ export function getMasteryAlignedContractResourceMultiplier(
 ): number {
   const m = getMasteryAlignedPickupYieldMultiplier(mastery, theme);
   return 1 + (m - 1) * 0.85;
+}
+
+/**
+ * Set detection (Executional L2/L3) + next install Blood/Frame/Resonance cost + hybrid-lane warning.
+ */
+export function getSchoolMasterySystemsReadout(
+  mastery: PlayerRuneMasteryState,
+  school: RuneSchool,
+  alignment: FactionAlignment,
+): string[] {
+  const tier = getExecutionalTier(mastery, school);
+  const primary = getPrimaryRuneSchool(alignment);
+  const offPrimary = primary !== null && school !== primary;
+  const cost = computeInstallCost({ alignment, school });
+
+  const setLine =
+    tier >= 2
+      ? "Systems · Executional L3 detected (5–6 minors) — apex identity."
+      : tier >= 1
+        ? "Systems · Executional L2 detected (3–4 minors) — set bonuses active."
+        : "Systems · L1 runway — three minors here unlock L2 set detection.";
+
+  const costLine = `Next minor capacity cost · Blood ${cost.blood} · Frame ${cost.frame} · Resonance ${cost.resonance}.`;
+
+  const hybridLine = offPrimary
+    ? "Hybrid lane · off-primary school: each install adds a hybrid drain stack (ceilings tighten; Crafter / Convergence may forgive)."
+    : null;
+
+  return hybridLine ? [setLine, costLine, hybridLine] : [setLine, costLine];
 }

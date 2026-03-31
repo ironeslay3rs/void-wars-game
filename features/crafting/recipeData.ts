@@ -1,7 +1,13 @@
 import type { ResourceKey, ResourcesState } from "@/features/game/gameTypes";
 import type { ItemRankTier } from "@/features/inventory/itemRanks";
 
-export type CraftingCategory = "organic" | "structural" | "arcane" | "hybrid";
+export type CraftingCategory =
+  | "organic"
+  | "structural"
+  | "arcane"
+  | "hybrid"
+  /** Phase 4 — bulk sinks + intermediate mats (War Exchange–adjacent stock flow). */
+  | "refining";
 
 export type CraftedItem = {
   id: string;
@@ -10,6 +16,9 @@ export type CraftedItem = {
   kind: "weapon" | "armor" | "rune-core" | "consumable";
   rankTier: ItemRankTier;
 };
+
+/** Phase 7 — recipe visible only after mythic ladder unlocks (Mastery screen). */
+export type MythicRecipeGate = "l3RareRuneSet" | "runeCrafterLicense";
 
 export type CraftRecipe = {
   id: string;
@@ -21,6 +30,7 @@ export type CraftRecipe = {
   output:
     | { kind: "resources"; grant: Partial<ResourcesState> }
     | { kind: "item"; item: CraftedItem };
+  mythicGate?: MythicRecipeGate;
 };
 
 export const craftRecipes: CraftRecipe[] = [
@@ -142,6 +152,38 @@ export const craftRecipes: CraftRecipe[] = [
     },
   },
   {
+    id: "obsidian-cycle-core",
+    name: "Obsidian Cycle Core",
+    category: "arcane",
+    craftTimeSeconds: 22,
+    successChance: 0.5,
+    mythicGate: "l3RareRuneSet",
+    materials: { ironHeart: 1, runeDust: 14, emberCore: 2 },
+    output: {
+      kind: "item",
+      item: {
+        id: "obsidian-cycle-core-t4",
+        name: "Obsidian Cycle Core",
+        rarity: "Rare",
+        kind: "rune-core",
+        rankTier: "T4",
+      },
+    },
+  },
+  {
+    id: "crafter-lattice-channel",
+    name: "Crafter Lattice Channel",
+    category: "arcane",
+    craftTimeSeconds: 18,
+    successChance: 0.58,
+    mythicGate: "runeCrafterLicense",
+    materials: { runeDust: 22, credits: 15 },
+    output: {
+      kind: "resources",
+      grant: { emberCore: 2, runeDust: 4 },
+    },
+  },
+  {
     id: "bio-serum",
     name: "Bio Serum",
     category: "hybrid",
@@ -159,6 +201,42 @@ export const craftRecipes: CraftRecipe[] = [
       },
     },
   },
+  {
+    id: "refine-ore-granulate",
+    name: "Ore Granulate Wash",
+    category: "refining",
+    craftTimeSeconds: 4,
+    successChance: 0.88,
+    materials: { ironOre: 24, credits: 10 },
+    output: {
+      kind: "resources",
+      grant: { scrapAlloy: 9 },
+    },
+  },
+  {
+    id: "refine-scrap-ember-channel",
+    name: "Scrap Ember Channel",
+    category: "refining",
+    craftTimeSeconds: 7,
+    successChance: 0.7,
+    materials: { scrapAlloy: 18, runeDust: 3 },
+    output: {
+      kind: "resources",
+      grant: { emberCore: 1, scrapAlloy: 6 },
+    },
+  },
+  {
+    id: "refine-bio-slurry-rift",
+    name: "Biomass Slurry Rift",
+    category: "refining",
+    craftTimeSeconds: 5,
+    successChance: 0.82,
+    materials: { bioSamples: 16, ironOre: 6 },
+    output: {
+      kind: "resources",
+      grant: { runeDust: 4, bioSamples: 6 },
+    },
+  },
 ];
 
 export const craftingCategoryLabels: Record<CraftingCategory, string> = {
@@ -166,5 +244,6 @@ export const craftingCategoryLabels: Record<CraftingCategory, string> = {
   structural: "Structural",
   arcane: "Arcane",
   hybrid: "Hybrid",
+  refining: "Refining",
 };
 

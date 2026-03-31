@@ -1,10 +1,17 @@
 import { initialGameState } from "@/features/game/initialGameState";
+import { resolveCharacterCreated } from "@/features/player/characterCreatedGate";
+import {
+  applyPathAlignedMasteryBonus,
+  computeVoidStrainFromFieldLootPickup,
+  decayVoidInstabilityOnSurvivalTick,
+  getExplorationInstabilitySurchargeCredits,
+} from "@/features/progression/phase3Progression";
 import { getFeastHallOfferById } from "@/features/black-market/feastHallData";
 import { phase1ExplorationReward } from "@/features/exploration/explorationData";
 import {
   applyActivityHungerCost,
   addPartialResources,
-  applyMissionReward,
+  applyMissionRewardWithVoidStrain,
   applyRankXp,
   buildMissionQueueEntry,
   canAccessMission,
@@ -19,8 +26,12 @@ import {
 } from "@/features/game/gameMissionUtils";
 import {
   FACTION_HQ_STIPEND_COOLDOWN_MS,
+  appendGuildLedgerEntry,
+  applyTheaterGuildBonusesToBase,
   computeFactionHqStipend,
+  guildPointsFromIntensity,
   huntIntensityFromMissionRankReward,
+  huntIntensityFromRealtimeTotals,
   normalizePlayerFactionWorldSlice,
   withWorldProgressAfterHunt,
 } from "@/features/factions/factionWorldLogic";
@@ -68,6 +79,7 @@ import {
 import { getVoidMarketWarAdjustments } from "@/features/factions/warEconomy";
 import {
   canGrantRuneCrafterLicense,
+  canPrimeConvergence,
   canUnlockL3RareRuneSet,
   normalizeMythicAscension,
 } from "@/features/progression/mythicAscensionLogic";
@@ -89,7 +101,7 @@ import {
   setGuildPledge,
 } from "@/features/social/guildLiveLogic";
 import type { SharedGuildContract } from "@/features/social/guildLiveTypes";
-import { enforcePickup } from "@/features/resources/inventoryLogic";
+import { enforceCapacity, enforcePickup } from "@/features/resources/inventoryLogic";
 import {
   equipItem,
   sanitizeLoadoutForFaction,
@@ -97,6 +109,16 @@ import {
 } from "@/features/player/loadoutState";
 import { applyMarketBuy, applyMarketSell } from "@/features/market/marketActions";
 import { craftItem } from "@/features/crafting/craftActions";
+import {
+  getCraftWorkOrderById,
+  normalizeCraftWorkOrderSlot,
+  withCraftWorkOrderProgress,
+} from "@/features/economy/craftWorkOrderData";
+import { getPathAlignedContractResourceMultiplier } from "@/features/economy/pathGatheringYield";
+import {
+  getStallArrearsPayoffTotal,
+  processStallRentCharges,
+} from "@/features/economy/stallUpkeep";
 import { craftRecipes } from "@/features/crafting/recipeData";
 
 function updateSingleResource(
@@ -144,12 +166,16 @@ function applySurvivalDecay(player: PlayerState, now: number): PlayerState {
       ? HUNGER_CONDITION_PRESSURE_PER_TICK
       : 0;
 
-  return {
-    ...player,
-    hunger: nextHunger,
-    condition: Math.max(0, player.condition - ticks * conditionPressurePerTick),
-    lastConditionTickAt: now,
-  };
+  return processStallRentCharges(
+    {
+      ...player,
+      hunger: nextHunger,
+      condition: Math.max(0, player.condition - ticks * conditionPressurePerTick),
+      lastConditionTickAt: now,
+      voidInstability: decayVoidInstabilityOnSurvivalTick(player, ticks),
+    },
+    now,
+  );
 }
 
 function hydratePlayerState(player: GameState["player"]): PlayerState {
@@ -221,6 +247,36 @@ function hydratePlayerState(player: GameState["player"]): PlayerState {
     mythicAscension: normalizeMythicAscension(
       (player as { mythicAscension?: unknown }).mythicAscension,
     ),
+
+    voidInstability:
+      typeof (player as { voidInstability?: unknown }).voidInstability ===
+        "number" &&
+      Number.isFinite((player as { voidInstability: number }).voidInstability)
+        ? clamp((player as { voidInstability: number }).voidInstability, 0, 100)
+        : initialGameState.player.voidInstability,
+
+    craftWorkOrder: normalizeCraftWorkOrderSlot(
+      (player as { craftWorkOrder?: unknown }).craftWorkOrder,
+    ),
+
+    characterCreated: resolveCharacterCreated({
+      stored:
+        typeof (player as { characterCreated?: unknown }).characterCreated ===
+        "boolean"
+          ? (player as { characterCreated: boolean }).characterCreated
+          : undefined,
+      playerName:
+        typeof player.playerName === "string" ? player.playerName : "",
+      factionAlignment:
+        player.factionAlignment === "unbound" ||
+        player.factionAlignment === "bio" ||
+        player.factionAlignment === "mecha" ||
+        player.factionAlignment === "pure"
+          ? player.factionAlignment
+          : player.factionAlignment === "spirit"
+            ? "pure"
+            : "unbound",
+    }),
   };
 }
 
@@ -350,6 +406,23 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       };
     }
 
+    case "VOID_FIELD_ORB_COLLECTED": {
+      const k = action.payload.key;
+      const amt = Math.max(0, Math.floor(action.payload.amount));
+      if (amt <= 0) return state;
+      const cur = state.player.fieldLootGainedThisRun?.[k] ?? 0;
+      return {
+        ...state,
+        player: {
+          ...state.player,
+          fieldLootGainedThisRun: {
+            ...(state.player.fieldLootGainedThisRun ?? {}),
+            [k]: cur + amt,
+          },
+        },
+      };
+    }
+
     case "ADD_FIELD_LOOT": {
       const { accepted } = enforcePickup(state.player.resources, {
         [action.payload.key]: action.payload.amount,
@@ -363,18 +436,27 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         action.payload.key,
         acceptedAmount,
       );
-      const nextFieldLoot = {
-        ...(state.player.fieldLootGainedThisRun ?? {}),
-        [action.payload.key]:
-          (state.player.fieldLootGainedThisRun?.[action.payload.key] ?? 0) +
-          acceptedAmount,
-      };
+      const skipLedger = action.payload.skipRunLedger === true;
+      const prevFl = state.player.fieldLootGainedThisRun ?? {};
+      const nextFieldLoot = skipLedger
+        ? prevFl
+        : {
+            ...prevFl,
+            [action.payload.key]:
+              (prevFl[action.payload.key] ?? 0) + acceptedAmount,
+          };
+      const pickupStrain = computeVoidStrainFromFieldLootPickup(acceptedAmount);
       return {
         ...state,
         player: {
           ...state.player,
           resources: nextResources,
           fieldLootGainedThisRun: nextFieldLoot,
+          voidInstability: clamp(
+            state.player.voidInstability + pickupStrain,
+            0,
+            100,
+          ),
         },
       };
     }
@@ -409,10 +491,87 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     case "CRAFT_RECIPE": {
       const recipe = craftRecipes.find((r) => r.id === action.payload.recipeId) ?? null;
       if (!recipe) return state;
-      const { player } = craftItem({ player: state.player, recipe });
+      const { player: craftedPlayer, result } = craftItem({
+        player: state.player,
+        recipe,
+      });
+      let player = craftedPlayer;
+      if (result.ok && result.success) {
+        player = withCraftWorkOrderProgress(player, {
+          type: "recipe",
+          recipeId: recipe.id,
+        });
+      }
       return {
         ...state,
         player,
+      };
+    }
+
+    case "ACCEPT_CRAFT_WORK_ORDER": {
+      if ((state.player.stallArrearsCount ?? 0) > 0) {
+        return state;
+      }
+      const def = getCraftWorkOrderById(action.payload.definitionId);
+      if (!def) return state;
+      return {
+        ...state,
+        player: {
+          ...state.player,
+          craftWorkOrder: { definitionId: def.id, progress: 0 },
+        },
+      };
+    }
+
+    case "PAY_STALL_ARREARS": {
+      const n = state.player.stallArrearsCount ?? 0;
+      if (n <= 0) return state;
+      const cost = getStallArrearsPayoffTotal(n);
+      if (state.player.resources.credits < cost) return state;
+      return {
+        ...state,
+        player: {
+          ...state.player,
+          stallArrearsCount: 0,
+          resources: updateSingleResource(
+            state.player.resources,
+            "credits",
+            -cost,
+          ),
+        },
+      };
+    }
+
+    case "ABANDON_CRAFT_WORK_ORDER":
+      if (state.player.craftWorkOrder === null) return state;
+      return {
+        ...state,
+        player: {
+          ...state.player,
+          craftWorkOrder: null,
+        },
+      };
+
+    case "CLAIM_CRAFT_WORK_ORDER": {
+      const wo = state.player.craftWorkOrder;
+      if (!wo) return state;
+      const def = getCraftWorkOrderById(wo.definitionId);
+      if (!def || wo.progress < def.targetCount) return state;
+      let resources = updateSingleResource(
+        state.player.resources,
+        "credits",
+        def.rewardCredits,
+      );
+      if (def.rewardResources) {
+        resources = addPartialResources(resources, def.rewardResources);
+      }
+      return {
+        ...state,
+        player: {
+          ...state.player,
+          resources,
+          craftWorkOrder: null,
+        },
       };
     }
 
@@ -524,6 +683,31 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         },
       };
 
+    case "APPLY_ARENA_RANKED_SR_DELTA": {
+      const delta = action.payload;
+      if (!Number.isFinite(delta) || delta === 0) return state;
+      const p = state.player;
+      const sr = p.mythicAscension.arenaRankedSeason1Rating;
+      const next = Math.max(600, Math.min(2800, Math.floor(sr + delta)));
+      if (next === sr) return state;
+      const mythic = p.mythicAscension;
+      const nextValor =
+        delta > 0 && mythic.convergencePrimed
+          ? Math.min(99, mythic.runeKnightValor + 1)
+          : mythic.runeKnightValor;
+      return {
+        ...state,
+        player: {
+          ...p,
+          mythicAscension: {
+            ...mythic,
+            arenaRankedSeason1Rating: next,
+            runeKnightValor: nextValor,
+          },
+        },
+      };
+    }
+
     case "ADJUST_HUNGER":
       return {
         ...state,
@@ -532,6 +716,24 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           hunger: clamp(state.player.hunger + action.payload, 0, 100),
         },
       };
+
+    case "APPLY_VOID_INSTABILITY_DELTA": {
+      const delta = action.payload;
+      if (!Number.isFinite(delta) || delta === 0) {
+        return state;
+      }
+      return {
+        ...state,
+        player: {
+          ...state.player,
+          voidInstability: clamp(
+            state.player.voidInstability + delta,
+            0,
+            100,
+          ),
+        },
+      };
+    }
 
     case "RECOVER_CONDITION": {
       const now = Date.now();
@@ -559,6 +761,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           condition: clamp(player.condition + recoveryAmount, 0, 100),
           conditionRecoveryAvailableAt: now + STATUS_RECOVERY_COOLDOWN_MS,
           activeFeastHallOfferId: null,
+          voidInstability: Math.max(0, player.voidInstability - 6),
           resources: updateSingleResource(
             player.resources,
             "credits",
@@ -596,12 +799,15 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         -needIron,
       );
 
+      let nextPlayer = {
+        ...player,
+        resources: updateSingleResource(spentOre, "mossRations", 1),
+      };
+      nextPlayer = withCraftWorkOrderProgress(nextPlayer, { type: "moss-bind" });
+
       return {
         ...state,
-        player: {
-          ...player,
-          resources: updateSingleResource(spentOre, "mossRations", 1),
-        },
+        player: nextPlayer,
       };
     }
 
@@ -641,6 +847,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           ),
           emergencyRationAvailableAt: now + EMERGENCY_RATION_COOLDOWN_MS,
           activeFeastHallOfferId: null,
+          voidInstability: Math.max(0, player.voidInstability - 3),
           resources: updateSingleResource(
             player.resources,
             "credits",
@@ -671,6 +878,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             0,
             100,
           ),
+          voidInstability: Math.max(0, player.voidInstability - 2),
           resources: updateSingleResource(player.resources, "mossRations", -1),
         },
       };
@@ -865,12 +1073,21 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
                 : undefined,
             };
 
+      const rewardWithPathMastery = applyPathAlignedMasteryBonus(
+        rewardWithNextRunMods,
+        mission.path,
+        player.factionAlignment,
+      );
       const resolvedConditionDelta = getResolvedConditionDelta(
         player,
-        rewardWithNextRunMods,
+        rewardWithPathMastery,
       );
       const nextPlayer = applyActivityHungerCost(
-        applyMissionReward(player, rewardWithNextRunMods),
+        applyMissionRewardWithVoidStrain(
+          player,
+          rewardWithPathMastery,
+          mission.path,
+        ),
         "hunt",
       );
 
@@ -887,19 +1104,19 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           resolvedAt,
           conditionDelta: resolvedConditionDelta,
           conditionAfter: nextPlayer.condition,
-          rankXpGained: rewardWithNextRunMods.rankXp,
-          masteryProgressGained: rewardWithNextRunMods.masteryProgress,
-          influenceGained: rewardWithNextRunMods.influence ?? 0,
-          resourcesGained: rewardWithNextRunMods.resources ?? {},
+          rankXpGained: rewardWithPathMastery.rankXp,
+          masteryProgressGained: rewardWithPathMastery.masteryProgress,
+          influenceGained: rewardWithPathMastery.influence ?? 0,
+          resourcesGained: rewardWithPathMastery.resources ?? {},
           fieldLootGained: state.player.fieldLootGainedThisRun ?? {},
           hungerPressureLabel: hungerEffects.label,
           hungerRewardPenaltyPct: hungerEffects.rewardPenaltyPct,
           hungerConditionDrainPenalty: hungerEffects.conditionDrainPenalty,
 
-          baseRankXpGained: rewardWithNextRunMods.rankXp,
-          baseMasteryProgressGained: rewardWithNextRunMods.masteryProgress,
-          baseInfluenceGained: rewardWithNextRunMods.influence ?? 0,
-          baseResourcesGained: rewardWithNextRunMods.resources ?? {},
+          baseRankXpGained: rewardWithPathMastery.rankXp,
+          baseMasteryProgressGained: rewardWithPathMastery.masteryProgress,
+          baseInfluenceGained: rewardWithPathMastery.influence ?? 0,
+          baseResourcesGained: rewardWithPathMastery.resources ?? {},
 
           realtimeContributionBonusMultiplier: null,
           realtimeContributionAppliedForResolvedAt: null,
@@ -927,6 +1144,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             rewardWithNextRunMods.influence ?? 0,
           ),
           reason: `Contract — ${mission.title}`,
+          nowMs: resolvedAt,
         });
       }
 
@@ -1054,6 +1272,12 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             zoneForMastery.lootTheme,
           )
         : 1;
+      const pathResourceMult = zoneForMastery
+        ? getPathAlignedContractResourceMultiplier(
+            state.player.factionAlignment,
+            zoneForMastery.lootTheme,
+          )
+        : 1;
 
       const nextZoneMastery = {
         ...prevZoneMastery,
@@ -1092,7 +1316,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
               effectiveBonusMultiplier *
               resourceEfficiencyFactor *
               streakYieldMultiplier *
-              masteryResourceYieldMult,
+              masteryResourceYieldMult *
+              pathResourceMult,
           );
           if (bonusAmount <= 0) return;
           realtimeResourcesBonusGained[key] =
@@ -1111,7 +1336,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           adjustedBaseAmount *
             effectiveBonusMultiplier *
             streakYieldMultiplier *
-            masteryResourceYieldMult,
+            masteryResourceYieldMult *
+            pathResourceMult,
         );
         if (bonusAmount <= 0) return;
         realtimeResourcesBonusGained[key] =
@@ -1134,7 +1360,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           seed: `rt-boss-${zoneId}-${resolvedAt}`,
         });
         rolledBossLoot.forEach((line) => {
-          const amt = Math.floor(line.amount * masteryResourceYieldMult);
+          const amt = Math.floor(
+            line.amount * masteryResourceYieldMult * pathResourceMult,
+          );
           if (amt <= 0) return;
           realtimeResourcesBonusGained[line.resource] =
             (realtimeResourcesBonusGained[line.resource] ?? 0) + amt;
@@ -1205,9 +1433,39 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         },
       };
 
+      const rtGuildIntensity = huntIntensityFromRealtimeTotals({
+        totalDamageDealt: totalDamageForIdentity,
+        mobsKilled: mobsKilledForIdentity,
+        exposedKills: exposedKills ?? latest.realtimeExposedKills ?? 0,
+      });
+      const supplementalBase = clamp(
+        Math.floor(guildPointsFromIntensity(rtGuildIntensity) * 0.5),
+        2,
+        10,
+      );
+      const { delta: supplementalGuild, reasonTags: rtGuildTags } =
+        applyTheaterGuildBonusesToBase(
+          state.player,
+          zoneId,
+          supplementalBase,
+          resolvedAt,
+        );
+      const rtGuildReason =
+        rtGuildTags.length > 0
+          ? `Realtime void field · ${rtGuildTags.join(", ")}`
+          : "Realtime void field";
+      const playerAfterRealtimeGuild =
+        supplementalGuild > 0
+          ? appendGuildLedgerEntry(nextPlayerAfterBonus, {
+              amount: supplementalGuild,
+              reason: rtGuildReason,
+              at: resolvedAt,
+            })
+          : nextPlayerAfterBonus;
+
       return {
         ...state,
-        player: nextPlayerAfterBonus,
+        player: playerAfterRealtimeGuild,
       };
     }
 
@@ -1222,13 +1480,38 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         return state;
       }
 
+      const processKind = action.payload.kind ?? "exploration";
+      const explorationSurcharge =
+        processKind === "exploration"
+          ? getExplorationInstabilitySurchargeCredits(
+              state.player.voidInstability,
+            )
+          : 0;
+
+      if (
+        explorationSurcharge > 0 &&
+        state.player.resources.credits < explorationSurcharge
+      ) {
+        return state;
+      }
+
+      const resourcesAfterTithe =
+        explorationSurcharge > 0
+          ? updateSingleResource(
+              state.player.resources,
+              "credits",
+              -explorationSurcharge,
+            )
+          : state.player.resources;
+
       return {
         ...state,
         player: {
           ...state.player,
+          resources: resourcesAfterTithe,
           activeProcess: {
             id: action.payload.id,
-            kind: action.payload.kind ?? "exploration",
+            kind: processKind,
             status: "running",
             title: action.payload.title,
             sourceId: action.payload.sourceId ?? null,
@@ -1236,7 +1519,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             endsAt: action.payload.endsAt,
           },
           fieldLootGainedThisRun:
-            (action.payload.kind ?? "exploration") === "hunt" ? {} : state.player.fieldLootGainedThisRun,
+            processKind === "hunt" ? {} : state.player.fieldLootGainedThisRun,
         },
       };
     }
@@ -1289,7 +1572,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       }
 
       const nextPlayer = applyActivityHungerCost(
-        applyMissionReward(player, phase1ExplorationReward),
+        applyMissionRewardWithVoidStrain(
+          player,
+          phase1ExplorationReward,
+          "neutral",
+        ),
         "exploration",
       );
 
@@ -1453,8 +1740,17 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         };
       }
 
+      const rewardWithPathMastery = applyPathAlignedMasteryBonus(
+        mission.reward,
+        mission.path,
+        state.player.factionAlignment,
+      );
       const nextPlayer = applyActivityHungerCost(
-        applyMissionReward(state.player, mission.reward),
+        applyMissionRewardWithVoidStrain(
+          state.player,
+          rewardWithPathMastery,
+          mission.path,
+        ),
         mission.category === "hunting-ground" ? "hunt" : "mission",
       );
       const nextQueue = missionQueue.filter(
@@ -1583,6 +1879,19 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             mythicAscension: {
               ...p.mythicAscension,
               runeCrafterLicense: true,
+            },
+          },
+        };
+      }
+      if (action.payload === "convergence-prime") {
+        if (!canPrimeConvergence(p)) return state;
+        return {
+          ...state,
+          player: {
+            ...p,
+            mythicAscension: {
+              ...p.mythicAscension,
+              convergencePrimed: true,
             },
           },
         };
@@ -1721,11 +2030,12 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const nextContracts: SharedGuildContract[] = contracts.map((x) =>
         x.id === c.id ? { ...x, status: "claimed" } : x,
       );
+      const { accepted } = enforceCapacity(p.resources, c.reward);
       return {
         ...state,
         player: {
           ...p,
-          resources: addPartialResources(p.resources, c.reward),
+          resources: addPartialResources(p.resources, accepted),
           guildContracts: nextContracts,
         },
       };

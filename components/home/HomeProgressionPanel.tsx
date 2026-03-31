@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useGame } from "@/features/game/gameContext";
 import { getFirstSessionGuidance } from "@/features/guidance/firstSessionGuidance";
+import { getCareerFocusHomeEffectLine } from "@/features/player/careerFocusModifiers";
 
 function getPathAccent(path: string) {
   switch (path) {
@@ -93,6 +94,7 @@ export default function HomeProgressionPanel() {
   const accent = getPathAccent(player.factionAlignment);
   const tagline = getPathTagline(player.factionAlignment);
   const careerLabel = getCareerLabel(player.careerFocus);
+  const careerEffectLine = getCareerFocusHomeEffectLine(player.careerFocus);
   const progressPct =
     player.rankXpToNext > 0
       ? Math.max(0, Math.min(100, (player.rankXp / player.rankXpToNext) * 100))
@@ -131,6 +133,10 @@ export default function HomeProgressionPanel() {
           </div>
         </div>
       </div>
+
+      <p className="mt-2 text-[11px] leading-relaxed text-white/55">
+        {careerEffectLine}
+      </p>
 
       <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/8">
         <div

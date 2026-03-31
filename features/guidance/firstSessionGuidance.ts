@@ -1,5 +1,6 @@
 import { initialGameState } from "@/features/game/initialGameState";
 import type { GameState, PathType } from "@/features/game/gameTypes";
+import { getExplorationInstabilitySurchargeCredits } from "@/features/progression/phase3Progression";
 
 export type FirstSessionGuidanceAction = "explore" | "hunt" | "recover";
 const RECOVERY_GUIDANCE_THRESHOLD = 60;
@@ -101,6 +102,12 @@ const SCHOOL_COPY: Record<PathType | "unbound", SchoolCopy> = {
   },
 };
 
+function explorationInstabilityDetailSuffix(voidInstability: number): string {
+  const tithe = getExplorationInstabilitySurchargeCredits(voidInstability);
+  if (tithe <= 0) return "";
+  return ` Void instability is elevated — the next field sweep charges a ${tithe} credit stabilizer tithe before launch.`;
+}
+
 export function getFirstSessionGuidance(
   state: GameState,
 ): FirstSessionGuidance {
@@ -133,7 +140,8 @@ export function getFirstSessionGuidance(
       stateLabel: "Hunt Resolved",
       objective: "Payout banked. Open the next sweep.",
       detail:
-        "The last run paid out and field state is still stable. Keep the loop moving.",
+        "The last run paid out and field state is still stable. Keep the loop moving." +
+        explorationInstabilityDetailSuffix(player.voidInstability),
       nextStepLabel: "Start the next sweep",
       nextAction: "explore",
       isFirstTimePlayer,
@@ -156,7 +164,9 @@ export function getFirstSessionGuidance(
   return {
     stateLabel: copy.exploreLabel,
     objective: copy.exploreObjective,
-    detail: isFirstTimePlayer ? copy.exploreFirstDetail : copy.exploreDetail,
+    detail:
+      (isFirstTimePlayer ? copy.exploreFirstDetail : copy.exploreDetail) +
+      explorationInstabilityDetailSuffix(player.voidInstability),
     nextStepLabel: "Start the sweep",
     nextAction: "explore",
     isFirstTimePlayer,

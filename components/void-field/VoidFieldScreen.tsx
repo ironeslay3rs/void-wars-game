@@ -12,7 +12,7 @@ import {
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useGame } from "@/features/game/gameContext";
 import type { ResourceKey } from "@/features/game/gameTypes";
-import { getMissionById } from "@/features/game/gameMissionUtils";
+import { clamp, getMissionById } from "@/features/game/gameMissionUtils";
 import {
   DEFAULT_HOME_DEPLOY_ZONE_ID,
   voidZoneById,
@@ -26,6 +26,10 @@ import {
 import { useVoidRealtimeSession } from "@/features/void-maps/realtime/VoidRealtimeBridge";
 import { useVoidFieldCombatFeedback } from "@/features/void-maps/useVoidFieldCombatFeedback";
 import { useVoidFieldLootDropSpawns } from "@/features/void-maps/useVoidFieldLootDropSpawns";
+import {
+  createVoidFieldLootDropVfx,
+  type VoidFieldLootDropVfx,
+} from "@/features/void-maps/voidFieldLootDrops";
 import { voidFieldContractPayoutPreview } from "@/features/void-maps/voidFieldContractPreview";
 import { useVoidFieldShellMobPopulation } from "@/features/void-maps/useVoidFieldShellMobPopulation";
 import { useVoidFieldControls } from "@/features/void-maps/useVoidFieldControls";
@@ -46,6 +50,11 @@ import {
   getCareerFocusFieldLootAmountMultiplier,
   getCareerFocusShellDamageBonusPct,
 } from "@/features/player/careerFocusModifiers";
+import {
+  getConvergencePrimedFieldLootMultiplier,
+  getPathAlignedFieldLootMultiplier,
+} from "@/features/economy/pathGatheringYield";
+import { computeVoidStrainFromVoidFieldExtraction } from "@/features/progression/phase3Progression";
 import { getMasteryAlignedPickupYieldMultiplier } from "@/features/mastery/masteryGameplayEffects";
 import {
   getSchoolCombatPassives,
@@ -155,11 +164,34 @@ export default function VoidFieldScreen() {
       state.player.runeMastery,
       zone.lootTheme,
     );
-    return career * masteryAligned;
-  }, [state.player.careerFocus, state.player.runeMastery, zone.lootTheme]);
+    const pathAligned = getPathAlignedFieldLootMultiplier(
+      state.player.factionAlignment,
+      zone.lootTheme,
+    );
+    const convergence = getConvergencePrimedFieldLootMultiplier(
+      state.player.mythicAscension.convergencePrimed,
+    );
+    return career * masteryAligned * pathAligned * convergence;
+  }, [
+    state.player.careerFocus,
+    state.player.factionAlignment,
+    state.player.runeMastery,
+    state.player.mythicAscension.convergencePrimed,
+    zone.lootTheme,
+  ]);
 
   const { mobsForField, applyShellMobDamage, bossChip } =
     useVoidFieldShellMobPopulation(allocatedZone.id, realtime.mobs, state.player);
+
+  const wsRealtimeMobIds = useMemo(
+    () => new Set(realtime.mobs.map((m) => m.mobEntityId)),
+    [realtime.mobs],
+  );
+  const skipClientRollForMobEntityId = useCallback(
+    (mobEntityId: string) =>
+      realtimeConnected && isHuntRunning && wsRealtimeMobIds.has(mobEntityId),
+    [realtimeConnected, isHuntRunning, wsRealtimeMobIds],
+  );
 
   const combatHudLine = useMemo(() => {
     const loadout =
@@ -220,11 +252,58 @@ export default function VoidFieldScreen() {
     };
   }, [positionNorm]);
 
-  const { drops: lootDrops, removeDrop } = useVoidFieldLootDropSpawns(
+  const { drops: clientLootDrops, removeDrop } = useVoidFieldLootDropSpawns(
     mobsForField,
     allocatedZone.id,
     fieldLootAmountMultiplier,
+    { skipClientRollForMobEntityId },
   );
+  const [serverLootDrops, setServerLootDrops] = useState<VoidFieldLootDropVfx[]>(
+    [],
+  );
+
+  useEffect(() => {
+    setServerLootDrops([]);
+  }, [initialZoneId, sessionBucketId]);
+
+  useEffect(() => {
+    const batch = realtime.drainAuthoritativeMobLootEvents();
+    if (batch.length === 0) return;
+    const additions: VoidFieldLootDropVfx[] = [];
+    const tick = Date.now();
+    for (const ev of batch) {
+      ev.lines.forEach((line, idx) => {
+        const amt = Math.max(
+          1,
+          Math.round(line.amount * fieldLootAmountMultiplier),
+        );
+        additions.push(
+          createVoidFieldLootDropVfx(
+            ev.x,
+            ev.y,
+            line.resource,
+            amt,
+            `srv-${ev.mobEntityId}-${idx}-${tick}`,
+          ),
+        );
+      });
+    }
+    setServerLootDrops((d) => [...additions, ...d].slice(0, 15));
+  }, [
+    realtime.authoritativeMobLootSeq,
+    fieldLootAmountMultiplier,
+    realtime.drainAuthoritativeMobLootEvents,
+  ]);
+
+  const lootDrops = useMemo(
+    () => [...serverLootDrops, ...clientLootDrops],
+    [serverLootDrops, clientLootDrops],
+  );
+
+  const removeServerLootDrop = useCallback((id: string) => {
+    setServerLootDrops((d) => d.filter((x) => x.id !== id));
+  }, []);
+
   const [lootCollectPulse, setLootCollectPulse] = useState(0);
   const [sessionLoot, setSessionLoot] = useState<
     Partial<Record<ResourceKey, number>>
@@ -238,16 +317,24 @@ export default function VoidFieldScreen() {
   const onLootConsumed = useCallback(
     (id: string) => {
       const d = lootDrops.find((x) => x.id === id) ?? null;
-      removeDrop(id);
+      if (id.startsWith("srv-")) {
+        removeServerLootDrop(id);
+      } else {
+        removeDrop(id);
+      }
       setLootCollectPulse((p) => p + 1);
       if (d) {
+        dispatch({
+          type: "VOID_FIELD_ORB_COLLECTED",
+          payload: { key: d.resource, amount: d.amount },
+        });
         setSessionLoot((prev) => ({
           ...prev,
           [d.resource]: (prev[d.resource] ?? 0) + d.amount,
         }));
       }
     },
-    [lootDrops, removeDrop],
+    [lootDrops, removeDrop, removeServerLootDrop, dispatch],
   );
 
   const stimFloatMultiplier =
@@ -440,8 +527,8 @@ export default function VoidFieldScreen() {
     for (const [key, amount] of Object.entries(summary.lootCollected)) {
       if (!amount || amount <= 0) continue;
       dispatch({
-        type: "ADD_RESOURCE",
-        payload: { key: key as ResourceKey, amount },
+        type: "ADD_FIELD_LOOT",
+        payload: { key: key as ResourceKey, amount, skipRunLedger: true },
       });
     }
     if (summary.xpEarned > 0) {
@@ -451,11 +538,37 @@ export default function VoidFieldScreen() {
       dispatch({ type: "ADJUST_CONDITION", payload: -summary.conditionSpent });
     }
 
+    const conditionBefore = state.player.condition;
+    const conditionAfter = clamp(
+      conditionBefore - summary.conditionSpent,
+      0,
+      100,
+    );
+    const strainDelta = computeVoidStrainFromVoidFieldExtraction({
+      kills: summary.kills,
+      conditionAfter,
+      conditionDelta: -summary.conditionSpent,
+      lootUnits: 0,
+    });
+    if (strainDelta > 0) {
+      dispatch({
+        type: "APPLY_VOID_INSTABILITY_DELTA",
+        payload: strainDelta,
+      });
+    }
+
     extractionAppliedRef.current = true;
     queueMicrotask(() => {
       setExtractionSummary(summary);
     });
-  }, [dispatch, inExtractionZone, sessionKills, sessionLoot, zone.label]);
+  }, [
+    dispatch,
+    inExtractionZone,
+    sessionKills,
+    sessionLoot,
+    zone.label,
+    state.player.condition,
+  ]);
 
   return (
     <main className="fixed inset-0 overflow-hidden bg-black text-white">
@@ -509,6 +622,11 @@ export default function VoidFieldScreen() {
         bossChip={bossChip}
         combatHudLine={combatHudLine}
         encounterBrief={encounterBrief}
+        voidStrainChip={
+          state.player.voidInstability >= 18
+            ? `Void strain ${Math.round(state.player.voidInstability)}`
+            : null
+        }
       />
 
       <VoidFieldCombatTicker

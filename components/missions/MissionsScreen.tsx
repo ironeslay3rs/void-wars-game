@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import MissionResult from "@/components/missions/MissionResult";
 import MissionTimer from "@/components/missions/MissionTimer";
+import QuickDiscardResourceButtons from "@/components/inventory/QuickDiscardResourceButtons";
 import ScreenHeader from "@/components/shared/ScreenHeader";
 import SectionCard from "@/components/shared/SectionCard";
 import { useGame } from "@/features/game/gameContext";
@@ -24,6 +25,12 @@ import {
   getCanonBookLockReason,
   isCanonBookMissionUnlocked,
 } from "@/features/progression/canonBookGate";
+import {
+  checkCapacity,
+  getOverflowPenalty,
+  INVENTORY_CAPACITY_MAX,
+} from "@/features/resources/inventoryLogic";
+import { getDoctrinePressureStrip } from "@/features/world/missionDoctrineStrip";
 
 type QueuedMissionView = MissionQueueEntry & {
   mission: MissionDefinition;
@@ -368,6 +375,17 @@ export default function MissionsScreen() {
     return () => window.clearTimeout(timeout);
   }, [boardFeedback]);
 
+  const carryCapacity = useMemo(
+    () => checkCapacity(state.player.resources, INVENTORY_CAPACITY_MAX),
+    [state.player.resources],
+  );
+  const carryOverloadPenalty = carryCapacity.isOverloaded
+    ? getOverflowPenalty(carryCapacity)
+    : null;
+  const carryPct = Math.min(100, Math.max(0, carryCapacity.percent));
+  const carryNearCap = !carryCapacity.isOverloaded && carryPct >= 85;
+  const doctrineStrip = getDoctrinePressureStrip(state.player, now);
+
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(70,90,120,0.18),_rgba(5,8,20,0.96)_55%)] px-4 py-6 text-white md:px-6 md:py-8 xl:px-8">
       <div className="mx-auto flex max-w-6xl flex-col gap-6">
@@ -378,6 +396,74 @@ export default function MissionsScreen() {
           title={missionsScreenData.title}
           subtitle={missionsScreenData.subtitle}
         />
+
+        <div className="rounded-2xl border border-rose-400/22 bg-rose-950/14 px-4 py-3 text-[11px] leading-relaxed text-white/80 md:text-sm">
+          <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/45">
+            {doctrineStrip.title}
+          </div>
+          <div className="mt-1 font-semibold text-rose-100/90">
+            {doctrineStrip.contestedLine}
+          </div>
+          <p className="mt-1 text-white/60">{doctrineStrip.pressureLine}</p>
+          {doctrineStrip.commodityLine ? (
+            <p className="mt-1 text-amber-200/85">{doctrineStrip.commodityLine}</p>
+          ) : null}
+        </div>
+
+        {carryOverloadPenalty ? (
+          <div className="rounded-2xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-[11px] leading-relaxed text-red-100/95 shadow-[0_8px_28px_rgba(0,0,0,0.25)] md:text-sm">
+            <div className="font-bold uppercase tracking-[0.12em] text-red-200">
+              Cargo overloaded
+            </div>
+            <div className="mt-1 text-red-100/90">
+              Timers run ×{carryOverloadPenalty.missionSpeedPenalty.toFixed(1)}, field movement −
+              {carryOverloadPenalty.movementPenaltyPct}%, mission pay −
+              {carryOverloadPenalty.missionRewardPenaltyPct}%.
+            </div>
+            <div className="mt-2 flex flex-wrap gap-1.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-red-50/95 md:text-[11px]">
+              <span className="rounded-md border border-red-200/35 bg-black/25 px-2 py-0.5">
+                Time ×{carryOverloadPenalty.missionSpeedPenalty.toFixed(1)}
+              </span>
+              <span className="rounded-md border border-red-200/35 bg-black/25 px-2 py-0.5">
+                Move −{carryOverloadPenalty.movementPenaltyPct}%
+              </span>
+              <span className="rounded-md border border-red-200/35 bg-black/25 px-2 py-0.5">
+                Pay −{carryOverloadPenalty.missionRewardPenaltyPct}%
+              </span>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Link
+                href="/inventory"
+                className="rounded-lg border border-red-300/40 bg-red-500/15 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-red-50 hover:border-red-200/60 md:text-[11px]"
+              >
+                Inventory
+              </Link>
+              <Link
+                href="/bazaar/war-exchange"
+                className="rounded-lg border border-red-200/45 bg-black/30 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-red-50 hover:border-red-100/70 md:text-[11px]"
+              >
+                Sell surplus
+              </Link>
+            </div>
+            <QuickDiscardResourceButtons
+              wrapClassName="mt-2 flex flex-wrap gap-2"
+              buttonClassName="rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-white/75 hover:border-white/30 hover:bg-white/10 md:text-xs"
+            />
+          </div>
+        ) : carryNearCap ? (
+          <div className="rounded-2xl border border-amber-400/28 bg-amber-500/10 px-4 py-3 text-[11px] leading-snug text-amber-100/90 md:flex md:flex-wrap md:items-center md:justify-between md:gap-3 md:text-sm">
+            <span>
+              Carry near cap ({carryCapacity.used}/{carryCapacity.max}). Sell or discard before
+              you stack long operations.
+            </span>
+            <Link
+              href="/bazaar/war-exchange"
+              className="mt-2 inline-block shrink-0 font-bold uppercase tracking-widest text-amber-50 underline decoration-amber-400/50 underline-offset-2 hover:text-amber-100 md:mt-0"
+            >
+              War Exchange →
+            </Link>
+          </div>
+        ) : null}
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard

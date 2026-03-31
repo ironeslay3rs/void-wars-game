@@ -255,6 +255,12 @@ export type VoidRealtimeBinding = {
 
 export type CareerFocus = "combat" | "gathering" | "crafting";
 
+/** Phase 4 — one active broker work order tracked in the Crafting District. */
+export type CraftWorkOrderSlot = {
+  definitionId: string;
+  progress: number;
+};
+
 /** Void field shell combat — rigs influence posture/expose math (`resolveShellHit`). */
 export type FieldLoadoutProfile = "assault" | "support" | "breach";
 export type LoadoutSlotId =
@@ -267,6 +273,11 @@ export type LoadoutSlotsState = Record<LoadoutSlotId, string | null>;
 
 export type PlayerState = {
   playerName: string;
+  /**
+   * True only after the player completes the New Game flow (`createNewPlayer`).
+   * Used to force Puppy-first onboarding; legacy saves infer when the field is absent.
+   */
+  characterCreated: boolean;
   factionAlignment: FactionAlignment;
   /** Hub / profile portrait only — not used on Void Field. */
   characterPortraitId: CharacterPortraitId;
@@ -305,6 +316,12 @@ export type PlayerState = {
   influence: number;
   hasBiotechSpecimenLead: boolean;
 
+  /**
+   * Phase 3 — Void strain from contracts and survival pressure. High values add
+   * extra condition loss on mission resolution; decays when stable, falls on recovery.
+   */
+  voidInstability: number;
+
   resources: ResourcesState;
   /** Field pickups accrued during the currently running hunt (cleared on run start/end). */
   fieldLootGainedThisRun: Partial<ResourcesState>;
@@ -314,6 +331,16 @@ export type PlayerState = {
 
   /** M3 crafting output: lightweight crafted item inventory (non-resource). */
   craftedInventory: Record<string, number>;
+
+  /** Phase 4 — optional district work order (craft / bind quota + claim reward). */
+  craftWorkOrder: CraftWorkOrderSlot | null;
+
+  /**
+   * Phase 4 — stall/workshop rent timeline (wall clock, evaluated on survival ticks).
+   * When rent is due and credits are short, `stallArrearsCount` rises (broker markup).
+   */
+  lastStallRentResolvedAt: number;
+  stallArrearsCount: number;
 
   knownRecipes: string[];
   unlockedRoutes: string[];
@@ -388,13 +415,29 @@ export type GameAction =
   | { type: "UNEQUIP_LOADOUT_ITEM"; payload: { slot: LoadoutSlotId } }
   | { type: "SET_FACTION_ALIGNMENT"; payload: PathType }
   | { type: "ADD_RESOURCE"; payload: { key: ResourceKey; amount: number } }
-  | { type: "ADD_FIELD_LOOT"; payload: { key: ResourceKey; amount: number } }
+  | {
+      type: "ADD_FIELD_LOOT";
+      payload: {
+        key: ResourceKey;
+        amount: number;
+        /** When true, only bank resources + strain — skip `fieldLootGainedThisRun` (orb picks already recorded). */
+        skipRunLedger?: boolean;
+      };
+    }
+  | {
+      type: "VOID_FIELD_ORB_COLLECTED";
+      payload: { key: ResourceKey; amount: number };
+    }
   | { type: "SPEND_RESOURCE"; payload: { key: ResourceKey; amount: number } }
   | { type: "GAIN_RANK_XP"; payload: number }
   | { type: "SET_RANK_LEVEL"; payload: number }
   | { type: "SET_RANK_NAME"; payload: string }
   | { type: "ADJUST_CONDITION"; payload: number }
+  /** Phase 5 — ranked / tournament arena SR (clamped shell ladder). */
+  | { type: "APPLY_ARENA_RANKED_SR_DELTA"; payload: number }
   | { type: "ADJUST_HUNGER"; payload: number }
+  /** Phase 3 — apply Void strain delta (e.g. void field extraction). Clamped 0–100. */
+  | { type: "APPLY_VOID_INSTABILITY_DELTA"; payload: number }
   | { type: "RECOVER_CONDITION" }
   | { type: "CRAFT_MOSS_RATION" }
   | { type: "CONSUME_MOSS_RATION" }
@@ -402,6 +445,11 @@ export type GameAction =
   | { type: "MARKET_BUY"; payload: { listingId: string } }
   | { type: "MARKET_SELL"; payload: { key: ResourceKey; amount: number } }
   | { type: "CRAFT_RECIPE"; payload: { recipeId: string } }
+  | { type: "ACCEPT_CRAFT_WORK_ORDER"; payload: { definitionId: string } }
+  | { type: "CLAIM_CRAFT_WORK_ORDER" }
+  | { type: "ABANDON_CRAFT_WORK_ORDER" }
+  /** Phase 4 — clear stall arrears (one payment for all missed periods). */
+  | { type: "PAY_STALL_ARREARS" }
   | { type: "CRAFT_NEXT_RUN_MODIFIER"; payload: { modifierId: NextRunModifierId } }
   | { type: "USE_FEAST_HALL_OFFER"; payload: { offerId: FeastHallOfferId } }
   | { type: "RESOLVE_HUNT"; payload: { missionId: string; resolvedAt?: number } }
@@ -462,7 +510,10 @@ export type GameAction =
   | { type: "CLAIM_FACTION_HQ_STIPEND" }
   | {
       type: "ATTEMPT_MYTHIC_UNLOCK";
-      payload: "l3-rare-rune-set" | "rune-crafter-license";
+      payload:
+        | "l3-rare-rune-set"
+        | "rune-crafter-license"
+        | "convergence-prime";
     }
   | { type: "GUILD_CREATE"; payload: { guildName: string } }
   | { type: "GUILD_JOIN"; payload: { guildCode: string } }

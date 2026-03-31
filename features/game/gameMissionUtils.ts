@@ -25,6 +25,12 @@ import {
   getOverflowPenalty,
 } from "@/features/resources/inventoryLogic";
 import { getFusionContractModifiers } from "@/features/progression/fusionProgression";
+import {
+  applyPathAlignedMasteryBonus,
+  computeVoidInstabilityGain,
+  getVoidInstabilityExtraConditionDrain,
+  withVoidInstabilityDelta,
+} from "@/features/progression/phase3Progression";
 
 export function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
@@ -119,9 +125,12 @@ export function getResolvedConditionDelta(
   player: PlayerState,
   reward: MissionReward,
 ) {
-  return getPressureAdjustedConditionDelta(
+  const base = getPressureAdjustedConditionDelta(
     player.condition,
     reward.conditionDelta,
+  );
+  return (
+    base - getVoidInstabilityExtraConditionDrain(player.voidInstability)
   );
 }
 
@@ -149,6 +158,25 @@ export function applyMissionReward(
       player.navigation.currentRoute,
     ),
   };
+}
+
+/** Phase 3 — apply payout and accumulate Void strain from the contract outcome. */
+export function applyMissionRewardWithVoidStrain(
+  player: PlayerState,
+  reward: MissionReward,
+  missionPath: PathType | "neutral",
+): PlayerState {
+  const resolvedConditionDelta = getResolvedConditionDelta(player, reward);
+  const after = applyMissionReward(player, reward);
+  return withVoidInstabilityDelta(
+    after,
+    computeVoidInstabilityGain({
+      conditionAfter: after.condition,
+      resolvedConditionDelta,
+      missionPath,
+      factionAlignment: player.factionAlignment,
+    }),
+  );
 }
 
 function applyOverloadPenaltyToReward(
@@ -593,33 +621,54 @@ export function processMissionQueue(state: GameState, now: number): GameState {
               : undefined,
           };
 
+    const rewardWithPathMastery = applyPathAlignedMasteryBonus(
+      rewardWithFusionMods,
+      mission.path,
+      nextPlayer.factionAlignment,
+    );
+
     const resolvedConditionDelta = getResolvedConditionDelta(
       nextPlayer,
-      rewardWithFusionMods,
+      rewardWithPathMastery,
     );
     const rewardWithOverloadPenalty = applyOverloadPenaltyToReward(
       nextPlayer,
-      rewardWithFusionMods,
+      rewardWithPathMastery,
     );
 
     const playerBeforeReward = nextPlayer;
-    const playerAfterReward = applyMissionReward(
+    const playerAfterInstability = applyMissionRewardWithVoidStrain(
       nextPlayer,
       rewardWithOverloadPenalty,
+      mission.path,
     );
     const appliedResourceGain = getAppliedResourceGain(
       playerBeforeReward.resources,
-      playerAfterReward.resources,
+      playerAfterInstability.resources,
     );
 
     nextPlayer = applyActivityHungerCost(
-      playerAfterReward,
+      playerAfterInstability,
       mission.category === "hunting-ground" ? "hunt" : "mission",
     );
     playerChanged = true;
 
     if (mission.category === "hunting-ground") {
       const fieldLoot = nextPlayer.fieldLootGainedThisRun ?? {};
+      if (
+        typeof process !== "undefined" &&
+        process.env.NODE_ENV === "development" &&
+        process.env.NEXT_RUNTIME !== "edge"
+      ) {
+        // Greppable dev telemetry: confirms settlement copies the run ledger before it is cleared.
+        // (Pickup path: VOID_FIELD_ORB_COLLECTED → ledger; extract: ADD_FIELD_LOOT + skipRunLedger.)
+        console.info("[void-wars:hunt-field-loot]", {
+          missionId: mission.id,
+          queueId: entry.queueId,
+          resolvedAt: entry.endsAt,
+          fieldLootGainedSnapshot: fieldLoot,
+        });
+      }
       // Clear next-run modifiers after the run ends (single-use, non-stacking).
       nextPlayer = {
         ...nextPlayer,
@@ -673,6 +722,7 @@ export function processMissionQueue(state: GameState, now: number): GameState {
             rewardWithOverloadPenalty.influence ?? 0,
           ),
           reason: `Contract resolved — ${mission.title}`,
+          nowMs: entry.endsAt,
         });
       }
     }

@@ -67,6 +67,8 @@ export default function LoadoutPage() {
     player.loadoutSlots.weapon === "bio-mirefang-sidearm";
 
   const allSlotsEmpty = LOADOUT_SLOT_ORDER.every((s) => !player.loadoutSlots[s]);
+  const nextEmptySlot = LOADOUT_SLOT_ORDER.find((s) => !player.loadoutSlots[s]);
+  const weaponSlotEmpty = !player.loadoutSlots.weapon;
 
   function handleQuickEquip() {
     const filled = autoEquipStarterKit(player.loadoutSlots, player.factionAlignment);
@@ -196,6 +198,17 @@ export default function LoadoutPage() {
             Equip items from owned inventory into your combat slots. Unequip returns the
             item to your available inventory list.
           </p>
+          {weaponSlotEmpty ? (
+            <p className="mt-3 rounded-xl border border-cyan-400/30 bg-cyan-950/20 px-4 py-3 text-xs leading-relaxed text-cyan-100/90">
+              <span className="font-bold uppercase tracking-[0.12em] text-cyan-200">
+                Equip weapon first
+              </span>
+              <span className="mt-1 block text-cyan-100/85">
+                Your weapon sets strike range and damage bonuses on the void field — fill this
+                slot before you tune armor, core, or runes.
+              </span>
+            </p>
+          ) : null}
 
           <div className="mt-4 grid gap-3 md:grid-cols-2">
             {LOADOUT_SLOT_ORDER.map((slot) => {
@@ -205,13 +218,26 @@ export default function LoadoutPage() {
                 player.factionAlignment,
                 player.craftedInventory,
               );
+              const highlightEmpty = !equipped && slot === nextEmptySlot;
               return (
                 <div
                   key={slot}
-                  className="rounded-xl border border-white/12 bg-black/25 p-4"
+                  className={[
+                    "rounded-xl border bg-black/25 p-4 transition",
+                    highlightEmpty
+                      ? "border-cyan-400/45 shadow-[0_0_20px_rgba(34,211,238,0.12)] ring-1 ring-cyan-400/25"
+                      : "border-white/12",
+                  ].join(" ")}
                 >
-                  <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/45">
-                    {LOADOUT_SLOT_LABELS[slot]}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/45">
+                      {LOADOUT_SLOT_LABELS[slot]}
+                    </div>
+                    {highlightEmpty ? (
+                      <span className="rounded-md border border-cyan-400/35 bg-cyan-500/15 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.14em] text-cyan-100">
+                        Next
+                      </span>
+                    ) : null}
                   </div>
                   {equipped ? (
                     <>

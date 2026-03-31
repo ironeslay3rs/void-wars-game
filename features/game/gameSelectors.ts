@@ -28,6 +28,9 @@ export function canAccessTeleportGate(state: GameState) {
 }
 
 export function canContinueGame(state: GameState) {
+  if (!state.player.characterCreated) {
+    return false;
+  }
   return (
     hasChosenPath(state) ||
     state.player.rankLevel > 1 ||

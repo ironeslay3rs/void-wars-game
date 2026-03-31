@@ -20,12 +20,15 @@ import {
 import {
   createInitialRuneMastery,
   normalizeRuneDepthFromMinors,
+  type EffectiveCapacityOptions,
 } from "@/features/mastery/runeMasteryLogic";
 import {
   normalizePlayerFactionWorldSlice,
   parseVoidZoneId,
 } from "@/features/factions/factionWorldLogic";
 import { normalizeMythicAscension } from "@/features/progression/mythicAscensionLogic";
+import { normalizeCraftWorkOrderSlot } from "@/features/economy/craftWorkOrderData";
+import { resolveCharacterCreated } from "@/features/player/characterCreatedGate";
 import {
   normalizeGuildContracts,
   normalizeGuildRoster,
@@ -131,7 +134,10 @@ function clampInt(n: number, min: number, max: number) {
   return Math.min(max, Math.max(min, Math.floor(n)));
 }
 
-function normalizeRuneMastery(value: unknown): PlayerRuneMasteryState {
+function normalizeRuneMastery(
+  value: unknown,
+  relief: EffectiveCapacityOptions,
+): PlayerRuneMasteryState {
   const base = createInitialRuneMastery();
   if (!isRecord(value)) {
     return base;
@@ -196,13 +202,16 @@ function normalizeRuneMastery(value: unknown): PlayerRuneMasteryState {
       ? Math.max(0, Math.floor(value.hybridDrainStacks))
       : base.hybridDrainStacks;
 
-  return normalizeRuneDepthFromMinors({
-    depthBySchool,
-    minorCountBySchool,
-    capacity,
-    capacityMax,
-    hybridDrainStacks,
-  });
+  return normalizeRuneDepthFromMinors(
+    {
+      depthBySchool,
+      minorCountBySchool,
+      capacity,
+      capacityMax,
+      hybridDrainStacks,
+    },
+    relief,
+  );
 }
 
 function normalizeLatestHuntResult(value: unknown): LatestHuntResult | null {
@@ -576,23 +585,39 @@ function normalizePlayer(value: unknown): PlayerState {
       ? (nextRunModifiersCandidate as PlayerState["nextRunModifiers"])
       : initialGameState.player.nextRunModifiers;
 
+  const playerName =
+    typeof raw.playerName === "string"
+      ? raw.playerName
+      : initialGameState.player.playerName;
+
+  const factionAlignment =
+    raw.factionAlignment === "unbound" ||
+    raw.factionAlignment === "bio" ||
+    raw.factionAlignment === "mecha" ||
+    raw.factionAlignment === "pure"
+      ? raw.factionAlignment
+      : raw.factionAlignment === "spirit"
+        ? "pure"
+        : initialGameState.player.factionAlignment;
+
+  const mythicAscension = normalizeMythicAscension(
+    (raw as Record<string, unknown>).mythicAscension,
+  );
+
   return {
     ...initialGameState.player,
 
-    playerName:
-      typeof raw.playerName === "string"
-        ? raw.playerName
-        : initialGameState.player.playerName,
+    playerName,
+    factionAlignment,
 
-    factionAlignment:
-      raw.factionAlignment === "unbound" ||
-      raw.factionAlignment === "bio" ||
-      raw.factionAlignment === "mecha" ||
-      raw.factionAlignment === "pure"
-        ? raw.factionAlignment
-        : raw.factionAlignment === "spirit"
-          ? "pure"
-        : initialGameState.player.factionAlignment,
+    characterCreated: resolveCharacterCreated({
+      stored:
+        typeof raw.characterCreated === "boolean"
+          ? raw.characterCreated
+          : undefined,
+      playerName,
+      factionAlignment,
+    }),
 
     characterPortraitId:
       typeof raw.characterPortraitId === "string" &&
@@ -686,6 +711,33 @@ function normalizePlayer(value: unknown): PlayerState {
       typeof raw.hasBiotechSpecimenLead === "boolean"
         ? raw.hasBiotechSpecimenLead
         : initialGameState.player.hasBiotechSpecimenLead,
+
+    voidInstability:
+      typeof raw.voidInstability === "number" &&
+      Number.isFinite(raw.voidInstability)
+        ? Math.max(
+            0,
+            Math.min(100, Math.round(raw.voidInstability)),
+          )
+        : initialGameState.player.voidInstability,
+
+    craftWorkOrder: normalizeCraftWorkOrderSlot(
+      (raw as { craftWorkOrder?: unknown }).craftWorkOrder,
+    ),
+
+    lastStallRentResolvedAt: (() => {
+      const v = (raw as Record<string, unknown>).lastStallRentResolvedAt;
+      return typeof v === "number" && Number.isFinite(v)
+        ? v
+        : initialGameState.player.lastStallRentResolvedAt;
+    })(),
+
+    stallArrearsCount: (() => {
+      const v = (raw as Record<string, unknown>).stallArrearsCount;
+      return typeof v === "number" && Number.isFinite(v)
+        ? Math.max(0, Math.min(99, Math.floor(v)))
+        : initialGameState.player.stallArrearsCount;
+    })(),
 
     resources: normalizeResources(raw.resources),
     fieldLootGainedThisRun:
@@ -783,6 +835,10 @@ function normalizePlayer(value: unknown): PlayerState {
 
     runeMastery: normalizeRuneMastery(
       (raw as Record<string, unknown>).runeMastery,
+      {
+        crafterHybridRelief: mythicAscension.runeCrafterLicense,
+        convergenceHybridRelief: mythicAscension.convergencePrimed,
+      },
     ),
 
     ...normalizePlayerFactionWorldSlice(raw as PlayerState),
@@ -792,9 +848,7 @@ function normalizePlayer(value: unknown): PlayerState {
       (raw as Record<string, unknown>).guildContracts,
     ),
 
-    mythicAscension: normalizeMythicAscension(
-      (raw as Record<string, unknown>).mythicAscension,
-    ),
+    mythicAscension,
   };
 }
 

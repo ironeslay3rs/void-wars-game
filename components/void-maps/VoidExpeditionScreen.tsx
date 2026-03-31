@@ -22,6 +22,7 @@ import {
   isCanonBookMissionUnlocked,
 } from "@/features/progression/canonBookGate";
 import { getDoctrineQueueGate } from "@/features/progression/launchDoctrine";
+import WarFrontDemandCallout from "@/components/shared/WarFrontDemandCallout";
 
 const DEFAULT_DEPLOY_HG_MISSION_ID = "hg-rustfang-prowl";
 
@@ -234,6 +235,25 @@ function VoidExpeditionScreenInner() {
           </div>
         </div>
       ) : null}
+
+      <div
+        className={[
+          "absolute z-35 mx-3 max-w-xl md:left-6 md:mx-0 md:max-w-lg",
+          activeHunt ? "top-[11rem] md:top-[10.5rem]" : "top-[4.25rem]",
+        ].join(" ")}
+      >
+        <WarFrontDemandCallout
+          nowMs={now}
+          playerFaction={state.player.factionAlignment}
+          influence={state.player.influence}
+          guildPledge={
+            state.player.guild.kind === "inGuild"
+              ? state.player.guild.pledge
+              : null
+          }
+          deployZoneId={selectedZoneId}
+        />
+      </div>
 
       <VoidExpeditionMap
         selectedZoneId={selectedZoneId}

@@ -29,6 +29,7 @@ import {
 import { getEmergingRoleHint } from "@/features/player/playerIdentity";
 import { VOID_EXPEDITION_PATH } from "@/features/void-maps/voidRoutes";
 import { getDoctrineQueueGate } from "@/features/progression/launchDoctrine";
+import { getGuildLedgerSliceForHuntResult } from "@/features/social/guildLiveLogic";
 
 function formatResolvedAt(timestamp: number) {
   return new Date(timestamp).toLocaleString();
@@ -243,6 +244,14 @@ export default function BiotechLabsResultPage() {
       })
     : [];
 
+  const mercenaryLedgerSlice =
+    latestHuntResult && isFieldContractResult
+      ? getGuildLedgerSliceForHuntResult(
+          state.player,
+          latestHuntResult.resolvedAt,
+        )
+      : null;
+
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(30,120,80,0.22),rgba(5,8,20,1)_55%)] px-6 py-10 text-white md:px-10">
       <div className="mx-auto flex max-w-5xl flex-col gap-8">
@@ -410,6 +419,33 @@ export default function BiotechLabsResultPage() {
                 … Bonus fills in once realtime contribution settles (usually
                 within a few seconds).
               </p>
+            ) : null}
+            {mercenaryLedgerSlice && mercenaryLedgerSlice.total > 0 ? (
+              <div className="mt-4 rounded-xl border border-cyan-400/25 bg-cyan-950/20 px-4 py-3">
+                <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-100/75">
+                  Mercenary ledger (this settlement)
+                </div>
+                <p className="mt-1 text-sm font-semibold tabular-nums text-cyan-50/95">
+                  +{mercenaryLedgerSlice.total} guild contribution
+                </p>
+                <ul className="mt-2 space-y-1.5 text-[11px] leading-snug text-white/58">
+                  {mercenaryLedgerSlice.entries.map((e, i) => (
+                    <li key={`${e.at}-${e.reason}-${i}`}>
+                      <span className="tabular-nums text-cyan-200/85">
+                        +{e.amount}
+                      </span>
+                      {" · "}
+                      {e.reason}
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  href="/guild"
+                  className="mt-3 inline-flex text-[11px] font-semibold uppercase tracking-[0.12em] text-cyan-200/90 underline decoration-cyan-400/35 underline-offset-2 hover:text-white"
+                >
+                  Guild board
+                </Link>
+              </div>
             ) : null}
           </div>
         ) : null}

@@ -1,4 +1,5 @@
 import FactionPathPanel from "@/components/home/FactionPathPanel";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { FactionAlignment, GameState } from "@/features/game/gameTypes";
 import {
@@ -11,6 +12,8 @@ import { getLaunchDirectives } from "@/features/progression/launchReadiness";
 import {
   getDoctrineQueueGate,
 } from "@/features/progression/launchDoctrine";
+import { getCareerFocusHomeEffectLine } from "@/features/player/careerFocusModifiers";
+import { getVoidInstabilityTierLabel } from "@/features/progression/phase3Progression";
 
 type PathSelection = Exclude<FactionAlignment, "unbound">;
 
@@ -52,6 +55,8 @@ export default function MainMenuRightRail({
   const doctrineQueueGate = getDoctrineQueueGate(state.player, now);
   const launchReadiness = doctrineQueueGate.readiness;
   const doctrineQueueCap = doctrineQueueGate.cap;
+  const voidStrain = state.player.voidInstability;
+  const voidStrainRead = getVoidInstabilityTierLabel(voidStrain);
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -116,6 +121,53 @@ export default function MainMenuRightRail({
               {mastery}%
             </div>
           </div>
+        </div>
+
+        <div className="mt-3 rounded-[18px] border border-white/10 bg-black/20 p-3">
+          <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/38">
+            Career focus
+          </div>
+          <p className="mt-2 text-[11px] leading-relaxed text-white/68">
+            {getCareerFocusHomeEffectLine(state.player.careerFocus)}
+          </p>
+        </div>
+
+        <div className="mt-3 rounded-[18px] border border-violet-400/22 bg-violet-950/20 p-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-violet-200/65">
+                Void strain
+              </div>
+              <div className="mt-1 text-[11px] font-bold uppercase tracking-[0.14em] text-violet-100/90">
+                {voidStrainRead.label}
+              </div>
+              <p className="mt-1.5 text-[10px] leading-relaxed text-white/58">
+                {voidStrainRead.hint}
+              </p>
+            </div>
+            <div className="shrink-0 text-right">
+              <div className="text-2xl font-black tabular-nums text-white">
+                {Math.round(voidStrain)}
+              </div>
+              <div className="text-[9px] uppercase tracking-[0.18em] text-white/40">
+                / 100
+              </div>
+            </div>
+          </div>
+          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-black/35">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-violet-600/85 to-fuchsia-500/75 transition-[width] duration-500"
+              style={{
+                width: `${Math.max(0, Math.min(100, voidStrain))}%`,
+              }}
+            />
+          </div>
+          <Link
+            href="/status"
+            className="mt-2 inline-block text-[10px] font-bold uppercase tracking-widest text-violet-200 underline decoration-violet-400/45 underline-offset-2 hover:text-violet-100"
+          >
+            Full readout →
+          </Link>
         </div>
       </section>
 

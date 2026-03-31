@@ -8,6 +8,9 @@ import {
   Wrench,
   Flame,
 } from "lucide-react";
+import CraftWorkOrderPanel from "@/components/crafting/CraftWorkOrderPanel";
+import RuneHierarchyDistrictCallout from "@/components/crafting/RuneHierarchyDistrictCallout";
+import StallArrearsCallout from "@/components/shared/StallArrearsCallout";
 import BazaarSubpageNav from "@/components/bazaar/BazaarSubpageNav";
 import { useGame } from "@/features/game/gameContext";
 import { getCraftingDistrictScreenData } from "@/features/crafting-district/craftingDistrictScreenData";
@@ -33,6 +36,10 @@ import {
 } from "@/features/crafting-district/craftingProfession";
 import { craftRecipes, craftingCategoryLabels, type CraftingCategory } from "@/features/crafting/recipeData";
 import { itemRankLabel } from "@/features/inventory/itemRanks";
+import {
+  getRecipeMythicGateHint,
+  meetsRecipeMythicGate,
+} from "@/features/progression/mythicAscensionLogic";
 
 type BossRelicKey = "coil" | "ash" | "vault";
 
@@ -150,6 +157,13 @@ function CraftingConsole() {
         </div>
       ) : null}
 
+      {tab === "refining" ? (
+        <p className="rounded-xl border border-violet-300/25 bg-violet-950/20 px-4 py-3 text-xs leading-relaxed text-violet-100/85">
+          Refining is your cargo sink: trades volume for tighter stock. Risk firewalls still
+          apply — failures burn the material line like other crafts.
+        </p>
+      ) : null}
+
       <div className="grid gap-3 md:grid-cols-2">
         {recipes.map((recipe) => {
           const canAfford = Object.entries(recipe.materials).every(([k, v]) => {
@@ -158,6 +172,8 @@ function CraftingConsole() {
             if (need <= 0) return true;
             return (state.player.resources[key] ?? 0) >= need;
           });
+          const mythicOk = meetsRecipeMythicGate(state.player, recipe.mythicGate);
+          const craftEnabled = canAfford && mythicOk;
 
           return (
             <div
@@ -204,6 +220,24 @@ function CraftingConsole() {
                   : `${recipe.output.item.name} (${itemRankLabel(recipe.output.item.rankTier)})`}
               </div>
 
+              {recipe.mythicGate && !mythicOk ? (
+                <p className="mt-3 rounded-lg border border-amber-400/25 bg-amber-950/25 px-3 py-2 text-[11px] leading-relaxed text-amber-100/85">
+                  {getRecipeMythicGateHint(recipe.mythicGate)}
+                </p>
+              ) : null}
+              {recipe.id === "obsidian-cycle-core" && mythicOk ? (
+                <p className="mt-2 text-[10px] leading-relaxed text-rose-200/70">
+                  Unstable bind: failure still consumes mats and adds void strain—recover
+                  before chaining.
+                </p>
+              ) : null}
+              {recipe.id === "crafter-lattice-channel" && mythicOk ? (
+                <p className="mt-2 text-[10px] leading-relaxed text-rose-200/65">
+                  Lattice channel backlash on fail is lighter than obsidian, but still
+                  spikes strain.
+                </p>
+              ) : null}
+
               <button
                 type="button"
                 onClick={() => {
@@ -217,7 +251,7 @@ function CraftingConsole() {
                   setToast(`Crafted: ${recipe.name} → ${outputDesc}`);
                   window.setTimeout(() => setToast(null), 3500);
                 }}
-                disabled={!canAfford}
+                disabled={!craftEnabled}
                 className="mt-4 w-full rounded-xl border border-cyan-400/25 bg-cyan-500/10 px-4 py-3 text-sm font-semibold text-cyan-100 transition hover:border-cyan-300/45 hover:bg-cyan-500/16 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Craft
@@ -454,6 +488,8 @@ export default function CraftingDistrictPage() {
 
         <BazaarSubpageNav accentClassName="hover:border-orange-400/40" />
 
+        <StallArrearsCallout />
+
         <div className="grid gap-6 md:grid-cols-3">
           {screenData.cards.map((card) => (
             <div
@@ -538,17 +574,29 @@ export default function CraftingDistrictPage() {
               </div>
               <h2 className="mt-2 text-xl font-black uppercase">Working recipes</h2>
               <p className="mt-2 text-sm text-white/65">
-                Five recipes are live in this build. Tabs group them by discipline.
-                Crafting spends materials immediately and outputs either resources or a
-                crafted item entry.
+                {craftRecipes.length} recipes are live in this build. Tabs group them by discipline.
+                Crafting spends materials immediately and outputs either resources or a crafted
+                item entry.
+              </p>
+              <p className="mt-2 rounded-xl border border-amber-300/22 bg-amber-950/15 px-4 py-3 text-xs leading-relaxed text-amber-100/88">
+                Phase 4 (start) — Refining tab turns bulk ore, scrap, and biomass into alloy,
+                cores, and dust. On success, Bio / Mecha / Pure operatives recover +1 of their
+                path&apos;s staple reagent (samples, alloy, or dust).
               </p>
               <p className="mt-2 rounded-xl border border-cyan-300/20 bg-cyan-950/25 px-4 py-3 text-xs leading-relaxed text-cyan-100/85">
-                Item rank rules: T1 is entry gear, T2 is combat-ready, T3 is rare war-grade.
+                Item rank rules: T1 is entry gear, T2 is combat-ready, T3 is rare war-grade,
+                T4 is obsidian-cycle war metal (mythic ladder).
                 Upgrade recipes consume more refined materials and boss relic stock.
               </p>
 
+              <div className="mt-4">
+                <RuneHierarchyDistrictCallout />
+              </div>
+
               <CraftingConsole />
             </div>
+
+            <CraftWorkOrderPanel />
 
             <div className="rounded-2xl border border-white/10 bg-black/25 p-6">
               <div className="text-[11px] uppercase tracking-[0.22em] text-emerald-300/70">

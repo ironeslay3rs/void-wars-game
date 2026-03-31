@@ -7,6 +7,7 @@ import StatusHeroCard from "@/components/status/StatusHeroCard";
 import StatusScreenSummary from "@/components/status/StatusScreenSummary";
 import StatusResourcesCard from "@/components/status/StatusResourcesCard";
 import StatusSystemsCard from "@/components/status/StatusSystemsCard";
+import VoidInstabilityReadout from "@/components/status/VoidInstabilityReadout";
 import { canonNavigationItems } from "@/features/canonRegistry";
 import { assets } from "@/lib/assets";
 
@@ -121,6 +122,7 @@ export default function StatusPage() {
 
             <div className="grid gap-6">
               <StatusScreenSummary />
+              <VoidInstabilityReadout />
               <StatusSystemsCard />
               <SectionCard
                 title="Loadout Snapshot"

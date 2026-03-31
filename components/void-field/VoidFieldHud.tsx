@@ -22,6 +22,7 @@ export default function VoidFieldHud({
   bossChip = null,
   combatHudLine = null,
   encounterBrief = null,
+  voidStrainChip = null,
 }: {
   className?: string;
   zoneLabel: string;
@@ -47,6 +48,8 @@ export default function VoidFieldHud({
   combatHudLine?: string | null;
   /** M4: notable local encounter (e.g. Hollowfang apex on Howling Scar). */
   encounterBrief?: string | null;
+  /** Phase 3 — elevated Void strain while deployed. */
+  voidStrainChip?: string | null;
 }) {
   return (
     <header
@@ -97,6 +100,11 @@ export default function VoidFieldHud({
           {bossChip ? (
             <span className="rounded-full border border-rose-400/25 bg-rose-950/35 px-2.5 py-1 text-rose-100">
               {bossChip}
+            </span>
+          ) : null}
+          {voidStrainChip ? (
+            <span className="rounded-full border border-violet-400/30 bg-violet-950/40 px-2.5 py-1 text-violet-100">
+              {voidStrainChip}
             </span>
           ) : null}
           {combatHudLine ? (

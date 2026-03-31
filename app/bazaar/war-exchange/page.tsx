@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import BazaarSubpageNav from "@/components/bazaar/BazaarSubpageNav";
 import ScreenHeader from "@/components/shared/ScreenHeader";
 import { useGame } from "@/features/game/gameContext";
 import type { ResourceKey } from "@/features/game/gameTypes";
+import type { MarketListing } from "@/features/market/marketListings";
 import {
   MARKET_LISTINGS,
   RESOURCE_BASE_PRICES,
@@ -15,8 +16,18 @@ import {
   enforceCapacity,
   getOverflowPenalty,
 } from "@/features/resources/inventoryLogic";
-import { quoteSellPriceCredits } from "@/features/market/marketActions";
+import {
+  quoteSellPriceCredits,
+  WAR_EXCHANGE_SELL_BROKER_CUT,
+} from "@/features/market/marketActions";
 import { formatResourceLabel } from "@/features/game/gameFeedback";
+import { getStallBrokerBuyMarkupMultiplier } from "@/features/economy/stallUpkeep";
+import {
+  getWarExchangeBuyDemandMultiplier,
+  getWarExchangeSellDemandMultiplier,
+} from "@/features/world/warDemandMarket";
+import StallArrearsCallout from "@/components/shared/StallArrearsCallout";
+import WarFrontDemandCallout from "@/components/shared/WarFrontDemandCallout";
 
 type Tab = "buy" | "sell";
 
@@ -32,6 +43,7 @@ const SELL_AMOUNTS = [1, 5, 10] as const;
 export default function WarExchangePage() {
   const { state, dispatch } = useGame();
   const { player } = state;
+  const brokerCutPct = Math.round(WAR_EXCHANGE_SELL_BROKER_CUT * 100);
   const [tab, setTab] = useState<Tab>("buy");
   const [confirm, setConfirm] = useState<
     | null
@@ -39,6 +51,12 @@ export default function WarExchangePage() {
     | { kind: "sell"; key: ResourceKey; amount: number }
   >(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [marketNow, setMarketNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const id = window.setInterval(() => setMarketNow(Date.now()), 60_000);
+    return () => window.clearInterval(id);
+  }, []);
 
   const capacity = checkCapacity(player.resources);
   const penalty = getOverflowPenalty(capacity);
@@ -59,6 +77,28 @@ export default function WarExchangePage() {
     });
   }, [player.resources]);
 
+  const buyMult = useMemo(
+    () => getStallBrokerBuyMarkupMultiplier(player.stallArrearsCount ?? 0),
+    [player.stallArrearsCount],
+  );
+
+  const listingBuyTotal = (listing: MarketListing) =>
+    Math.ceil(
+      listing.priceCredits *
+        buyMult *
+        getWarExchangeBuyDemandMultiplier(
+          listing,
+          player.factionAlignment,
+          marketNow,
+        ),
+    );
+
+  const sellQuote = (key: ResourceKey, amount: number) =>
+    quoteSellPriceCredits(key, amount, {
+      playerFaction: player.factionAlignment,
+      nowMs: marketNow,
+    });
+
   const fieldMedPatchListing = listings.find(
     (listing) => listing.id === "field-med-patch",
   );
@@ -78,7 +118,7 @@ export default function WarExchangePage() {
         <ScreenHeader
           eyebrow="Bazaar / War Exchange"
           title="War Exchange"
-          subtitle="Buy essentials for credits, sell surplus at a 10% cut. Purchases respect storage capacity."
+          subtitle={`Buy essentials for credits, sell surplus at a ${brokerCutPct}% broker tithe. Purchases respect storage capacity.`}
         />
 
         {capacity.isOverloaded ? (
@@ -92,6 +132,24 @@ export default function WarExchangePage() {
             </div>
           </div>
         ) : null}
+
+        <StallArrearsCallout />
+
+        <WarFrontDemandCallout
+          nowMs={marketNow}
+          playerFaction={player.factionAlignment}
+          influence={player.influence}
+          guildPledge={
+            player.guild.kind === "inGuild" ? player.guild.pledge : null
+          }
+        />
+
+        <p className="rounded-xl border border-rose-400/22 bg-rose-950/16 px-4 py-3 text-xs leading-relaxed text-rose-100/88">
+          <span className="font-bold text-rose-50/95">Restricted war metal:</span>{" "}
+          Ironheart never brokers as bulk surplus here — apex void drops feed
+          obsidian-cycle forges in the Crafting District (Phase 7 restricted
+          economy).
+        </p>
 
         <div className="flex flex-wrap gap-2">
           <button
@@ -123,6 +181,14 @@ export default function WarExchangePage() {
           </div>
         </div>
 
+        {tab === "sell" ? (
+          <p className="text-xs leading-relaxed text-amber-100/80">
+            Exchange quotes show net credits after the War Exchange&apos;s {brokerCutPct}% tithe
+            (gross value − cut). Heavy sellers stack refine-first workflows from the Crafting
+            District to avoid raw waste.
+          </p>
+        ) : null}
+
         {fieldMedPatchListing ? (
           <div className="rounded-2xl border border-emerald-300/25 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100/90">
             <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-100/75">
@@ -130,14 +196,18 @@ export default function WarExchangePage() {
             </div>
             <div className="mt-1">
               Buy <span className="font-black text-emerald-50">Field Med Patch</span>{" "}
-              ({fieldMedPatchListing.priceCredits} credits) and confirm stock
-              decreases + item grant applies.
+              ({listingBuyTotal(fieldMedPatchListing)} credits
+              <span className="text-emerald-200/70">
+                {" "}
+                · list {fieldMedPatchListing.priceCredits}
+              </span>
+              ) and confirm stock decreases + item grant applies.
             </div>
             <button
               type="button"
               disabled={
                 fieldMedPatchListing.stockLeft <= 0 ||
-                player.resources.credits < fieldMedPatchListing.priceCredits
+                player.resources.credits < listingBuyTotal(fieldMedPatchListing)
               }
               onClick={() =>
                 setConfirm({
@@ -158,7 +228,13 @@ export default function WarExchangePage() {
               const grantEntries = Object.entries(l.grant).filter(
                 (e): e is [string, number] => typeof e[1] === "number" && e[1] > 0,
               );
-              const canAfford = player.resources.credits >= l.priceCredits;
+              const warDm = getWarExchangeBuyDemandMultiplier(
+                l,
+                player.factionAlignment,
+                marketNow,
+              );
+              const price = listingBuyTotal(l);
+              const canAfford = player.resources.credits >= price;
               return (
                 <div
                   key={l.id}
@@ -200,11 +276,17 @@ export default function WarExchangePage() {
                   <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-sm">
                     <div className={canAfford ? "text-white/75" : "text-red-300/90"}>
                       Price:{" "}
-                      <span className="font-black text-white">{l.priceCredits}</span>{" "}
+                      <span className="font-black text-white">{price}</span>{" "}
                       credits
+                      {buyMult > 1 || Math.abs(warDm - 1) > 0.005 ? (
+                        <span className="mt-0.5 block text-[11px] text-amber-200/80">
+                          List {l.priceCredits} cr · stall ×{buyMult.toFixed(2)} · war
+                          front ×{warDm.toFixed(2)}
+                        </span>
+                      ) : null}
                       {!canAfford ? (
                         <span className="ml-2 text-[11px] text-red-300/80">
-                          (need {l.priceCredits - player.resources.credits} more)
+                          (need {price - player.resources.credits} more)
                         </span>
                       ) : null}
                     </div>
@@ -227,6 +309,11 @@ export default function WarExchangePage() {
           <section className="grid gap-3 md:grid-cols-2">
             {sellRows.map((row) => {
               const hasAny = row.owned > 0;
+              const sellWarDm = getWarExchangeSellDemandMultiplier(
+                row.key,
+                player.factionAlignment,
+                marketNow,
+              );
               return (
                 <div
                   key={row.key}
@@ -240,6 +327,16 @@ export default function WarExchangePage() {
                       <div className="mt-1 text-[11px] uppercase tracking-[0.18em] text-white/45">
                         {row.base} credits each · net 90% after cut
                       </div>
+                      {Math.abs(sellWarDm - 1.01) > 0.001 ? (
+                        <div className="mt-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-amber-200/85">
+                          War front demand ×{sellWarDm.toFixed(2)} (gross before
+                          tithe)
+                        </div>
+                      ) : (
+                        <div className="mt-2 text-[10px] text-white/40">
+                          War front demand ×1.01 baseline
+                        </div>
+                      )}
                     </div>
                     <div
                       className={[
@@ -256,7 +353,7 @@ export default function WarExchangePage() {
                   <div className="mt-4 flex flex-wrap gap-2">
                     {SELL_AMOUNTS.map((qty) => {
                       const canSell = row.owned >= qty;
-                      const net = quoteSellPriceCredits(row.key, qty).net;
+                      const net = sellQuote(row.key, qty).net;
                       return (
                         <button
                           key={qty}
@@ -288,7 +385,7 @@ export default function WarExchangePage() {
                           Sell All
                         </div>
                         <div className="mt-0.5 text-[10px] text-amber-100/55">
-                          +{quoteSellPriceCredits(row.key, row.owned).net} cr
+                          +{sellQuote(row.key, row.owned).net} cr
                         </div>
                       </button>
                     ) : (
@@ -323,11 +420,23 @@ export default function WarExchangePage() {
                     const grantEntries = Object.entries(listing.grant).filter(
                       (e): e is [string, number] => typeof e[1] === "number" && e[1] > 0,
                     );
+                    const charge = listingBuyTotal(listing);
+                    const warDm = getWarExchangeBuyDemandMultiplier(
+                      listing,
+                      player.factionAlignment,
+                      marketNow,
+                    );
                     return (
                       <span>
                         {listing.name} for{" "}
-                        <span className="font-black text-white">{listing.priceCredits}</span>{" "}
+                        <span className="font-black text-white">{charge}</span>{" "}
                         credits.
+                        {buyMult > 1 || Math.abs(warDm - 1) > 0.005 ? (
+                          <span className="mt-1 block text-[11px] text-amber-200/85">
+                            List {listing.priceCredits} cr · stall ×{buyMult.toFixed(2)} · war
+                            ×{warDm.toFixed(2)}
+                          </span>
+                        ) : null}
                         {grantEntries.length > 0 ? (
                           <span className="mt-1 block text-emerald-100/80">
                             Receive:{" "}
@@ -340,14 +449,24 @@ export default function WarExchangePage() {
                     );
                   })()
                 : (() => {
-                    const quote = quoteSellPriceCredits(confirm.key, confirm.amount);
+                    const quote = sellQuote(confirm.key, confirm.amount);
+                    const warSm = getWarExchangeSellDemandMultiplier(
+                      confirm.key,
+                      player.factionAlignment,
+                      marketNow,
+                    );
                     return (
                       <span>
                         Sell{" "}
                         <span className="font-black text-white">{confirm.amount}</span>{" "}
                         {formatResourceLabel(confirm.key)} →{" "}
                         <span className="font-black text-emerald-200">+{quote.net} credits</span>{" "}
-                        (after 10% cut).
+                        (after {brokerCutPct}% tithe).
+                        {Math.abs(warSm - 1) > 0.005 ? (
+                          <span className="mt-1 block text-[11px] text-amber-200/85">
+                            Gross scaled · war ×{warSm.toFixed(2)}
+                          </span>
+                        ) : null}
                       </span>
                     );
                   })()}
@@ -381,7 +500,8 @@ export default function WarExchangePage() {
                       setConfirm(null);
                       return;
                     }
-                    if (player.resources.credits < listing.priceCredits) {
+                    const charge = listingBuyTotal(listing);
+                    if (player.resources.credits < charge) {
                       pushToast("Insufficient credits.");
                       setConfirm(null);
                       return;
@@ -401,7 +521,7 @@ export default function WarExchangePage() {
                       return;
                     }
                     dispatch({ type: "MARKET_BUY", payload: { listingId: confirm.listingId } });
-                    const nextCredits = player.resources.credits - listing.priceCredits;
+                    const nextCredits = player.resources.credits - charge;
                     const nextStock = Math.max(0, stockLeft - 1);
                     pushToast(
                       listing.id === "field-med-patch"
@@ -421,7 +541,7 @@ export default function WarExchangePage() {
                       type: "MARKET_SELL",
                       payload: { key: confirm.key, amount: confirm.amount },
                     });
-                    const net = quoteSellPriceCredits(confirm.key, confirm.amount).net;
+                    const net = sellQuote(confirm.key, confirm.amount).net;
                     pushToast(
                       `Sold ${confirm.amount} ${formatResourceLabel(confirm.key)} for +${net} credits.`,
                     );
