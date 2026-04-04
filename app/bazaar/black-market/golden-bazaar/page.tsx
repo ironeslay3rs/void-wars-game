@@ -1,3 +1,4 @@
+import Link from "next/link";
 import BazaarSubpageNav from "@/components/bazaar/BazaarSubpageNav";
 import GoldenBazaarExchange from "@/components/black-market/GoldenBazaarExchange";
 import ScreenHeader from "@/components/shared/ScreenHeader";
@@ -17,6 +18,18 @@ export default function GoldenBazaarPage() {
           title="Golden Bazaar"
           subtitle="Browse commodity listings, pay fees, and move stock through the neutral citadel. This is the first real transaction layer for the loop."
         />
+
+        <p className="rounded-xl border border-cyan-400/22 bg-cyan-950/20 px-4 py-3 text-xs leading-relaxed text-cyan-100/85">
+          Looking for <span className="font-semibold text-cyan-50">player-posted gear</span>
+          ? The{" "}
+          <Link
+            href="/bazaar/auction-house"
+            className="font-semibold text-cyan-200 underline decoration-cyan-400/40 underline-offset-2 hover:text-white"
+          >
+            Auction House
+          </Link>{" "}
+          route handles listing experiments separately from this commodity desk.
+        </p>
 
         <GoldenBazaarExchange />
       </div>

@@ -26,6 +26,7 @@ export const initialGameState: GameState = {
     activeFeastHallOfferId: null,
     nextRunModifiers: null,
     nextRunModifiersAppliedForProcessId: null,
+    expeditionReadyStabilityPending: false,
 
     rank: "Unmarked",
     rankLevel: 1,
@@ -36,6 +37,14 @@ export const initialGameState: GameState = {
     influence: 0,
     hasBiotechSpecimenLead: false,
     voidInstability: 0,
+    runInstability: 0,
+    runInstabilityLog: [],
+    runHeatPushBoost: null,
+    instabilityStreakTurns: 0,
+    runArchetype: "balanced",
+    runStyleRiSamples: [],
+    runStyleVentCount: 0,
+    runStylePushCount: 0,
 
     resources: {
       credits: 0,
@@ -109,6 +118,9 @@ export const initialGameState: GameState = {
     lastFactionHqStipendAt: 0,
 
     mythicAscension: initialMythicAscension(),
+    lastCraftOutcome: null,
+    lastRuneInstallOutcome: null,
+    lastMythicGateBreakthrough: null,
   },
 
   missions: [

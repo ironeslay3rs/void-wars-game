@@ -1,4 +1,5 @@
 import type { NextRunModifierId, NextRunModifiers, ResourceKey } from "@/features/game/gameTypes";
+import { preRunPrepNextRunDefinitions } from "@/features/crafting/preRunPrep";
 
 export type NextRunModifierDefinition = {
   id: NextRunModifierId;
@@ -66,6 +67,7 @@ export const nextRunModifierDefinitions: NextRunModifierDefinition[] = [
       applyOnSettlement: { rewardBonusPct: 15, conditionDrainPenalty: 4 },
     },
   },
+  ...preRunPrepNextRunDefinitions,
 ];
 
 export function getNextRunModifierDefinitionById(id: NextRunModifierId) {

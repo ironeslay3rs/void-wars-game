@@ -28,6 +28,8 @@ import {
 } from "@/features/world/warDemandMarket";
 import StallArrearsCallout from "@/components/shared/StallArrearsCallout";
 import WarFrontDemandCallout from "@/components/shared/WarFrontDemandCallout";
+import TerritorialDoctrinePanel from "@/components/shared/TerritorialDoctrinePanel";
+import { CARGO_INFUSION_HEADING } from "@/features/status/voidInfusionMetaphor";
 
 type Tab = "buy" | "sell";
 
@@ -124,16 +126,19 @@ export default function WarExchangePage() {
         {capacity.isOverloaded ? (
           <div className="rounded-2xl border border-red-400/25 bg-red-500/10 p-5 text-sm text-red-100">
             <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-red-100/70">
-              OVERLOADED
+              {CARGO_INFUSION_HEADING}
             </div>
             <div className="mt-2">{penalty.message}</div>
             <div className="mt-2 text-red-100/80">
-              Sell or discard surplus to restore pickup + purchase capacity.
+              Sell or discard surplus to bleed cargo infusion and restore pickup + purchase
+              capacity.
             </div>
           </div>
         ) : null}
 
         <StallArrearsCallout />
+
+        <TerritorialDoctrinePanel player={player} nowMs={marketNow} />
 
         <WarFrontDemandCallout
           nowMs={marketNow}

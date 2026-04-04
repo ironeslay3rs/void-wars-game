@@ -35,7 +35,7 @@ export default function ProfessionsScreen() {
               Crafting District runs the{" "}
               <span className="text-white/88">Obsidian Cycle Core</span> (war
               metal bind). Failed attempts spike{" "}
-              <span className="text-white/88">void strain</span>—recover before
+              <span className="text-white/88">Void infusion</span>—recover before
               chaining. Earn the Rune Crafter license on{" "}
               <Link
                 href="/mastery"

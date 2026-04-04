@@ -2,6 +2,10 @@
 
 import { useGame } from "@/features/game/gameContext";
 import { getVoidInstabilityTierLabel } from "@/features/progression/phase3Progression";
+import {
+  VOID_INFUSION_HEADING,
+  voidInfusionBodyExplainer,
+} from "@/features/status/voidInfusionMetaphor";
 
 export default function VoidInstabilityReadout() {
   const { state } = useGame();
@@ -16,13 +20,14 @@ export default function VoidInstabilityReadout() {
             Consequence
           </div>
           <div className="mt-2 text-lg font-black uppercase tracking-[0.1em] text-white">
-            Void instability
+            {VOID_INFUSION_HEADING}
           </div>
+          <p className="mt-1 text-[11px] uppercase tracking-[0.14em] text-violet-200/50">
+            Instability index · same meter as field HUD
+          </p>
           <p className="mt-2 max-w-xl text-sm leading-relaxed text-white/70">
-            {hint} Paid recovery and emergency rations shave strain; moss rations trim a
-            little. Staying fed and stable lets it bleed down over time. High strain
-            can impose a credit tithe when starting field sweeps and adds wear when
-            contracts resolve.
+            <span className="font-semibold text-white/88">{hint}</span>{" "}
+            {voidInfusionBodyExplainer}
           </p>
         </div>
         <div className="text-right">

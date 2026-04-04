@@ -106,9 +106,9 @@ export default function ExplorationPanel() {
                 {explorationTithe} credits due at sweep start
               </div>
               <p className="mt-1 text-xs leading-relaxed text-violet-100/75">
-                High instability forces a paid prep line before the Black Market
-                clears another surface deployment. Bank credits or lower strain
-                on Status (recovery bleeds instability).
+                High Void infusion forces a paid prep line before the Black Market clears
+                another surface deployment. Bank credits or lower infusion on Status
+                (recovery bleeds the meter).
               </p>
             </div>
           ) : null}

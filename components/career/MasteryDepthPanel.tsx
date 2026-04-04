@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 import { useGame } from "@/features/game/gameContext";
 import {
   computeInstallCost,
@@ -79,8 +80,41 @@ export default function MasteryDepthPanel() {
   );
   const primary = getPrimaryRuneSchool(factionAlignment);
 
+  const [runeToast, setRuneToast] = useState<{
+    message: string;
+    tone: "ok" | "bad";
+  } | null>(null);
+  const seenRuneAt = useRef<number | null>(null);
+
+  useEffect(() => {
+    const o = state.player.lastRuneInstallOutcome;
+    if (!o) return;
+    if (seenRuneAt.current === o.at) return;
+    seenRuneAt.current = o.at;
+
+    const schoolLabel = SCHOOL_LABEL[o.school];
+    const message = o.ok
+      ? `Minor installed on ${schoolLabel} — depth now L${o.newDepth}.`
+      : o.reason;
+    setRuneToast({ message, tone: o.ok ? "ok" : "bad" });
+    dispatch({ type: "CLEAR_LAST_RUNE_INSTALL_OUTCOME" });
+    const hid = window.setTimeout(() => setRuneToast(null), 4200);
+    return () => window.clearTimeout(hid);
+  }, [state.player.lastRuneInstallOutcome, dispatch]);
+
   return (
     <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 shadow-[0_0_32px_rgba(0,0,0,0.35)]">
+      {runeToast ? (
+        <div
+          className={`mb-4 rounded-xl border px-4 py-3 text-sm ${
+            runeToast.tone === "ok"
+              ? "border-emerald-400/40 bg-emerald-500/10 text-emerald-100"
+              : "border-rose-400/40 bg-rose-500/10 text-rose-100"
+          }`}
+        >
+          {runeToast.message}
+        </div>
+      ) : null}
       <div className="text-[10px] uppercase tracking-[0.24em] text-amber-200/70">
         Mastery spine · Hour 20–40
       </div>

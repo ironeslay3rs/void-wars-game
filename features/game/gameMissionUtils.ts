@@ -31,6 +31,11 @@ import {
   getVoidInstabilityExtraConditionDrain,
   withVoidInstabilityDelta,
 } from "@/features/progression/phase3Progression";
+import { applyRunInstabilityMissionSettlement } from "@/features/progression/runInstability";
+import { applyDoctrineWarToMissionReward } from "@/features/world/zoneDoctrineWarEffects";
+import { applyPrimedPrepRunInstabilityTrim } from "@/features/crafting/prepRunHooks";
+import { maybeApplyExpeditionReadyStabilityToReward } from "@/features/expedition/expeditionReadiness";
+import { updateRunArchetypeAfterSettlement } from "@/features/game/runArchetypeLogic";
 
 export function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
@@ -161,6 +166,23 @@ export function applyMissionReward(
 }
 
 /** Phase 3 — apply payout and accumulate Void strain from the contract outcome. */
+/** Hunt / void-sector missions: scale payout + strain from live zone doctrine pressure. */
+export function mergeDoctrineWarIntoReward(
+  reward: MissionReward,
+  mission: MissionDefinition,
+  player: PlayerState,
+): { reward: MissionReward; extraVoidInstability: number } {
+  if (!mission.deployZoneId) return { reward, extraVoidInstability: 0 };
+  const pressure = player.zoneDoctrinePressure[mission.deployZoneId];
+  if (!pressure) return { reward, extraVoidInstability: 0 };
+  return applyDoctrineWarToMissionReward(
+    reward,
+    mission.deployZoneId,
+    pressure,
+    player.factionAlignment,
+  );
+}
+
 export function applyMissionRewardWithVoidStrain(
   player: PlayerState,
   reward: MissionReward,
@@ -627,21 +649,57 @@ export function processMissionQueue(state: GameState, now: number): GameState {
       nextPlayer.factionAlignment,
     );
 
-    const resolvedConditionDelta = getResolvedConditionDelta(
-      nextPlayer,
+    const doctrineMerged = mergeDoctrineWarIntoReward(
       rewardWithPathMastery,
+      mission,
+      nextPlayer,
+    );
+    const rewardWithDoctrine = doctrineMerged.reward;
+    const doctrineExtraVoid = doctrineMerged.extraVoidInstability;
+
+    const riSettled = applyRunInstabilityMissionSettlement(
+      nextPlayer,
+      rewardWithDoctrine,
+      {
+        missionId: mission.id,
+        resolvedAt: entry.endsAt,
+        isHuntingGround: mission.category === "hunting-ground",
+      },
+    );
+    const playerAfterRi = applyPrimedPrepRunInstabilityTrim(
+      riSettled.player,
+      riSettled.player.nextRunModifiers,
+      mission.category === "hunting-ground",
+    );
+    const stabilityApplied = maybeApplyExpeditionReadyStabilityToReward(
+      playerAfterRi,
+      riSettled.reward,
+      mission.category === "hunting-ground",
+    );
+    const playerAfterStability = stabilityApplied.player;
+    const rewardAfterRi = stabilityApplied.reward;
+
+    const resolvedConditionDelta = getResolvedConditionDelta(
+      playerAfterStability,
+      rewardAfterRi,
     );
     const rewardWithOverloadPenalty = applyOverloadPenaltyToReward(
-      nextPlayer,
-      rewardWithPathMastery,
+      playerAfterStability,
+      rewardAfterRi,
     );
 
-    const playerBeforeReward = nextPlayer;
-    const playerAfterInstability = applyMissionRewardWithVoidStrain(
-      nextPlayer,
+    const playerBeforeReward = playerAfterStability;
+    let playerAfterInstability = applyMissionRewardWithVoidStrain(
+      playerAfterStability,
       rewardWithOverloadPenalty,
       mission.path,
     );
+    if (doctrineExtraVoid > 0) {
+      playerAfterInstability = withVoidInstabilityDelta(
+        playerAfterInstability,
+        doctrineExtraVoid,
+      );
+    }
     const appliedResourceGain = getAppliedResourceGain(
       playerBeforeReward.resources,
       playerAfterInstability.resources,
@@ -651,6 +709,7 @@ export function processMissionQueue(state: GameState, now: number): GameState {
       playerAfterInstability,
       mission.category === "hunting-ground" ? "hunt" : "mission",
     );
+    nextPlayer = updateRunArchetypeAfterSettlement(nextPlayer);
     playerChanged = true;
 
     if (mission.category === "hunting-ground") {

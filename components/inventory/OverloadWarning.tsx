@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import QuickDiscardResourceButtons from "@/components/inventory/QuickDiscardResourceButtons";
+import { CARGO_INFUSION_HEADING } from "@/features/status/voidInfusionMetaphor";
 
 export default function OverloadWarning({
   message,
@@ -16,7 +17,9 @@ export default function OverloadWarning({
 }) {
   return (
     <div className="mt-3 rounded-xl border border-red-400/35 bg-red-500/12 px-4 py-3 text-sm text-red-100">
-      <div className="font-bold uppercase tracking-[0.12em]">Overloaded</div>
+      <div className="font-bold uppercase tracking-[0.12em]">
+        {CARGO_INFUSION_HEADING}
+      </div>
       <div className="mt-1 text-red-100/90">{message}</div>
       <div className="mt-2 flex flex-wrap gap-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-red-50/95">
         {typeof missionSpeedPenalty === "number" ? (

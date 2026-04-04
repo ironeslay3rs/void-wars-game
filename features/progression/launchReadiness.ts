@@ -41,7 +41,7 @@ export function getLaunchDirectives(player: PlayerState, now: number): LaunchDir
   ) {
     directives.push({
       id: "void-strain",
-      label: "Bleed Void strain",
+      label: "Bleed Void infusion",
       detail:
         "Instability is high — paid recovery, rations, and stable vitals pull it down. Check Status for the full readout.",
       tone: "warning",

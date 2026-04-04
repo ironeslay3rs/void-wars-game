@@ -23,6 +23,11 @@ import {
   isVoidFieldShellMobId,
   VOID_FIELD_SHELL_STRIKE_DAMAGE,
 } from "@/features/void-maps/voidFieldShellMobs";
+import { formatRunStyleLabel } from "@/features/game/runArchetypeLogic";
+import {
+  formatRunInstabilityChip,
+  runInstabilityShellDamageMultiplier,
+} from "@/features/progression/runInstability";
 import { useVoidRealtimeSession } from "@/features/void-maps/realtime/VoidRealtimeBridge";
 import { useVoidFieldCombatFeedback } from "@/features/void-maps/useVoidFieldCombatFeedback";
 import { useVoidFieldLootDropSpawns } from "@/features/void-maps/useVoidFieldLootDropSpawns";
@@ -41,6 +46,9 @@ import VoidFieldDeployIntro from "@/components/void-field/VoidFieldDeployIntro";
 import VoidFieldHud from "@/components/void-field/VoidFieldHud";
 import { useVoidFieldLocalPlayer } from "@/components/void-field/useVoidFieldLocalPlayer";
 import ExtractionSummary from "@/components/field/ExtractionSummary";
+import { voidInfusionHudLine } from "@/features/status/voidInfusionMetaphor";
+import { getAscensionTensionChipLine } from "@/features/progression/ascensionStep";
+import { getActivePrepSurface } from "@/features/crafting/prepRunHooks";
 import {
   buildExtractionSummary,
   type ExtractionSummary as ExtractionSummaryData,
@@ -206,6 +214,11 @@ export default function VoidFieldScreen() {
     const combat = getPlayerLoadoutCombatModifiers(state.player);
     return `${loadout} · ${s} · ${combat.weaponFamily.toUpperCase()} ${combat.strikeRangePct}% · passives ${on}/${passives.length}`;
   }, [state.player]);
+
+  const ascensionTensionChip = useMemo(
+    () => getAscensionTensionChipLine(state),
+    [state],
+  );
 
   const strikeRangePct = useMemo(
     () => getPlayerStrikeRangePct(state.player),
@@ -388,8 +401,14 @@ export default function VoidFieldScreen() {
       );
       const boostPct = stimBoostPct + careerBoostPct;
       const loadoutMult = getPlayerLoadoutCombatModifiers(state.player).attackMultiplier;
+      const heatMult = runInstabilityShellDamageMultiplier(
+        state.player.runInstability,
+      );
       const dmg = Math.round(
-        VOID_FIELD_SHELL_STRIKE_DAMAGE * (1 + boostPct / 100) * loadoutMult,
+        VOID_FIELD_SHELL_STRIKE_DAMAGE *
+          (1 + boostPct / 100) *
+          loadoutMult *
+          heatMult,
       );
       registerSlashForMob(mobEntityId);
       const dealt = applyShellMobDamage(mobEntityId, dmg);
@@ -490,12 +509,13 @@ export default function VoidFieldScreen() {
     isRecoveryOnCooldown && feastHallOffer
       ? `Feast Hall: ${feastHallOffer.label} · ${feastHallOffer.nextRunEffect} (${recoveryCooldownRemainingSeconds}s)`
       : null;
+  const prepSurface = getActivePrepSurface(state.player);
   const activeModifierChip =
-    state.player.nextRunModifiers && huntStatus === "running"
-      ? `${state.player.nextRunModifiers.effectKey}: ${state.player.nextRunModifiers.nextRunEffect}`
-      : state.player.nextRunModifiers
-        ? `Primed: ${state.player.nextRunModifiers.effectKey}`
-        : null;
+    prepSurface.state === "primed"
+      ? huntStatus === "running"
+        ? `${prepSurface.headline} — ${prepSurface.detail}`
+        : `${prepSurface.headline} · arms when hunt timer starts`
+      : `${prepSurface.headline} · ${prepSurface.detail}`;
 
   useEffect(() => {
     let added = 0;
@@ -563,6 +583,8 @@ export default function VoidFieldScreen() {
       });
     }
 
+    dispatch({ type: "RESET_RUN_INSTABILITY" });
+
     extractionAppliedRef.current = true;
     queueMicrotask(() => {
       setExtractionSummary(summary);
@@ -628,11 +650,10 @@ export default function VoidFieldScreen() {
         bossChip={bossChip}
         combatHudLine={combatHudLine}
         encounterBrief={encounterBrief}
-        voidStrainChip={
-          state.player.voidInstability >= 18
-            ? `Void strain ${Math.round(state.player.voidInstability)}`
-            : null
-        }
+        voidStrainChip={voidInfusionHudLine(state.player.voidInstability)}
+        runHeatChip={formatRunInstabilityChip(state.player.runInstability)}
+        runStyleChip={formatRunStyleLabel(state.player.runArchetype)}
+        ascensionTensionChip={ascensionTensionChip}
       />
 
       <VoidFieldCombatTicker

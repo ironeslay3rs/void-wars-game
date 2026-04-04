@@ -6,6 +6,7 @@ import MissionResult from "@/components/missions/MissionResult";
 import MissionTimer from "@/components/missions/MissionTimer";
 import QuickDiscardResourceButtons from "@/components/inventory/QuickDiscardResourceButtons";
 import ScreenHeader from "@/components/shared/ScreenHeader";
+import RunInstabilityBar from "@/components/shared/RunInstabilityBar";
 import SectionCard from "@/components/shared/SectionCard";
 import { useGame } from "@/features/game/gameContext";
 import { missionsScreenData } from "@/features/missions/missionsScreenData";
@@ -30,7 +31,11 @@ import {
   getOverflowPenalty,
   INVENTORY_CAPACITY_MAX,
 } from "@/features/resources/inventoryLogic";
+import WarFrontSnapshotCallout from "@/components/shared/WarFrontSnapshotCallout";
 import { getDoctrinePressureStrip } from "@/features/world/missionDoctrineStrip";
+import { getWarFrontSnapshot } from "@/features/world/warFrontSnapshot";
+import { voidZoneById, type VoidZoneId } from "@/features/void-maps/zoneData";
+import { CARGO_INFUSION_HEADING } from "@/features/status/voidInfusionMetaphor";
 
 type QueuedMissionView = MissionQueueEntry & {
   mission: MissionDefinition;
@@ -397,6 +402,8 @@ export default function MissionsScreen() {
           subtitle={missionsScreenData.subtitle}
         />
 
+        <RunInstabilityBar />
+
         <div className="rounded-2xl border border-rose-400/22 bg-rose-950/14 px-4 py-3 text-[11px] leading-relaxed text-white/80 md:text-sm">
           <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/45">
             {doctrineStrip.title}
@@ -404,16 +411,46 @@ export default function MissionsScreen() {
           <div className="mt-1 font-semibold text-rose-100/90">
             {doctrineStrip.contestedLine}
           </div>
+          {doctrineStrip.stakesLine ? (
+            <p className="mt-1 text-rose-50/82">{doctrineStrip.stakesLine}</p>
+          ) : null}
           <p className="mt-1 text-white/60">{doctrineStrip.pressureLine}</p>
           {doctrineStrip.commodityLine ? (
             <p className="mt-1 text-amber-200/85">{doctrineStrip.commodityLine}</p>
+          ) : null}
+          {doctrineStrip.sectorWinnerLine ? (
+            <div className="mt-2 rounded-xl border border-amber-300/25 bg-black/30 px-3 py-2">
+              <div className="text-[9px] font-bold uppercase tracking-[0.16em] text-amber-200/70">
+                {doctrineStrip.sectorControlTitle}
+              </div>
+              <p className="mt-1 text-[11px] font-semibold text-amber-50/95">
+                {doctrineStrip.sectorWinnerLine}
+              </p>
+              {doctrineStrip.warConsequenceLine ? (
+                <p className="mt-1 text-[11px] leading-relaxed text-rose-100/82">
+                  {doctrineStrip.warConsequenceLine}
+                </p>
+              ) : null}
+              {doctrineStrip.warMechanicalLine ? (
+                <p className="mt-1 text-[10px] leading-relaxed text-white/55">
+                  {doctrineStrip.warMechanicalLine}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+          {doctrineStrip.warFrontSnapshot ? (
+            <WarFrontSnapshotCallout
+              snapshot={doctrineStrip.warFrontSnapshot}
+              showZoneTitle={false}
+              className="mt-2 border-rose-400/20 bg-black/28"
+            />
           ) : null}
         </div>
 
         {carryOverloadPenalty ? (
           <div className="rounded-2xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-[11px] leading-relaxed text-red-100/95 shadow-[0_8px_28px_rgba(0,0,0,0.25)] md:text-sm">
             <div className="font-bold uppercase tracking-[0.12em] text-red-200">
-              Cargo overloaded
+              {CARGO_INFUSION_HEADING} · hold over capacity
             </div>
             <div className="mt-1 text-red-100/90">
               Timers run ×{carryOverloadPenalty.missionSpeedPenalty.toFixed(1)}, field movement −
@@ -524,6 +561,14 @@ export default function MissionsScreen() {
                   mission.reward.resources ?? {},
                 ).filter(([, v]) => typeof v === "number" && v !== 0);
                 const isCanonUnlocked = isCanonBookMissionUnlocked(mission.canonBook);
+                const deployId = mission.deployZoneId;
+                const zoneSnap =
+                  deployId && deployId in voidZoneById
+                    ? getWarFrontSnapshot(
+                        state.player,
+                        deployId as VoidZoneId,
+                      )
+                    : null;
                 return (
                   <div
                     key={mission.id}
@@ -535,6 +580,12 @@ export default function MissionsScreen() {
                     <p className="mt-1 text-sm text-white/60">
                       {mission.description}
                     </p>
+                    {zoneSnap ? (
+                      <WarFrontSnapshotCallout
+                        snapshot={zoneSnap}
+                        className="mt-2 border-emerald-400/20 bg-black/35"
+                      />
+                    ) : null}
                     <div className="mt-3 flex flex-wrap gap-1.5">
                       {resourceRewards.map(([k, v]) => (
                         <span
@@ -818,6 +869,11 @@ export default function MissionsScreen() {
                     queuedEntries.map((entry) => {
                       const status = getQueueStatus(entry, now);
                       const isActive = status === "active";
+                      const qz = entry.mission.deployZoneId;
+                      const queueSnap =
+                        qz && qz in voidZoneById
+                          ? getWarFrontSnapshot(state.player, qz as VoidZoneId)
+                          : null;
 
                       return (
                         <div
@@ -846,6 +902,14 @@ export default function MissionsScreen() {
                                   </>
                                 )}
                               </div>
+                              {queueSnap ? (
+                                <div className="mt-2">
+                                  <WarFrontSnapshotCallout
+                                    snapshot={queueSnap}
+                                    className="border-amber-400/20 bg-black/30"
+                                  />
+                                </div>
+                              ) : null}
                             </div>
 
                             <span

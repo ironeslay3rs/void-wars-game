@@ -46,6 +46,8 @@ export type ResourceKey =
   /** M6: restricted-war / mythic forge metal (boss-named pool). */
   | "ironHeart";
 
+export type RunArchetype = "safe" | "balanced" | "greedy" | "volatile";
+
 export type FeastHallOfferId =
   | "scavenger-broth"
   | "sample-stew"
@@ -55,13 +57,19 @@ export type NextRunModifierId =
   | "scrap-kit"
   | "ember-stim"
   | "frost-stabilizer"
-  | "void-extract";
+  | "void-extract"
+  | "heat-sink-patch"
+  | "salvage-rigging"
+  | "extract-balm";
 
 export type NextRunEffectKey =
   | "SCRAP_KIT"
   | "EMBER_STIM"
   | "FROST_STABILIZER"
-  | "VOID_EXTRACT";
+  | "VOID_EXTRACT"
+  | "HEAT_SINK_PATCH"
+  | "SALVAGE_RIGGING"
+  | "EXTRACT_BALM";
 
 export type NextRunModifiers = {
   id: NextRunModifierId;
@@ -78,11 +86,15 @@ export type NextRunModifiers = {
     rewardBonusPct?: number; // e.g. +15
     conditionDrainReduction?: number; // e.g. 3 (reduces drain)
     conditionDrainPenalty?: number; // e.g. 4 (adds risk)
+    /** Flat points trimmed from run heat after this settlement’s heat tick (prep kits). */
+    runInstabilityGainReduction?: number;
   };
   /** Applied to shell-only combat feel (client practice). */
   applyInField?: {
     shellDamageBoostPct?: number; // e.g. 25
     floatDamageBoostPct?: number; // e.g. 25 (display-only)
+    /** Orb + extract salvage amounts multiplied during the primed run. */
+    fieldLootBonusPct?: number;
   };
 };
 
@@ -271,6 +283,35 @@ export type LoadoutSlotId =
   | "professionBind";
 export type LoadoutSlotsState = Record<LoadoutSlotId, string | null>;
 
+/** Ephemeral UI feedback after `CRAFT_RECIPE` (not persisted across hydrate). */
+export type LastCraftOutcome = {
+  at: number;
+  recipeId: string;
+  recipeName: string;
+  ok: boolean;
+  /** Present when `ok`; false = failed bind (mats still spent). */
+  success: boolean | null;
+  detail: string;
+};
+
+/** Ephemeral UI feedback after `INSTALL_MINOR_RUNE` (not persisted across hydrate). */
+export type LastRuneInstallOutcome =
+  | { at: number; school: PathType; ok: true; newDepth: number }
+  | { at: number; school: PathType; ok: false; reason: string };
+
+export type MythicGateBreakthroughKind =
+  | "l3-rare-rune-set"
+  | "rune-crafter-license"
+  | "convergence-prime";
+
+/** Ephemeral banner + pulse after `ATTEMPT_MYTHIC_UNLOCK` (cleared on save load). */
+export type LastMythicGateBreakthrough = {
+  at: number;
+  gate: MythicGateBreakthroughKind;
+  headline: string;
+  detail: string;
+};
+
 export type PlayerState = {
   playerName: string;
   /**
@@ -306,6 +347,11 @@ export type PlayerState = {
   nextRunModifiers: NextRunModifiers | null;
   /** Idempotency: which hunt process already received on-start modifiers. */
   nextRunModifiersAppliedForProcessId: string | null;
+  /**
+   * Set on Expedition deploy when readiness band is "ready". Consumed on first
+   * hunting-ground settlement: small condition cushion on closeout (client-only).
+   */
+  expeditionReadyStabilityPending: boolean;
 
   rank: string;
   rankLevel: number;
@@ -321,6 +367,38 @@ export type PlayerState = {
    * extra condition loss on mission resolution; decays when stable, falls on recovery.
    */
   voidInstability: number;
+
+  /**
+   * Per-run "heat" (0–100): climbs during hunts, realtime raids, and gray-market moves.
+   * Resets on void extraction or returning to hub. Separate from void strain.
+   */
+  runInstability: number;
+  /** Recent run-heat events (threshold crosses + context); capped in helpers. */
+  runInstabilityLog: Array<{ at: number; message: string }>;
+
+  /**
+   * Optional one-shot payout amp from intentional "push heat" (expires wall-clock).
+   * Consumed on next mission/hunt settlement while valid.
+   */
+  runHeatPushBoost: { rewardMult: number; expiresAt: number } | null;
+
+  /**
+   * Greed streak: counts consecutive contract settlements that end with run heat ≥ 40.
+   * Resets below threshold, on vent below 40, hub/extract, or meltdown.
+   */
+  instabilityStreakTurns: number;
+
+  /**
+   * Auto-detected run style from recent settlements (avg heat), greed streak, and vent/push usage.
+   * Updated when a contract settles.
+   */
+  runArchetype: RunArchetype;
+  /** Rolling post-settlement run heat samples (0–100) for averaging / volatility. */
+  runStyleRiSamples: number[];
+  /** Lifetime tally: successful vent heat actions (feeds “safe”). */
+  runStyleVentCount: number;
+  /** Lifetime tally: successful push heat actions (feeds “greedy”). */
+  runStylePushCount: number;
 
   resources: ResourcesState;
   /** Field pickups accrued during the currently running hunt (cleared on run start/end). */
@@ -391,6 +469,15 @@ export type PlayerState = {
 
   /** M6 mythic ladder + arena rated shell. */
   mythicAscension: MythicAscensionState;
+
+  /** Cleared after UI reads it; always null on save hydrate. */
+  lastCraftOutcome: LastCraftOutcome | null;
+
+  /** Cleared after UI reads it; always null on save hydrate. */
+  lastRuneInstallOutcome: LastRuneInstallOutcome | null;
+
+  /** Mythic gate just cleared — strong log line + UI pulse; null on hydrate. */
+  lastMythicGateBreakthrough: LastMythicGateBreakthrough | null;
 };
 
 /* =========================
@@ -445,6 +532,7 @@ export type GameAction =
   | { type: "MARKET_BUY"; payload: { listingId: string } }
   | { type: "MARKET_SELL"; payload: { key: ResourceKey; amount: number } }
   | { type: "CRAFT_RECIPE"; payload: { recipeId: string } }
+  | { type: "CLEAR_LAST_CRAFT_OUTCOME" }
   | { type: "ACCEPT_CRAFT_WORK_ORDER"; payload: { definitionId: string } }
   | { type: "CLAIM_CRAFT_WORK_ORDER" }
   | { type: "ABANDON_CRAFT_WORK_ORDER" }
@@ -503,6 +591,7 @@ export type GameAction =
       };
     }
   | { type: "INSTALL_MINOR_RUNE"; payload: { school: PathType } }
+  | { type: "CLEAR_LAST_RUNE_INSTALL_OUTCOME" }
   | { type: "UNLOCK_ROUTE"; payload: string }
   | { type: "SET_CURRENT_ROUTE"; payload: RouteNodeId }
   | { type: "REFRESH_AVAILABLE_ROUTES" }
@@ -542,4 +631,11 @@ export type GameAction =
   | { type: "SET_ATTUNEMENT_STATE"; payload: AttunementState }
   | { type: "SET_GATE_STATUS"; payload: GateStatus }
   | { type: "HYDRATE_STATE"; payload: GameState }
-  | { type: "RESET_GAME" };
+  | { type: "RESET_GAME" }
+  | {
+      type: "SET_EXPEDITION_READY_STABILITY_PENDING";
+      payload: { value: boolean };
+    }
+  | { type: "RESET_RUN_INSTABILITY" }
+  | { type: "VENT_RUN_INSTABILITY" }
+  | { type: "PUSH_RUN_INSTABILITY"; payload?: { nowMs?: number } };

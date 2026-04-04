@@ -67,8 +67,8 @@ export default function ExtractionSummary({
         </div>
 
         <p className="mt-4 text-[11px] leading-relaxed text-violet-200/80">
-          Void strain rises with extraction load — heavy kills, wear, and cargo all
-          count. Check Status for the full instability readout.
+          Void infusion rises with extraction load — heavy kills, wear, and cargo all count.
+          Check Status for the full infusion readout (instability index).
         </p>
 
         <div className="mt-5">

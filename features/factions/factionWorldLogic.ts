@@ -198,10 +198,36 @@ export function shiftDoctrinePressureForHunt(params: {
     pushPure += spread;
   }
 
+  let sumBio = params.pressure.bio + pushBio;
+  let sumMecha = params.pressure.mecha + pushMecha;
+  let sumPure = params.pressure.pure + pushPure;
+
+  const interim: DoctrinePressure = {
+    bio: sumBio,
+    mecha: sumMecha,
+    pure: sumPure,
+  };
+  const dom = dominantDoctrinePath(interim);
+  const sorted = [sumBio, sumMecha, sumPure].sort((a, b) => b - a);
+  const margin = sorted[0] - sorted[1];
+
+  /** +1 to ledger after base hunt push — small, client-only territorial feedback (M1). */
+  if (params.playerFaction !== "unbound") {
+    if (params.playerFaction !== dom && margin >= 8) {
+      if (dom === "bio") sumBio += 1;
+      else if (dom === "mecha") sumMecha += 1;
+      else sumPure += 1;
+    } else if (params.playerFaction === dom && margin >= 3) {
+      if (params.playerFaction === "bio") sumBio += 1;
+      else if (params.playerFaction === "mecha") sumMecha += 1;
+      else sumPure += 1;
+    }
+  }
+
   return normalizeDoctrinePressure({
-    bio: params.pressure.bio + pushBio,
-    mecha: params.pressure.mecha + pushMecha,
-    pure: params.pressure.pure + pushPure,
+    bio: sumBio,
+    mecha: sumMecha,
+    pure: sumPure,
   });
 }
 

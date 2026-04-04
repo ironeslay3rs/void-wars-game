@@ -23,6 +23,9 @@ export default function VoidFieldHud({
   combatHudLine = null,
   encounterBrief = null,
   voidStrainChip = null,
+  runHeatChip = null,
+  runStyleChip = null,
+  ascensionTensionChip = null,
 }: {
   className?: string;
   zoneLabel: string;
@@ -48,8 +51,14 @@ export default function VoidFieldHud({
   combatHudLine?: string | null;
   /** M4: notable local encounter (e.g. Hollowfang apex on Howling Scar). */
   encounterBrief?: string | null;
-  /** Phase 3 — elevated Void strain while deployed. */
+  /** Phase 3 — elevated Void infusion readout while deployed. */
   voidStrainChip?: string | null;
+  /** Per-run heat (hunts / raids / gray trades). */
+  runHeatChip?: string | null;
+  /** Detected run posture (safe / balanced / greedy / volatile). */
+  runStyleChip?: string | null;
+  /** Near mythic gate — one-line tension from ascension spine. */
+  ascensionTensionChip?: string | null;
 }) {
   return (
     <header
@@ -105,6 +114,21 @@ export default function VoidFieldHud({
           {voidStrainChip ? (
             <span className="rounded-full border border-violet-400/30 bg-violet-950/40 px-2.5 py-1 text-violet-100">
               {voidStrainChip}
+            </span>
+          ) : null}
+          {runHeatChip ? (
+            <span className="rounded-full border border-rose-400/35 bg-rose-950/40 px-2.5 py-1 text-rose-100">
+              {runHeatChip}
+            </span>
+          ) : null}
+          {runStyleChip ? (
+            <span className="rounded-full border border-sky-400/30 bg-sky-950/40 px-2.5 py-1 text-[10px] font-semibold normal-case tracking-normal text-sky-100">
+              {runStyleChip}
+            </span>
+          ) : null}
+          {ascensionTensionChip ? (
+            <span className="max-w-[min(100%,22rem)] rounded-full border border-amber-300/35 bg-amber-950/45 px-2.5 py-1 text-[10px] font-semibold normal-case leading-snug tracking-normal text-amber-100">
+              {ascensionTensionChip}
             </span>
           ) : null}
           {combatHudLine ? (

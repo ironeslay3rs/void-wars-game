@@ -70,14 +70,14 @@ const ZONES: ZoneDef[] = [
   },
   {
     id: "golden-bazaar",
-    label: "Auction House",
+    label: "Golden Bazaar",
     sin: "Greed",
-    desc: "Player market listings, bids, and ranked gear trade",
+    desc: "Legal commodity desk — taxed trades (player auction is a separate route)",
     left: "6%",
     top: "52%",
     width: "16%",
     height: "14%",
-    href: "/bazaar/auction-house",
+    href: "/bazaar/black-market/golden-bazaar",
   },
   {
     id: "ivory-tower",

@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import MainMenuLeftRail from "@/components/home/MainMenuLeftRail";
 import MainMenuCenterStage from "@/components/home/MainMenuCenterStage";
 import MainMenuRightRail from "@/components/home/MainMenuRightRail";
@@ -11,8 +13,11 @@ import ConditionWidget from "@/components/home/ConditionWidget";
 import MissionPanel from "@/components/home/MissionPanel";
 import FactionPathPanel from "@/components/home/FactionPathPanel";
 import HomeResourceStrip from "@/components/home/HomeResourceStrip";
+import PlayerNextGuidanceCard from "@/components/home/PlayerNextGuidanceCard";
 import { getFirstSessionGuidance } from "@/features/guidance/firstSessionGuidance";
+import { getPlayerNextGuidance } from "@/features/guidance/playerNextGuidance";
 import { getProgressionMeaning } from "@/features/game/gameSelectors";
+import { getActiveMythicGateBreakthrough } from "@/features/progression/ascensionStep";
 import {
   HOME_BOTTOM_NAV_BOTTOM,
   HOME_CENTER_STAGE_BOTTOM_CLEARANCE,
@@ -28,10 +33,34 @@ function getSelectedPath(alignment: FactionAlignment): PathSelection | null {
 }
 
 export default function HomeHudClient() {
-  const { state, selectPath } = useGame();
+  const { state, selectPath, dispatch } = useGame();
+  const pathname = usePathname();
+  const prevPathRef = useRef<string | null>(null);
+  const [ascensionNow, setAscensionNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const prev = prevPathRef.current;
+    prevPathRef.current = pathname ?? "";
+    if (pathname !== "/home") return;
+    if (!prev || prev === "/home") return;
+    if (state.player.runInstability > 0) {
+      dispatch({ type: "RESET_RUN_INSTABILITY" });
+    }
+  }, [pathname, state.player.runInstability, dispatch]);
+
+  useEffect(() => {
+    const t = window.setInterval(() => setAscensionNow(Date.now()), 15000);
+    return () => window.clearInterval(t);
+  }, []);
+
   const selectedPath = getSelectedPath(state.player.factionAlignment);
   const guidance = getFirstSessionGuidance(state);
   const progressionMeaning = getProgressionMeaning(state);
+  const nextGuidance = getPlayerNextGuidance(state);
+  const ascensionBreakthrough = getActiveMythicGateBreakthrough(
+    state.player,
+    ascensionNow,
+  );
 
   return (
     <>
@@ -43,6 +72,10 @@ export default function HomeHudClient() {
         }}
       >
         <div className="mx-auto flex w-full max-w-xl flex-col gap-3 pb-4">
+          <PlayerNextGuidanceCard
+            guidance={nextGuidance}
+            breakthroughBanner={ascensionBreakthrough}
+          />
           <ConditionWidget
             path={selectedPath}
             rank={state.player.rank}
@@ -100,6 +133,8 @@ export default function HomeHudClient() {
           selectedPath={selectedPath}
           onSelectPath={selectPath}
           state={state}
+          nextGuidance={nextGuidance}
+          ascensionBreakthrough={ascensionBreakthrough}
         />
       </section>
 

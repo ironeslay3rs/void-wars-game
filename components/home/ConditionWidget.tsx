@@ -167,7 +167,7 @@ export default function ConditionWidget({
           <div className="flex items-center justify-between">
             <div>
               <div className="text-[10px] uppercase tracking-[0.18em] text-white/45">
-                Pressure
+                Somatic strain
               </div>
               <div className="mt-1 text-sm font-semibold text-white">
                 {pressureState}
@@ -175,7 +175,7 @@ export default function ConditionWidget({
             </div>
 
             <div className="text-right text-xs text-white/55">
-              Survival Readout
+              Body readout
             </div>
           </div>
         </div>

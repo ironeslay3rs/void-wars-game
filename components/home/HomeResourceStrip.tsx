@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useMemo } from "react";
 import { useGame } from "@/features/game/gameContext";
 import { getResourceIcon } from "@/features/game/resourceIconMap";
 import type { ResourceKey } from "@/features/game/gameTypes";
@@ -11,6 +12,14 @@ import {
   getOverflowPenalty,
   INVENTORY_CAPACITY_MAX,
 } from "@/features/resources/inventoryLogic";
+import { CARGO_INFUSION_HEADING } from "@/features/status/voidInfusionMetaphor";
+import RunInstabilityBar from "@/components/shared/RunInstabilityBar";
+import { getActivePrepSurface } from "@/features/crafting/prepRunHooks";
+import {
+  evaluateExpeditionReadiness,
+  formatExpeditionReadinessBand,
+} from "@/features/expedition/expeditionReadiness";
+import { voidZones } from "@/features/void-maps/zoneData";
 
 const PRIMARY: Array<{ key: ResourceKey; label: string }> = [
   { key: "credits", label: "Credits" },
@@ -51,6 +60,15 @@ function ResourceChip({ label, value, resourceKey }: { label: string; value: num
 
 export default function HomeResourceStrip() {
   const { state } = useGame();
+  const prep = getActivePrepSurface(state.player);
+  const previewZoneId = useMemo(() => {
+    const z = voidZones.find((vz) => state.player.rankLevel >= vz.threatLevel);
+    return z?.id ?? voidZones[0].id;
+  }, [state.player.rankLevel]);
+  const expeditionPreview = useMemo(
+    () => evaluateExpeditionReadiness(state.player, previewZoneId),
+    [state.player, previewZoneId],
+  );
   const r = state.player.resources;
   const capacity = checkCapacity(r, INVENTORY_CAPACITY_MAX);
   const penalty = getOverflowPenalty(capacity);
@@ -85,7 +103,12 @@ export default function HomeResourceStrip() {
 
       <div className="border-t border-white/10 px-3 py-2 sm:px-4">
         <div className="flex items-center justify-between gap-2 text-[9px] font-semibold uppercase tracking-[0.14em] text-white/45 sm:text-[10px]">
-          <span>Carry load</span>
+          <span>
+            Carry load
+            {capacity.isOverloaded ? (
+              <span className="ml-1 text-red-200/90">· {CARGO_INFUSION_HEADING}</span>
+            ) : null}
+          </span>
           <span
             className={
               capacity.isOverloaded
@@ -153,6 +176,69 @@ export default function HomeResourceStrip() {
             </Link>
           </div>
         ) : null}
+      </div>
+
+      <div
+        className={[
+          "border-t px-3 py-2 sm:px-4",
+          prep.state === "primed"
+            ? "border-cyan-400/25 bg-cyan-950/20"
+            : "border-white/10 bg-black/20",
+        ].join(" ")}
+      >
+        <div className="text-[8px] font-bold uppercase tracking-[0.2em] text-white/40">
+          Next run prep
+        </div>
+        <p
+          className={[
+            "mt-0.5 text-[10px] font-semibold leading-snug sm:text-[11px]",
+            prep.state === "primed" ? "text-cyan-100/95" : "text-white/55",
+          ].join(" ")}
+        >
+          {prep.headline}
+        </p>
+        <p className="mt-0.5 text-[9px] leading-snug text-white/48 sm:text-[10px]">
+          {prep.detail}{" "}
+          <Link
+            href="/bazaar/crafting-district"
+            className="font-semibold text-cyan-200/85 underline decoration-cyan-400/35 underline-offset-2 hover:text-cyan-50"
+          >
+            Crafting District
+          </Link>
+        </p>
+      </div>
+
+      <div className="border-t border-white/10 px-3 py-2 sm:px-4">
+        <div className="text-[8px] font-bold uppercase tracking-[0.2em] text-white/40">
+          Expedition readiness
+        </div>
+        <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
+          <span className="text-[10px] font-bold tabular-nums text-white/80">
+            {expeditionPreview.readinessScore}/100 ·{" "}
+            {formatExpeditionReadinessBand(expeditionPreview.readinessBand)}
+          </span>
+          <Link
+            href="/deploy-into-void"
+            className="text-[9px] font-bold uppercase tracking-[0.14em] text-cyan-200/90 underline decoration-cyan-400/40 underline-offset-2 hover:text-cyan-50"
+          >
+            Deploy map →
+          </Link>
+        </div>
+        {expeditionPreview.primaryWarning ? (
+          <p className="mt-1 text-[9px] leading-snug text-amber-200/80">
+            {expeditionPreview.primaryWarning}
+          </p>
+        ) : (
+          <p className="mt-1 text-[9px] leading-snug text-white/45">
+            {expeditionPreview.readinessBand === "ready"
+              ? "Full readiness — first void closeout trims a sliver of wear."
+              : "Review strip on the deploy map before you commit a run."}
+          </p>
+        )}
+      </div>
+
+      <div className="border-t border-white/10 px-3 py-2 sm:px-4">
+        <RunInstabilityBar />
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Hammer,
   Package,
@@ -21,6 +21,7 @@ import {
   RUNE_CRAFTER_STABILIZATION_SIGIL_BONUS,
   RUNE_CRAFTER_STABILIZATION_SIGIL_COST,
 } from "@/features/status/statusRecovery";
+import { getNextRunModifierCraftBlocker } from "@/features/crafting-district/nextRunModifierCraft";
 import {
   CRAFT_GATE_VOID_EXTRACT,
   getRecipeRuneRequirementHint,
@@ -124,7 +125,35 @@ function formatResource(key: string) {
 function CraftingConsole() {
   const { state, dispatch } = useGame();
   const [tab, setTab] = useState<CraftingCategory>("organic");
-  const [toast, setToast] = useState<string | null>(null);
+  const [craftToast, setCraftToast] = useState<{
+    message: string;
+    tone: "ok" | "bad";
+  } | null>(null);
+  const seenCraftAt = useRef<number | null>(null);
+
+  useEffect(() => {
+    const o = state.player.lastCraftOutcome;
+    if (!o) return;
+    if (seenCraftAt.current === o.at) return;
+    seenCraftAt.current = o.at;
+
+    let message: string;
+    let tone: "ok" | "bad";
+    if (!o.ok) {
+      tone = "bad";
+      message = o.detail;
+    } else if (o.success) {
+      tone = "ok";
+      message = o.detail;
+    } else {
+      tone = "bad";
+      message = `${o.recipeName}: bind failed — ${o.detail} Materials were still consumed.`;
+    }
+    setCraftToast({ message, tone });
+    dispatch({ type: "CLEAR_LAST_CRAFT_OUTCOME" });
+    const hid = window.setTimeout(() => setCraftToast(null), 4200);
+    return () => window.clearTimeout(hid);
+  }, [state.player.lastCraftOutcome, dispatch]);
 
   const recipes = craftRecipes.filter((r) => r.category === tab);
 
@@ -151,9 +180,16 @@ function CraftingConsole() {
         })}
       </div>
 
-      {toast ? (
-        <div className="rounded-xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-50/90">
-          {toast}
+      {craftToast ? (
+        <div
+          className={[
+            "rounded-xl border px-4 py-3 text-sm",
+            craftToast.tone === "ok"
+              ? "border-emerald-400/20 bg-emerald-500/10 text-emerald-50/90"
+              : "border-rose-400/30 bg-rose-500/12 text-rose-50/92",
+          ].join(" ")}
+        >
+          {craftToast.message}
         </div>
       ) : null}
 
@@ -227,7 +263,7 @@ function CraftingConsole() {
               ) : null}
               {recipe.id === "obsidian-cycle-core" && mythicOk ? (
                 <p className="mt-2 text-[10px] leading-relaxed text-rose-200/70">
-                  Unstable bind: failure still consumes mats and adds void strain—recover
+                  Unstable bind: failure still consumes mats and adds Void infusion—recover
                   before chaining.
                 </p>
               ) : null}
@@ -242,14 +278,6 @@ function CraftingConsole() {
                 type="button"
                 onClick={() => {
                   dispatch({ type: "CRAFT_RECIPE", payload: { recipeId: recipe.id } });
-                  const outputDesc =
-                    recipe.output.kind === "resources"
-                      ? Object.entries(recipe.output.grant)
-                          .map(([k, v]) => `+${v} ${formatResource(k)}`)
-                          .join(", ")
-                      : recipe.output.item.name;
-                  setToast(`Crafted: ${recipe.name} → ${outputDesc}`);
-                  window.setTimeout(() => setToast(null), 3500);
                 }}
                 disabled={!craftEnabled}
                 className="mt-4 w-full rounded-xl border border-cyan-400/25 bg-cyan-500/10 px-4 py-3 text-sm font-semibold text-cyan-100 transition hover:border-cyan-300/45 hover:bg-cyan-500/16 disabled:cursor-not-allowed disabled:opacity-40"
@@ -439,14 +467,9 @@ export default function CraftingDistrictPage() {
   function craftNextRunModifier(
     modifierId: (typeof nextRunModifierDefinitions)[number]["id"],
   ) {
-    if (
-      modifierId === "void-extract" &&
-      !meetsRecipeRuneDepth(state.player, CRAFT_GATE_VOID_EXTRACT)
-    ) {
-      setRationResult(
-        getRecipeRuneRequirementHint(CRAFT_GATE_VOID_EXTRACT) ??
-          "Rune depth too shallow for Void Extract.",
-      );
+    const blocker = getNextRunModifierCraftBlocker(state.player, modifierId);
+    if (blocker) {
+      setRationResult(blocker);
       return;
     }
     dispatch({ type: "CRAFT_NEXT_RUN_MODIFIER", payload: { modifierId } });
@@ -750,6 +773,7 @@ export default function CraftingDistrictPage() {
               </h2>
               <p className="mt-3 text-sm leading-6 text-white/70">
                 No inventory layer: pick one kit, pay the cost, and it applies on the next run only.
+                Prep kits trim run heat, stack salvage, or cushion extract wear — prime before you deploy.
               </p>
               <div className="mt-4 grid gap-3">
                 {nextRunModifierDefinitions.map((def) => {

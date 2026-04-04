@@ -3,7 +3,9 @@
 import { useState } from "react";
 import BazaarSubpageNav from "@/components/bazaar/BazaarSubpageNav";
 import ScreenHeader from "@/components/shared/ScreenHeader";
+import { resourceCostShortfall } from "@/features/black-market/sinLaneDealHelpers";
 import { useGame } from "@/features/game/gameContext";
+import type { ResourceKey } from "@/features/game/gameTypes";
 
 type Deal = {
   id: string;
@@ -136,6 +138,14 @@ export default function SilentGardenScreen() {
                 >
                   {affordable ? "Enter Stillness" : "Insufficient Funds"}
                 </button>
+                {!affordable ? (
+                  <p className="mt-2 text-[10px] leading-snug text-rose-200/80">
+                    {resourceCostShortfall(
+                      deal.cost as Partial<Record<ResourceKey, number>>,
+                      state.player.resources,
+                    )}
+                  </p>
+                ) : null}
               </div>
             );
           })}

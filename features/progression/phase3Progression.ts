@@ -140,23 +140,23 @@ export function getVoidInstabilityTierLabel(voidInstability: number): {
   if (voidInstability < 20) {
     return {
       label: "Quiet",
-      hint: "No meaningful Void resonance scarring this cycle.",
+      hint: "Void infusion is quiet — no meaningful resonance scarring this cycle.",
     };
   }
   if (voidInstability < 45) {
     return {
       label: "Stirring",
-      hint: "Light strain. Watch condition on the next contract.",
+      hint: "Infusion is stirring. Watch condition on the next contract.",
     };
   }
   if (voidInstability < 70) {
     return {
       label: "Pressing",
-      hint: "The Void is leaving marks—extra wear on mission resolution.",
+      hint: "Infusion is pressing — extra wear when contracts resolve.",
     };
   }
   return {
     label: "Severe",
-    hint: "Heavy instability: contracts bite harder until you stabilize and recover.",
+    hint: "Deep infusion: contracts bite harder until you stabilize, eat, and recover.",
   };
 }

@@ -1,4 +1,5 @@
 import type { GameState } from "@/features/game/gameTypes";
+import { getCurrentAscensionStep } from "@/features/progression/ascensionStep";
 import { getHungerPressureEffects } from "@/features/status/survival";
 import { getNextRunModifierDefinitionById } from "@/features/crafting-district/nextRunModifiersData";
 
@@ -51,7 +52,11 @@ export function getContinueRoute(state: GameState) {
 }
 
 export type ProgressionMeaningChip = {
-  id: "hunger-pressure" | "primed-modifier" | "next-unlock";
+  id:
+    | "hunger-pressure"
+    | "primed-modifier"
+    | "next-unlock"
+    | "ascension-tension";
   label: string;
 };
 
@@ -99,7 +104,17 @@ export function getProgressionMeaning(state: GameState): ProgressionMeaning {
       : `Next Unlock: Rank ${player.rankLevel + 1}`,
   };
 
-  const chips = pickMax2Chips([hungerChip, primedChip, nextUnlockChip]);
+  const ascensionNear = getCurrentAscensionStep(state).nearBreakthroughLine;
+  const ascensionTensionChip: ProgressionMeaningChip | null = ascensionNear
+    ? { id: "ascension-tension", label: ascensionNear }
+    : null;
+
+  const chips = pickMax2Chips([
+    ascensionTensionChip,
+    hungerChip,
+    primedChip,
+    nextUnlockChip,
+  ]);
 
   const enablement: string[] = [];
   const last = player.lastHuntResult;

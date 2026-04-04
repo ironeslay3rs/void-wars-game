@@ -15,6 +15,10 @@ import {
   getOverflowPenalty,
   INVENTORY_CAPACITY_MAX,
 } from "@/features/resources/inventoryLogic";
+import {
+  CARGO_INFUSION_HEADING,
+  cargoInfusionBodyExplainer,
+} from "@/features/status/voidInfusionMetaphor";
 
 function formatFactionLabel(faction: string) {
   if (faction === "unbound") return "Unbound";
@@ -49,9 +53,9 @@ export default function InventoryScreen() {
     },
     {
       label: "Load State",
-      value: capacity.isOverloaded ? "OVERLOADED" : "STABLE",
+      value: capacity.isOverloaded ? CARGO_INFUSION_HEADING.toUpperCase() : "STABLE",
       hint: capacity.isOverloaded
-        ? overloadPenalty.message
+        ? `${cargoInfusionBodyExplainer} ${overloadPenalty.message}`
         : "Carry weight is within limits and pickups are accepted.",
     },
   ];

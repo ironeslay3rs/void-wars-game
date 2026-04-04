@@ -8,10 +8,12 @@ import MasteryDepthPanel from "@/components/career/MasteryDepthPanel";
 import MythicAscensionPanel from "@/components/mastery/MythicAscensionPanel";
 import RuneCapacityDisplay from "@/components/mastery/RuneCapacityDisplay";
 import { masteryScreenData } from "@/features/mastery/masteryScreenData";
+import { getMasteryHubCards } from "@/features/mastery/masteryHubCards";
 import { useGame } from "@/features/game/gameContext";
 
 export default function MasteryScreen() {
   const { state } = useGame();
+  const hubCards = getMasteryHubCards(state.player);
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(70,60,120,0.22),_rgba(5,8,20,1)_55%)] px-6 py-10 text-white md:px-10">
@@ -72,7 +74,7 @@ export default function MasteryScreen() {
         </SectionCard>
 
         <div className="grid gap-6 md:grid-cols-3">
-          {masteryScreenData.cards.map((card) => (
+          {hubCards.map((card) => (
             <PlaceholderPanel
               key={card.label}
               label={card.label}

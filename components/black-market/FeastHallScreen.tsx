@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import SectionCard from "@/components/shared/SectionCard";
 import { feastHallOffers } from "@/features/black-market/feastHallData";
+import { resourceCostShortfall } from "@/features/black-market/sinLaneDealHelpers";
 import { useGame } from "@/features/game/gameContext";
 import type { FeastHallOfferId, ResourceKey } from "@/features/game/gameTypes";
 import { useRecoveryCooldown } from "@/features/status/useRecoveryCooldown";
@@ -391,6 +392,13 @@ export default function FeastHallScreen({
                         ? `Take ${offer.title}`
                         : "Insufficient payment"}
                 </button>
+                {!affordable &&
+                !isRecoveryOnCooldown &&
+                player.condition < 100 ? (
+                  <p className="mt-2 text-[11px] leading-snug text-rose-200/80">
+                    {resourceCostShortfall(offer.cost, player.resources)}
+                  </p>
+                ) : null}
               </div>
             </SectionCard>
           );

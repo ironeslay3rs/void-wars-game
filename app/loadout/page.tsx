@@ -18,6 +18,7 @@ import {
   autoEquipStarterKit,
   getAvailableItemsForSlot,
   getEquippedItem,
+  LOADOUT_SLOT_HINTS,
   LOADOUT_SLOT_LABELS,
   LOADOUT_SLOT_ORDER,
 } from "@/features/player/loadoutState";
@@ -230,11 +231,19 @@ export default function LoadoutPage() {
                   ].join(" ")}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/45">
-                      {LOADOUT_SLOT_LABELS[slot]}
+                    <div className="min-w-0">
+                      <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/45">
+                        {LOADOUT_SLOT_LABELS[slot]}
+                      </div>
+                      <p
+                        className="mt-1 text-[10px] leading-snug text-white/45"
+                        title={LOADOUT_SLOT_HINTS[slot]}
+                      >
+                        {LOADOUT_SLOT_HINTS[slot]}
+                      </p>
                     </div>
                     {highlightEmpty ? (
-                      <span className="rounded-md border border-cyan-400/35 bg-cyan-500/15 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.14em] text-cyan-100">
+                      <span className="shrink-0 rounded-md border border-cyan-400/35 bg-cyan-500/15 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.14em] text-cyan-100">
                         Next
                       </span>
                     ) : null}

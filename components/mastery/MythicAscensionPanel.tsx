@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useGame } from "@/features/game/gameContext";
 import {
   canGrantRuneCrafterLicense,
@@ -9,11 +10,20 @@ import {
   getRuneKnightReadiness,
   getSaintRuneL5Panel,
 } from "@/features/progression/mythicAscensionLogic";
+import { getActiveMythicGateBreakthrough } from "@/features/progression/ascensionStep";
 import SectionCard from "@/components/shared/SectionCard";
 
 export default function MythicAscensionPanel() {
   const { state, dispatch } = useGame();
+  const [now, setNow] = useState(() => Date.now());
   const p = state.player;
+
+  useEffect(() => {
+    const t = window.setInterval(() => setNow(Date.now()), 15000);
+    return () => window.clearInterval(t);
+  }, []);
+
+  const breakthrough = getActiveMythicGateBreakthrough(p, now);
   const m = p.mythicAscension;
   const saint = getSaintRuneL5Panel(m);
   const knight = getRuneKnightReadiness(p);
@@ -28,6 +38,16 @@ export default function MythicAscensionPanel() {
       description="Rare L3 sets, Rune Crafter recognition, and the Saint Rune road — Book 1 exposes gates, not the full L5 forge."
     >
       <div className="space-y-4 text-sm text-white/70">
+        {breakthrough ? (
+          <div className="rounded-xl border border-amber-200/40 bg-[linear-gradient(90deg,rgba(120,60,12,0.45),rgba(20,14,8,0.92))] px-4 py-3 shadow-[0_0_28px_rgba(251,191,36,0.18)]">
+            <p className="text-[10px] font-black uppercase leading-snug tracking-[0.14em] text-amber-50">
+              {breakthrough.headline}
+            </p>
+            <p className="mt-2 text-xs leading-relaxed text-amber-100/88">
+              {breakthrough.detail}
+            </p>
+          </div>
+        ) : null}
         <div className="rounded-xl border border-amber-400/25 bg-amber-950/20 px-4 py-3">
           <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-amber-200/80">
             Ironheart

@@ -41,7 +41,7 @@ export default function RuneHierarchyDistrictCallout() {
       </ul>
       <p className="mt-3 text-[11px] leading-relaxed text-rose-200/75">
         Unstable lattice: failed obsidian or lattice channel crafts still burn mats and raise{" "}
-        <span className="font-semibold text-rose-100/90">void strain</span> — settle strain before
+        <span className="font-semibold text-rose-100/90">Void infusion</span> — settle before
         pushing the war economy.
       </p>
       <Link

@@ -17,6 +17,8 @@ import {
   getOverflowPenalty,
   INVENTORY_CAPACITY_MAX,
 } from "@/features/resources/inventoryLogic";
+import { CARGO_INFUSION_HEADING } from "@/features/status/voidInfusionMetaphor";
+import WarFrontSnapshotCallout from "@/components/shared/WarFrontSnapshotCallout";
 
 function getConditionColor(condition: number) {
   if (condition >= 65) return "bg-emerald-500";
@@ -127,6 +129,11 @@ export default function MissionPanel() {
         <div className="mt-1 text-[11px] font-semibold text-rose-100/90">
           {doctrineStrip.contestedLine}
         </div>
+        {doctrineStrip.stakesLine ? (
+          <p className="mt-1 text-[11px] leading-relaxed text-rose-50/80">
+            {doctrineStrip.stakesLine}
+          </p>
+        ) : null}
         <p className="mt-1 text-[11px] leading-relaxed text-white/55">
           {doctrineStrip.pressureLine}
         </p>
@@ -134,6 +141,33 @@ export default function MissionPanel() {
           <p className="mt-1 text-[11px] leading-relaxed text-amber-200/85">
             {doctrineStrip.commodityLine}
           </p>
+        ) : null}
+        {doctrineStrip.sectorWinnerLine ? (
+          <div className="mt-2 rounded-lg border border-amber-300/20 bg-black/25 px-2 py-1.5">
+            <div className="text-[8px] font-bold uppercase tracking-[0.16em] text-amber-200/65">
+              {doctrineStrip.sectorControlTitle}
+            </div>
+            <p className="mt-0.5 text-[10px] font-semibold text-amber-50/92">
+              {doctrineStrip.sectorWinnerLine}
+            </p>
+            {doctrineStrip.warConsequenceLine ? (
+              <p className="mt-1 text-[10px] leading-relaxed text-rose-100/80">
+                {doctrineStrip.warConsequenceLine}
+              </p>
+            ) : null}
+            {doctrineStrip.warMechanicalLine ? (
+              <p className="mt-1 text-[9px] leading-relaxed text-white/50">
+                {doctrineStrip.warMechanicalLine}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+        {doctrineStrip.warFrontSnapshot ? (
+          <WarFrontSnapshotCallout
+            snapshot={doctrineStrip.warFrontSnapshot}
+            showZoneTitle={false}
+            className="mt-2 border-rose-400/18 bg-black/22"
+          />
         ) : null}
         <Link
           href="/bazaar/war-exchange"
@@ -267,7 +301,7 @@ export default function MissionPanel() {
       {overload ? (
         <div className="mt-3 rounded-xl border border-red-400/30 bg-red-500/12 px-3 py-2 text-[11px] leading-relaxed text-red-100/95">
           <div className="font-bold uppercase tracking-[0.12em] text-red-200">
-            Cargo overloaded
+            {CARGO_INFUSION_HEADING} · hold over capacity
           </div>
           <div className="mt-1 text-red-100/90">
             Queue still runs, but mission timers ×{overload.missionSpeedPenalty.toFixed(1)}, field

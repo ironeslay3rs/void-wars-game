@@ -156,6 +156,12 @@ export default function VoidMarketExchange() {
           >
             Buy {u} {VOID_MARKET_COMMODITY_LABEL[commodity]}
           </button>
+          {!canBuy ? (
+            <p className="mt-2 text-[11px] leading-relaxed text-rose-200/85">
+              Short {Math.max(0, buyTotal - res.credits)} credits for this debit (
+              {buyTotal} cr).
+            </p>
+          ) : null}
         </div>
 
         <div className="rounded-xl border border-amber-400/25 bg-amber-950/15 p-4">
@@ -197,6 +203,12 @@ export default function VoidMarketExchange() {
           >
             Sell {u} {VOID_MARKET_COMMODITY_LABEL[commodity]}
           </button>
+          {!canSell ? (
+            <p className="mt-2 text-[11px] leading-relaxed text-rose-200/85">
+              Hold {res[commodity] ?? 0} / {u}{" "}
+              {VOID_MARKET_COMMODITY_LABEL[commodity]} — sell less or gather more.
+            </p>
+          ) : null}
         </div>
       </div>
 

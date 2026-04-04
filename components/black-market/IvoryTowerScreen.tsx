@@ -3,7 +3,9 @@
 import { useState } from "react";
 import BazaarSubpageNav from "@/components/bazaar/BazaarSubpageNav";
 import ScreenHeader from "@/components/shared/ScreenHeader";
+import { resourceCostShortfall } from "@/features/black-market/sinLaneDealHelpers";
 import { useGame } from "@/features/game/gameContext";
+import type { ResourceKey } from "@/features/game/gameTypes";
 
 type Deal = {
   id: string;
@@ -143,6 +145,18 @@ export default function IvoryTowerScreen() {
             >
               {ivoryValorAffordable ? "Record rite" : "Need 4 valor and 120 credits"}
             </button>
+            {!ivoryValorAffordable ? (
+              <p className="mt-2 text-[11px] leading-snug text-rose-200/80">
+                {[
+                  mythic.runeKnightValor < 4
+                    ? `Knight valor ${mythic.runeKnightValor}/4`
+                    : null,
+                  credits < 120 ? `Credits ${credits}/120` : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </p>
+            ) : null}
           </div>
         ) : (
           <div className="rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm text-white/55">
@@ -188,6 +202,14 @@ export default function IvoryTowerScreen() {
                 >
                   {affordable ? "Ascend" : "Insufficient Funds"}
                 </button>
+                {!affordable ? (
+                  <p className="mt-2 text-[10px] leading-snug text-rose-200/80">
+                    {resourceCostShortfall(
+                      deal.cost as Partial<Record<ResourceKey, number>>,
+                      state.player.resources,
+                    )}
+                  </p>
+                ) : null}
               </div>
             );
           })}

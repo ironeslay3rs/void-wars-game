@@ -5,6 +5,7 @@ import {
 import { VOID_EXPEDITION_PATH } from "@/features/void-maps/voidRoutes";
 
 export type BazaarDistrictId =
+  | "void-market-desk"
   | "biotech-labs"
   | "pure-enclave"
   | "crafting-district"
@@ -37,6 +38,17 @@ export type BazaarDistrict = {
 };
 
 export const bazaarDistrictData: BazaarDistrict[] = [
+  {
+    id: "void-market-desk",
+    title: "Void Market",
+    subtitle: "Legal commodity desk",
+    description:
+      "Taxed buys and listing-fee sells on scrap, ember, dust, and bio samples — complements the central War Exchange.",
+    route: "/bazaar/void-market",
+    themeKey: "forge",
+    positionClass: "left-[22%] top-[52%] md:left-[24%] md:top-[50%]",
+    widthClass: "w-[270px]",
+  },
   {
     id: "biotech-labs",
     title: "Biotech Labs",

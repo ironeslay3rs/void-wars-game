@@ -1,10 +1,20 @@
 import { initialGameState } from "@/features/game/initialGameState";
+import {
+  maybeApplyExpeditionReadyStabilityToReward,
+} from "@/features/expedition/expeditionReadiness";
+import {
+  bumpRunStylePushCount,
+  bumpRunStyleVentCount,
+  isRunArchetype,
+  updateRunArchetypeAfterSettlement,
+} from "@/features/game/runArchetypeLogic";
 import { resolveCharacterCreated } from "@/features/player/characterCreatedGate";
 import {
   applyPathAlignedMasteryBonus,
   computeVoidStrainFromFieldLootPickup,
   decayVoidInstabilityOnSurvivalTick,
   getExplorationInstabilitySurchargeCredits,
+  withVoidInstabilityDelta,
 } from "@/features/progression/phase3Progression";
 import { getFeastHallOfferById } from "@/features/black-market/feastHallData";
 import { phase1ExplorationReward } from "@/features/exploration/explorationData";
@@ -20,6 +30,7 @@ import {
   getResolvedConditionDelta,
   getRankName,
   getXpToNext,
+  mergeDoctrineWarIntoReward,
   processMissionQueue,
   rebuildMissionQueueSchedule,
   syncMirroredHuntActiveProcess,
@@ -68,6 +79,10 @@ import type {
   ResourcesState,
 } from "@/features/game/gameTypes";
 import { getNextRunModifierDefinitionById } from "@/features/crafting-district/nextRunModifiersData";
+import {
+  applyPrimedPrepRunInstabilityTrim,
+  boostFieldLootAmountForPrep,
+} from "@/features/crafting/prepRunHooks";
 import { rollVoidFieldLoot } from "@/features/void-maps/rollVoidFieldLoot";
 import { tryInstallMinorRune } from "@/features/mastery/runeMasteryLogic";
 import { getDistrictCraftingCost } from "@/features/crafting-district/craftingProfession";
@@ -85,6 +100,16 @@ import {
 } from "@/features/progression/mythicAscensionLogic";
 import { getMasteryAlignedContractResourceMultiplier } from "@/features/mastery/masteryGameplayEffects";
 import { getDoctrineQueueGate } from "@/features/progression/launchDoctrine";
+import {
+  RUN_INSTABILITY_DELTA_GRAY_TRADE,
+  RUN_INSTABILITY_DELTA_GUILD_CLAIM,
+  RUN_INSTABILITY_DELTA_RAID,
+  applyRunInstabilityMissionSettlement,
+  attemptPushRunInstability,
+  attemptVentRunInstability,
+  bumpRunInstability,
+  resetRunInstability,
+} from "@/features/progression/runInstability";
 import {
   isCanonBookMissionUnlocked,
 } from "@/features/progression/canonBookGate";
@@ -255,6 +280,77 @@ function hydratePlayerState(player: GameState["player"]): PlayerState {
         ? clamp((player as { voidInstability: number }).voidInstability, 0, 100)
         : initialGameState.player.voidInstability,
 
+    runInstability:
+      typeof (player as { runInstability?: unknown }).runInstability ===
+        "number" &&
+      Number.isFinite((player as { runInstability: number }).runInstability)
+        ? clamp((player as { runInstability: number }).runInstability, 0, 100)
+        : initialGameState.player.runInstability,
+
+    runInstabilityLog: Array.isArray(
+      (player as { runInstabilityLog?: unknown }).runInstabilityLog,
+    )
+      ? (player as { runInstabilityLog: PlayerState["runInstabilityLog"] })
+          .runInstabilityLog
+      : initialGameState.player.runInstabilityLog,
+
+    runHeatPushBoost: (() => {
+      const raw = (player as { runHeatPushBoost?: unknown }).runHeatPushBoost;
+      if (!raw || typeof raw !== "object") return initialGameState.player.runHeatPushBoost;
+      const o = raw as Record<string, unknown>;
+      const rewardMult =
+        typeof o.rewardMult === "number" && o.rewardMult > 1 ? o.rewardMult : null;
+      const expiresAt =
+        typeof o.expiresAt === "number" && Number.isFinite(o.expiresAt)
+          ? o.expiresAt
+          : null;
+      if (rewardMult === null || expiresAt === null) {
+        return initialGameState.player.runHeatPushBoost;
+      }
+      return { rewardMult, expiresAt };
+    })(),
+
+    instabilityStreakTurns: (() => {
+      const v = (player as { instabilityStreakTurns?: unknown }).instabilityStreakTurns;
+      return typeof v === "number" && Number.isFinite(v)
+        ? Math.max(0, Math.min(999, Math.floor(v)))
+        : initialGameState.player.instabilityStreakTurns;
+    })(),
+
+    runArchetype: isRunArchetype(
+      (player as { runArchetype?: unknown }).runArchetype,
+    )
+      ? (player as { runArchetype: typeof initialGameState.player.runArchetype })
+          .runArchetype
+      : initialGameState.player.runArchetype,
+    runStyleRiSamples: Array.isArray(
+      (player as { runStyleRiSamples?: unknown }).runStyleRiSamples,
+    )
+      ? (player as { runStyleRiSamples: unknown[] }).runStyleRiSamples
+          .filter((x): x is number => typeof x === "number" && Number.isFinite(x))
+          .map((x) => clamp(Math.round(x), 0, 100))
+          .slice(-12)
+      : initialGameState.player.runStyleRiSamples,
+    runStyleVentCount: (() => {
+      const v = (player as { runStyleVentCount?: unknown }).runStyleVentCount;
+      return typeof v === "number" && Number.isFinite(v)
+        ? Math.max(0, Math.min(9999, Math.floor(v)))
+        : initialGameState.player.runStyleVentCount;
+    })(),
+    runStylePushCount: (() => {
+      const v = (player as { runStylePushCount?: unknown }).runStylePushCount;
+      return typeof v === "number" && Number.isFinite(v)
+        ? Math.max(0, Math.min(9999, Math.floor(v)))
+        : initialGameState.player.runStylePushCount;
+    })(),
+
+    expeditionReadyStabilityPending:
+      typeof (player as { expeditionReadyStabilityPending?: unknown })
+        .expeditionReadyStabilityPending === "boolean"
+        ? (player as { expeditionReadyStabilityPending: boolean })
+            .expeditionReadyStabilityPending
+        : initialGameState.player.expeditionReadyStabilityPending,
+
     craftWorkOrder: normalizeCraftWorkOrderSlot(
       (player as { craftWorkOrder?: unknown }).craftWorkOrder,
     ),
@@ -277,6 +373,9 @@ function hydratePlayerState(player: GameState["player"]): PlayerState {
             ? "pure"
             : "unbound",
     }),
+
+    lastCraftOutcome: null,
+    lastRuneInstallOutcome: null,
   };
 }
 
@@ -408,7 +507,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
     case "VOID_FIELD_ORB_COLLECTED": {
       const k = action.payload.key;
-      const amt = Math.max(0, Math.floor(action.payload.amount));
+      const rawAmt = Math.max(0, Math.floor(action.payload.amount));
+      const amt = boostFieldLootAmountForPrep(
+        rawAmt,
+        state.player.nextRunModifiers,
+      );
       if (amt <= 0) return state;
       const cur = state.player.fieldLootGainedThisRun?.[k] ?? 0;
       return {
@@ -424,8 +527,12 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     }
 
     case "ADD_FIELD_LOOT": {
+      const boostedAmount = boostFieldLootAmountForPrep(
+        action.payload.amount,
+        state.player.nextRunModifiers,
+      );
       const { accepted } = enforcePickup(state.player.resources, {
-        [action.payload.key]: action.payload.amount,
+        [action.payload.key]: boostedAmount,
       });
       const acceptedAmount = accepted[action.payload.key] ?? 0;
       if (acceptedAmount <= 0) {
@@ -445,7 +552,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             [action.payload.key]:
               (prevFl[action.payload.key] ?? 0) + acceptedAmount,
           };
-      const pickupStrain = computeVoidStrainFromFieldLootPickup(acceptedAmount);
+      const pickupStrain =
+        computeVoidStrainFromFieldLootPickup(acceptedAmount);
       return {
         ...state,
         player: {
@@ -502,11 +610,41 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           recipeId: recipe.id,
         });
       }
+      const lastCraftOutcome =
+        result.ok === false
+          ? {
+              at: Date.now(),
+              recipeId: result.recipeId,
+              recipeName: result.recipeName,
+              ok: false,
+              success: null,
+              detail: result.reason,
+            }
+          : {
+              at: Date.now(),
+              recipeId: result.recipeId,
+              recipeName: result.recipeName,
+              ok: true,
+              success: result.success,
+              detail: result.message,
+            };
       return {
         ...state,
-        player,
+        player: {
+          ...player,
+          lastCraftOutcome,
+        },
       };
     }
+
+    case "CLEAR_LAST_CRAFT_OUTCOME":
+      return {
+        ...state,
+        player: {
+          ...state.player,
+          lastCraftOutcome: null,
+        },
+      };
 
     case "ACCEPT_CRAFT_WORK_ORDER": {
       if ((state.player.stallArrearsCount ?? 0) > 0) {
@@ -600,28 +738,38 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         res = updateSingleResource(res, commodity, n);
         return {
           ...state,
-          player: {
-            ...player,
-            resources: res,
-          },
+          player: bumpRunInstability(
+            {
+              ...player,
+              resources: res,
+            },
+            RUN_INSTABILITY_DELTA_GRAY_TRADE,
+            "Void market buy — brokers log the lane.",
+          ),
         };
       }
       if (player.resources[commodity] < n) {
         return state;
       }
-      const { netCredits } = quoteVoidMarketSell(
+      const sellQ = quoteVoidMarketSell(
         n,
         commodity,
         player.careerFocus,
       );
+      const warSell = getVoidMarketWarAdjustments(player);
+      const netCredits = Math.floor(sellQ.netCredits * warSell.sellMult);
       let res = updateSingleResource(player.resources, commodity, -n);
       res = updateSingleResource(res, "credits", netCredits);
       return {
         ...state,
-        player: {
-          ...player,
-          resources: res,
-        },
+        player: bumpRunInstability(
+          {
+            ...player,
+            resources: res,
+          },
+          RUN_INSTABILITY_DELTA_GRAY_TRADE,
+          "Void market sell — salvage flagged on the rim.",
+        ),
       };
     }
 
@@ -1078,17 +1226,40 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         mission.path,
         player.factionAlignment,
       );
-      const resolvedConditionDelta = getResolvedConditionDelta(
+      const riSettled = applyRunInstabilityMissionSettlement(
         player,
         rewardWithPathMastery,
+        {
+          missionId: mission.id,
+          resolvedAt,
+          isHuntingGround: mission.category === "hunting-ground",
+        },
       );
-      const nextPlayer = applyActivityHungerCost(
-        applyMissionRewardWithVoidStrain(
-          player,
-          rewardWithPathMastery,
-          mission.path,
+      const playerAfterRi = applyPrimedPrepRunInstabilityTrim(
+        riSettled.player,
+        riSettled.player.nextRunModifiers,
+        mission.category === "hunting-ground",
+      );
+      const stabilityApplied = maybeApplyExpeditionReadyStabilityToReward(
+        playerAfterRi,
+        riSettled.reward,
+        mission.category === "hunting-ground",
+      );
+      const rewardAfterRi = stabilityApplied.reward;
+      const playerAfterStability = stabilityApplied.player;
+      const resolvedConditionDelta = getResolvedConditionDelta(
+        playerAfterStability,
+        rewardAfterRi,
+      );
+      const nextPlayer = updateRunArchetypeAfterSettlement(
+        applyActivityHungerCost(
+          applyMissionRewardWithVoidStrain(
+            playerAfterStability,
+            rewardAfterRi,
+            mission.path,
+          ),
+          mission.category === "hunting-ground" ? "hunt" : "mission",
         ),
-        "hunt",
       );
 
       let resolvedPlayer: PlayerState = {
@@ -1104,19 +1275,19 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           resolvedAt,
           conditionDelta: resolvedConditionDelta,
           conditionAfter: nextPlayer.condition,
-          rankXpGained: rewardWithPathMastery.rankXp,
-          masteryProgressGained: rewardWithPathMastery.masteryProgress,
-          influenceGained: rewardWithPathMastery.influence ?? 0,
-          resourcesGained: rewardWithPathMastery.resources ?? {},
+          rankXpGained: rewardAfterRi.rankXp,
+          masteryProgressGained: rewardAfterRi.masteryProgress,
+          influenceGained: rewardAfterRi.influence ?? 0,
+          resourcesGained: rewardAfterRi.resources ?? {},
           fieldLootGained: state.player.fieldLootGainedThisRun ?? {},
           hungerPressureLabel: hungerEffects.label,
           hungerRewardPenaltyPct: hungerEffects.rewardPenaltyPct,
           hungerConditionDrainPenalty: hungerEffects.conditionDrainPenalty,
 
-          baseRankXpGained: rewardWithPathMastery.rankXp,
-          baseMasteryProgressGained: rewardWithPathMastery.masteryProgress,
-          baseInfluenceGained: rewardWithPathMastery.influence ?? 0,
-          baseResourcesGained: rewardWithPathMastery.resources ?? {},
+          baseRankXpGained: rewardAfterRi.rankXp,
+          baseMasteryProgressGained: rewardAfterRi.masteryProgress,
+          baseInfluenceGained: rewardAfterRi.influence ?? 0,
+          baseResourcesGained: rewardAfterRi.resources ?? {},
 
           realtimeContributionBonusMultiplier: null,
           realtimeContributionAppliedForResolvedAt: null,
@@ -1465,7 +1636,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
       return {
         ...state,
-        player: playerAfterRealtimeGuild,
+        player: bumpRunInstability(
+          playerAfterRealtimeGuild,
+          RUN_INSTABILITY_DELTA_RAID,
+          "Realtime void raid settled — run heat surged.",
+        ),
       };
     }
 
@@ -1745,13 +1920,46 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         mission.path,
         state.player.factionAlignment,
       );
-      const nextPlayer = applyActivityHungerCost(
-        applyMissionRewardWithVoidStrain(
-          state.player,
-          rewardWithPathMastery,
-          mission.path,
+      const doctrineMerged = mergeDoctrineWarIntoReward(
+        rewardWithPathMastery,
+        mission,
+        state.player,
+      );
+      const riSettled = applyRunInstabilityMissionSettlement(
+        state.player,
+        doctrineMerged.reward,
+        {
+          missionId: mission.id,
+          resolvedAt: action.payload.claimedAt ?? Date.now(),
+          isHuntingGround: mission.category === "hunting-ground",
+        },
+      );
+      const playerAfterRiTrim = applyPrimedPrepRunInstabilityTrim(
+        riSettled.player,
+        riSettled.player.nextRunModifiers,
+        mission.category === "hunting-ground",
+      );
+      const stabilityApplied = maybeApplyExpeditionReadyStabilityToReward(
+        playerAfterRiTrim,
+        riSettled.reward,
+        mission.category === "hunting-ground",
+      );
+      let claimedPlayer = applyMissionRewardWithVoidStrain(
+        stabilityApplied.player,
+        stabilityApplied.reward,
+        mission.path,
+      );
+      if (doctrineMerged.extraVoidInstability > 0) {
+        claimedPlayer = withVoidInstabilityDelta(
+          claimedPlayer,
+          doctrineMerged.extraVoidInstability,
+        );
+      }
+      const nextPlayer = updateRunArchetypeAfterSettlement(
+        applyActivityHungerCost(
+          claimedPlayer,
+          mission.category === "hunting-ground" ? "hunt" : "mission",
         ),
-        mission.category === "hunting-ground" ? "hunt" : "mission",
       );
       const nextQueue = missionQueue.filter(
         (queueEntry) => queueEntry.queueId !== entry.queueId,
@@ -1778,10 +1986,36 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       };
 
     case "INSTALL_MINOR_RUNE": {
-      const r = tryInstallMinorRune(state.player, action.payload.school);
-      if (!r.ok) return state;
-      return { ...state, player: r.player };
+      const school = action.payload.school;
+      const r = tryInstallMinorRune(state.player, school);
+      const at = Date.now();
+      if (!r.ok) {
+        return {
+          ...state,
+          player: {
+            ...state.player,
+            lastRuneInstallOutcome: { at, school, ok: false, reason: r.reason },
+          },
+        };
+      }
+      const newDepth = r.player.runeMastery.depthBySchool[school];
+      return {
+        ...state,
+        player: {
+          ...r.player,
+          lastRuneInstallOutcome: { at, school, ok: true, newDepth },
+        },
+      };
     }
+
+    case "CLEAR_LAST_RUNE_INSTALL_OUTCOME":
+      return {
+        ...state,
+        player: {
+          ...state.player,
+          lastRuneInstallOutcome: null,
+        },
+      };
 
     case "UNLOCK_ROUTE": {
       if (state.player.unlockedRoutes.includes(action.payload)) return state;
@@ -1852,6 +2086,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
     case "ATTEMPT_MYTHIC_UNLOCK": {
       const p = state.player;
+      const now = Date.now();
       if (action.payload === "l3-rare-rune-set") {
         if (!canUnlockL3RareRuneSet(p)) return state;
         let res = updateSingleResource(p.resources, "ironHeart", -1);
@@ -1861,9 +2096,17 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           player: {
             ...p,
             resources: res,
+            masteryProgress: p.masteryProgress + 10,
             mythicAscension: {
               ...p.mythicAscension,
               l3RareRuneSetUnlocked: true,
+            },
+            lastMythicGateBreakthrough: {
+              at: now,
+              gate: "l3-rare-rune-set",
+              headline: "OBSIDIAN LATTICE ACCEPTED — L3 RARE RUNE CYCLE UNLOCKED.",
+              detail:
+                "The forge reads your tithe. +10 mastery progress — restricted recipes and the Crafter path are now in play.",
             },
           },
         };
@@ -1876,9 +2119,19 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           player: {
             ...p,
             resources: res,
+            masteryProgress: p.masteryProgress + 12,
+            influence: Math.max(0, p.influence + 1),
             mythicAscension: {
               ...p.mythicAscension,
               runeCrafterLicense: true,
+            },
+            lastMythicGateBreakthrough: {
+              at: now,
+              gate: "rune-crafter-license",
+              headline:
+                "RUNE CRAFTER LICENSE STAMPED — CENTRAL COMMAND RECOGNISES YOUR BINDINGS.",
+              detail:
+                "+12 mastery progress, +1 influence — hybrid filings and convergence prep unlock.",
             },
           },
         };
@@ -1889,9 +2142,17 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           ...state,
           player: {
             ...p,
+            masteryProgress: p.masteryProgress + 20,
             mythicAscension: {
               ...p.mythicAscension,
               convergencePrimed: true,
+            },
+            lastMythicGateBreakthrough: {
+              at: now,
+              gate: "convergence-prime",
+              headline: "CONVERGENCE FILED — HYBRID RESONANCE ON YOUR REGISTRY ROW.",
+              detail:
+                "+20 mastery progress — field loot posture improves; Knight valor and prestige spends go live.",
             },
           },
         };
@@ -2124,11 +2385,15 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const { accepted } = enforceCapacity(p.resources, c.reward);
       return {
         ...state,
-        player: {
-          ...p,
-          resources: addPartialResources(p.resources, accepted),
-          guildContracts: nextContracts,
-        },
+        player: bumpRunInstability(
+          {
+            ...p,
+            resources: addPartialResources(p.resources, accepted),
+            guildContracts: nextContracts,
+          },
+          RUN_INSTABILITY_DELTA_GUILD_CLAIM,
+          "Guild contract paid out — collective heat rises.",
+        ),
       };
     }
 
@@ -2203,6 +2468,37 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           },
         },
       };
+
+    case "SET_EXPEDITION_READY_STABILITY_PENDING":
+      return {
+        ...state,
+        player: {
+          ...state.player,
+          expeditionReadyStabilityPending: action.payload.value,
+        },
+      };
+
+    case "RESET_RUN_INSTABILITY":
+      return {
+        ...state,
+        player: {
+          ...resetRunInstability(state.player),
+          expeditionReadyStabilityPending: false,
+        },
+      };
+
+    case "VENT_RUN_INSTABILITY": {
+      const r = attemptVentRunInstability(state.player);
+      if (!r.ok) return state;
+      return { ...state, player: bumpRunStyleVentCount(r.player) };
+    }
+
+    case "PUSH_RUN_INSTABILITY": {
+      const nowMs = action.payload?.nowMs ?? Date.now();
+      const r = attemptPushRunInstability(state.player, nowMs);
+      if (!r.ok) return state;
+      return { ...state, player: bumpRunStylePushCount(r.player) };
+    }
 
     case "RESET_GAME":
       return initialGameState;

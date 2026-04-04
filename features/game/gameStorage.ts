@@ -26,6 +26,7 @@ import {
   normalizePlayerFactionWorldSlice,
   parseVoidZoneId,
 } from "@/features/factions/factionWorldLogic";
+import { isRunArchetype } from "@/features/game/runArchetypeLogic";
 import { normalizeMythicAscension } from "@/features/progression/mythicAscensionLogic";
 import { normalizeCraftWorkOrderSlot } from "@/features/economy/craftWorkOrderData";
 import { resolveCharacterCreated } from "@/features/player/characterCreatedGate";
@@ -679,6 +680,13 @@ function normalizePlayer(value: unknown): PlayerState {
         ? raw.nextRunModifiersAppliedForProcessId
         : initialGameState.player.nextRunModifiersAppliedForProcessId,
 
+    expeditionReadyStabilityPending:
+      typeof (raw as Record<string, unknown>).expeditionReadyStabilityPending ===
+      "boolean"
+        ? (raw as { expeditionReadyStabilityPending: boolean })
+            .expeditionReadyStabilityPending
+        : initialGameState.player.expeditionReadyStabilityPending,
+
     rank:
       typeof raw.rank === "string" ? raw.rank : initialGameState.player.rank,
 
@@ -720,6 +728,79 @@ function normalizePlayer(value: unknown): PlayerState {
             Math.min(100, Math.round(raw.voidInstability)),
           )
         : initialGameState.player.voidInstability,
+
+    runInstability:
+      typeof (raw as Record<string, unknown>).runInstability === "number" &&
+      Number.isFinite((raw as { runInstability: number }).runInstability)
+        ? Math.max(
+            0,
+            Math.min(100, Math.round((raw as { runInstability: number }).runInstability)),
+          )
+        : initialGameState.player.runInstability,
+
+    runInstabilityLog: Array.isArray(
+      (raw as Record<string, unknown>).runInstabilityLog,
+    )
+      ? ((raw as { runInstabilityLog: unknown[] }).runInstabilityLog
+          .filter(
+            (e): e is { at: number; message: string } =>
+              !!e &&
+              typeof e === "object" &&
+              typeof (e as { at?: unknown }).at === "number" &&
+              typeof (e as { message?: unknown }).message === "string",
+          )
+          .slice(-30))
+      : initialGameState.player.runInstabilityLog,
+
+    runHeatPushBoost: (() => {
+      const v = (raw as Record<string, unknown>).runHeatPushBoost;
+      if (!v || typeof v !== "object") return initialGameState.player.runHeatPushBoost;
+      const o = v as Record<string, unknown>;
+      const rewardMult =
+        typeof o.rewardMult === "number" && o.rewardMult > 1 ? o.rewardMult : null;
+      const expiresAt =
+        typeof o.expiresAt === "number" && Number.isFinite(o.expiresAt)
+          ? o.expiresAt
+          : null;
+      if (rewardMult === null || expiresAt === null) {
+        return initialGameState.player.runHeatPushBoost;
+      }
+      return { rewardMult, expiresAt };
+    })(),
+
+    instabilityStreakTurns: (() => {
+      const v = (raw as Record<string, unknown>).instabilityStreakTurns;
+      return typeof v === "number" && Number.isFinite(v)
+        ? Math.max(0, Math.min(999, Math.floor(v)))
+        : initialGameState.player.instabilityStreakTurns;
+    })(),
+
+    runArchetype: isRunArchetype(
+      (raw as Record<string, unknown>).runArchetype,
+    )
+      ? (raw as { runArchetype: typeof initialGameState.player.runArchetype })
+          .runArchetype
+      : initialGameState.player.runArchetype,
+    runStyleRiSamples: Array.isArray(
+      (raw as Record<string, unknown>).runStyleRiSamples,
+    )
+      ? (raw as { runStyleRiSamples: unknown[] }).runStyleRiSamples
+          .filter((x): x is number => typeof x === "number" && Number.isFinite(x))
+          .map((x) => clampInt(Math.round(x), 0, 100))
+          .slice(-12)
+      : initialGameState.player.runStyleRiSamples,
+    runStyleVentCount: (() => {
+      const v = (raw as Record<string, unknown>).runStyleVentCount;
+      return typeof v === "number" && Number.isFinite(v)
+        ? Math.max(0, Math.min(9999, Math.floor(v)))
+        : initialGameState.player.runStyleVentCount;
+    })(),
+    runStylePushCount: (() => {
+      const v = (raw as Record<string, unknown>).runStylePushCount;
+      return typeof v === "number" && Number.isFinite(v)
+        ? Math.max(0, Math.min(9999, Math.floor(v)))
+        : initialGameState.player.runStylePushCount;
+    })(),
 
     craftWorkOrder: normalizeCraftWorkOrderSlot(
       (raw as { craftWorkOrder?: unknown }).craftWorkOrder,
