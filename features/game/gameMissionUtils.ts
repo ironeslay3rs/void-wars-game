@@ -36,9 +36,19 @@ import { applyDoctrineWarToMissionReward } from "@/features/world/zoneDoctrineWa
 import { applyPrimedPrepRunInstabilityTrim } from "@/features/crafting/prepRunHooks";
 import { maybeApplyExpeditionReadyStabilityToReward } from "@/features/expedition/expeditionReadiness";
 import { updateRunArchetypeAfterSettlement } from "@/features/game/runArchetypeLogic";
+import { withPostSettlementMarketLegibility } from "@/features/expedition/postRunMarketPressure";
 
 export function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
+}
+
+function stripExpeditionContractSnapshot(
+  snaps: PlayerState["expeditionContractSnapshots"],
+  queueId: string,
+): PlayerState["expeditionContractSnapshots"] {
+  if (!(queueId in snaps)) return snaps;
+  const { [queueId]: _removed, ...rest } = snaps;
+  return rest;
 }
 
 export function getRankName(level: number) {
@@ -502,6 +512,14 @@ export function processMissionQueue(state: GameState, now: number): GameState {
 
     queueChanged = true;
 
+    nextPlayer = {
+      ...nextPlayer,
+      expeditionContractSnapshots: stripExpeditionContractSnapshot(
+        nextPlayer.expeditionContractSnapshots,
+        entry.queueId,
+      ),
+    };
+
     const mission = getMissionById(state.missions, entry.missionId);
 
     if (!mission) {
@@ -735,43 +753,47 @@ export function processMissionQueue(state: GameState, now: number): GameState {
         nextRunModifiersAppliedForProcessId: null,
         fieldLootGainedThisRun: {},
       };
-      latestHgHuntResult = {
-        missionId: mission.id,
-        huntTitle: mission.title,
-        resolvedAt: entry.endsAt,
-        conditionDelta: resolvedConditionDelta,
-        conditionAfter: nextPlayer.condition,
-        rankXpGained: rewardWithOverloadPenalty.rankXp,
-        masteryProgressGained: rewardWithOverloadPenalty.masteryProgress,
-        influenceGained: rewardWithOverloadPenalty.influence ?? 0,
-        resourcesGained: appliedResourceGain,
-        fieldLootGained: fieldLoot,
-        hungerPressureLabel: hungerEffects?.label,
-        hungerRewardPenaltyPct: hungerEffects?.rewardPenaltyPct,
-        hungerConditionDrainPenalty: hungerEffects?.conditionDrainPenalty,
-        fusionRewardMultiplier: fusionModifiers?.rewardMultiplier ?? null,
-        fusionConditionDeltaOffset: fusionModifiers?.conditionDeltaOffset ?? 0,
-        fusionCadenceLabel: fusionModifiers?.cadenceLabel ?? null,
-        fusionPressureLabel: fusionModifiers?.pressureLabel ?? null,
+      latestHgHuntResult = withPostSettlementMarketLegibility(
+        {
+          missionId: mission.id,
+          huntTitle: mission.title,
+          resolvedAt: entry.endsAt,
+          conditionDelta: resolvedConditionDelta,
+          conditionAfter: nextPlayer.condition,
+          rankXpGained: rewardWithOverloadPenalty.rankXp,
+          masteryProgressGained: rewardWithOverloadPenalty.masteryProgress,
+          influenceGained: rewardWithOverloadPenalty.influence ?? 0,
+          resourcesGained: appliedResourceGain,
+          fieldLootGained: fieldLoot,
+          hungerPressureLabel: hungerEffects?.label,
+          hungerRewardPenaltyPct: hungerEffects?.rewardPenaltyPct,
+          hungerConditionDrainPenalty: hungerEffects?.conditionDrainPenalty,
+          fusionRewardMultiplier: fusionModifiers?.rewardMultiplier ?? null,
+          fusionConditionDeltaOffset: fusionModifiers?.conditionDeltaOffset ?? 0,
+          fusionCadenceLabel: fusionModifiers?.cadenceLabel ?? null,
+          fusionPressureLabel: fusionModifiers?.pressureLabel ?? null,
 
-        baseRankXpGained: rewardWithOverloadPenalty.rankXp,
-        baseMasteryProgressGained: rewardWithOverloadPenalty.masteryProgress,
-        baseInfluenceGained: rewardWithOverloadPenalty.influence ?? 0,
-        baseResourcesGained: appliedResourceGain,
+          baseRankXpGained: rewardWithOverloadPenalty.rankXp,
+          baseMasteryProgressGained: rewardWithOverloadPenalty.masteryProgress,
+          baseInfluenceGained: rewardWithOverloadPenalty.influence ?? 0,
+          baseResourcesGained: appliedResourceGain,
 
-        realtimeContributionBonusMultiplier: null,
-        realtimeContributionAppliedForResolvedAt: null,
-        realtimeRankXpBonusGained: 0,
-        realtimeMasteryProgressBonusGained: 0,
-        realtimeInfluenceBonusGained: 0,
-        realtimeResourcesBonusGained: {},
+          realtimeContributionBonusMultiplier: null,
+          realtimeContributionAppliedForResolvedAt: null,
+          realtimeRankXpBonusGained: 0,
+          realtimeMasteryProgressBonusGained: 0,
+          realtimeInfluenceBonusGained: 0,
+          realtimeResourcesBonusGained: {},
 
-        realtimeTotalDamageDealt: 0,
-        realtimeTotalHitsLanded: 0,
-        realtimeMobsContributedTo: 0,
-        realtimeMobsKilled: 0,
-        realtimeExposedKills: 0,
-      };
+          realtimeTotalDamageDealt: 0,
+          realtimeTotalHitsLanded: 0,
+          realtimeMobsContributedTo: 0,
+          realtimeMobsKilled: 0,
+          realtimeExposedKills: 0,
+        },
+        nextPlayer,
+        entry.endsAt,
+      );
 
       if (mission.deployZoneId) {
         nextPlayer = withWorldProgressAfterHunt(nextPlayer, {

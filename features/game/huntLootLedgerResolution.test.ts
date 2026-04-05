@@ -64,6 +64,37 @@ describe("hunt resolution vs field loot ledger", () => {
   });
 });
 
+describe("COMMIT_VOID_FIELD_EXTRACTION (single ledger path)", () => {
+  it("banks ledger loot, clears run ledger, and stores lastVoidFieldExtractionLedger", () => {
+    const s0: GameState = {
+      ...initialGameState,
+      player: {
+        ...initialGameState.player,
+        condition: 100,
+        fieldLootGainedThisRun: { scrapAlloy: 4 },
+        resources: {
+          ...initialGameState.player.resources,
+          scrapAlloy: 10,
+        },
+      },
+    };
+    const s1 = gameReducer(s0, {
+      type: "COMMIT_VOID_FIELD_EXTRACTION",
+      payload: { kills: 2, zoneName: "Test Zone", zoneId: "howling-scar" },
+    });
+    expect(s1.player.fieldLootGainedThisRun).toEqual({});
+    expect(s1.player.resources.scrapAlloy).toBe(14);
+    expect(s1.player.lastVoidFieldExtractionLedger).not.toBeNull();
+    expect(s1.player.lastVoidFieldExtractionLedger?.resourcesBanked.scrapAlloy).toBe(
+      4,
+    );
+    expect(s1.player.lastVoidFieldExtractionLedger?.kills).toBe(2);
+    expect(
+      s1.player.lastVoidFieldExtractionLedger?.warExchangeSellPressureLines.length,
+    ).toBeGreaterThan(0);
+  });
+});
+
 describe("ADD_FIELD_LOOT skipRunLedger (extract after orb ledger)", () => {
   it("does not double-count fieldLootGainedThisRun when skipRunLedger is true", () => {
     const s0: GameState = {

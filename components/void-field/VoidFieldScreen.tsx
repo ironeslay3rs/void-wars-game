@@ -11,8 +11,8 @@ import {
 } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useGame } from "@/features/game/gameContext";
-import type { ResourceKey } from "@/features/game/gameTypes";
-import { clamp, getMissionById } from "@/features/game/gameMissionUtils";
+import type { ResourceKey, VoidFieldExtractionLedgerResult } from "@/features/game/gameTypes";
+import { getMissionById } from "@/features/game/gameMissionUtils";
 import {
   DEFAULT_HOME_DEPLOY_ZONE_ID,
   voidZoneById,
@@ -49,10 +49,6 @@ import ExtractionSummary from "@/components/field/ExtractionSummary";
 import { voidInfusionHudLine } from "@/features/status/voidInfusionMetaphor";
 import { getAscensionTensionChipLine } from "@/features/progression/ascensionStep";
 import { getActivePrepSurface } from "@/features/crafting/prepRunHooks";
-import {
-  buildExtractionSummary,
-  type ExtractionSummary as ExtractionSummaryData,
-} from "@/features/field/extractionLogic";
 import { getFeastHallOfferById } from "@/features/black-market/feastHallData";
 import {
   getCareerFocusFieldLootAmountMultiplier,
@@ -62,7 +58,6 @@ import {
   getConvergencePrimedFieldLootMultiplier,
   getPathAlignedFieldLootMultiplier,
 } from "@/features/economy/pathGatheringYield";
-import { computeVoidStrainFromVoidFieldExtraction } from "@/features/progression/phase3Progression";
 import { getMasteryAlignedPickupYieldMultiplier } from "@/features/mastery/masteryGameplayEffects";
 import {
   getSchoolCombatPassives,
@@ -329,8 +324,9 @@ export default function VoidFieldScreen() {
   >({});
   const [sessionKills, setSessionKills] = useState(0);
   const [extractionSummary, setExtractionSummary] =
-    useState<ExtractionSummaryData | null>(null);
+    useState<VoidFieldExtractionLedgerResult | null>(null);
   const extractionAppliedRef = useRef(false);
+  const extractionLedgerShownRef = useRef<number | null>(null);
   const seenDeadMobIdsRef = useRef<Set<string>>(new Set());
 
   const onLootConsumed = useCallback(
@@ -543,60 +539,25 @@ export default function VoidFieldScreen() {
   useEffect(() => {
     if (!inExtractionZone) return;
     if (extractionAppliedRef.current) return;
-
-    const summary = buildExtractionSummary({
-      zoneName: zone.label,
-      kills: sessionKills,
-      lootCollected: sessionLoot,
-    });
-
-    for (const [key, amount] of Object.entries(summary.lootCollected)) {
-      if (!amount || amount <= 0) continue;
-      dispatch({
-        type: "ADD_FIELD_LOOT",
-        payload: { key: key as ResourceKey, amount, skipRunLedger: true },
-      });
-    }
-    if (summary.xpEarned > 0) {
-      dispatch({ type: "GAIN_RANK_XP", payload: summary.xpEarned });
-    }
-    if (summary.conditionSpent > 0) {
-      dispatch({ type: "ADJUST_CONDITION", payload: -summary.conditionSpent });
-    }
-
-    const conditionBefore = state.player.condition;
-    const conditionAfter = clamp(
-      conditionBefore - summary.conditionSpent,
-      0,
-      100,
-    );
-    const strainDelta = computeVoidStrainFromVoidFieldExtraction({
-      kills: summary.kills,
-      conditionAfter,
-      conditionDelta: -summary.conditionSpent,
-      lootUnits: 0,
-    });
-    if (strainDelta > 0) {
-      dispatch({
-        type: "APPLY_VOID_INSTABILITY_DELTA",
-        payload: strainDelta,
-      });
-    }
-
-    dispatch({ type: "RESET_RUN_INSTABILITY" });
-
     extractionAppliedRef.current = true;
-    queueMicrotask(() => {
-      setExtractionSummary(summary);
+    dispatch({
+      type: "COMMIT_VOID_FIELD_EXTRACTION",
+      payload: {
+        kills: sessionKills,
+        zoneName: zone.label,
+        zoneId: zone.id,
+      },
     });
-  }, [
-    dispatch,
-    inExtractionZone,
-    sessionKills,
-    sessionLoot,
-    zone.label,
-    state.player.condition,
-  ]);
+  }, [dispatch, inExtractionZone, sessionKills, zone.label, zone.id]);
+
+  useEffect(() => {
+    const L = state.player.lastVoidFieldExtractionLedger;
+    if (!L) return;
+    if (L.zoneName !== zone.label) return;
+    if (extractionLedgerShownRef.current === L.resolvedAt) return;
+    extractionLedgerShownRef.current = L.resolvedAt;
+    setExtractionSummary(L);
+  }, [state.player.lastVoidFieldExtractionLedger, zone.label]);
 
   return (
     <main className="fixed inset-0 overflow-hidden bg-black text-white">
@@ -679,7 +640,15 @@ export default function VoidFieldScreen() {
         Extraction
       </div>
 
-      {extractionSummary ? <ExtractionSummary summary={extractionSummary} /> : null}
+      {extractionSummary ? (
+        <ExtractionSummary
+          ledger={extractionSummary}
+          playerSnapshot={{
+            condition: state.player.condition,
+            hunger: state.player.hunger,
+          }}
+        />
+      ) : null}
     </main>
   );
 }

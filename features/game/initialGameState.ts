@@ -60,6 +60,8 @@ export const initialGameState: GameState = {
       ironHeart: 0,
     },
     fieldLootGainedThisRun: {},
+    expeditionContractSnapshots: {},
+    lastVoidFieldExtractionLedger: null,
     market: createInitialMarketState(),
     craftedInventory: {},
     craftWorkOrder: null,

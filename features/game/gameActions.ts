@@ -83,6 +83,9 @@ import {
   applyPrimedPrepRunInstabilityTrim,
   boostFieldLootAmountForPrep,
 } from "@/features/crafting/prepRunHooks";
+import { buildExpeditionContractSnapshot } from "@/features/expedition/expeditionContractSnapshot";
+import { withPostSettlementMarketLegibility } from "@/features/expedition/postRunMarketPressure";
+import { applyVoidFieldExtractionSettlement } from "@/features/expedition/voidFieldExtractionLedger";
 import { rollVoidFieldLoot } from "@/features/void-maps/rollVoidFieldLoot";
 import { tryInstallMinorRune } from "@/features/mastery/runeMasteryLogic";
 import { getDistrictCraftingCost } from "@/features/crafting-district/craftingProfession";
@@ -523,6 +526,21 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             [k]: cur + amt,
           },
         },
+      };
+    }
+
+    case "COMMIT_VOID_FIELD_EXTRACTION": {
+      const nowMs = action.payload.nowMs ?? Date.now();
+      const { player: nextPlayer } = applyVoidFieldExtractionSettlement({
+        player: state.player,
+        kills: Math.max(0, Math.floor(action.payload.kills)),
+        zoneName: action.payload.zoneName,
+        zoneId: action.payload.zoneId,
+        nowMs,
+      });
+      return {
+        ...state,
+        player: nextPlayer,
       };
     }
 
@@ -1262,14 +1280,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         ),
       );
 
-      let resolvedPlayer: PlayerState = {
-        ...nextPlayer,
-        hasBiotechSpecimenLead:
-          mission.id === "bio-hunt-specimen"
-            ? false
-            : player.hasBiotechSpecimenLead,
-        fieldLootGainedThisRun: {},
-        lastHuntResult: {
+      const lastHuntResult = withPostSettlementMarketLegibility(
+        {
           missionId: mission.id,
           huntTitle: mission.title,
           resolvedAt,
@@ -1302,6 +1314,18 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           realtimeMobsKilled: 0,
           realtimeExposedKills: 0,
         },
+        nextPlayer,
+        resolvedAt,
+      );
+
+      let resolvedPlayer: PlayerState = {
+        ...nextPlayer,
+        hasBiotechSpecimenLead:
+          mission.id === "bio-hunt-specimen"
+            ? false
+            : player.hasBiotechSpecimenLead,
+        fieldLootGainedThisRun: {},
+        lastHuntResult,
       };
 
       if (
@@ -1826,10 +1850,23 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         player: state.player,
       });
 
-      const queuedPlayer: PlayerState = {
+      let queuedPlayer: PlayerState = {
         ...state.player,
         missionQueue: [...missionQueue, nextEntry],
       };
+
+      if (mission.category === "hunting-ground") {
+        queuedPlayer = {
+          ...queuedPlayer,
+          expeditionContractSnapshots: {
+            ...queuedPlayer.expeditionContractSnapshots,
+            [nextEntry.queueId]: buildExpeditionContractSnapshot(
+              mission,
+              nextEntry,
+            ),
+          },
+        };
+      }
 
       return {
         ...state,
@@ -1864,9 +1901,13 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         player: state.player,
       });
 
+      const nextSnaps = { ...state.player.expeditionContractSnapshots };
+      delete nextSnaps[action.payload.queueId];
+
       const removedPlayer: PlayerState = {
         ...state.player,
         missionQueue: rebuiltQueue,
+        expeditionContractSnapshots: nextSnaps,
       };
 
       return {

@@ -155,6 +155,47 @@ export type LatestHuntResult = {
   // Aliases for run-complete UI readability
   kills?: number;
   damage?: number;
+
+  /** M1 — citadel carry meter readout after this settlement (no hidden overload). */
+  carryPressureSummary?: string;
+  /** M1 — War Exchange sell-demand lines for materials in this payout window. */
+  warExchangeSellPressureLines?: string[];
+};
+
+/** Queued void hunting contract — captured at pickup for readable expedition context. */
+export type ExpeditionContractSnapshot = {
+  contractId: string;
+  targetLabel: string;
+  deployZoneId?: VoidZoneId;
+  expectedRewardSummary: string;
+  riskStrainPotential: string;
+  queuedAt: number;
+};
+
+/**
+ * Single ledger object for void-field extraction (orb haul → citadel bank).
+ * Produced only by `COMMIT_VOID_FIELD_EXTRACTION` in the game reducer.
+ */
+export type VoidFieldExtractionLedgerResult = {
+  zoneName: string;
+  zoneId?: string;
+  resolvedAt: number;
+  kills: number;
+  /** Run ledger totals attempted at the gate (pre-bank). */
+  ledgerLootAttempted: Partial<ResourcesState>;
+  resourcesBanked: Partial<ResourcesState>;
+  /** Boosted amounts that could not fit (overload / capacity gate). */
+  resourcesRejected: Partial<ResourcesState>;
+  pickupStrainFromBanking: number;
+  extractionStrainDelta: number;
+  rankXpGained: number;
+  conditionSpent: number;
+  carryBefore: { used: number; max: number; isOverloaded: boolean };
+  carryAfter: { used: number; max: number; isOverloaded: boolean };
+  /** Plain-language reason when salvage was trimmed or pack is overloaded. */
+  overloadWhy: string | null;
+  warExchangeSellPressureLines: string[];
+  resourcesAfterBanking: ResourcesState;
 };
 
 export type ActiveProcess = {
@@ -404,6 +445,17 @@ export type PlayerState = {
   /** Field pickups accrued during the currently running hunt (cleared on run start/end). */
   fieldLootGainedThisRun: Partial<ResourcesState>;
 
+  /**
+   * M1 expedition contract snapshots (hunting-ground rows only), keyed by `queueId`.
+   * Dropped when that row resolves or is removed from the queue.
+   */
+  expeditionContractSnapshots: Record<string, ExpeditionContractSnapshot>;
+
+  /**
+   * M1 void-field extraction outcome (single action path). Ephemeral UI payload; null on fresh hydrate.
+   */
+  lastVoidFieldExtractionLedger: VoidFieldExtractionLedgerResult | null;
+
   /** M3→M4: War Exchange storefront stock state. */
   market: MarketState;
 
@@ -514,6 +566,19 @@ export type GameAction =
   | {
       type: "VOID_FIELD_ORB_COLLECTED";
       payload: { key: ResourceKey; amount: number };
+    }
+  /**
+   * M1 — Bank `fieldLootGainedThisRun` through one reducer path (strain, carry, War Exchange copy).
+   * Server-authoritative amounts still arrive via `VOID_FIELD_ORB_COLLECTED` first.
+   */
+  | {
+      type: "COMMIT_VOID_FIELD_EXTRACTION";
+      payload: {
+        kills: number;
+        zoneName: string;
+        zoneId?: string;
+        nowMs?: number;
+      };
     }
   | { type: "SPEND_RESOURCE"; payload: { key: ResourceKey; amount: number } }
   | { type: "GAIN_RANK_XP"; payload: number }

@@ -2,6 +2,7 @@ import { isCharacterPortraitId } from "@/features/characters/characterPortraits"
 import { initialGameState } from "@/features/game/initialGameState";
 import type {
   ActiveProcess,
+  ExpeditionContractSnapshot,
   GameState,
   LatestHuntResult,
   MissionCategory,
@@ -379,7 +380,51 @@ function normalizeLatestHuntResult(value: unknown): LatestHuntResult | null {
     result.damage = damageCandidate;
   }
 
+  if (
+    typeof (value as Record<string, unknown>).carryPressureSummary === "string"
+  ) {
+    result.carryPressureSummary = (value as Record<string, unknown>)
+      .carryPressureSummary as string;
+  }
+
+  const warLines = (value as Record<string, unknown>)
+    .warExchangeSellPressureLines;
+  if (Array.isArray(warLines)) {
+    result.warExchangeSellPressureLines = warLines
+      .filter((x): x is string => typeof x === "string")
+      .slice(0, 12);
+  }
+
   return result;
+}
+
+function normalizeExpeditionContractSnapshots(
+  value: unknown,
+): Record<string, ExpeditionContractSnapshot> {
+  if (!isRecord(value)) return {};
+  const out: Record<string, ExpeditionContractSnapshot> = {};
+  for (const [queueId, rawSnap] of Object.entries(value)) {
+    if (typeof queueId !== "string" || !isRecord(rawSnap)) continue;
+    if (typeof rawSnap.contractId !== "string") continue;
+    if (typeof rawSnap.targetLabel !== "string") continue;
+    if (typeof rawSnap.expectedRewardSummary !== "string") continue;
+    if (typeof rawSnap.riskStrainPotential !== "string") continue;
+    if (
+      typeof rawSnap.queuedAt !== "number" ||
+      !Number.isFinite(rawSnap.queuedAt)
+    ) {
+      continue;
+    }
+    out[queueId] = {
+      contractId: rawSnap.contractId,
+      targetLabel: rawSnap.targetLabel,
+      deployZoneId: parseVoidZoneId(rawSnap.deployZoneId),
+      expectedRewardSummary: rawSnap.expectedRewardSummary,
+      riskStrainPotential: rawSnap.riskStrainPotential,
+      queuedAt: rawSnap.queuedAt,
+    };
+  }
+  return out;
 }
 
 function normalizeBehaviorStats(value: unknown) {
@@ -825,6 +870,11 @@ function normalizePlayer(value: unknown): PlayerState {
       raw.fieldLootGainedThisRun !== undefined
         ? normalizePartialResources(raw.fieldLootGainedThisRun)
         : initialGameState.player.fieldLootGainedThisRun,
+
+    expeditionContractSnapshots: normalizeExpeditionContractSnapshots(
+      (raw as Record<string, unknown>).expeditionContractSnapshots,
+    ),
+    lastVoidFieldExtractionLedger: null,
 
     knownRecipes: Array.isArray(raw.knownRecipes)
       ? raw.knownRecipes.filter(
