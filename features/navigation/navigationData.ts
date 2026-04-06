@@ -11,7 +11,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     id: "bazaar",
     label: canonBazaar.routeLabel,
     description:
-      "Public market district for common trade and contracts. Black Market access is a separate hidden layer.",
+      "Neutral survival citadel under Black Market law. Trade, recovery, and contract pressure all pass through these controlled wings: Feast Hall, Biotech, and Guild.",
   },
   {
     id: "forge",

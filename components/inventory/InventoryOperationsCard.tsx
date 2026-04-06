@@ -6,7 +6,7 @@ export default function InventoryOperationsCard() {
     },
     {
       title: "Vault Access",
-      body: "Future long-term storage expansion for rare materials, named items, and market reserves.",
+      body: "Future long-term storage expansion for rare materials, named items, and Black Market reserves.",
     },
     {
       title: "Sorting Rules",

@@ -2,10 +2,15 @@ import type { FactionAlignment } from "@/features/game/gameTypes";
 
 export const canonBazaar = {
   id: "bazaar",
-  navLabel: "Market",
-  routeLabel: "Market",
-  headingLabel: "The Market",
-  districtPrefix: "Market",
+  navLabel: "Black Market",
+  routeLabel: "Black Market",
+  headingLabel: "Black Market",
+  districtPrefix: "Bazaar",
+  tagline: "Neutral ground under Black Market law.",
+  description:
+    "The survivor citadel below the world: neutral ground for trade, recovery, and the bargains people make to stay alive one more night.",
+  law:
+    "Black Market law is simple: terms hold, neutral ground is respected, and panic buys no mercy.",
 } as const;
 
 export const canonFactionHqs = {

@@ -55,7 +55,7 @@ export function ZoneDoctrinePressurePanel({
             : globalKind === "reinforced"
               ? "Reinforced in hard-line theatres: dominant zones favor your alignment."
               : globalKind === "contested"
-                ? "Contested: rival doctrine holds several regions; expect tighter salvage markets."
+                ? "Contested: rival doctrine holds several regions; expect tighter Black Market salvage lanes."
                 : "Balanced — no single bloc owns the void ring yet."}
         </p>
       </div>

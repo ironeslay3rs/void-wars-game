@@ -79,8 +79,8 @@ export const friendShellEntries: FriendShellEntry[] = [
     title: "Citadel Broker",
     faction: "Bio",
     presence: "online",
-    note: "Trading route gossip and trench reports through neutral channels.",
-    statusLine: "Watching the board now.",
+    note: "Moves trench gossip through neutral Black Market lanes where survival matters more than faction bragging.",
+    statusLine: "Watching the board under Black Market law.",
   },
 ];
 
@@ -131,7 +131,7 @@ export const friendChatShellMessages: Record<string, ChatShellMessage[]> = {
     {
       id: "grave-1",
       sender: "friend",
-      text: "Neutral brokers are hearing Black Market traffic again. Feast Hall is moving more bodies than usual.",
+      text: "Neutral brokers are hearing Black Market traffic again. Feast Hall is taking more bodies, which means survival pressure is spiking below the citadel.",
       timestamp: "22:03",
     },
     {
@@ -198,18 +198,18 @@ export const mailEntries: MailEntry[] = [
     category: "Citadel Notice",
     receivedAt: "Yesterday / 22:03",
     unread: false,
-    preview: "Feast Hall traffic is rising. Terms remain fixed under market law.",
+    preview: "Feast Hall traffic is rising. Neutral ground remains open, but Black Market law has not softened.",
     body: [
-      "Traffic through the Black Market has increased, especially through Gluttony and Feast Hall.",
-      "Terms remain fixed. The market will not recognize panic as a bargaining right.",
-      "This circular is archived for awareness only and carries no live claim path in the current build.",
+      "Traffic through the Black Market has increased, especially through Gluttony and Feast Hall. The citadel is taking in the desperate again.",
+      "Terms remain fixed. The Black Market will not recognize panic as a bargaining right, and neutral ground only holds as long as the law is obeyed.",
+      "Trade, recovery, and survival lanes remain open. Come prepared, pay what is owed, and leave with your footing intact if you can.",
     ],
     attachments: [
       {
         id: "market-bulletin",
-        label: "Market Bulletin",
+        label: "Black Market Bulletin",
         type: "document",
-        detail: "Reference notice placeholder only.",
+        detail: "Reference notice from the neutral citadel ledger.",
       },
     ],
   },

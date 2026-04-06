@@ -18,16 +18,14 @@ export type MainMenuItem = {
 };
 
 export const mainMenuItems: MainMenuItem[] = [
-  { label: "Continue", href: "/home", icon: "missions", isPrimary: true },
-  { label: "New Game", href: "/new-game", icon: "briefcase" },
+  { label: "Command", href: "/home", icon: "missions", isPrimary: true },
+  { label: "Deploy", href: "/deploy-into-void", icon: "store", isPrimary: true },
+  { label: "Contracts", href: "/missions", icon: "missions", isPrimary: true },
+  { label: "Vitals", href: "/status", icon: "settings", isPrimary: true },
+  { label: "Stores", href: "/inventory", icon: "briefcase", isPrimary: true },
+  { label: "Black Market", href: "/bazaar/black-market", icon: "black-market", isPrimary: true },
+  { label: "Arena", href: "/arena", icon: "trophy" },
   { label: "Career", href: "/career", icon: "briefcase" },
   { label: "Mastery", href: "/mastery", icon: "brain" },
   { label: "Professions", href: "/professions", icon: "wrench" },
-  { label: "Market", href: "/bazaar/war-exchange", icon: "store" },
-  { label: "Missions", href: "/missions", icon: "missions" },
-  { label: "Black Market", href: "/bazaar/black-market", icon: "black-market" },
-  { label: "Arena", href: "/arena", icon: "trophy" },
-  { label: "Guild", href: "/guild", icon: "users" },
-  { label: "Social", href: "/social", icon: "social" },
-  { label: "Settings", href: "/settings", icon: "settings" },
 ];

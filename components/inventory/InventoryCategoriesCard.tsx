@@ -23,7 +23,7 @@ export default function InventoryCategoriesCard() {
           value: player.resources.credits,
           tier: "Currency",
           tooltip:
-            "Universal payment. Spent on market trades, services, and recovery.",
+            "Universal payment. Spent on Black Market trades, services, and recovery.",
         },
         {
           label: "Moss Rations",

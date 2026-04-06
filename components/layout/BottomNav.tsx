@@ -37,7 +37,7 @@ function getAccentClasses(
 
 function isRouteActive(pathname: string, href: string) {
   if (pathname === href) return true;
-  if (href === "/") return false;
+  if (href === "/home" && pathname === "/") return true;
   return pathname.startsWith(`${href}/`);
 }
 
@@ -46,8 +46,11 @@ export default function BottomNav() {
   const items = getNavigationItemsByPlacement("bottom");
 
   return (
-    <nav className="relative w-full min-w-0" aria-label="Primary navigation">
-      <div className="grid grid-cols-5 gap-1 sm:gap-2 md:gap-3">
+    <nav className="relative w-full min-w-0" aria-label="Command navigation">
+      <div
+        className="grid gap-1 sm:gap-2 md:gap-3"
+        style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}
+      >
         {items.map((item) => {
           const Icon = item.icon;
           const isActive = isRouteActive(pathname, item.href);
@@ -83,7 +86,7 @@ export default function BottomNav() {
 
               <span
                 className={[
-                  "relative z-10 max-w-[4.2rem] truncate text-center text-[9px] font-extrabold uppercase leading-tight tracking-[0.06em] sm:max-w-none sm:text-[11px] sm:tracking-[0.08em] md:text-[13px]",
+                  "relative z-10 max-w-[4.5rem] text-center text-[9px] font-extrabold uppercase leading-tight tracking-[0.06em] whitespace-normal sm:max-w-none sm:text-[11px] sm:tracking-[0.08em] md:text-[13px]",
                   isActive ? "text-white" : "",
                 ].join(" ")}
               >

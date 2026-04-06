@@ -126,10 +126,10 @@ export function getFirstSessionGuidance(
   if (player.lastHuntResult) {
     if (player.condition < RECOVERY_GUIDANCE_THRESHOLD) {
       return {
-        stateLabel: "Hunt Resolved / Survival Pressure",
-        objective: "Haul secured. Stabilize before the next run.",
+        stateLabel: "Return / Recovery Pressure",
+        objective: "The haul is home. Recover before you prep another run.",
         detail: copy.recoveryDetail,
-        nextStepLabel: "Open Status and stabilize",
+        nextStepLabel: "Recover, then prep the next run",
         nextAction: "recover",
         isFirstTimePlayer,
         schoolHint: copy.schoolHint,
@@ -137,12 +137,12 @@ export function getFirstSessionGuidance(
     }
 
     return {
-      stateLabel: "Hunt Resolved",
-      objective: "Payout banked. Open the next sweep.",
+      stateLabel: "Return / Prep Window",
+      objective: "The payout is banked. Prep the next deployment now.",
       detail:
-        "The last run paid out and field state is still stable. Keep the loop moving." +
+        "The last run paid out and the body is still holding. Use the return to prep the next sweep before the lane cools." +
         explorationInstabilityDetailSuffix(player.voidInstability),
-      nextStepLabel: "Start the next sweep",
+      nextStepLabel: "Prep the next sweep",
       nextAction: "explore",
       isFirstTimePlayer,
       schoolHint: copy.schoolHint,
@@ -151,10 +151,10 @@ export function getFirstSessionGuidance(
 
   if (player.hasBiotechSpecimenLead) {
     return {
-      stateLabel: copy.huntLabel,
-      objective: copy.huntObjective,
-      detail: copy.huntDetail,
-      nextStepLabel: "Open Biotech Labs and run the hunt",
+      stateLabel: "Deploy / Live Lead",
+      objective: "The lead is confirmed. Deploy and finish the hunt.",
+      detail: `${copy.huntDetail} This is the live part of the loop: step out, resolve it clean, and come back with the return.`,
+      nextStepLabel: "Deploy on the hunt",
       nextAction: "hunt",
       isFirstTimePlayer,
       schoolHint: copy.schoolHint,
@@ -162,12 +162,12 @@ export function getFirstSessionGuidance(
   }
 
   return {
-    stateLabel: copy.exploreLabel,
-    objective: copy.exploreObjective,
+    stateLabel: "Prep / Sweep Ready",
+    objective: "Open the next sweep and set the loop in motion.",
     detail:
       (isFirstTimePlayer ? copy.exploreFirstDetail : copy.exploreDetail) +
       explorationInstabilityDetailSuffix(player.voidInstability),
-    nextStepLabel: "Start the sweep",
+    nextStepLabel: "Prep the sweep",
     nextAction: "explore",
     isFirstTimePlayer,
     schoolHint: copy.schoolHint,

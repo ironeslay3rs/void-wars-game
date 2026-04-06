@@ -12,9 +12,9 @@ export default function VoidMarketPage() {
         <BazaarSubpageNav accentClassName="hover:border-amber-300/40" />
 
         <ScreenHeader
-          eyebrow="Bazaar / Void Market"
-          title="Void Market"
-          subtitle="M3 commodity desk: taxed buys, fee-bearing sells, and profession-adjusted quotes — legal trade complement to Black Market sin lanes."
+          eyebrow="Bazaar / Black Market Exchange"
+          title="Black Market Exchange"
+          subtitle="M3 commodity desk: taxed buys, fee-bearing sells, and profession-adjusted quotes — a controlled Black Market trade lane inside the citadel."
         />
 
         <VoidMarketExchange />

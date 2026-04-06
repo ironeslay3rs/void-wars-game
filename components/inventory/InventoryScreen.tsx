@@ -49,7 +49,7 @@ export default function InventoryScreen() {
     {
       label: "Credits",
       value: String(player.resources.credits),
-      hint: "Shared global state balance available for market and inventory use.",
+      hint: "Shared global state balance available for Black Market and inventory use.",
     },
     {
       label: "Load State",

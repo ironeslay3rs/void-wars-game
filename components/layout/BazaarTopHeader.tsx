@@ -11,7 +11,7 @@ export default function BazaarTopHeader() {
           className="inline-flex items-center gap-2 rounded-[16px] border border-white/10 bg-black/45 px-5 py-3 text-sm font-semibold text-white shadow-[0_14px_40px_rgba(0,0,0,0.35)] transition hover:border-amber-300/30 hover:bg-black/55"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to Main Panel
+          Return to Home
         </Link>
       </div>
 
@@ -35,12 +35,17 @@ export default function BazaarTopHeader() {
         </span>
       </div>
 
+      <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-amber-100/78">
+        Survivor citadel hub for contraband, rations, and district access. Move through the
+        Bazaar, then cut into the Black Market, Feast Hall, Biotech, or Guild wings as needed.
+      </p>
+
       <div className="mt-4 flex justify-center">
         <Link
           href="/bazaar/black-market"
           className="inline-flex items-center rounded-[16px] border border-orange-300/25 bg-[linear-gradient(135deg,rgba(120,20,10,0.45),rgba(30,10,8,0.72))] px-6 py-3 text-sm font-black uppercase tracking-[0.16em] text-amber-100 shadow-[0_14px_40px_rgba(0,0,0,0.35)] transition hover:-translate-y-0.5 hover:border-orange-200/40"
         >
-          Access Black Market
+          Enter Black Market
         </Link>
       </div>
     </div>
