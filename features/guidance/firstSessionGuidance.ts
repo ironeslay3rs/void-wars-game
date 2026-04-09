@@ -95,7 +95,7 @@ const SCHOOL_COPY: Record<PathType | "unbound", SchoolCopy> = {
     huntLabel: "Lead Active",
     huntObjective: "Signal confirmed. Initiate the hunt.",
     huntDetail:
-      "A live lead is ready to resolve. Open Biotech Labs to convert it into rewards and progression.",
+      "A live lead is ready to resolve. Deploy, close the hunt, and bank the return — rewards and progression follow the payout.",
     recoveryDetail:
       "Condition is the one resource you cannot buy back in bulk. Recover before the next sweep or the next run starts from a deficit.",
     schoolHint: "Explore → hunt → recover → grow.",
