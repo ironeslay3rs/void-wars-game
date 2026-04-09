@@ -9,6 +9,7 @@ import {
 } from "@/features/economy/craftWorkOrderData";
 import { addPartialResources } from "@/features/game/gameMissionUtils";
 import type { GameAction, GameState, ResourceKey } from "@/features/game/gameTypes";
+import { getBrokerInteraction } from "@/features/lore/brokerInteractionData";
 import { computeFactionHqStipend, FACTION_HQ_STIPEND_COOLDOWN_MS } from "@/features/factions/factionWorldLogic";
 import { getVoidMarketWarAdjustments } from "@/features/factions/warEconomy";
 import { applyMarketBuy, applyMarketSell } from "@/features/market/marketActions";
@@ -319,6 +320,39 @@ export function handleEconomyAction(
           lastFactionHqStipendAt: now,
           resources: addPartialResources(p.resources, { credits }),
           influence: Math.max(0, p.influence + infGain),
+        },
+      };
+    }
+
+    case "BROKER_INTERACT": {
+      const brokerId = action.payload.brokerId;
+      const interaction = getBrokerInteraction(brokerId);
+      if (!interaction) return state;
+      const p = state.player;
+      if (p.resources.credits < interaction.cost) return state;
+      const now = Date.now();
+      const lastUsed = p.brokerCooldowns[brokerId] ?? 0;
+      if (interaction.cooldownMs > 0 && now - lastUsed < interaction.cooldownMs) return state;
+      let nextResources = { ...p.resources, credits: p.resources.credits - interaction.cost };
+      let nextCondition = p.condition;
+      let nextInstability = p.runInstability;
+      const eff = interaction.effect;
+      if (eff.kind === "grant_resource") {
+        nextResources = { ...nextResources, [eff.resourceKey]: (nextResources[eff.resourceKey] ?? 0) + eff.amount };
+      } else if (eff.kind === "restore_condition") {
+        nextCondition = Math.min(100, p.condition + eff.amount);
+      } else if (eff.kind === "reduce_instability") {
+        nextInstability = Math.max(0, p.runInstability - eff.amount);
+      }
+      // "show_tip" effect has no state change — tip is selected in the UI
+      return {
+        ...state,
+        player: {
+          ...p,
+          resources: nextResources,
+          condition: nextCondition,
+          runInstability: nextInstability,
+          brokerCooldowns: { ...p.brokerCooldowns, [brokerId]: now },
         },
       };
     }

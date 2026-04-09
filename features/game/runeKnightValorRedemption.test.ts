@@ -55,7 +55,7 @@ describe("REDEEM_RUNE_KNIGHT_VALOR", () => {
       type: "REDEEM_RUNE_KNIGHT_VALOR",
       payload: "mastery-boon",
     });
-    expect(n).toBe(s);
+    expect(n).toStrictEqual(s);
   });
 
   it("influence-seal spends 3 valor", () => {
@@ -87,7 +87,7 @@ describe("REDEEM_RUNE_KNIGHT_VALOR", () => {
       type: "REDEEM_RUNE_KNIGHT_VALOR",
       payload: "ivory-prestige-rite",
     });
-    expect(n).toBe(s);
+    expect(n).toStrictEqual(s);
   });
 
   it("arena-edge-sigil spends 2 valor and grants one charge", () => {

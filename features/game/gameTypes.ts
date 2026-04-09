@@ -272,14 +272,28 @@ export type CanonBookRung =
   | "book-7"
   | "system";
 
+export type MissionOriginTagId =
+  | "bonehowl-remnant"
+  | "olympus-castoff"
+  | "crimson-altar-contraband"
+  | "pharos-surplus"
+  | "mandate-salvage"
+  | "mouth-of-inti-relic"
+  | "thousand-hands-fragment"
+  | "black-market-local";
+
 export type MissionDefinition = {
   id: string;
   category: MissionCategory;
   title: string;
   description: string;
+  /** Rumor-board flavor — how this mission sounds on the Black Market rumor board. */
+  rumorFlavor?: string;
   path: PathType | "neutral";
   /** Canon expansion rung for safe roadmap sequencing (Book 1-7). */
   canonBook?: CanonBookRung;
+  /** Where this opportunity leaked from (nation war, local scam, faction surplus). */
+  originTag?: MissionOriginTagId;
   durationHours: number;
   reward: MissionReward;
   /** Void theatre for hunting contracts — drives doctrine pressure drift. */
@@ -351,6 +365,23 @@ export type LastMythicGateBreakthrough = {
   gate: MythicGateBreakthroughKind;
   headline: string;
   detail: string;
+};
+
+/**
+ * Hidden convergence tracking — seeded in PlayerState but never surfaced in UI.
+ * The fusion of Body + Mind + Soul is the forbidden truth of the Sevenfold Rune
+ * universe. This data exists so the architecture supports late-game discovery
+ * without refactoring. No reducer writes to this yet.
+ */
+export type CrossSchoolExposure = {
+  /** Count of off-path materials the player has held (even briefly). */
+  offPathMaterialsEncountered: number;
+  /** Has the player ever experienced a mismatch event? */
+  mismatchEncountered: boolean;
+  /** Has the player used ANY material from each school? */
+  schoolsExposed: { bio: boolean; mecha: boolean; pure: boolean };
+  /** Hidden counter: increments on cross-school actions. */
+  anomalyScore: number;
 };
 
 export type PlayerState = {
@@ -498,6 +529,11 @@ export type PlayerState = {
   zoneRunStreak: number;
 
   missionQueue: MissionQueueEntry[];
+  /**
+   * UI / copy: concurrent run-pressure tags (queued contracts + optional field thread).
+   * Derived — do not mutate directly; `gameReducer` and save load recompute.
+   */
+  activeRuns: string[];
   maxMissionQueueSlots: number;
 
   /** Hour 20–40 mastery spine: per-school depth, capacity pools, hybrid drain. */
@@ -530,6 +566,22 @@ export type PlayerState = {
 
   /** Mythic gate just cleared — strong log line + UI pulse; null on hydrate. */
   lastMythicGateBreakthrough: LastMythicGateBreakthrough | null;
+
+  /**
+   * Hidden convergence seed — tracks cross-school material exposure.
+   * No reducer writes to this in Phase 1. No UI reads it.
+   * Exists so the data shape supports late-game discovery without refactoring.
+   */
+  crossSchoolExposure: CrossSchoolExposure;
+
+  /**
+   * Ephemeral anomaly toast — fires ONCE per cross-school combination.
+   * Cleared after UI reads it; null on save hydrate.
+   */
+  lastAnomalyToast: { text: string; school: PathType; at: number } | null;
+
+  /** Broker interaction cooldowns — maps brokerId to last-interaction timestamp. */
+  brokerCooldowns: Record<string, number>;
 };
 
 /* =========================
@@ -703,4 +755,5 @@ export type GameAction =
     }
   | { type: "RESET_RUN_INSTABILITY" }
   | { type: "VENT_RUN_INSTABILITY" }
-  | { type: "PUSH_RUN_INSTABILITY"; payload?: { nowMs?: number } };
+  | { type: "PUSH_RUN_INSTABILITY"; payload?: { nowMs?: number } }
+  | { type: "BROKER_INTERACT"; payload: { brokerId: string } };

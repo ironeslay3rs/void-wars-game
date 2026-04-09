@@ -11,6 +11,21 @@ export function hasChosenPath(state: GameState) {
   return state.player.factionAlignment !== "unbound";
 }
 
+/**
+ * True if the player has completed the New Game onboarding flow.
+ * Handles legacy saves where characterCreated may not exist — infers
+ * from having a non-unbound faction or any progression.
+ */
+export function selectHasCreatedCharacter(state: GameState) {
+  if (state.player.characterCreated) return true;
+  // Legacy save inference: if they have a faction or progression, they've played
+  return (
+    state.player.factionAlignment !== "unbound" ||
+    state.player.rankLevel > 1 ||
+    state.player.influence > 0
+  );
+}
+
 export function hasUnlockedRoutes(state: GameState) {
   return state.player.unlockedRoutes.length > 0;
 }

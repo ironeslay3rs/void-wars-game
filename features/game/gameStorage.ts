@@ -35,6 +35,7 @@ import {
   normalizeGuildContracts,
   normalizeGuildRoster,
 } from "@/features/social/guildLiveLogic";
+import { deriveActiveRuns } from "@/features/game/lib/runPressure";
 
 export const SAVE_VERSION = 4;
 
@@ -650,7 +651,7 @@ function normalizePlayer(value: unknown): PlayerState {
     (raw as Record<string, unknown>).mythicAscension,
   );
 
-  return {
+  const normalized: PlayerState = {
     ...initialGameState.player,
 
     playerName,
@@ -883,9 +884,9 @@ function normalizePlayer(value: unknown): PlayerState {
       : initialGameState.player.knownRecipes,
 
     unlockedRoutes: Array.isArray(raw.unlockedRoutes)
-      ? raw.unlockedRoutes.filter(
-          (route): route is string => typeof route === "string",
-        )
+      ? raw.unlockedRoutes
+          .filter((route): route is string => typeof route === "string")
+          .map((route) => (route === "spirit-sanctum" ? "pure-sanctum" : route))
       : initialGameState.player.unlockedRoutes,
 
     navigation: isRecord(raw.navigation)
@@ -980,6 +981,22 @@ function normalizePlayer(value: unknown): PlayerState {
     ),
 
     mythicAscension,
+
+    brokerCooldowns:
+      isRecord((raw as Record<string, unknown>).brokerCooldowns)
+        ? (Object.fromEntries(
+            Object.entries(
+              (raw as Record<string, unknown>).brokerCooldowns as Record<string, unknown>,
+            ).filter(
+              ([, v]) => typeof v === "number" && Number.isFinite(v as number),
+            ),
+          ) as Record<string, number>)
+        : {},
+  };
+
+  return {
+    ...normalized,
+    activeRuns: deriveActiveRuns(normalized),
   };
 }
 

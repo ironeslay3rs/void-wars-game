@@ -1,4 +1,5 @@
 import type { GameAction, GameState } from "@/features/game/gameTypes";
+import { deriveActiveRuns } from "@/features/game/lib/runPressure";
 import { handleEconomyAction } from "@/features/game/reducers/economyReducer";
 import { handleHydrationAction } from "@/features/game/reducers/hydrationReducer";
 import { handleMetaAction } from "@/features/game/reducers/metaReducer";
@@ -9,6 +10,7 @@ import { handleSocialAction } from "@/features/game/reducers/socialReducer";
 import { handleSurvivalAction } from "@/features/game/reducers/survivalReducer";
 import { handleVoidPressureAction } from "@/features/game/reducers/voidPressureReducer";
 
+/** Order matters: first handler that returns non-null wins. Add new actions in exactly one domain reducer. */
 const reducerHandlers = [
   handleHydrationAction,
   handlePlayerIdentityAction,
@@ -21,13 +23,21 @@ const reducerHandlers = [
   handleMetaAction,
 ] as const;
 
+function withDerivedActiveRuns(state: GameState): GameState {
+  const activeRuns = deriveActiveRuns(state.player);
+  return {
+    ...state,
+    player: { ...state.player, activeRuns },
+  };
+}
+
 export function gameReducer(state: GameState, action: GameAction): GameState {
   for (const handleAction of reducerHandlers) {
     const nextState = handleAction(state, action);
     if (nextState !== null) {
-      return nextState;
+      return withDerivedActiveRuns(nextState);
     }
   }
 
-  return state;
+  return withDerivedActiveRuns(state);
 }
