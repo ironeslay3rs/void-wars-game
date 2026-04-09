@@ -3,6 +3,8 @@
 import { useState } from "react";
 import BazaarSubpageNav from "@/components/bazaar/BazaarSubpageNav";
 import ScreenHeader from "@/components/shared/ScreenHeader";
+import BrokerCard from "@/components/shared/BrokerCard";
+import { getBrokersByDistrict } from "@/features/lore/brokerData";
 import { resourceCostShortfall } from "@/features/black-market/sinLaneDealHelpers";
 import { useGame } from "@/features/game/gameContext";
 import type { ResourceKey } from "@/features/game/gameTypes";
@@ -214,6 +216,16 @@ export default function IvoryTowerScreen() {
             );
           })}
         </div>
+        {getBrokersByDistrict("ivory-tower").length > 0 ? (
+          <div className="mt-6 space-y-3">
+            <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/40">Brokers</div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {getBrokersByDistrict("ivory-tower").map((b) => (
+                <BrokerCard key={b.id} broker={b} />
+              ))}
+            </div>
+          </div>
+        ) : null}
       </div>
     </main>
   );

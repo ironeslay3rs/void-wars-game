@@ -6,6 +6,8 @@ import BazaarSubpageNav from "@/components/bazaar/BazaarSubpageNav";
 import ScreenHeader from "@/components/shared/ScreenHeader";
 import SectionCard from "@/components/shared/SectionCard";
 import PlaceholderPanel from "@/components/shared/PlaceholderPanel";
+import BrokerCard from "@/components/shared/BrokerCard";
+import { getBrokersByDistrict } from "@/features/lore/brokerData";
 import { useGame } from "@/features/game/gameContext";
 import { huntingGroundScreenData } from "@/features/hunting-ground/huntingGroundScreenData";
 import { VOID_EXPEDITION_PATH } from "@/features/void-maps/voidRoutes";
@@ -926,6 +928,16 @@ export default function HuntingGroundScreen({
             </SectionCard>
           </div>
         </div>
+        {getBrokersByDistrict("mercenary-guild").length > 0 ? (
+          <div className="mt-6 space-y-3">
+            <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/40">Guild Staff</div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {getBrokersByDistrict("mercenary-guild").map((b) => (
+                <BrokerCard key={b.id} broker={b} />
+              ))}
+            </div>
+          </div>
+        ) : null}
       </div>
     </main>
   );

@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useGame } from "@/features/game/gameContext";
+import BrokerCard from "@/components/shared/BrokerCard";
+import { getBrokersByDistrict } from "@/features/lore/brokerData";
 import {
   quoteVoidMarketBuy,
   quoteVoidMarketSell,
@@ -188,6 +190,14 @@ export default function GoldenBazaarExchange() {
           ) : null}
         </div>
       </div>
+      {getBrokersByDistrict("golden-bazaar").length > 0 ? (
+        <div className="mt-4 space-y-3">
+          <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/40">Brokers</div>
+          {getBrokersByDistrict("golden-bazaar").map((b) => (
+            <BrokerCard key={b.id} broker={b} />
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }

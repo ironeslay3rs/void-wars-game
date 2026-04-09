@@ -6,6 +6,8 @@ import InventoryLoadoutCard from "@/components/inventory/InventoryLoadoutCard";
 import InventoryOperationsCard from "@/components/inventory/InventoryOperationsCard";
 import InventoryOverviewCard from "@/components/inventory/InventoryOverviewCard";
 import ScreenHeader from "@/components/shared/ScreenHeader";
+import ScreenDataManualSections from "@/components/shared/ScreenDataManualSections";
+import ScreenDataStatStrip from "@/components/shared/ScreenDataStatStrip";
 import SectionCard from "@/components/shared/SectionCard";
 import PlaceholderPanel from "@/components/shared/PlaceholderPanel";
 import { useGame } from "@/features/game/gameContext";
@@ -71,6 +73,19 @@ export default function InventoryScreen() {
           subtitle={inventoryScreenData.subtitle}
         />
 
+        <ScreenDataStatStrip
+          cards={inventoryScreenData.cards}
+          ariaLabel="Inventory protocol snapshot"
+        />
+
+        <ScreenDataManualSections
+          sections={inventoryScreenData.sections}
+          ariaLabel="Inventory protocol field manual"
+        />
+
+        <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/45">
+          Live status
+        </div>
         <div className="grid gap-6 md:grid-cols-3">
           {liveCards.map((card) => (
             <PlaceholderPanel

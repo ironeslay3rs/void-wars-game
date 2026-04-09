@@ -22,6 +22,8 @@ import {
   getFactionAccent,
 } from "@/features/arena/arenaView";
 import { useGame } from "@/features/game/gameContext";
+import BrokerCard from "@/components/shared/BrokerCard";
+import { getBrokersByDistrict } from "@/features/lore/brokerData";
 
 export default function ArenaScreen() {
   const router = useRouter();
@@ -140,6 +142,16 @@ export default function ArenaScreen() {
             </SectionCard>
           </div>
         </div>
+        {getBrokersByDistrict("coliseum").length > 0 ? (
+          <div className="mt-6 space-y-3">
+            <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/40">Authority</div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {getBrokersByDistrict("coliseum").map((b) => (
+                <BrokerCard key={b.id} broker={b} />
+              ))}
+            </div>
+          </div>
+        ) : null}
       </div>
     </main>
   );
