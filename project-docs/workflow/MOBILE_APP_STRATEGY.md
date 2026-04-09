@@ -8,9 +8,12 @@ The game is a **Next.js web client**. Getting it onto cellphones has three pract
 
 **Shipped in code:**
 
-- `app/manifest.ts` — Web App Manifest (`display: standalone`, `start_url: /home`, theme colors).
+- `app/manifest.ts` — Web App Manifest (`display: standalone`, `start_url: /home`, theme colors, stable `id`, `categories`, **shortcuts** to Command / Deploy / Contracts / Black Market).
 - `public/icons/pwa-icon.svg` — maskable-friendly vector icon for the manifest.
 - `app/apple-icon.tsx` — PNG **apple-touch-icon** for iOS “Add to Home Screen”.
+- `app/icon.tsx` — favicon for browser tabs (matches tile styling).
+- `app/opengraph-image.tsx` + `app/twitter-image.tsx` — **link preview** cards (shares, Discord, etc.); `metadataBase` + Open Graph / Twitter metadata in `app/layout.tsx`.
+- `lib/siteUrl.ts` — canonical origin (`NEXT_PUBLIC_SITE_URL` or `VERCEL_URL` fallback) for absolute metadata.
 - `app/layout.tsx` — `appleWebApp`, `themeColor`, `formatDetection` (no auto tel links).
 
 **Implemented layout pass (March 2026 — narrow phones ~390px):**
