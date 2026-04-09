@@ -30,6 +30,7 @@ import type {
 import { voidZoneById, type VoidZoneId } from "@/features/void-maps/zoneData";
 import { isVoidFieldShellBossMobId } from "@/features/void-maps/voidFieldShellMobs";
 import { getVoidFieldLootProfileIdFromMobId } from "@/features/void-maps/voidFieldLootTables";
+import { resolveAuthoritativeMobLoot } from "@/features/void-maps/realtime/resolveAuthoritativeMobLoot";
 import { getVoidRealtimeWebSocketUrl } from "@/lib/voidRealtimeWsUrl";
 
 export type VoidRealtimeSessionApi = {
@@ -400,10 +401,24 @@ export function VoidRealtimeBridge({
             const victim = mobsRef.current.find(
               (m) => m.mobEntityId === msg.mobEntityId,
             );
-            if (msg.lootLines && msg.lootLines.length > 0) {
+            // Phase 8 / parity fix: server-authoritative mobs MUST always
+            // produce loot. If the server omits `lootLines`, the helper
+            // falls back to a deterministic client roll using the SAME
+            // rollVoidFieldLoot() the shell mobs already use. Without
+            // this, server mobs silently dropped zero loot because the
+            // client also skipped its own roll via
+            // skipClientRollForMobEntityId.
+            const resolvedLines = resolveAuthoritativeMobLoot({
+              mobEntityId: msg.mobEntityId,
+              mobId: victim?.mobId ?? "unknown",
+              spawnedAt: victim?.spawnedAt ?? 0,
+              zoneId: joinContextRef.current.binding?.zoneId,
+              serverLines: msg.lootLines,
+            });
+            if (resolvedLines.length > 0) {
               authoritativeLootQueueRef.current.push({
                 mobEntityId: msg.mobEntityId,
-                lines: msg.lootLines,
+                lines: resolvedLines,
                 x: victim?.x ?? 50,
                 y: victim?.y ?? 50,
               });
