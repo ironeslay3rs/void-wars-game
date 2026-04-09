@@ -1,6 +1,6 @@
 # The Open World Awakens + Sin Institutions — integrate-home-guide → main
 
-327 files changed · 38 commits · 99 tests passing · `next build` clean · 0 typecheck errors
+330+ files changed · 41 commits · 114 tests passing · `next build` clean · 0 typecheck errors
 
 ## What this PR ships
 
@@ -39,8 +39,10 @@ The missing operating-org layer between schools and lanes. Each of the seven sin
 | Phase | Headline | Key files |
 |---|---|---|
 | **9. Sin Institutions** | Operating-org layer surfaced on every school HQ; canon-locked Bonehowl Syndicate + 6 game-specific entries flagged via `canonSource` | `features/institutions/`, `SchoolHqScreen` "Operating institution" section, +10 selector tests |
+| **9 · unlock 1** | Brokers carry `institutionId`; `BrokerCard` shows the affiliation chip across 9 district screens | `features/lore/brokerData.ts`, `BrokerCard`, +8 join tests |
+| **9 · unlock 2** | Mission origin tags carry `institutionId`; `MissionOriginBadge` hover reveals the full institution → school → nation lineage | `features/missions/missionOriginTags.ts`, `MissionOriginBadge`, +7 join tests |
 
-## Player success criteria — all 11 pass
+## Player success criteria — all 13 pass
 
 1. ✅ Open `/empires` and instantly see 3 empires
 2. ✅ Click any empire and see its 2-3 child schools
@@ -52,13 +54,15 @@ The missing operating-org layer between schools and lanes. Each of the seven sin
 8. ✅ Pick a school in `/new-game` and see it on the home command deck
 9. ✅ Visit an off-empire school HQ and feel the convergence toast fire
 10. ✅ Get loot from every realtime kill — even if the server forgets to send it
-11. ✅ NEW (P9) Read which institution actually runs each school + lane on the school HQ page
+11. ✅ Read which institution actually runs each school + lane on the school HQ page
+12. ✅ See which institution employs each broker on every district screen (chip in `BrokerCard`)
+13. ✅ Hover any mission origin badge to see the full institution → school → nation lineage
 
 ## Tests
 
 ```
-Test Files  14 passed (14)
-     Tests  99 passed (99)
+Test Files  16 passed (16)
+     Tests  114 passed (114)
 ```
 
 New test files in this PR:
@@ -66,6 +70,8 @@ New test files in this PR:
 - `features/convergence/convergenceSeed.test.ts` — 12 tests pinning the cross-school exposure helper
 - `features/void-maps/realtime/resolveAuthoritativeMobLoot.test.ts` — 7 tests pinning the mob loot parity fallback
 - `features/institutions/institutionSelectors.test.ts` — 10 tests pinning the institution↔school↔lane↔sin joins
+- `features/lore/brokerInstitution.test.ts` — 8 tests pinning broker↔institution joins (10 affiliated, 3 faction-less)
+- `features/missions/missionOriginInstitution.test.ts` — 7 tests pinning mission origin↔institution joins (7 affiliated, 1 catch-all null)
 
 ## GSD status promotions
 
@@ -81,6 +87,8 @@ Other 🟡 cells were not promoted — Phase 6-8 changes are additive, but the o
 - [ ] Manual click-through: visit a school HQ that doesn't match your empire → verify the AnomalyToast fires once
 - [ ] Manual click-through: hunt in the void field → verify loot drops from server-authoritative mobs (the parity fix)
 - [ ] Manual click-through: every school HQ shows the "Operating institution" section with the correct org and a "Canon" / "Game lore" chip (Bonehowl Syndicate alone is "Canon", others are "Game lore")
+- [ ] Manual click-through: every district screen with brokers shows the institution chip on each affiliated broker (Mama Sol / The Warden / Nails are deliberately chipless)
+- [ ] Manual hover: a non-`black-market-local` mission origin badge tooltip reads "[Institution] → [School] — [Nation] ([Pantheon]) · [material flavor]"
 - [ ] New game flow: confirm step 2 requires both empire AND school affinity before advancing
 - [ ] Confirm `npx next build` is clean post-merge
 - [ ] Confirm `npm test` is clean post-merge
@@ -89,12 +97,14 @@ Other 🟡 cells were not promoted — Phase 6-8 changes are additive, but the o
 - Mana mechanic (P1 in `VOID_WARS_SYSTEM_BACKLOG.md`) — not touched
 - Pantheon system (P3) — partially seeded via `school.pantheon` field, full layer is future work
 - Currency restructure (Sinful Coin / Ichor / Soul Crystals / Ironheart canon names) — separate concern
-- Brokers / mission origins / War Exchange / Mythic ladder hooking into institutions — Phase 9 ships only the data spine + the `SchoolHqScreen` surface; integrating institutions into other UIs is future work
+- War Exchange institutional pressure — institutions don't drive numbers yet; first economic hook is a future pass
+- Mythic ladder gated by institutional influence — future depth slice
+- Hearts vs Spades faction testing (Book 5 PvP) — separate game-mode scope
 
 ## Notes
-- Branch is 38 commits ahead of `main`
+- Branch is 41 commits ahead of `main`
 - Working tree is clean except `.claude/settings.local.json` (intentionally excluded)
 - Save shape additions (`affinitySchoolId`, `crossSchoolExposure`, `lastAnomalyToast`, `brokerCooldowns`, `activeRuns`) all have legacy-load normalizers in `gameStorage.ts` — pre-existing saves will hydrate cleanly with sensible defaults
-- Phase 9 (institutions) is pure-additive data + one UI section — no new state, no save migration, no behavior changes outside the school HQ render
+- Phase 9 + both unlocks are pure-additive data + 3 UI surfaces (school HQ, broker card, mission origin tooltip) — no new state, no save migration, no behavior changes outside those renders
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
