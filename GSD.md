@@ -197,3 +197,74 @@ WIP audit + 16 commits landed on `integrate-home-guide`. `npx tsc --noEmit` clea
 - 7-school dual-face slice (open schools tied to black market lanes) — M4 (pivoted from convergence per 2026-04-09 canon check).
 - Convergence wire-up — M5 (pushed from M4; seed already in state shape).
 
+---
+
+## 2026-04-09 — M3 (pivoted): The Open World Awakens — Phases 1-5 shipped
+
+Big design pass per `docs/big-plan-open-world-awakens.md`. Landed five
+incremental commits that bring the canonical 3-empire / 7-school /
+7-lane structure to life as the spine of the game. Full test suite
+remains green (70/70 tests passing). Typecheck clean after every phase.
+
+**Phase 1 — Data foundation (`31aa58b`)**
+- `features/empires/{empireTypes,empireData,empireSelectors}.ts` — three
+  empires (Bio, Mecha, Pure) as civilizational bodies, each parented to
+  2-3 schools.
+- `features/schools/{schoolTypes,schoolData,schoolSelectors}.ts` — the
+  canonical 7 schools (Bonehowl of Fenrir, Mouth of Inti, Flesh Thrones
+  of Olympus, Crimson Altars of Astarte, Thousand Hands of Vishrava,
+  Divine Pharos of Ra, Clockwork Mandate of Heaven) with full canon
+  metadata: sin, nation, pantheon, parent empire, paired black market
+  lane, pressure identity, countermeasure style, and origin tag joins.
+- `features/schools/schoolSelectors.test.ts` — 19 tests pinning the
+  structure.
+- `docs/big-plan-open-world-awakens.md` — design vision document
+  (supersedes the outdated `world-expansion-plan.md`).
+
+**Phase 2 — Routes (`b78897f`)**
+- `/empires` index, `/empires/[empireId]` detail, `/schools` index,
+  `/schools/[schoolId]` HQ. All four routes static-generated from the
+  canonical SCHOOL_ORDER and EMPIRE_ORDER arrays.
+- `components/empires/{EmpireOverviewCard,EmpireDetailScreen}.tsx`,
+  `components/schools/{SchoolListByEmpire,SchoolHqScreen}.tsx`.
+- Navigation entries added to `homeMenuData.ts`.
+
+**Phase 3 — Dual-face cross-links (`39bc3e6`)**
+- `components/schools/OpenFaceLink.tsx` — declarative lane → school
+  link.
+- Rolled into all 7 sin lanes: Arena (wrath), Feast Hall (gluttony),
+  Mirror House (envy), Velvet Den (lust), Golden Bazaar (greed), Ivory
+  Tower (pride), Silent Garden (sloth). Each lane now surfaces a
+  one-click jump to its open-face school. The school → lane direction
+  was already built into `SchoolHqScreen` in Phase 2.
+
+**Phase 4 — Mission origin resolution (`b54b842`)**
+- `MissionOriginBadge` becomes a clickable Link when the origin tag
+  resolves to a canonical school via `getSchoolForOriginTag()`. Six
+  of seven origin tags resolve (`black-market-local` is by-design
+  unmapped). Hover title carries the full lineage: `School name —
+  Nation (Pantheon) · material flavor`.
+
+**Phase 5 — Doctrine pressure surfaces school names (`280bbde`)**
+- `ZoneDoctrinePressurePanel` replaces `Dominant: Bio` with
+  `Held by the Bio Empire` (linking to `/empires/bio`) plus a row of
+  clickable school chips showing every school the dominant empire
+  owns, each linking to its HQ.
+
+**Player success criteria (from the design doc):**
+1. ✅ Open `/empires` and immediately understand there are 3 empires
+2. ✅ Click any empire and see its 2-3 child schools
+3. ✅ Open `/schools` and see all 7 schools organized by empire
+4. ✅ Click any school and see its sin, nation, lane pairing, pressure
+5. ✅ Walk into any black market lane and click through to the open-face school
+6. ✅ See any mission's origin tag resolve to a real school name with one click
+7. ✅ Read any zone's doctrine pressure as a school name, not a percentage triplet
+
+**Phases deferred:**
+- Phase 6 — First-session school affinity (touches `/new-game` flow that
+  was just refreshed in M2; defer until Phases 1-5 prove the data shape)
+- Phase 7 — Convergence wire-up (the natural payoff; needs schools to be
+  walkable first, which is now true)
+- Phase 8 — Realtime mob loot parity (parallel technical track; lives at
+  `features/void-maps/realtime/`)
+
