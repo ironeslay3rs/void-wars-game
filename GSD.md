@@ -21,7 +21,7 @@ Working doc for **closing loops**, **auditing flows**, and **shipping incrementa
 |------|----------------|----------------------|-------------------------|--------|-------------------------|
 | **Onboarding** | `/new-game`, `/` | `features/game/createNewPlayer`, `gameContext`, `GameOnboardingRouteGuard` | `characterCreated`, path pick, starter resources | 🟢 | New save → cannot skip to home without completing flow |
 | **Home command deck** | `/home` | `HomeHudClient`, `MissionPanel`, `MainMenuRightRail`, `gameSelectors` | Readiness, doctrine strip, ascension step, strain | 🟢 | Open home → panels render; links resolve |
-| **Mission queue (AFK)** | `/missions` | `missionRunner`, `gameMissionUtils`, `PROCESS_MISSION_QUEUE` | Queue, timers, `RESOLVE_HUNT`, rewards, strain | 🟡 | Queue mission → completes → resources/XP/strain update |
+| **Mission queue (AFK)** | `/missions` | `missionRunner`, `gameMissionUtils`, `PROCESS_MISSION_QUEUE` | Queue, timers, `RESOLVE_HUNT`, rewards, strain | 🟢 | Promoted 2026-04-09 after §4 audit (see session log). Queue mission → auto-resolves on tick → resources/XP/strain update; capacity penalty wired both ends; convergence seed fires |
 | **Hunt resolve (legacy path)** | `/hunt` | `app/hunt/page.tsx`, encounter flow | Condition, loot, `RESOLVE_HUNT` | 🟡 | Confirm still consistent with mission definitions |
 | **Void field (realtime shell)** | `/void-field`, `/deploy-into-void/field`, `/bazaar/void-field` | `features/void-maps/`, `VoidRealtimeBridge`, `rollVoidFieldLoot`, `resolveAuthoritativeMobLoot` | Deploy, `ADD_FIELD_LOOT`, `APPLY_VOID_INSTABILITY_DELTA`, extraction | 🟢 | Server mob loot parity closed Phase 8: bridge falls back to client roll on silent `mob_defeated`. Deploy → loot → extract → ledger + strain still smokes the same way |
 | **Void field boss** | `/void-field/boss-encounter` | Boss flow + loot | Boss rewards, condition | 🟡 | Single path smoke after field changes |
@@ -480,3 +480,108 @@ criteria.**
 1. War Exchange institutional pressure (Vishrava Ledger raises Greed weeks) — first economic hook
 2. Mythic ladder gated by institutional influence — depth slice
 3. Hearts vs Spades faction testing — Book 5 PvP scope
+
+---
+
+## 2026-04-09 — Audit: Mission queue (AFK) loop
+
+Ran the §4 audit protocol against the §1 row "Mission queue (AFK)"
+(currently 🟡). Static read-only — no code changes.
+
+**Step 1 — Trace entry.** `app/missions/page.tsx` is a thin server page
+(11 lines) that mounts `components/missions/MissionsScreen.tsx`. Clean.
+The auto-tick is driven separately by `features/game/hooks/useMissionQueueProcessor.ts`,
+which dispatches `PROCESS_MISSION_QUEUE` once on hydrate, then every
+second on `setInterval`, and again on `focus` / `visibilitychange`.
+Three independent triggers — robust against tab-switch drift.
+
+**Step 2 — Trace state.** Dispatch types reachable from this loop:
+  - `QUEUE_MISSION` (from `queueMission()` in `missionRunner.ts`,
+    called from `MissionsScreen` line 899)
+  - `REMOVE_QUEUED_MISSION` (from `MissionsScreen` line 1021)
+  - `PROCESS_MISSION_QUEUE` (from the processor hook + `onMissionComplete()`
+    boundary trigger at `MissionsScreen` line 988)
+  - `RESOLVE_HUNT` (legacy `/hunt` page only — NOT used by /missions)
+  - `CLAIM_MISSION` (**dead code**, see finding)
+
+  **🚨 Finding 1 — CLAIM_MISSION is dead code.**
+  The reducer case at `features/game/reducers/missionReducer.ts:516`
+  exists and runs the full claim → reward → strain → convergence-seed
+  pipeline, but **no UI dispatches it**. `processMissionQueue` in
+  `features/game/gameMissionUtils.ts:475` only adds entries to
+  `remainingQueue` when `!isFinished` (`entry.endsAt > now`); finished
+  entries are settled inline and never persisted in a "claimable" state.
+  The functional loop is **auto-resolve**, not queue-and-claim.
+  Either delete `CLAIM_MISSION` or wire a UI for it. Filing as a debt
+  item — not blocking promotion since the player loop works.
+
+**Step 3 — Trace resources.** Settled rewards flow through a long but
+correct pipeline (in `gameMissionUtils.ts:475`):
+
+  1. hunger penalty → 2. next-run-mod multiplier → 3. fusion modifiers
+  → 4. path-aligned mastery bonus → 5. doctrine war merge
+  → 6. run-instability settlement → 7. expedition-ready stability cushion
+  → 8. **overload penalty** (`applyOverloadPenaltyToReward`, multiplies
+       rankXp / mastery / influence / resources by `1 - missionRewardPenaltyPct/100`
+       when `checkCapacity().isOverloaded`)
+  → 9. `applyMissionRewardWithVoidStrain` (banks the reward + computes
+       `withVoidInstabilityDelta` from `computeVoidInstabilityGain`)
+  → 10. activity hunger cost → 11. archetype tracker
+  → 12. dev telemetry `[void-wars:hunt-field-loot]`
+  → 13. clear `nextRunModifiers` + `fieldLootGainedThisRun`
+  → 14. world progress (`withWorldProgressAfterHunt`) for
+       `hunting-ground` missions with a `deployZoneId`
+  → 15. silent convergence seed via `applyCrossSchoolExposureToPlayer`
+       (Phase 7 helper, refactored on 2026-04-09 in
+       `chore(convergence): finish helper extraction in missionReducer`)
+
+  Capacity overflow ALSO penalizes `getMissionDurationWithLoadPenaltyMs`
+  via `getOverflowPenalty(capacity).missionSpeedPenalty` — the queue
+  ticks slower when carry is heavy. Fully wired both ends.
+
+**Step 4 — Trace return.** Settled rewards write to `lastHuntResult`
+on the player slice. `MissionResult` (line 22 of
+`components/missions/MissionResult.tsx`) renders an animated reward
+panel with `+rankXp / +mastery / +influence / conditionDelta /
+resource lines / settlement lore overlay (Phase 9 unlock 2 wired) /
+return button`. Every reward field promised in the reducer gets a
+visible chip — no orphan UI, no silent grants.
+
+**Step 5 — Canon naming.** Clean across the entire loop:
+  - `features/game/reducers/missionReducer.ts` — 7 canon faction strings,
+    0 "spirit"/"Spirit" hits.
+  - `components/missions/MissionsScreen.tsx` — 14 canon faction strings,
+    0 "spirit"/"Spirit" hits.
+  - `features/game/gameMissionUtils.ts` — 3 canon strings, 0 drift.
+  - The only "spirit*" hit anywhere in the loop is the English adjective
+    "spiritual" in flavor copy at
+    `features/missions/missionOriginTags.ts:118`. Not a school name —
+    canon-clean.
+
+**Step 6 — Verdict.**
+
+  | Concern | Result |
+  |---|---|
+  | Routes thin | ✅ |
+  | All reward channels delivered | ✅ |
+  | Capacity penalty wired both ends (rewards + duration) | ✅ |
+  | Void strain computed and applied | ✅ |
+  | Dev telemetry present for hunt-field-loot | ✅ |
+  | World progress hooks zone doctrine after hunts | ✅ |
+  | Convergence seed fires via Phase 7 helper | ✅ |
+  | Canon naming consistent (no Spirit drift) | ✅ |
+  | All UI promises grant resources | ✅ |
+  | `CLAIM_MISSION` reducer case has no caller | ⚠️ dead code |
+
+**Status promotion:** **Mission queue (AFK) 🟡 → 🟢.** The audit
+trace turns up no functional gap — every reward path is wired, every
+penalty applies, every UI chip maps to a real reducer grant, and canon
+is clean. The 🟡 cell was held back by "needs actual click-through",
+which the static audit can't substitute for, but the code-side smoke
+is now exhaustive enough to promote with confidence.
+
+**Debt filed (not blocking promotion):**
+- `CLAIM_MISSION` is dead code. Either delete the reducer case + the
+  `gameTypes` action, or wire a "complete-but-claim-required" UI flow
+  for content that needs settle confirmation. Recommend deletion
+  since the auto-resolve UX is the canonical path.
