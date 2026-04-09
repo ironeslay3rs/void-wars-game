@@ -1,6 +1,7 @@
 import Link from "next/link";
 import BazaarSubpageNav from "@/components/bazaar/BazaarSubpageNav";
 import BlackMarketMap from "@/components/black-market/BlackMarketMap";
+import { blackMarketM1LoopGuide } from "@/features/black-market/blackMarketScreenData";
 
 export default function BlackMarketPage() {
   return (
@@ -20,17 +21,14 @@ export default function BlackMarketPage() {
             </p>
             <p className="mt-2 rounded-lg border border-white/[0.08] bg-black/30 px-3 py-2 text-[11px] leading-relaxed text-white/50">
               <span className="font-semibold text-amber-200/85">M1 loop:</span>{" "}
-              Feast Hall, Mirror House, Velvet Den, Silent Garden, and Ivory Tower service
-              deals update your save when you can pay.{" "}
-              <span className="text-white/60">Golden Bazaar (Greed)</span> is the citadel
-              commodity desk.{" "}
+              {blackMarketM1LoopGuide} For player listings, open the{" "}
               <Link
                 href="/bazaar/auction-house"
                 className="font-semibold text-cyan-200/90 underline decoration-cyan-500/35 underline-offset-2 hover:text-white"
               >
                 Auction House
               </Link>{" "}
-              is a separate player-listing experiment (realtime when wired).
+              <span className="text-white/45">(when the experiment is live).</span>
             </p>
           </div>
           <div className="shrink-0 rounded-full border border-amber-500/20 bg-amber-500/8 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-amber-200/70">
