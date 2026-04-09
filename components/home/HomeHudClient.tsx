@@ -1,19 +1,25 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { usePathname } from "next/navigation";
 import BottomNav from "@/components/layout/BottomNav";
 import { useGame } from "@/features/game/gameContext";
 import type { FactionAlignment, GameState } from "@/features/game/gameTypes";
 import ConditionWidget from "@/components/home/ConditionWidget";
 import HomeResourceStrip from "@/components/home/HomeResourceStrip";
+import UpgradeNudge from "@/components/home/UpgradeNudge";
+import MarketEventHeadline from "@/components/home/MarketEventHeadline";
 import { getFirstSessionGuidance } from "@/features/guidance/firstSessionGuidance";
-import { getProgressionMeaning } from "@/features/game/gameSelectors";
+import { getHomeCommandFooter } from "@/features/guidance/homeCommandCopy";
+import { getRunPressureFromPlayer } from "@/features/game/lib/runPressure";
+import { getProgressionMeaning, selectHasCreatedCharacter } from "@/features/game/gameSelectors";
+import { getRandomCanonLine } from "@/features/lore/canonLines";
 import {
   HOME_BOTTOM_NAV_BOTTOM,
   HOME_MOBILE_PANEL_BOTTOM_CLEARANCE,
   HOME_MOBILE_SCROLL_TOP,
+  HOME_MOBILE_SCROLL_TOP_CRITICAL,
   HOME_RESOURCE_STRIP_BOTTOM,
 } from "@/config/layout";
 
@@ -74,11 +80,11 @@ function getPrimaryAction(state: GameState): PrimaryAction {
   if (queueIsEmpty) {
     return {
       phase: "prep",
-      headline: "Prep the Next Contract",
+      headline: "Queue the Next Contract",
       detail:
-        "No contract chain is holding. Open Missions, choose the next job, and set the next deployment in motion.",
-      hint: "Now: prep in Missions. Next: deploy as soon as the contract is set.",
-      label: "Prep in Missions",
+        "Nothing is on your contract stack. Open Contracts, pick an operation, and start a timer before you deploy.",
+      hint: "Now: Contracts. Next: deploy from Command when the stack is moving.",
+      label: "Open Contracts",
       href: "/missions",
       tone: "ready",
     };
@@ -150,22 +156,71 @@ export default function HomeHudClient() {
     }
   }, [pathname, state.player.runInstability, dispatch]);
 
+  const hasCharacter = selectHasCreatedCharacter(state);
+
+  // New player — show onboarding CTA instead of full Command Deck
+  if (!hasCharacter) {
+    return (
+      <section
+        className="fixed inset-x-0 z-30 flex items-center justify-center px-4"
+        style={{
+          top: HOME_MOBILE_SCROLL_TOP,
+          bottom: `calc(${HOME_MOBILE_PANEL_BOTTOM_CLEARANCE} + env(safe-area-inset-bottom, 0px))`,
+        }}
+      >
+        <div className="mx-auto w-full max-w-md space-y-6 text-center">
+          <h1 className="text-3xl font-black uppercase tracking-[0.08em] text-white">
+            Void Wars: Oblivion
+          </h1>
+          <p className="text-sm leading-relaxed text-white/55">
+            The Black Market doesn&apos;t judge why people show up. It only judges what they do after they arrive.
+          </p>
+          <Link
+            href="/new-game"
+            className="mx-auto flex min-h-[56px] max-w-xs items-center justify-center rounded-xl border border-cyan-300/35 bg-cyan-500/12 px-6 py-3 text-sm font-black uppercase tracking-[0.14em] text-cyan-50 transition hover:border-cyan-200/55 hover:bg-cyan-500/20"
+          >
+            Start Your Story
+          </Link>
+        </div>
+      </section>
+    );
+  }
+
   const selectedPath = getSelectedPath(state.player.factionAlignment);
   const guidance = getFirstSessionGuidance(state);
   const progressionMeaning = getProgressionMeaning(state);
+  const runPressure = getRunPressureFromPlayer(state.player);
+  const pressureLine = runPressure.line;
   const primaryAction = getPrimaryAction(state);
+  const commandFooter = getHomeCommandFooter(primaryAction);
+  const vitalsCritical =
+    state.player.condition < 40 || state.player.hunger < 40;
+  // Ambient Black Market flavor — stable per session, changes on remount
+  const marketQuote = useMemo(() => getRandomCanonLine("market"), []);
+  const homeScrollTop = vitalsCritical
+    ? HOME_MOBILE_SCROLL_TOP_CRITICAL
+    : HOME_MOBILE_SCROLL_TOP;
 
   return (
     <>
       <section
         className="fixed inset-x-0 z-30 overflow-y-auto overscroll-y-contain px-[max(0.75rem,env(safe-area-inset-left,0px))] pr-[max(0.75rem,env(safe-area-inset-right,0px))]"
         style={{
-          top: `max(${HOME_MOBILE_SCROLL_TOP}, env(safe-area-inset-top, 0px))`,
+          top: `max(${homeScrollTop}, env(safe-area-inset-top, 0px))`,
           bottom: `calc(${HOME_MOBILE_PANEL_BOTTOM_CLEARANCE} + env(safe-area-inset-bottom, 0px))`,
         }}
       >
         <div className="mx-auto flex w-full max-w-xl flex-col gap-6 pb-8 pt-1 sm:gap-7 sm:pb-10">
           <PrimaryActionCard action={primaryAction} />
+          <UpgradeNudge />
+          <MarketEventHeadline />
+          <p
+            className="command-pressure-line"
+            role="status"
+            aria-live="polite"
+          >
+            {pressureLine}
+          </p>
           <ConditionWidget
             path={selectedPath}
             rank={state.player.rank}
@@ -176,11 +231,21 @@ export default function HomeHudClient() {
             hunger={state.player.hunger}
             masteryProgress={state.player.masteryProgress}
             loopStateLabel={guidance.stateLabel}
+            loopObjective={guidance.objective}
             nextStepLabel={guidance.nextStepLabel}
+            pathRhythmHint={guidance.schoolHint}
             progressionMeaning={progressionMeaning}
           />
           <p className="px-1 text-center text-[11px] font-semibold uppercase tracking-[0.18em] text-white/42 sm:text-[12px]">
-            Act now or lose ground.
+            {commandFooter}
+          </p>
+          <p className="px-2 text-center text-[10px] italic leading-snug text-white/25 sm:text-[11px]">
+            &ldquo;{marketQuote.text}&rdquo;
+            {marketQuote.source ? (
+              <span className="ml-1 not-italic text-white/15">
+                — {marketQuote.source}
+              </span>
+            ) : null}
           </p>
         </div>
       </section>

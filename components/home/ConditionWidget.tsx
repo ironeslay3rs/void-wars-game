@@ -14,7 +14,11 @@ type ConditionWidgetProps = {
   hunger: number;
   masteryProgress: number;
   loopStateLabel: string;
+  /** One-line objective from first-session guidance (what the loop is asking for now). */
+  loopObjective: string;
   nextStepLabel: string;
+  /** Path rhythm (Bio / Mecha / Pure / unbound) — teaches the core cadence. */
+  pathRhythmHint: string;
   progressionMeaning: ProgressionMeaning;
 };
 
@@ -28,7 +32,9 @@ export default function ConditionWidget({
   hunger,
   masteryProgress,
   loopStateLabel,
+  loopObjective,
   nextStepLabel,
+  pathRhythmHint,
   progressionMeaning,
 }: ConditionWidgetProps) {
   const isCriticalSurvival = condition <= 0 || hunger <= 0;
@@ -52,12 +58,6 @@ export default function ConditionWidget({
       : hungerStateLabel === "Low"
         ? "Stores are thinning."
         : "Starvation pressure rising.";
-  const pressureState =
-    condition < 40
-      ? "Recovery urgent."
-      : hungerStateLabel === "Starving"
-        ? "Hunger pressure active."
-        : "Field state stable.";
 
   const pathLabel = path ? path.toUpperCase() : "UNBOUND";
 
@@ -71,7 +71,7 @@ export default function ConditionWidget({
           Condition Matrix
         </h3>
         <p className="mt-1 text-sm text-white/60">
-          Live readout for survival pressure, rank, and current alignment.
+          Pressure, rank, and path alignment — what the loop is asking for right now.
         </p>
         {isCriticalSurvival ? (
           <div className="mt-3 rounded-xl border border-amber-300/30 bg-amber-500/10 px-3 py-2 text-[11px] leading-relaxed text-amber-100/90">
@@ -87,9 +87,22 @@ export default function ConditionWidget({
         <div className="mt-2 text-sm font-semibold text-white">
           {loopStateLabel}
         </div>
-        <div className="mt-1 text-xs text-cyan-50/80">
+        {loopObjective.trim().length > 0 ? (
+          <p className="mt-2 text-xs leading-relaxed text-cyan-50/75">
+            {loopObjective}
+          </p>
+        ) : null}
+        <div className="mt-2 text-xs text-cyan-50/80">
           Next: {nextStepLabel}
         </div>
+        {pathRhythmHint.trim().length > 0 ? (
+          <p className="mt-3 border-t border-cyan-400/15 pt-3 text-[11px] leading-relaxed text-cyan-100/50">
+            <span className="font-semibold uppercase tracking-[0.12em] text-cyan-200/55">
+              Path rhythm ·{" "}
+            </span>
+            {pathRhythmHint}
+          </p>
+        ) : null}
       </div>
 
       <div className="rounded-xl border border-white/10 bg-white/5 p-3">
@@ -160,23 +173,6 @@ export default function ConditionWidget({
           </div>
           <div className="mt-2 text-[11px] text-white/55">
             Rank is earned through hunts, missions, and contracts.
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-[10px] uppercase tracking-[0.18em] text-white/45">
-                Somatic strain
-              </div>
-              <div className="mt-1 text-sm font-semibold text-white">
-                {pressureState}
-              </div>
-            </div>
-
-            <div className="text-right text-xs text-white/55">
-              Body readout
-            </div>
           </div>
         </div>
 

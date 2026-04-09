@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import SectionCard from "@/components/shared/SectionCard";
 import StatusHeroCard from "@/components/status/StatusHeroCard";
+import StatusLoadoutSnapshotCard from "@/components/status/StatusLoadoutSnapshotCard";
 import StatusScreenSummary from "@/components/status/StatusScreenSummary";
 import StatusResourcesCard from "@/components/status/StatusResourcesCard";
 import StatusSystemsCard from "@/components/status/StatusSystemsCard";
@@ -124,32 +124,7 @@ export default function StatusPage() {
               <StatusScreenSummary />
               <VoidInstabilityReadout />
               <StatusSystemsCard />
-              <SectionCard
-                title="Loadout Snapshot"
-                description="Reserved for weapon, armor, core, and rune-slot exposure once the current status shell is locked."
-              >
-                <div className="grid gap-3">
-                  {[
-                    "Weapon Slot",
-                    "Armor Slot",
-                    "Core Slot",
-                    "Rune Set",
-                    "Profession Bind",
-                  ].map((entry) => (
-                    <div
-                      key={entry}
-                      className="flex items-center justify-between rounded-2xl border border-dashed border-white/12 bg-white/[0.02] px-4 py-3"
-                    >
-                      <span className="text-sm uppercase tracking-[0.08em] text-white/60">
-                        {entry}
-                      </span>
-                      <span className="text-sm font-semibold text-white/35">
-                        Empty
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </SectionCard>
+              <StatusLoadoutSnapshotCard />
             </div>
           </div>
 

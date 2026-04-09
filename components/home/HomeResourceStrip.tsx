@@ -6,6 +6,7 @@ import { useMemo } from "react";
 import { useGame } from "@/features/game/gameContext";
 import { getResourceIcon } from "@/features/game/resourceIconMap";
 import type { ResourceKey } from "@/features/game/gameTypes";
+import { formatResourceLabel } from "@/features/game/gameFeedback";
 import QuickDiscardResourceButtons from "@/components/inventory/QuickDiscardResourceButtons";
 import {
   checkCapacity,
@@ -14,6 +15,7 @@ import {
 } from "@/features/resources/inventoryLogic";
 import { CARGO_INFUSION_HEADING } from "@/features/status/voidInfusionMetaphor";
 import RunInstabilityBar from "@/components/shared/RunInstabilityBar";
+import ResourceTooltip from "@/components/shared/ResourceTooltip";
 import { getActivePrepSurface } from "@/features/crafting/prepRunHooks";
 import {
   evaluateExpeditionReadiness,
@@ -21,22 +23,16 @@ import {
 } from "@/features/expedition/expeditionReadiness";
 import { voidZones } from "@/features/void-maps/zoneData";
 
-const PRIMARY: Array<{ key: ResourceKey; label: string }> = [
-  { key: "credits", label: "Credits" },
-  { key: "runeDust", label: "Void Crystals" },
-  { key: "bioSamples", label: "Bio Essence" },
-];
+// Canonical currency order: Sinful Coin, Ichor, Soul Crystals, then game-specific
+const PRIMARY_KEYS: ResourceKey[] = ["credits", "bioSamples", "runeDust"];
+const SECONDARY_KEYS: ResourceKey[] = ["ironOre", "scrapAlloy", "emberCore", "mossRations"];
 
-const SECONDARY: Array<{ key: ResourceKey; label: string }> = [
-  { key: "ironOre", label: "Iron Ore" },
-  { key: "scrapAlloy", label: "Scrap Alloy" },
-  { key: "emberCore", label: "Ember Core" },
-  { key: "mossRations", label: "Rations" },
-];
+const PRIMARY = PRIMARY_KEYS.map((key) => ({ key, label: formatResourceLabel(key) }));
+const SECONDARY = SECONDARY_KEYS.map((key) => ({ key, label: formatResourceLabel(key) }));
 
 function ResourceChip({ label, value, resourceKey }: { label: string; value: number; resourceKey: ResourceKey }) {
   return (
-    <div className="flex items-center gap-2 px-3 py-2">
+    <div className="flex min-w-[80px] shrink-0 items-center gap-2 px-3 py-2">
       <div className="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-md border border-white/10 bg-black/30 p-0.5">
         <Image
           src={getResourceIcon(resourceKey)}
@@ -47,7 +43,7 @@ function ResourceChip({ label, value, resourceKey }: { label: string; value: num
         />
       </div>
       <div className="min-w-0">
-        <div className="text-[9px] font-semibold uppercase tracking-[0.16em] text-white/40 sm:text-[10px]">
+        <div className="truncate text-[9px] font-semibold uppercase tracking-[0.16em] text-white/40 sm:text-[10px]">
           {label}
         </div>
         <div className="text-xs font-black tabular-nums text-white sm:text-sm">
@@ -88,15 +84,26 @@ export default function HomeResourceStrip() {
 
         <div className="h-px w-px shrink-0 self-stretch bg-white/8" />
 
-        <div className="flex min-w-0 flex-1 divide-x divide-white/8">
+        <div className="flex min-w-0 flex-1 divide-x divide-white/8 overflow-x-auto">
           {PRIMARY.map((res) => (
-            <ResourceChip key={res.key} label={res.label} value={r[res.key]} resourceKey={res.key} />
+            <ResourceTooltip key={res.key} resourceKey={res.key}>
+              <ResourceChip label={res.label} value={r[res.key]} resourceKey={res.key} />
+            </ResourceTooltip>
           ))}
+          <div className="flex divide-x divide-white/8 sm:hidden">
+            {SECONDARY.map((res) => (
+              <ResourceTooltip key={res.key} resourceKey={res.key}>
+                <ResourceChip label={res.label} value={r[res.key]} resourceKey={res.key} />
+              </ResourceTooltip>
+            ))}
+          </div>
         </div>
 
         <div className="hidden divide-x divide-white/8 sm:flex">
           {SECONDARY.map((res) => (
-            <ResourceChip key={res.key} label={res.label} value={r[res.key]} resourceKey={res.key} />
+            <ResourceTooltip key={res.key} resourceKey={res.key}>
+              <ResourceChip label={res.label} value={r[res.key]} resourceKey={res.key} />
+            </ResourceTooltip>
           ))}
         </div>
       </div>

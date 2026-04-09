@@ -4,6 +4,7 @@ import CornerBrackets from "@/components/chrome/CornerBrackets";
 import CityHomeScene from "@/components/home/CityHomeScene";
 import TopBar from "@/components/layout/TopBar";
 import HomeHudClient from "@/components/home/HomeHudClient";
+import AnomalyToast from "@/components/shared/AnomalyToast";
 
 export default function GameHudShell() {
   return (
@@ -20,6 +21,7 @@ export default function GameHudShell() {
       <div className="safe-min-h-screen relative z-20">
         <TopBar />
         <HomeHudClient />
+        <AnomalyToast />
       </div>
     </main>
   );
