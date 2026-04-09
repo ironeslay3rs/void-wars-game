@@ -3,7 +3,12 @@
 import { useState } from "react";
 import BazaarSubpageNav from "@/components/bazaar/BazaarSubpageNav";
 import ScreenHeader from "@/components/shared/ScreenHeader";
+import BrokerCard from "@/components/shared/BrokerCard";
+import OpenFaceLink from "@/components/schools/OpenFaceLink";
+import { getBrokersByDistrict } from "@/features/lore/brokerData";
+import { resourceCostShortfall } from "@/features/black-market/sinLaneDealHelpers";
 import { useGame } from "@/features/game/gameContext";
+import type { ResourceKey } from "@/features/game/gameTypes";
 
 type Deal = {
   id: string;
@@ -57,6 +62,11 @@ export default function IvoryTowerScreen() {
   const [toast, setToast] = useState<string | null>(null);
   const credits = state.player.resources.credits ?? 0;
   const runeDust = state.player.resources.runeDust ?? 0;
+  const mythic = state.player.mythicAscension;
+  const ivoryValorAffordable =
+    mythic.convergencePrimed &&
+    mythic.runeKnightValor >= 4 &&
+    credits >= 120;
 
   function canAfford(cost: Deal["cost"]) {
     if ((cost.credits ?? 0) > credits) return false;
@@ -75,9 +85,19 @@ export default function IvoryTowerScreen() {
     window.setTimeout(() => setToast(null), 3000);
   }
 
+  function handleKnightPrestigeRite() {
+    if (!ivoryValorAffordable) return;
+    dispatch({
+      type: "REDEEM_RUNE_KNIGHT_VALOR",
+      payload: "ivory-prestige-rite",
+    });
+    setToast("Knight prestige rite — pride buys condition under seal.");
+    window.setTimeout(() => setToast(null), 3200);
+  }
+
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(120,100,20,0.22),_rgba(5,8,18,1)_58%)] px-6 py-10 text-white md:px-10">
-      <div className="mx-auto flex max-w-[1200px] flex-col gap-8">
+    <main className="safe-min-h-screen bg-[radial-gradient(circle_at_top,_rgba(120,100,20,0.22),_rgba(5,8,18,1)_58%)] px-4 pb-[max(2rem,env(safe-area-inset-bottom,0px))] pt-[max(1.5rem,env(safe-area-inset-top,0px))] text-white sm:px-6 md:px-10 md:py-10">
+      <div className="mx-auto flex max-w-[1200px] flex-col gap-6 md:gap-8">
         <BazaarSubpageNav
           accentClassName="hover:border-yellow-300/40"
           backHref="/bazaar/black-market"
@@ -90,13 +110,66 @@ export default function IvoryTowerScreen() {
           subtitle="Ascend, or be consumed by the gap. The Tower sells what lesser vaults cannot hold."
         />
 
+        <OpenFaceLink laneId="ivory-tower" />
+
         {toast && (
           <div className="rounded-2xl border border-yellow-400/30 bg-yellow-500/10 px-5 py-4 text-sm text-yellow-100">
             {toast}
           </div>
         )}
 
-        <div className="grid gap-4 md:grid-cols-3">
+        {mythic.convergencePrimed ? (
+          <div className="rounded-2xl border border-amber-400/30 bg-[linear-gradient(135deg,rgba(80,60,10,0.35),rgba(12,10,8,0.85))] p-5 shadow-[0_12px_40px_rgba(0,0,0,0.35)]">
+            <div className="text-xs font-bold uppercase tracking-[0.18em] text-amber-300/80">
+              Knight channel — convergence filed
+            </div>
+            <h3 className="mt-2 text-lg font-black text-white">Knight prestige rite</h3>
+            <p className="mt-2 text-sm leading-relaxed text-white/65">
+              Spend Rune Knight valor and credits together. The Tower records the exchange — no free
+              glory.
+            </p>
+            <div className="mt-4 space-y-1">
+              <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">Cost</div>
+              <div className="text-sm text-amber-200">
+                4 Knight valor · 120 credits
+              </div>
+              <div className="text-[11px] text-white/45">
+                You hold {mythic.runeKnightValor} valor · {credits.toLocaleString()} credits
+              </div>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-[10px] text-amber-100">
+                +15 Condition (capped 100)
+              </span>
+            </div>
+            <button
+              type="button"
+              disabled={!ivoryValorAffordable}
+              onClick={handleKnightPrestigeRite}
+              className="mt-4 min-h-[44px] w-full touch-manipulation rounded-xl border border-amber-400/45 bg-amber-500/20 text-xs font-black uppercase tracking-[0.12em] text-amber-100 transition hover:bg-amber-500/30 disabled:cursor-not-allowed disabled:opacity-40 sm:max-w-md"
+            >
+              {ivoryValorAffordable ? "Record rite" : "Need 4 valor and 120 credits"}
+            </button>
+            {!ivoryValorAffordable ? (
+              <p className="mt-2 text-[11px] leading-snug text-rose-200/80">
+                {[
+                  mythic.runeKnightValor < 4
+                    ? `Knight valor ${mythic.runeKnightValor}/4`
+                    : null,
+                  credits < 120 ? `Credits ${credits}/120` : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </p>
+            ) : null}
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm text-white/55">
+            Knight valor rites unlock after Convergence is filed (Career → Mythic ladder).
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           {DEALS.map((deal) => {
             const affordable = canAfford(deal.cost);
             const grants = formatGrant(deal.grant);
@@ -130,14 +203,32 @@ export default function IvoryTowerScreen() {
                   type="button"
                   disabled={!affordable}
                   onClick={() => handlePurchase(deal)}
-                  className="mt-4 h-10 w-full rounded-xl border border-yellow-400/35 bg-yellow-500/15 text-xs font-black uppercase tracking-[0.14em] text-yellow-200 transition hover:bg-yellow-500/25 disabled:cursor-not-allowed disabled:opacity-40"
+                  className="mt-4 min-h-[44px] w-full touch-manipulation rounded-xl border border-yellow-400/35 bg-yellow-500/15 text-xs font-black uppercase tracking-[0.14em] text-yellow-200 transition hover:bg-yellow-500/25 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {affordable ? "Ascend" : "Insufficient Funds"}
                 </button>
+                {!affordable ? (
+                  <p className="mt-2 text-[10px] leading-snug text-rose-200/80">
+                    {resourceCostShortfall(
+                      deal.cost as Partial<Record<ResourceKey, number>>,
+                      state.player.resources,
+                    )}
+                  </p>
+                ) : null}
               </div>
             );
           })}
         </div>
+        {getBrokersByDistrict("ivory-tower").length > 0 ? (
+          <div className="mt-6 space-y-3">
+            <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/40">Brokers</div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {getBrokersByDistrict("ivory-tower").map((b) => (
+                <BrokerCard key={b.id} broker={b} />
+              ))}
+            </div>
+          </div>
+        ) : null}
       </div>
     </main>
   );

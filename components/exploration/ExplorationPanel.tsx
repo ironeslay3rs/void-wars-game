@@ -13,6 +13,7 @@ import {
 } from "@/features/game/gameFeedback";
 import { getFirstSessionGuidance } from "@/features/guidance/firstSessionGuidance";
 import { getActivityHungerCost } from "@/features/status/survival";
+import { getExplorationInstabilitySurchargeCredits } from "@/features/progression/phase3Progression";
 
 const PHASE1_EXPLORATION_TITLE = "Outer Wastes Exploration";
 
@@ -28,6 +29,12 @@ export default function ExplorationPanel() {
   const shouldHighlightStartAction =
     !activeProcess && guidance.nextAction === "explore";
   const explorationHungerCost = getActivityHungerCost("exploration");
+  const explorationTithe = getExplorationInstabilitySurchargeCredits(
+    state.player.voidInstability,
+  );
+  const canAffordExplorationTithe =
+    explorationTithe <= 0 ||
+    state.player.resources.credits >= explorationTithe;
   const rewardResourceEntries = getNonZeroResourceEntries(
     phase1ExplorationReward.resources ?? {},
   );
@@ -89,6 +96,22 @@ export default function ExplorationPanel() {
               -{explorationHungerCost}% hunger on claim
             </div>
           </div>
+
+          {explorationTithe > 0 ? (
+            <div className="rounded-xl border border-violet-400/25 bg-violet-500/10 p-3 sm:col-span-2">
+              <div className="text-[10px] uppercase tracking-[0.16em] text-violet-200/70">
+                Void stabilizer tithe
+              </div>
+              <div className="mt-2 text-sm font-semibold text-violet-50">
+                {explorationTithe} credits due at sweep start
+              </div>
+              <p className="mt-1 text-xs leading-relaxed text-violet-100/75">
+                High Void infusion forces a paid prep line before the Black Market clears
+                another surface deployment. Bank credits or lower infusion on Status
+                (recovery bleeds the meter).
+              </p>
+            </div>
+          ) : null}
         </div>
 
         {!activeProcess ? (
@@ -102,15 +125,25 @@ export default function ExplorationPanel() {
             <button
               type="button"
               onClick={handleStartExploration}
+              disabled={!canAffordExplorationTithe}
               className={[
                 "w-full rounded-xl px-4 py-3 text-sm font-semibold transition",
-                shouldHighlightStartAction
-                  ? "border border-cyan-300/60 bg-cyan-400/16 text-cyan-50 shadow-[0_0_0_1px_rgba(103,232,249,0.2),0_0_28px_rgba(34,211,238,0.2)] hover:border-cyan-200/80 hover:bg-cyan-400/20"
-                  : "border border-cyan-400/25 bg-cyan-400/10 text-cyan-100 hover:border-cyan-300/40 hover:bg-cyan-400/15",
+                !canAffordExplorationTithe
+                  ? "cursor-not-allowed border border-white/10 bg-white/[0.04] text-white/35"
+                  : shouldHighlightStartAction
+                    ? "border border-cyan-300/60 bg-cyan-400/16 text-cyan-50 shadow-[0_0_0_1px_rgba(103,232,249,0.2),0_0_28px_rgba(34,211,238,0.2)] hover:border-cyan-200/80 hover:bg-cyan-400/20"
+                    : "border border-cyan-400/25 bg-cyan-400/10 text-cyan-100 hover:border-cyan-300/40 hover:bg-cyan-400/15",
               ].join(" ")}
             >
               <span className="flex items-center justify-between gap-3">
-                <span>Start Field Sweep</span>
+                <span>
+                  Start Field Sweep
+                  {explorationTithe > 0 ? (
+                    <span className="mt-1 block text-[11px] font-normal normal-case tracking-normal text-white/60">
+                      Includes {explorationTithe} credit stabilizer tithe
+                    </span>
+                  ) : null}
+                </span>
                 {shouldHighlightStartAction ? (
                   <span className="rounded-full border border-cyan-300/40 bg-cyan-300/14 px-2 py-1 text-[10px] uppercase tracking-[0.16em] text-cyan-50">
                     First Step
@@ -118,6 +151,13 @@ export default function ExplorationPanel() {
                 ) : null}
               </span>
             </button>
+
+            {!canAffordExplorationTithe ? (
+              <div className="rounded-xl border border-amber-500/25 bg-amber-500/10 px-3 py-3 text-sm text-amber-100/90">
+                Blocked: need {explorationTithe} credits for the stabilizer tithe
+                before this sweep can launch.
+              </div>
+            ) : null}
 
             <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-3 text-sm text-white/60">
               {idleActionMessage}

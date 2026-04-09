@@ -1,5 +1,6 @@
 import type { PlayerState, ResourcesState } from "@/features/game/gameTypes";
 import type { CreatureDefinition } from "@/features/combat/creatureData";
+import { getPathAlignedFieldLootMultiplier } from "@/features/economy/pathGatheringYield";
 import { rollVoidFieldLoot } from "@/features/void-maps/rollVoidFieldLoot";
 import { getPlayerLoadoutCombatModifiers } from "@/features/combat/loadoutCombatStats";
 
@@ -112,9 +113,14 @@ export function resolveEncounter(params: {
     seed: params.seed,
   });
 
+  const pathLootMult = getPathAlignedFieldLootMultiplier(
+    player.factionAlignment,
+    creature.lootTheme,
+  );
   const loot: Partial<ResourcesState> = { ...(creature.guaranteedDrops ?? {}) };
   for (const line of rolled) {
-    loot[line.resource] = (loot[line.resource] ?? 0) + line.amount;
+    const amt = Math.max(0, Math.round(line.amount * pathLootMult));
+    loot[line.resource] = (loot[line.resource] ?? 0) + amt;
   }
 
   const rankXpEarned = creature.rarity === "rare" ? 18 : creature.rarity === "uncommon" ? 12 : 8;

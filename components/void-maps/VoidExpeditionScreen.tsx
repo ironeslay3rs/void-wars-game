@@ -22,6 +22,12 @@ import {
   isCanonBookMissionUnlocked,
 } from "@/features/progression/canonBookGate";
 import { getDoctrineQueueGate } from "@/features/progression/launchDoctrine";
+import WarFrontDemandCallout from "@/components/shared/WarFrontDemandCallout";
+import { getActivePrepSurface } from "@/features/crafting/prepRunHooks";
+import {
+  evaluateExpeditionReadiness,
+  EXPEDITION_READY_STABILITY_DELTA,
+} from "@/features/expedition/expeditionReadiness";
 
 const DEFAULT_DEPLOY_HG_MISSION_ID = "hg-rustfang-prowl";
 
@@ -88,6 +94,12 @@ function VoidExpeditionScreenInner() {
   const masteryGatesOk = playerMeetsAllZoneMasteryGates(state.player, selected);
   const isRecommended = playerCondition >= selected.recommendedCondition;
   const mastery = state.player.zoneMastery[selectedZoneId] ?? 0;
+  const prepSurface = getActivePrepSurface(state.player);
+
+  const expeditionReadiness = useMemo(
+    () => evaluateExpeditionReadiness(state.player, selectedZoneId),
+    [state.player, selectedZoneId],
+  );
 
   const nextLocked = useMemo(
     () =>
@@ -123,6 +135,13 @@ function VoidExpeditionScreenInner() {
         zoneId: selectedZoneId,
         sessionBucketId,
         clientId: voidClientId,
+      },
+    });
+
+    dispatch({
+      type: "SET_EXPEDITION_READY_STABILITY_PENDING",
+      payload: {
+        value: expeditionReadiness.readinessBand === "ready",
       },
     });
 
@@ -210,7 +229,7 @@ function VoidExpeditionScreenInner() {
           Back to Home
         </Link>
         <div className="rounded-lg border border-fuchsia-300/35 bg-fuchsia-500/12 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-fuchsia-100">
-          Deploy Map
+          Realm chart
         </div>
       </div>
 
@@ -235,6 +254,83 @@ function VoidExpeditionScreenInner() {
         </div>
       ) : null}
 
+      <div
+        className={[
+          "absolute z-35 mx-3 flex max-w-xl flex-col gap-2 md:left-6 md:mx-0 md:max-w-lg",
+          activeHunt ? "top-[11rem] md:top-[10.5rem]" : "top-[4.25rem]",
+        ].join(" ")}
+      >
+        {!activeHunt ? (
+          <div className="rounded-xl border border-fuchsia-500/28 bg-black/70 px-4 py-3 text-[11px] leading-relaxed text-fuchsia-50/90 shadow-lg backdrop-blur-md">
+            <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-fuchsia-200/70">
+              Realm deploy
+            </div>
+            <p className="mt-1.5 text-white/80">
+              Choose a realm, then{" "}
+              <span className="font-semibold text-fuchsia-100">Deploy</span> — the
+              hunt queues and the void field opens. If Deploy is locked, fix your
+              contract stack on{" "}
+              <Link
+                href="/missions"
+                className="font-semibold text-fuchsia-100 underline decoration-fuchsia-400/40 underline-offset-2 hover:text-white"
+              >
+                Missions
+              </Link>{" "}
+              or stabilize from{" "}
+              <Link
+                href="/home"
+                className="font-semibold text-fuchsia-100 underline decoration-fuchsia-400/40 underline-offset-2 hover:text-white"
+              >
+                Command
+              </Link>
+              .
+            </p>
+          </div>
+        ) : null}
+        <WarFrontDemandCallout
+          nowMs={now}
+          playerFaction={state.player.factionAlignment}
+          influence={state.player.influence}
+          guildPledge={
+            state.player.guild.kind === "inGuild"
+              ? state.player.guild.pledge
+              : null
+          }
+          deployZoneId={selectedZoneId}
+        />
+        <div
+          className={[
+            "rounded-xl border px-4 py-3 text-xs leading-relaxed shadow-lg backdrop-blur-md",
+            prepSurface.state === "primed"
+              ? "border-cyan-400/35 bg-cyan-950/75 text-cyan-50/95"
+              : "border-white/15 bg-black/65 text-white/70",
+          ].join(" ")}
+        >
+          <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/50">
+            Field prep
+          </div>
+          <p className="mt-1 font-semibold text-white/92">{prepSurface.headline}</p>
+          <p className="mt-1 text-[11px] text-white/65">{prepSurface.detail}</p>
+        </div>
+        {!activeHunt && !state.player.loadoutSlots.weapon ? (
+          <div className="rounded-xl border border-cyan-400/28 bg-cyan-950/50 px-4 py-3 text-xs leading-relaxed text-cyan-50/90 shadow-lg backdrop-blur-md">
+            <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-200/75">
+              Loadout
+            </div>
+            <p className="mt-1">
+              No weapon equipped —{" "}
+              <Link
+                href="/loadout"
+                className="font-semibold text-cyan-100 underline decoration-cyan-400/40 underline-offset-2 hover:text-white"
+              >
+                open loadout
+              </Link>{" "}
+              for strike range and damage bonuses on the void field.
+            </p>
+          </div>
+        ) : null}
+      </div>
+
       <VoidExpeditionMap
         selectedZoneId={selectedZoneId}
         rankLevel={state.player.rankLevel}
@@ -254,6 +350,8 @@ function VoidExpeditionScreenInner() {
         onDeploy={handleDeployThisZone}
         playerName={state.player.playerName}
         characterPortraitId={state.player.characterPortraitId}
+        expeditionReadiness={expeditionReadiness}
+        expeditionStabilityBonusDelta={EXPEDITION_READY_STABILITY_DELTA}
       />
     </main>
   );

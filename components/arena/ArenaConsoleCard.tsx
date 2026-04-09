@@ -1,16 +1,12 @@
-type ArenaMode = {
-  title: string;
-  subtitle: string;
-  body: string;
-};
+import type { ArenaMode } from "@/features/arena/arenaTypes";
 
 type QueueState = "idle" | "searching" | "matched";
 
 type ArenaConsoleCardProps = {
-  arenaEligibility: string;
   condition: number;
   barClassName: string;
   selectedMode: ArenaMode;
+  canQueueSelectedMode: boolean;
   queueState: QueueState;
   onQueue: () => void;
   onCancelQueue: () => void;
@@ -18,16 +14,29 @@ type ArenaConsoleCardProps = {
 };
 
 export default function ArenaConsoleCard({
-  arenaEligibility,
   condition,
   barClassName,
   selectedMode,
+  canQueueSelectedMode,
   queueState,
   onQueue,
   onCancelQueue,
   onEnterMatch,
 }: ArenaConsoleCardProps) {
-  const canQueue = arenaEligibility === "Eligible";
+  const isPractice = selectedMode.id === "practice";
+  const gateLabel = isPractice
+    ? "Practice lane"
+    : canQueueSelectedMode
+      ? "Eligible"
+      : "Ranked locked";
+
+  const gatePositive = isPractice || canQueueSelectedMode;
+
+  const headline = isPractice
+    ? "Sparring lane — no SR / condition swing"
+    : canQueueSelectedMode
+      ? "Combat systems nominal"
+      : "Condition too low for this mode";
 
   return (
     <div className="space-y-4">
@@ -40,19 +49,17 @@ export default function ArenaConsoleCard({
           <div
             className={[
               "rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em]",
-              canQueue
+              gatePositive
                 ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-100"
                 : "border-red-500/30 bg-red-500/10 text-red-100",
             ].join(" ")}
           >
-            {arenaEligibility}
+            {gateLabel}
           </div>
         </div>
 
         <div className="mt-3 text-lg font-black uppercase tracking-[0.04em] text-white">
-          {canQueue
-            ? "Combat systems nominal"
-            : "Condition too low for ranked queue"}
+          {headline}
         </div>
 
         <div className="mt-3 h-3 overflow-hidden rounded-full border border-white/10 bg-white/5">
@@ -66,7 +73,10 @@ export default function ArenaConsoleCard({
         </div>
 
         <p className="mt-3 text-sm text-white/60">
-          Current condition: {condition}%. Ranked access opens at 40% or above.
+          Current condition: {condition}%.
+          {isPractice
+            ? " Practice ignores the 40% ranked gate — payouts are reduced in-match."
+            : " Ranked & tournament require 40% or above to queue."}
         </p>
       </div>
 
@@ -99,10 +109,10 @@ export default function ArenaConsoleCard({
               <button
                 type="button"
                 onClick={onQueue}
-                disabled={!canQueue}
+                disabled={!canQueueSelectedMode}
                 className={[
                   "w-full rounded-xl px-4 py-3 text-sm font-bold uppercase tracking-[0.1em] transition",
-                  canQueue
+                  canQueueSelectedMode
                     ? "bg-white text-black hover:brightness-110"
                     : "cursor-not-allowed bg-white/10 text-white/30",
                 ].join(" ")}

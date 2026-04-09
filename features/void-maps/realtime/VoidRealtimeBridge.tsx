@@ -16,6 +16,7 @@ import { getMissionById } from "@/features/game/gameMissionUtils";
 import type { GameAction, GameState } from "@/features/game/gameTypes";
 import type {
   AttackMobMessage,
+  AuthoritativeMobLootEvent,
   ClientToServerMessage,
   CombatEventMessage,
   HuntContributionResultMessage,
@@ -29,6 +30,7 @@ import type {
 import { voidZoneById, type VoidZoneId } from "@/features/void-maps/zoneData";
 import { isVoidFieldShellBossMobId } from "@/features/void-maps/voidFieldShellMobs";
 import { getVoidFieldLootProfileIdFromMobId } from "@/features/void-maps/voidFieldLootTables";
+import { resolveAuthoritativeMobLoot } from "@/features/void-maps/realtime/resolveAuthoritativeMobLoot";
 import { getVoidRealtimeWebSocketUrl } from "@/lib/voidRealtimeWsUrl";
 
 export type VoidRealtimeSessionApi = {
@@ -39,6 +41,8 @@ export type VoidRealtimeSessionApi = {
   mobs: MobEntity[];
   recentCombatEvents: CombatEventMessage[];
   huntContributionResult: HuntContributionResultMessage | null;
+  authoritativeMobLootSeq: number;
+  drainAuthoritativeMobLootEvents: () => AuthoritativeMobLootEvent[];
   sendMove: (x: number, y: number) => void;
   sendAttack: (mobEntityId: string) => void;
 };
@@ -133,6 +137,18 @@ export function VoidRealtimeBridge({
   const [error, setError] = useState<string | null>(null);
   const [players, setPlayers] = useState<PlayerPresence[]>([]);
   const [mobs, setMobs] = useState<MobEntity[]>([]);
+  const mobsRef = useRef<MobEntity[]>([]);
+  useLayoutEffect(() => {
+    mobsRef.current = mobs;
+  }, [mobs]);
+  const authoritativeLootQueueRef = useRef<AuthoritativeMobLootEvent[]>([]);
+  const [authoritativeMobLootSeq, setAuthoritativeMobLootSeq] = useState(0);
+
+  const drainAuthoritativeMobLootEvents = useCallback(() => {
+    const out = authoritativeLootQueueRef.current;
+    authoritativeLootQueueRef.current = [];
+    return out;
+  }, []);
   const [recentCombatEvents, setRecentCombatEvents] = useState<
     CombatEventMessage[]
   >([]);
@@ -381,7 +397,33 @@ export function VoidRealtimeBridge({
               }),
             );
             break;
-          case "mob_defeated":
+          case "mob_defeated": {
+            const victim = mobsRef.current.find(
+              (m) => m.mobEntityId === msg.mobEntityId,
+            );
+            // Phase 8 / parity fix: server-authoritative mobs MUST always
+            // produce loot. If the server omits `lootLines`, the helper
+            // falls back to a deterministic client roll using the SAME
+            // rollVoidFieldLoot() the shell mobs already use. Without
+            // this, server mobs silently dropped zero loot because the
+            // client also skipped its own roll via
+            // skipClientRollForMobEntityId.
+            const resolvedLines = resolveAuthoritativeMobLoot({
+              mobEntityId: msg.mobEntityId,
+              mobId: victim?.mobId ?? "unknown",
+              spawnedAt: victim?.spawnedAt ?? 0,
+              zoneId: joinContextRef.current.binding?.zoneId,
+              serverLines: msg.lootLines,
+            });
+            if (resolvedLines.length > 0) {
+              authoritativeLootQueueRef.current.push({
+                mobEntityId: msg.mobEntityId,
+                lines: resolvedLines,
+                x: victim?.x ?? 50,
+                y: victim?.y ?? 50,
+              });
+              setAuthoritativeMobLootSeq((n) => n + 1);
+            }
             setMobs((prev) =>
               prev.map((m) =>
                 m.mobEntityId === msg.mobEntityId
@@ -395,6 +437,7 @@ export function VoidRealtimeBridge({
               ),
             );
             break;
+          }
           case "combat_event":
             setRecentCombatEvents((prev) => [msg, ...prev].slice(0, 6));
             break;
@@ -506,6 +549,8 @@ export function VoidRealtimeBridge({
       mobs,
       recentCombatEvents,
       huntContributionResult,
+      authoritativeMobLootSeq,
+      drainAuthoritativeMobLootEvents,
       sendMove,
       sendAttack,
     }),
@@ -517,6 +562,8 @@ export function VoidRealtimeBridge({
       mobs,
       recentCombatEvents,
       huntContributionResult,
+      authoritativeMobLootSeq,
+      drainAuthoritativeMobLootEvents,
       sendMove,
       sendAttack,
     ],

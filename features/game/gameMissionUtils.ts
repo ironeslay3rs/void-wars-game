@@ -25,9 +25,30 @@ import {
   getOverflowPenalty,
 } from "@/features/resources/inventoryLogic";
 import { getFusionContractModifiers } from "@/features/progression/fusionProgression";
+import {
+  applyPathAlignedMasteryBonus,
+  computeVoidInstabilityGain,
+  getVoidInstabilityExtraConditionDrain,
+  withVoidInstabilityDelta,
+} from "@/features/progression/phase3Progression";
+import { applyRunInstabilityMissionSettlement } from "@/features/progression/runInstability";
+import { applyDoctrineWarToMissionReward } from "@/features/world/zoneDoctrineWarEffects";
+import { applyPrimedPrepRunInstabilityTrim } from "@/features/crafting/prepRunHooks";
+import { maybeApplyExpeditionReadyStabilityToReward } from "@/features/expedition/expeditionReadiness";
+import { updateRunArchetypeAfterSettlement } from "@/features/game/runArchetypeLogic";
+import { withPostSettlementMarketLegibility } from "@/features/expedition/postRunMarketPressure";
 
 export function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
+}
+
+function stripExpeditionContractSnapshot(
+  snaps: PlayerState["expeditionContractSnapshots"],
+  queueId: string,
+): PlayerState["expeditionContractSnapshots"] {
+  if (!(queueId in snaps)) return snaps;
+  const { [queueId]: _removed, ...rest } = snaps;
+  return rest;
 }
 
 export function getRankName(level: number) {
@@ -119,9 +140,12 @@ export function getResolvedConditionDelta(
   player: PlayerState,
   reward: MissionReward,
 ) {
-  return getPressureAdjustedConditionDelta(
+  const base = getPressureAdjustedConditionDelta(
     player.condition,
     reward.conditionDelta,
+  );
+  return (
+    base - getVoidInstabilityExtraConditionDrain(player.voidInstability)
   );
 }
 
@@ -149,6 +173,42 @@ export function applyMissionReward(
       player.navigation.currentRoute,
     ),
   };
+}
+
+/** Phase 3 — apply payout and accumulate Void strain from the contract outcome. */
+/** Hunt / void-sector missions: scale payout + strain from live zone doctrine pressure. */
+export function mergeDoctrineWarIntoReward(
+  reward: MissionReward,
+  mission: MissionDefinition,
+  player: PlayerState,
+): { reward: MissionReward; extraVoidInstability: number } {
+  if (!mission.deployZoneId) return { reward, extraVoidInstability: 0 };
+  const pressure = player.zoneDoctrinePressure[mission.deployZoneId];
+  if (!pressure) return { reward, extraVoidInstability: 0 };
+  return applyDoctrineWarToMissionReward(
+    reward,
+    mission.deployZoneId,
+    pressure,
+    player.factionAlignment,
+  );
+}
+
+export function applyMissionRewardWithVoidStrain(
+  player: PlayerState,
+  reward: MissionReward,
+  missionPath: PathType | "neutral",
+): PlayerState {
+  const resolvedConditionDelta = getResolvedConditionDelta(player, reward);
+  const after = applyMissionReward(player, reward);
+  return withVoidInstabilityDelta(
+    after,
+    computeVoidInstabilityGain({
+      conditionAfter: after.condition,
+      resolvedConditionDelta,
+      missionPath,
+      factionAlignment: player.factionAlignment,
+    }),
+  );
 }
 
 function applyOverloadPenaltyToReward(
@@ -452,6 +512,14 @@ export function processMissionQueue(state: GameState, now: number): GameState {
 
     queueChanged = true;
 
+    nextPlayer = {
+      ...nextPlayer,
+      expeditionContractSnapshots: stripExpeditionContractSnapshot(
+        nextPlayer.expeditionContractSnapshots,
+        entry.queueId,
+      ),
+    };
+
     const mission = getMissionById(state.missions, entry.missionId);
 
     if (!mission) {
@@ -593,33 +661,91 @@ export function processMissionQueue(state: GameState, now: number): GameState {
               : undefined,
           };
 
-    const resolvedConditionDelta = getResolvedConditionDelta(
-      nextPlayer,
+    const rewardWithPathMastery = applyPathAlignedMasteryBonus(
       rewardWithFusionMods,
-    );
-    const rewardWithOverloadPenalty = applyOverloadPenaltyToReward(
-      nextPlayer,
-      rewardWithFusionMods,
+      mission.path,
+      nextPlayer.factionAlignment,
     );
 
-    const playerBeforeReward = nextPlayer;
-    const playerAfterReward = applyMissionReward(
+    const doctrineMerged = mergeDoctrineWarIntoReward(
+      rewardWithPathMastery,
+      mission,
       nextPlayer,
-      rewardWithOverloadPenalty,
     );
+    const rewardWithDoctrine = doctrineMerged.reward;
+    const doctrineExtraVoid = doctrineMerged.extraVoidInstability;
+
+    const riSettled = applyRunInstabilityMissionSettlement(
+      nextPlayer,
+      rewardWithDoctrine,
+      {
+        missionId: mission.id,
+        resolvedAt: entry.endsAt,
+        isHuntingGround: mission.category === "hunting-ground",
+      },
+    );
+    const playerAfterRi = applyPrimedPrepRunInstabilityTrim(
+      riSettled.player,
+      riSettled.player.nextRunModifiers,
+      mission.category === "hunting-ground",
+    );
+    const stabilityApplied = maybeApplyExpeditionReadyStabilityToReward(
+      playerAfterRi,
+      riSettled.reward,
+      mission.category === "hunting-ground",
+    );
+    const playerAfterStability = stabilityApplied.player;
+    const rewardAfterRi = stabilityApplied.reward;
+
+    const resolvedConditionDelta = getResolvedConditionDelta(
+      playerAfterStability,
+      rewardAfterRi,
+    );
+    const rewardWithOverloadPenalty = applyOverloadPenaltyToReward(
+      playerAfterStability,
+      rewardAfterRi,
+    );
+
+    const playerBeforeReward = playerAfterStability;
+    let playerAfterInstability = applyMissionRewardWithVoidStrain(
+      playerAfterStability,
+      rewardWithOverloadPenalty,
+      mission.path,
+    );
+    if (doctrineExtraVoid > 0) {
+      playerAfterInstability = withVoidInstabilityDelta(
+        playerAfterInstability,
+        doctrineExtraVoid,
+      );
+    }
     const appliedResourceGain = getAppliedResourceGain(
       playerBeforeReward.resources,
-      playerAfterReward.resources,
+      playerAfterInstability.resources,
     );
 
     nextPlayer = applyActivityHungerCost(
-      playerAfterReward,
+      playerAfterInstability,
       mission.category === "hunting-ground" ? "hunt" : "mission",
     );
+    nextPlayer = updateRunArchetypeAfterSettlement(nextPlayer);
     playerChanged = true;
 
     if (mission.category === "hunting-ground") {
       const fieldLoot = nextPlayer.fieldLootGainedThisRun ?? {};
+      if (
+        typeof process !== "undefined" &&
+        process.env.NODE_ENV === "development" &&
+        process.env.NEXT_RUNTIME !== "edge"
+      ) {
+        // Greppable dev telemetry: confirms settlement copies the run ledger before it is cleared.
+        // (Pickup path: VOID_FIELD_ORB_COLLECTED → ledger; extract: ADD_FIELD_LOOT + skipRunLedger.)
+        console.info("[void-wars:hunt-field-loot]", {
+          missionId: mission.id,
+          queueId: entry.queueId,
+          resolvedAt: entry.endsAt,
+          fieldLootGainedSnapshot: fieldLoot,
+        });
+      }
       // Clear next-run modifiers after the run ends (single-use, non-stacking).
       nextPlayer = {
         ...nextPlayer,
@@ -627,43 +753,47 @@ export function processMissionQueue(state: GameState, now: number): GameState {
         nextRunModifiersAppliedForProcessId: null,
         fieldLootGainedThisRun: {},
       };
-      latestHgHuntResult = {
-        missionId: mission.id,
-        huntTitle: mission.title,
-        resolvedAt: entry.endsAt,
-        conditionDelta: resolvedConditionDelta,
-        conditionAfter: nextPlayer.condition,
-        rankXpGained: rewardWithOverloadPenalty.rankXp,
-        masteryProgressGained: rewardWithOverloadPenalty.masteryProgress,
-        influenceGained: rewardWithOverloadPenalty.influence ?? 0,
-        resourcesGained: appliedResourceGain,
-        fieldLootGained: fieldLoot,
-        hungerPressureLabel: hungerEffects?.label,
-        hungerRewardPenaltyPct: hungerEffects?.rewardPenaltyPct,
-        hungerConditionDrainPenalty: hungerEffects?.conditionDrainPenalty,
-        fusionRewardMultiplier: fusionModifiers?.rewardMultiplier ?? null,
-        fusionConditionDeltaOffset: fusionModifiers?.conditionDeltaOffset ?? 0,
-        fusionCadenceLabel: fusionModifiers?.cadenceLabel ?? null,
-        fusionPressureLabel: fusionModifiers?.pressureLabel ?? null,
+      latestHgHuntResult = withPostSettlementMarketLegibility(
+        {
+          missionId: mission.id,
+          huntTitle: mission.title,
+          resolvedAt: entry.endsAt,
+          conditionDelta: resolvedConditionDelta,
+          conditionAfter: nextPlayer.condition,
+          rankXpGained: rewardWithOverloadPenalty.rankXp,
+          masteryProgressGained: rewardWithOverloadPenalty.masteryProgress,
+          influenceGained: rewardWithOverloadPenalty.influence ?? 0,
+          resourcesGained: appliedResourceGain,
+          fieldLootGained: fieldLoot,
+          hungerPressureLabel: hungerEffects?.label,
+          hungerRewardPenaltyPct: hungerEffects?.rewardPenaltyPct,
+          hungerConditionDrainPenalty: hungerEffects?.conditionDrainPenalty,
+          fusionRewardMultiplier: fusionModifiers?.rewardMultiplier ?? null,
+          fusionConditionDeltaOffset: fusionModifiers?.conditionDeltaOffset ?? 0,
+          fusionCadenceLabel: fusionModifiers?.cadenceLabel ?? null,
+          fusionPressureLabel: fusionModifiers?.pressureLabel ?? null,
 
-        baseRankXpGained: rewardWithOverloadPenalty.rankXp,
-        baseMasteryProgressGained: rewardWithOverloadPenalty.masteryProgress,
-        baseInfluenceGained: rewardWithOverloadPenalty.influence ?? 0,
-        baseResourcesGained: appliedResourceGain,
+          baseRankXpGained: rewardWithOverloadPenalty.rankXp,
+          baseMasteryProgressGained: rewardWithOverloadPenalty.masteryProgress,
+          baseInfluenceGained: rewardWithOverloadPenalty.influence ?? 0,
+          baseResourcesGained: appliedResourceGain,
 
-        realtimeContributionBonusMultiplier: null,
-        realtimeContributionAppliedForResolvedAt: null,
-        realtimeRankXpBonusGained: 0,
-        realtimeMasteryProgressBonusGained: 0,
-        realtimeInfluenceBonusGained: 0,
-        realtimeResourcesBonusGained: {},
+          realtimeContributionBonusMultiplier: null,
+          realtimeContributionAppliedForResolvedAt: null,
+          realtimeRankXpBonusGained: 0,
+          realtimeMasteryProgressBonusGained: 0,
+          realtimeInfluenceBonusGained: 0,
+          realtimeResourcesBonusGained: {},
 
-        realtimeTotalDamageDealt: 0,
-        realtimeTotalHitsLanded: 0,
-        realtimeMobsContributedTo: 0,
-        realtimeMobsKilled: 0,
-        realtimeExposedKills: 0,
-      };
+          realtimeTotalDamageDealt: 0,
+          realtimeTotalHitsLanded: 0,
+          realtimeMobsContributedTo: 0,
+          realtimeMobsKilled: 0,
+          realtimeExposedKills: 0,
+        },
+        nextPlayer,
+        entry.endsAt,
+      );
 
       if (mission.deployZoneId) {
         nextPlayer = withWorldProgressAfterHunt(nextPlayer, {
@@ -673,6 +803,7 @@ export function processMissionQueue(state: GameState, now: number): GameState {
             rewardWithOverloadPenalty.influence ?? 0,
           ),
           reason: `Contract resolved — ${mission.title}`,
+          nowMs: entry.endsAt,
         });
       }
     }

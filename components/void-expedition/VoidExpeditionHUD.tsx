@@ -3,6 +3,10 @@
 import type { ReactNode } from "react";
 import CharacterPortraitImage from "@/components/character/CharacterPortraitImage";
 import type { CharacterPortraitId } from "@/features/characters/characterPortraits";
+import {
+  type ExpeditionReadiness,
+  formatExpeditionReadinessBand,
+} from "@/features/expedition/expeditionReadiness";
 import type { VoidZone } from "@/features/void-maps/zoneData";
 import { lootThemeToRuneSchool } from "@/features/mastery/masteryGameplayEffects";
 
@@ -24,6 +28,8 @@ export default function VoidExpeditionHUD({
   onDeploy,
   playerName,
   characterPortraitId,
+  expeditionReadiness = null,
+  expeditionStabilityBonusDelta = 3,
 }: {
   selectedZone: VoidZone;
   dropBiasLabel: string;
@@ -37,7 +43,20 @@ export default function VoidExpeditionHUD({
   onDeploy: () => void;
   playerName: string;
   characterPortraitId: CharacterPortraitId;
+  expeditionReadiness?: ExpeditionReadiness | null;
+  /** Shown when band is ready — matches `EXPEDITION_READY_STABILITY_DELTA`. */
+  expeditionStabilityBonusDelta?: number;
 }) {
+  const bandStyles = expeditionReadiness
+    ? expeditionReadiness.readinessBand === "ready"
+      ? "border-emerald-400/35 bg-emerald-950/35 text-emerald-50/95"
+      : expeditionReadiness.readinessBand === "strained"
+        ? "border-cyan-400/30 bg-cyan-950/30 text-cyan-50/90"
+        : expeditionReadiness.readinessBand === "risky"
+          ? "border-amber-400/35 bg-amber-950/35 text-amber-50/92"
+          : "border-rose-400/40 bg-rose-950/40 text-rose-50/92"
+    : "";
+
   return (
     <div className="pointer-events-auto absolute inset-x-0 bottom-0 z-20 border-t border-white/15 bg-black/80 px-4 py-4 shadow-[0_-12px_40px_rgba(0,0,0,0.45)] backdrop-blur-md md:px-6">
       <div className="mx-auto flex max-w-4xl flex-col gap-4 md:flex-row md:items-end md:justify-between">
@@ -119,6 +138,52 @@ export default function VoidExpeditionHUD({
             </div>
           )}
           <p className="mt-2 text-xs text-white/45">{nextLockLine}</p>
+
+          {expeditionReadiness ? (
+            <div
+              className={[
+                "mt-3 rounded-xl border px-3 py-2.5 text-[11px] leading-relaxed shadow-md backdrop-blur-sm",
+                bandStyles,
+              ].join(" ")}
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-[9px] font-black uppercase tracking-[0.18em] text-white/55">
+                  Expedition readiness
+                </span>
+                <span className="text-[10px] font-black tabular-nums text-white/90">
+                  {expeditionReadiness.readinessScore}/100 ·{" "}
+                  {formatExpeditionReadinessBand(expeditionReadiness.readinessBand)}
+                </span>
+              </div>
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-black/40">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-cyan-500/80 to-fuchsia-500/75 transition-[width]"
+                  style={{
+                    width: `${Math.max(0, Math.min(100, expeditionReadiness.readinessScore))}%`,
+                  }}
+                />
+              </div>
+              {expeditionReadiness.readinessBand === "ready" ? (
+                <p className="mt-2 text-[10px] font-semibold text-emerald-100/88">
+                  Ledger is tight — first hunt closeout trims {expeditionStabilityBonusDelta}{" "}
+                  wear if you hold this posture into deploy.
+                </p>
+              ) : null}
+              {expeditionReadiness.primaryWarning ? (
+                <p className="mt-2 text-[11px] font-semibold text-white/88">
+                  {expeditionReadiness.primaryWarning}
+                </p>
+              ) : null}
+              {expeditionReadiness.suggestedFix ? (
+                <p className="mt-1 text-[10px] text-white/65">
+                  {expeditionReadiness.suggestedFix}
+                </p>
+              ) : null}
+              <p className="mt-2 border-t border-white/10 pt-2 text-[9px] uppercase tracking-[0.12em] text-white/40">
+                Deploy is never locked — the void does not care if you listen.
+              </p>
+            </div>
+          ) : null}
         </div>
 
         <div className="flex w-full shrink-0 flex-col gap-2 md:w-auto md:items-end">

@@ -30,6 +30,16 @@ export const LOADOUT_SLOT_LABELS: Record<LoadoutSlotId, string> = {
   professionBind: "Profession Bind",
 };
 
+/** Short player-facing lines (loadout screen + tooltips). */
+export const LOADOUT_SLOT_HINTS: Record<LoadoutSlotId, string> = {
+  weapon:
+    "Sets strike range, damage bonus, and weapon family for void field shell combat.",
+  armor: "Cuts incoming shell damage — stacks with rig posture math.",
+  core: "Power core slot — augments sustain or utility in the field rig.",
+  runeSet: "Rune lattice — depth-gated; pairs with Pure / hybrid mastery work.",
+  professionBind: "Binds career focus modifiers into your deployed kit.",
+};
+
 export function createInitialLoadoutSlots(): LoadoutSlotsState {
   return {
     weapon: null,

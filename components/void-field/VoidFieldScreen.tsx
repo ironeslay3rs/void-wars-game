@@ -11,7 +11,7 @@ import {
 } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useGame } from "@/features/game/gameContext";
-import type { ResourceKey } from "@/features/game/gameTypes";
+import type { ResourceKey, VoidFieldExtractionLedgerResult } from "@/features/game/gameTypes";
 import { getMissionById } from "@/features/game/gameMissionUtils";
 import {
   DEFAULT_HOME_DEPLOY_ZONE_ID,
@@ -23,9 +23,18 @@ import {
   isVoidFieldShellMobId,
   VOID_FIELD_SHELL_STRIKE_DAMAGE,
 } from "@/features/void-maps/voidFieldShellMobs";
+import { formatRunStyleLabel } from "@/features/game/runArchetypeLogic";
+import {
+  formatRunInstabilityChip,
+  runInstabilityShellDamageMultiplier,
+} from "@/features/progression/runInstability";
 import { useVoidRealtimeSession } from "@/features/void-maps/realtime/VoidRealtimeBridge";
 import { useVoidFieldCombatFeedback } from "@/features/void-maps/useVoidFieldCombatFeedback";
 import { useVoidFieldLootDropSpawns } from "@/features/void-maps/useVoidFieldLootDropSpawns";
+import {
+  createVoidFieldLootDropVfx,
+  type VoidFieldLootDropVfx,
+} from "@/features/void-maps/voidFieldLootDrops";
 import { voidFieldContractPayoutPreview } from "@/features/void-maps/voidFieldContractPreview";
 import { useVoidFieldShellMobPopulation } from "@/features/void-maps/useVoidFieldShellMobPopulation";
 import { useVoidFieldControls } from "@/features/void-maps/useVoidFieldControls";
@@ -37,15 +46,18 @@ import VoidFieldDeployIntro from "@/components/void-field/VoidFieldDeployIntro";
 import VoidFieldHud from "@/components/void-field/VoidFieldHud";
 import { useVoidFieldLocalPlayer } from "@/components/void-field/useVoidFieldLocalPlayer";
 import ExtractionSummary from "@/components/field/ExtractionSummary";
-import {
-  buildExtractionSummary,
-  type ExtractionSummary as ExtractionSummaryData,
-} from "@/features/field/extractionLogic";
+import { voidInfusionHudLine } from "@/features/status/voidInfusionMetaphor";
+import { getAscensionTensionChipLine } from "@/features/progression/ascensionStep";
+import { getActivePrepSurface } from "@/features/crafting/prepRunHooks";
 import { getFeastHallOfferById } from "@/features/black-market/feastHallData";
 import {
   getCareerFocusFieldLootAmountMultiplier,
   getCareerFocusShellDamageBonusPct,
 } from "@/features/player/careerFocusModifiers";
+import {
+  getConvergencePrimedFieldLootMultiplier,
+  getPathAlignedFieldLootMultiplier,
+} from "@/features/economy/pathGatheringYield";
 import { getMasteryAlignedPickupYieldMultiplier } from "@/features/mastery/masteryGameplayEffects";
 import {
   getSchoolCombatPassives,
@@ -155,11 +167,34 @@ export default function VoidFieldScreen() {
       state.player.runeMastery,
       zone.lootTheme,
     );
-    return career * masteryAligned;
-  }, [state.player.careerFocus, state.player.runeMastery, zone.lootTheme]);
+    const pathAligned = getPathAlignedFieldLootMultiplier(
+      state.player.factionAlignment,
+      zone.lootTheme,
+    );
+    const convergence = getConvergencePrimedFieldLootMultiplier(
+      state.player.mythicAscension.convergencePrimed,
+    );
+    return career * masteryAligned * pathAligned * convergence;
+  }, [
+    state.player.careerFocus,
+    state.player.factionAlignment,
+    state.player.runeMastery,
+    state.player.mythicAscension.convergencePrimed,
+    zone.lootTheme,
+  ]);
 
   const { mobsForField, applyShellMobDamage, bossChip } =
     useVoidFieldShellMobPopulation(allocatedZone.id, realtime.mobs, state.player);
+
+  const wsRealtimeMobIds = useMemo(
+    () => new Set(realtime.mobs.map((m) => m.mobEntityId)),
+    [realtime.mobs],
+  );
+  const skipClientRollForMobEntityId = useCallback(
+    (mobEntityId: string) =>
+      realtimeConnected && isHuntRunning && wsRealtimeMobIds.has(mobEntityId),
+    [realtimeConnected, isHuntRunning, wsRealtimeMobIds],
+  );
 
   const combatHudLine = useMemo(() => {
     const loadout =
@@ -174,6 +209,11 @@ export default function VoidFieldScreen() {
     const combat = getPlayerLoadoutCombatModifiers(state.player);
     return `${loadout} · ${s} · ${combat.weaponFamily.toUpperCase()} ${combat.strikeRangePct}% · passives ${on}/${passives.length}`;
   }, [state.player]);
+
+  const ascensionTensionChip = useMemo(
+    () => getAscensionTensionChipLine(state),
+    [state],
+  );
 
   const strikeRangePct = useMemo(
     () => getPlayerStrikeRangePct(state.player),
@@ -220,34 +260,96 @@ export default function VoidFieldScreen() {
     };
   }, [positionNorm]);
 
-  const { drops: lootDrops, removeDrop } = useVoidFieldLootDropSpawns(
+  const { drops: clientLootDrops, removeDrop } = useVoidFieldLootDropSpawns(
     mobsForField,
     allocatedZone.id,
     fieldLootAmountMultiplier,
+    { skipClientRollForMobEntityId },
   );
+  const [serverLootDrops, setServerLootDrops] = useState<VoidFieldLootDropVfx[]>(
+    [],
+  );
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      setServerLootDrops([]);
+    });
+  }, [initialZoneId, sessionBucketId]);
+
+  useEffect(() => {
+    const batch = realtime.drainAuthoritativeMobLootEvents();
+    if (batch.length === 0) return;
+    const additions: VoidFieldLootDropVfx[] = [];
+    const tick = Date.now();
+    for (const ev of batch) {
+      ev.lines.forEach((line, idx) => {
+        const amt = Math.max(
+          1,
+          Math.round(line.amount * fieldLootAmountMultiplier),
+        );
+        additions.push(
+          createVoidFieldLootDropVfx(
+            ev.x,
+            ev.y,
+            line.resource,
+            amt,
+            `srv-${ev.mobEntityId}-${idx}-${tick}`,
+          ),
+        );
+      });
+    }
+    queueMicrotask(() => {
+      setServerLootDrops((d) => [...additions, ...d].slice(0, 15));
+    });
+    /* `realtime` identity churns; loot advances on authoritativeMobLootSeq + stable drain. */
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    realtime.authoritativeMobLootSeq,
+    fieldLootAmountMultiplier,
+    realtime.drainAuthoritativeMobLootEvents,
+  ]);
+
+  const lootDrops = useMemo(
+    () => [...serverLootDrops, ...clientLootDrops],
+    [serverLootDrops, clientLootDrops],
+  );
+
+  const removeServerLootDrop = useCallback((id: string) => {
+    setServerLootDrops((d) => d.filter((x) => x.id !== id));
+  }, []);
+
   const [lootCollectPulse, setLootCollectPulse] = useState(0);
   const [sessionLoot, setSessionLoot] = useState<
     Partial<Record<ResourceKey, number>>
   >({});
   const [sessionKills, setSessionKills] = useState(0);
   const [extractionSummary, setExtractionSummary] =
-    useState<ExtractionSummaryData | null>(null);
+    useState<VoidFieldExtractionLedgerResult | null>(null);
   const extractionAppliedRef = useRef(false);
+  const extractionLedgerShownRef = useRef<number | null>(null);
   const seenDeadMobIdsRef = useRef<Set<string>>(new Set());
 
   const onLootConsumed = useCallback(
     (id: string) => {
       const d = lootDrops.find((x) => x.id === id) ?? null;
-      removeDrop(id);
+      if (id.startsWith("srv-")) {
+        removeServerLootDrop(id);
+      } else {
+        removeDrop(id);
+      }
       setLootCollectPulse((p) => p + 1);
       if (d) {
+        dispatch({
+          type: "VOID_FIELD_ORB_COLLECTED",
+          payload: { key: d.resource, amount: d.amount },
+        });
         setSessionLoot((prev) => ({
           ...prev,
           [d.resource]: (prev[d.resource] ?? 0) + d.amount,
         }));
       }
     },
-    [lootDrops, removeDrop],
+    [lootDrops, removeDrop, removeServerLootDrop, dispatch],
   );
 
   const stimFloatMultiplier =
@@ -295,8 +397,14 @@ export default function VoidFieldScreen() {
       );
       const boostPct = stimBoostPct + careerBoostPct;
       const loadoutMult = getPlayerLoadoutCombatModifiers(state.player).attackMultiplier;
+      const heatMult = runInstabilityShellDamageMultiplier(
+        state.player.runInstability,
+      );
       const dmg = Math.round(
-        VOID_FIELD_SHELL_STRIKE_DAMAGE * (1 + boostPct / 100) * loadoutMult,
+        VOID_FIELD_SHELL_STRIKE_DAMAGE *
+          (1 + boostPct / 100) *
+          loadoutMult *
+          heatMult,
       );
       registerSlashForMob(mobEntityId);
       const dealt = applyShellMobDamage(mobEntityId, dmg);
@@ -397,12 +505,13 @@ export default function VoidFieldScreen() {
     isRecoveryOnCooldown && feastHallOffer
       ? `Feast Hall: ${feastHallOffer.label} · ${feastHallOffer.nextRunEffect} (${recoveryCooldownRemainingSeconds}s)`
       : null;
+  const prepSurface = getActivePrepSurface(state.player);
   const activeModifierChip =
-    state.player.nextRunModifiers && huntStatus === "running"
-      ? `${state.player.nextRunModifiers.effectKey}: ${state.player.nextRunModifiers.nextRunEffect}`
-      : state.player.nextRunModifiers
-        ? `Primed: ${state.player.nextRunModifiers.effectKey}`
-        : null;
+    prepSurface.state === "primed"
+      ? huntStatus === "running"
+        ? `${prepSurface.headline} — ${prepSurface.detail}`
+        : `${prepSurface.headline} · arms when hunt timer starts`
+      : `${prepSurface.headline} · ${prepSurface.detail}`;
 
   useEffect(() => {
     let added = 0;
@@ -430,32 +539,25 @@ export default function VoidFieldScreen() {
   useEffect(() => {
     if (!inExtractionZone) return;
     if (extractionAppliedRef.current) return;
-
-    const summary = buildExtractionSummary({
-      zoneName: zone.label,
-      kills: sessionKills,
-      lootCollected: sessionLoot,
-    });
-
-    for (const [key, amount] of Object.entries(summary.lootCollected)) {
-      if (!amount || amount <= 0) continue;
-      dispatch({
-        type: "ADD_RESOURCE",
-        payload: { key: key as ResourceKey, amount },
-      });
-    }
-    if (summary.xpEarned > 0) {
-      dispatch({ type: "GAIN_RANK_XP", payload: summary.xpEarned });
-    }
-    if (summary.conditionSpent > 0) {
-      dispatch({ type: "ADJUST_CONDITION", payload: -summary.conditionSpent });
-    }
-
     extractionAppliedRef.current = true;
-    queueMicrotask(() => {
-      setExtractionSummary(summary);
+    dispatch({
+      type: "COMMIT_VOID_FIELD_EXTRACTION",
+      payload: {
+        kills: sessionKills,
+        zoneName: zone.label,
+        zoneId: zone.id,
+      },
     });
-  }, [dispatch, inExtractionZone, sessionKills, sessionLoot, zone.label]);
+  }, [dispatch, inExtractionZone, sessionKills, zone.label, zone.id]);
+
+  useEffect(() => {
+    const L = state.player.lastVoidFieldExtractionLedger;
+    if (!L) return;
+    if (L.zoneName !== zone.label) return;
+    if (extractionLedgerShownRef.current === L.resolvedAt) return;
+    extractionLedgerShownRef.current = L.resolvedAt;
+    setExtractionSummary(L);
+  }, [state.player.lastVoidFieldExtractionLedger, zone.label]);
 
   return (
     <main className="fixed inset-0 overflow-hidden bg-black text-white">
@@ -509,6 +611,10 @@ export default function VoidFieldScreen() {
         bossChip={bossChip}
         combatHudLine={combatHudLine}
         encounterBrief={encounterBrief}
+        voidStrainChip={voidInfusionHudLine(state.player.voidInstability)}
+        runHeatChip={formatRunInstabilityChip(state.player.runInstability)}
+        runStyleChip={formatRunStyleLabel(state.player.runArchetype)}
+        ascensionTensionChip={ascensionTensionChip}
       />
 
       <VoidFieldCombatTicker
@@ -530,11 +636,19 @@ export default function VoidFieldScreen() {
         />
       </div>
 
-      <div className="pointer-events-none absolute right-4 top-24 z-30 rounded-full border border-emerald-300/45 bg-emerald-500/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-100">
+      <div className="pointer-events-none absolute right-[max(1rem,env(safe-area-inset-right,0px))] top-[calc(6.25rem+env(safe-area-inset-top,0px))] z-30 max-w-[min(200px,calc(100vw-2rem))] rounded-full border border-emerald-300/45 bg-emerald-500/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-100 md:top-24">
         Extraction
       </div>
 
-      {extractionSummary ? <ExtractionSummary summary={extractionSummary} /> : null}
+      {extractionSummary ? (
+        <ExtractionSummary
+          ledger={extractionSummary}
+          playerSnapshot={{
+            condition: state.player.condition,
+            hunger: state.player.hunger,
+          }}
+        />
+      ) : null}
     </main>
   );
 }

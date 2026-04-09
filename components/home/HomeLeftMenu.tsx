@@ -9,7 +9,7 @@ const menuItems = [
   { label: "Career", href: "#" },
   { label: "Mastery", href: "#" },
   { label: "Professions", href: "#" },
-  { label: "Market", href: "#" },
+  { label: "Black Market Exchange", href: "#" },
   { label: "Arena", href: "#" },
   { label: "Missions", href: "#" },
   { label: "Settings", href: "#" },

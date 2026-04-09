@@ -72,11 +72,19 @@ https://void-wars-game.vercel.app
 
 
 
-\*\*M1 hardening + M2 entry\*\* — the core loop must work end-to-end before expanding depth.
+\*\*M1 + Phase 6–9 (war front + guild + mythic convergence)\*\* — War Exchange buy/sell demand multipliers + UI; Home/Missions **regional war front** strip; void-field extraction uses `ADD_FIELD_LOOT` for ledger parity; Phase 9 convergence (hybrid relief, field pickup mult, valor, Golden Bazaar sell bonus). Phase 5 arena closed (modes, SR, telegraph).
 
 
 
-\## Live Audit Status (March 26, 2026)
+\## Live Audit Status (March 28, 2026)
+
+
+
+\### Live Home stack (canonical)
+
+\- `app/home/page.tsx` → `components/layout/GameHudShell.tsx` → `components/home/HomeHudClient.tsx` (+ `MainMenuLeftRail`, `MainMenuCenterStage`, `MainMenuRightRail`, `HomeResourceStrip`, `BottomNav`).
+
+\- Legacy duplicate `components/layout/HomeShell.tsx` and `components/layout/HomeHudClient.tsx` were removed — do not revive parallel home stacks.
 
 
 
@@ -86,15 +94,19 @@ https://void-wars-game.vercel.app
 
 \- Login flow with cookie persistence (Step 1 DONE)
 
-\- Homepage command deck: deployment panel, path selector, resource strip, left nav, bottom nav
+\- Homepage command deck: `GameHudShell` / `HomeHudClient` — path selector, condition, missions, resource strip, rails, bottom nav
 
 \- Status screen: character identity, system states, rank/mastery, survival state with recovery prompts
 
 \- Inventory: live item data, rarity tags, capacity tracking, resource counts, utility items
 
-\- Missions: queue system with timers, reward previews, path-locked missions
+\- Missions: queue with timers, auto-resolve, reward previews, path-locked missions
 
-\- Black Market hub: all districts visible and navigable
+\- Black Market hub: districts navigable; War Exchange buy/sell wired (prototype)
+
+\- New Game: callsign + school + career → `createNewPlayer`; `characterCreated` gates all routes except `/new-game` until completion
+
+\- Pure district route id: `/bazaar/pure-enclave` (legacy `/bazaar/spirit-enclave` redirects)
 
 \- Career: Mastery Tree, Hour 20-40 spine, tri-rail Bio/Mecha/Pure progression
 
@@ -108,23 +120,17 @@ https://void-wars-game.vercel.app
 
 
 
-\- Condition recovery partially wired — Emergency Ration shares cooldown with Recover Condition (should be separate action)
+\- Condition recovery tuning may still be needed — Emergency Ration uses `emergencyRationAvailableAt`; Recover Condition uses `conditionRecoveryAvailableAt` (separate cooldowns in code)
 
-\- Inventory capacity 426/120 with no enforcement or overflow penalty
+\- Inventory capacity: enforcement, overload penalties, and player-facing cues now live in `inventoryLogic`, inventory/Home/Missions — verify against design targets
 
-\- Loadout slots all empty — no equip flow connecting inventory to loadout
+\- Loadout: equip flow improved (weapon-first + next-slot highlight); further polish optional
 
-\- Mission queue button exists but no timer execution, no reward distribution, no result screen
+\- Crafting District: recipes / loop depth still M1-limited
 
-\- Black Market districts have no buy/sell transactions
+\- Hunt / void field: realtime and shell combat need ongoing parity and clarity
 
-\- New Game flow leads nowhere — no onboarding, no Puppy creation
-
-\- Crafting District has no functional recipes
-
-\- No hunt/combat encounter screen — combat visual payoff is missing
-
-\- Homepage resource strip overlaps center content; left nav clips MARKET
+\- Mobile / z-index regressions: verify after each home change (resource strip vs cinematic)
 
 
 
@@ -152,17 +158,13 @@ Moss Ration recipe (50 credits + 10 bioSamples), Emergency Ration action (USE\_E
 
 
 
-\### Step 3: Homepage layout fix (HIGH)
+\### SUPERSEDED — Step 3: Homepage layout (was LeftCommandMenu stack)
 
-\- Move HomeResourceStrip from top overlay to bottom-docked position (above BottomNav)
+\- Original targets pointed at `components/layout/LeftCommandMenu.tsx` + old `HomeShell` — removed.
 
-\- Fix z-index so center cinematic content is never obscured
+\- Current work: `components/layout/GameHudShell.tsx`, `components/home/HomeHudClient.tsx`, `config/layout.ts`, `HomeResourceStrip`, bottom nav safe areas.
 
-\- Fix LeftCommandMenu overflow clipping MARKET item
-
-\- Files: `app/home/page.tsx`, `components/layout/LeftCommandMenu.tsx`
-
-\- Gate: BIO PATH ENGAGED text fully readable, all nav items visible
+\- Gate: identity / pressure / next action readable; no clipped nav on mobile and desktop.
 
 
 
@@ -178,7 +180,7 @@ Moss Ration recipe (50 credits + 10 bioSamples), Emergency Ration action (USE\_E
 
 \- Files: `features/resources/inventoryLogic.ts`, `components/inventory/StorageOverview.tsx`
 
-\- Gate: 426/120 shows red warning, mission penalties visible
+\- Gate: over max shows red warning + penalties on inventory, Home resource strip, Home mission panel, and full Missions screen; pickups blocked when overloaded (`enforcePickup`)
 
 
 

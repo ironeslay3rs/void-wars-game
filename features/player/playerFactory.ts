@@ -13,6 +13,15 @@ function normalizeName(value: string) {
   return value.replace(/\s+/g, " ").trim().slice(0, 18);
 }
 
+/** One-line summaries for New Game UI (must match `SCHOOL_STARTER_RESOURCES`). */
+export const SCHOOL_STARTER_PACK_SUMMARY: Record<PathType, string> = {
+  bio: "500 credits · 15 iron ore · 10 scrap alloy · 20 bio samples · 5 rune dust · 3 moss rations",
+  mecha:
+    "500 credits · 30 iron ore · 25 scrap alloy · 5 bio samples · 5 rune dust · 2 moss rations",
+  pure:
+    "500 credits · 10 iron ore · 8 scrap alloy · 5 bio samples · 20 rune dust · 3 ember cores · 2 moss rations",
+};
+
 const SCHOOL_STARTER_RESOURCES: Record<PathType, Partial<ResourcesState>> = {
   bio: {
     credits: 500,
@@ -45,6 +54,8 @@ export function createNewPlayer(params: {
   name: string;
   school: PathType;
   career: CareerFocus;
+  /** Phase 6: which canonical school within the empire the player aligns with. */
+  affinitySchoolId?: string | null;
 }): PlayerState {
   const now = Date.now();
   const name = normalizeName(params.name);
@@ -54,8 +65,10 @@ export function createNewPlayer(params: {
 
   return {
     ...initialGameState.player,
+    characterCreated: true,
     playerName: name.length >= 2 ? name : "Puppy",
     factionAlignment: school,
+    affinitySchoolId: params.affinitySchoolId ?? null,
     careerFocus: params.career,
 
     rank: "Puppy",
@@ -81,5 +94,7 @@ export function createNewPlayer(params: {
 
     loadoutSlots: createInitialLoadoutSlots(),
     market: createInitialMarketState(),
+    lastStallRentResolvedAt: now,
+    stallArrearsCount: 0,
   };
 }

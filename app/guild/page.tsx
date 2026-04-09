@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import ScreenHeader from "@/components/shared/ScreenHeader";
 import SectionCard from "@/components/shared/SectionCard";
@@ -12,7 +12,11 @@ import {
   buildLocalRivalTable,
   GUILD_CONTRACT_TEMPLATES,
   getContractProgressPct,
+  getGuildMercenaryRank,
+  getGuildRivalInsight,
 } from "@/features/social/guildLiveLogic";
+import { getGuildRoutineBriefForNow } from "@/features/social/guildRoutineBrief";
+import { enforceCapacity } from "@/features/resources/inventoryLogic";
 
 function formatTime(ts: number) {
   try {
@@ -31,8 +35,7 @@ export default function GuildPage() {
   const { state, dispatch } = useGame();
   const total = state.player.guildContributionTotal ?? 0;
   const log = state.player.guildContributionLog ?? [];
-  const standing =
-    total >= 240 ? "Vanguard broker" : total >= 80 ? "Bonded contractor" : "Probationary";
+  const mercenaryRank = getGuildMercenaryRank(total);
   const guild = state.player.guild;
   const contracts = state.player.guildContracts ?? [];
   const activeContract = contracts.find((c) => c.status !== "claimed") ?? null;
@@ -41,9 +44,28 @@ export default function GuildPage() {
   const [newGuildName, setNewGuildName] = useState("");
   const [joinCode, setJoinCode] = useState("");
   const [newMember, setNewMember] = useState("");
+  const [guildRoutineNow, setGuildRoutineNow] = useState(() => Date.now());
+  const [claimToast, setClaimToast] = useState<string | null>(null);
+
+  useEffect(() => {
+    const id = window.setInterval(() => setGuildRoutineNow(Date.now()), 60_000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  function pushClaimToast(message: string) {
+    setClaimToast(message);
+    window.setTimeout(() => {
+      setClaimToast((prev) => (prev === message ? null : prev));
+    }, 3200);
+  }
 
   const rivals = useMemo(() => buildLocalRivalTable(state.player), [state.player]);
+  const rivalInsight = useMemo(() => getGuildRivalInsight(state.player), [state.player]);
   const contractChoices = useMemo(() => GUILD_CONTRACT_TEMPLATES, []);
+  const routineBrief = useMemo(
+    () => getGuildRoutineBriefForNow(guildRoutineNow),
+    [guildRoutineNow],
+  );
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(60,90,90,0.22),_rgba(5,8,20,1)_55%)] px-6 py-10 text-white md:px-10">
@@ -53,6 +75,12 @@ export default function GuildPage() {
           title={guildScreenData.title}
           subtitle={guildScreenData.subtitle}
         />
+
+        {claimToast ? (
+          <div className="rounded-xl border border-amber-400/35 bg-amber-950/35 px-4 py-3 text-sm text-amber-100/95">
+            {claimToast}
+          </div>
+        ) : null}
 
         <div className="flex flex-wrap gap-3">
           <Link
@@ -69,11 +97,25 @@ export default function GuildPage() {
           </Link>
         </div>
 
+        {guild.kind === "inGuild" ? (
+          <div className="rounded-2xl border border-emerald-400/25 bg-emerald-950/18 px-5 py-4">
+            <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/45">
+              Phase 8 · Collective routine
+            </div>
+            <div className="mt-2 text-sm font-semibold text-emerald-100/95">
+              {routineBrief.title}
+            </div>
+            <p className="mt-2 text-sm leading-relaxed text-white/70">
+              {routineBrief.detail}
+            </p>
+          </div>
+        ) : null}
+
         <div className="grid gap-6 md:grid-cols-3">
           <PlaceholderPanel
             label="Mercenary standing"
-            value={standing}
-            hint="Rises as you bank guild contribution from hunts and realtime void work."
+            value={mercenaryRank.label}
+            hint={mercenaryRank.hint}
           />
           <PlaceholderPanel
             label="Contribution points"
@@ -279,7 +321,7 @@ export default function GuildPage() {
         <div className="grid gap-6 lg:grid-cols-2">
           <SectionCard
             title="Shared contracts"
-            description="Post one contract. Progress is driven by your guild contribution ledger."
+            description="Post one contract. Progress is driven by your guild contribution ledger. Closing hunts in the contract zone pays extra mercenary points; stacks with the rotating contested void sector (Phase 8 war coordination)."
           >
             {guild.kind !== "inGuild" ? (
               <div className="rounded-xl border border-dashed border-white/10 p-6 text-sm text-white/50">
@@ -302,9 +344,21 @@ export default function GuildPage() {
                 </div>
                 <button
                   type="button"
-                  onClick={() =>
-                    dispatch({ type: "GUILD_CLAIM_CONTRACT", payload: { contractId: activeContract.id } })
-                  }
+                  onClick={() => {
+                    const { blocked } = enforceCapacity(
+                      state.player.resources,
+                      activeContract.reward,
+                    );
+                    dispatch({
+                      type: "GUILD_CLAIM_CONTRACT",
+                      payload: { contractId: activeContract.id },
+                    });
+                    if (blocked) {
+                      pushClaimToast(
+                        "Carry limit trimmed part of this payout. Clear inventory space before the next contract closes if you want the full stipend.",
+                      );
+                    }
+                  }}
                   disabled={activePct < 100}
                   className="mt-4 w-full rounded-xl border border-amber-400/25 bg-amber-500/12 px-4 py-3 text-sm font-semibold uppercase tracking-[0.08em] text-amber-100 transition enabled:hover:bg-amber-500/18 disabled:cursor-not-allowed disabled:opacity-50"
                 >
@@ -335,6 +389,11 @@ export default function GuildPage() {
             title="Guild standings (local)"
             description="Local leaderboard shell until server authority is scheduled."
           >
+            {rivalInsight ? (
+              <p className="mb-4 rounded-xl border border-amber-400/22 bg-amber-950/18 px-4 py-3 text-sm leading-relaxed text-amber-100/88">
+                {rivalInsight}
+              </p>
+            ) : null}
             <ul className="space-y-2">
               {rivals.map((g, idx) => (
                 <li

@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Bell, Power, UserCircle2, Users } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { Bell, Power, TrendingUp, UserCircle2, Users } from "lucide-react";
 import IconBadge from "@/components/shared/IconBadge";
 import CharacterPortraitImage from "@/components/character/CharacterPortraitImage";
 import { homeSceneData } from "@/features/home/homeSceneData";
@@ -23,13 +24,16 @@ function shortFactionLabel(alignment: FactionAlignment): string {
 }
 
 export default function TopBar() {
+  const pathname = usePathname();
   const { state } = useGame();
   const { signOut } = useAuth();
   const p = state.player;
   const conditionPct = Math.max(0, Math.min(100, p.condition));
+  const onHome = pathname === "/home" || pathname === "/";
+  const vitalsCritical = p.condition < 40 || p.hunger < 40;
 
   return (
-    <header className="absolute inset-x-0 top-0 z-30 px-4 pt-3 sm:px-6">
+    <header className="absolute inset-x-0 top-0 z-30 px-4 pt-[max(0.75rem,env(safe-area-inset-top,0px))] sm:px-6">
       <div className="relative mx-auto flex h-20 max-w-[1700px] items-start justify-between gap-3 sm:h-24 sm:gap-4">
         <div className="flex min-w-0 flex-1 items-start gap-2 pt-1 sm:gap-3">
           <Link
@@ -77,6 +81,15 @@ export default function TopBar() {
               aria-label="Mission alerts"
             >
               <Bell className="h-4 w-4" />
+            </Link>
+          </IconBadge>
+          <IconBadge>
+            <Link
+              href="/upgrades"
+              className="flex h-full w-full items-center justify-center text-slate-200"
+              aria-label="Upgrade hub"
+            >
+              <TrendingUp className="h-4 w-4" />
             </Link>
           </IconBadge>
         </div>
@@ -137,6 +150,34 @@ export default function TopBar() {
           </IconBadge>
         </div>
       </div>
+
+      {onHome && vitalsCritical ? (
+        <div
+          className="relative mx-auto mt-1 max-w-[1700px] px-0 sm:px-0"
+          role="status"
+          aria-live="polite"
+        >
+          <div className="flex flex-wrap items-center justify-center gap-2 rounded-xl border border-amber-400/35 bg-amber-950/55 px-3 py-2 text-center shadow-[0_8px_28px_rgba(0,0,0,0.35)] backdrop-blur-sm sm:justify-between sm:text-left">
+            <p className="min-w-0 flex-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-amber-100/95">
+              Vitals in the danger band — recover before you queue or deploy.
+            </p>
+            <div className="flex shrink-0 flex-wrap items-center justify-center gap-2">
+              <Link
+                href="/bazaar/black-market"
+                className="rounded-lg border border-amber-300/45 bg-amber-500/15 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-amber-50 hover:border-amber-200/60 hover:bg-amber-500/22"
+              >
+                Black Market
+              </Link>
+              <Link
+                href="/status"
+                className="rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-white/85 hover:border-white/25 hover:bg-white/10"
+              >
+                Status
+              </Link>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </header>
   );
 }

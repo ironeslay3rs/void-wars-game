@@ -1,6 +1,11 @@
 import type { PlayerState, ResourceKey, ResourcesState } from "@/features/game/gameTypes";
 import { clamp } from "@/features/game/gameMissionUtils";
 import type { CraftRecipe } from "@/features/crafting/recipeData";
+import { getRefiningPathBonus } from "@/features/economy/pathRefiningYield";
+import {
+  getRecipeMythicGateHint,
+  meetsRecipeMythicGate,
+} from "@/features/progression/mythicAscensionLogic";
 
 export type CraftResult =
   | {
@@ -68,6 +73,18 @@ export function craftItem(params: {
     };
   }
 
+  if (recipe.mythicGate && !meetsRecipeMythicGate(player, recipe.mythicGate)) {
+    return {
+      player,
+      result: {
+        ok: false,
+        recipeId: recipe.id,
+        recipeName: recipe.name,
+        reason: getRecipeMythicGateHint(recipe.mythicGate),
+      },
+    };
+  }
+
   const rolled = clamp(rng(), 0, 1);
   const success = rolled <= clamp(recipe.successChance, 0, 1);
 
@@ -79,7 +96,16 @@ export function craftItem(params: {
 
   if (success) {
     if (recipe.output.kind === "resources") {
-      gainedResources = recipe.output.grant;
+      gainedResources = { ...recipe.output.grant };
+      if (recipe.category === "refining") {
+        const pathExtra = getRefiningPathBonus(player.factionAlignment);
+        for (const [k, v] of Object.entries(pathExtra)) {
+          const key = k as ResourceKey;
+          const amt = typeof v === "number" ? v : 0;
+          if (amt <= 0) continue;
+          gainedResources[key] = (gainedResources[key] ?? 0) + amt;
+        }
+      }
     } else {
       gainedItemId = recipe.output.item.id;
       nextCrafted = {
@@ -97,11 +123,21 @@ export function craftItem(params: {
     nextResources[key] = (nextResources[key] ?? 0) + amt;
   }
 
+  let voidInstability = player.voidInstability;
+  if (!success) {
+    if (recipe.id === "obsidian-cycle-core") {
+      voidInstability = clamp(voidInstability + 7, 0, 100);
+    } else if (recipe.id === "crafter-lattice-channel") {
+      voidInstability = clamp(voidInstability + 3, 0, 100);
+    }
+  }
+
   return {
     player: {
       ...player,
       resources: nextResources,
       craftedInventory: nextCrafted,
+      voidInstability,
     },
     result: {
       ok: true,

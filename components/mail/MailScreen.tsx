@@ -43,7 +43,7 @@ export default function MailScreen({ embedded = false }: MailScreenProps) {
           backLabel="Back to Home"
           eyebrow="Citadel Archive"
           title="Mail"
-          subtitle="Delayed notices, field records, and placeholder rewards held apart from live contact traffic."
+          subtitle="Delayed notices and field records routed through the citadel archive—kept apart from live contact traffic."
         />
       ) : null}
 
@@ -149,7 +149,7 @@ export default function MailScreen({ embedded = false }: MailScreenProps) {
                 <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                   <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-white/38">
                     <PackageOpen className="h-4 w-4" />
-                    Attachments / Reward Placeholders
+                    Attachments / Ledger stubs
                   </div>
                   <div className="mt-4 grid gap-3">
                     {selectedMail.attachments.map((attachment) => (
@@ -190,7 +190,7 @@ export default function MailScreen({ embedded = false }: MailScreenProps) {
                 </div>
                 <p className="mt-2 text-sm leading-6 text-white/55">
                   Select a mail record from the inbox to review sender,
-                  subject, archive text, and placeholder attachments.
+                  subject, archive text, and staged attachment stubs.
                 </p>
               </div>
             )}

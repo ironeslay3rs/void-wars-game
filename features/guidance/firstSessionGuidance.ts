@@ -1,5 +1,6 @@
 import { initialGameState } from "@/features/game/initialGameState";
 import type { GameState, PathType } from "@/features/game/gameTypes";
+import { getExplorationInstabilitySurchargeCredits } from "@/features/progression/phase3Progression";
 
 export type FirstSessionGuidanceAction = "explore" | "hunt" | "recover";
 const RECOVERY_GUIDANCE_THRESHOLD = 60;
@@ -94,12 +95,18 @@ const SCHOOL_COPY: Record<PathType | "unbound", SchoolCopy> = {
     huntLabel: "Lead Active",
     huntObjective: "Signal confirmed. Initiate the hunt.",
     huntDetail:
-      "A live lead is ready to resolve. Open Biotech Labs to convert it into rewards and progression.",
+      "A live lead is ready to resolve. Deploy, close the hunt, and bank the return — rewards and progression follow the payout.",
     recoveryDetail:
       "Condition is the one resource you cannot buy back in bulk. Recover before the next sweep or the next run starts from a deficit.",
     schoolHint: "Explore → hunt → recover → grow.",
   },
 };
+
+function explorationInstabilityDetailSuffix(voidInstability: number): string {
+  const tithe = getExplorationInstabilitySurchargeCredits(voidInstability);
+  if (tithe <= 0) return "";
+  return ` Void instability is elevated — the next field sweep charges a ${tithe} credit stabilizer tithe before launch.`;
+}
 
 export function getFirstSessionGuidance(
   state: GameState,
@@ -119,10 +126,10 @@ export function getFirstSessionGuidance(
   if (player.lastHuntResult) {
     if (player.condition < RECOVERY_GUIDANCE_THRESHOLD) {
       return {
-        stateLabel: "Hunt Resolved / Survival Pressure",
-        objective: "Haul secured. Stabilize before the next run.",
+        stateLabel: "Return / Recovery Pressure",
+        objective: "The haul is home. Recover before you prep another run.",
         detail: copy.recoveryDetail,
-        nextStepLabel: "Open Status and stabilize",
+        nextStepLabel: "Recover, then prep the next run",
         nextAction: "recover",
         isFirstTimePlayer,
         schoolHint: copy.schoolHint,
@@ -130,11 +137,12 @@ export function getFirstSessionGuidance(
     }
 
     return {
-      stateLabel: "Hunt Resolved",
-      objective: "Payout banked. Open the next sweep.",
+      stateLabel: "Return / Prep Window",
+      objective: "The payout is banked. Prep the next deployment now.",
       detail:
-        "The last run paid out and field state is still stable. Keep the loop moving.",
-      nextStepLabel: "Start the next sweep",
+        "The last run paid out and the body is still holding. Use the return to prep the next sweep before the lane cools." +
+        explorationInstabilityDetailSuffix(player.voidInstability),
+      nextStepLabel: "Prep the next sweep",
       nextAction: "explore",
       isFirstTimePlayer,
       schoolHint: copy.schoolHint,
@@ -143,10 +151,10 @@ export function getFirstSessionGuidance(
 
   if (player.hasBiotechSpecimenLead) {
     return {
-      stateLabel: copy.huntLabel,
-      objective: copy.huntObjective,
-      detail: copy.huntDetail,
-      nextStepLabel: "Open Biotech Labs and run the hunt",
+      stateLabel: "Deploy / Live Lead",
+      objective: "The lead is confirmed. Deploy and finish the hunt.",
+      detail: `${copy.huntDetail} This is the live part of the loop: step out, resolve it clean, and come back with the return.`,
+      nextStepLabel: "Deploy on the hunt",
       nextAction: "hunt",
       isFirstTimePlayer,
       schoolHint: copy.schoolHint,
@@ -154,10 +162,12 @@ export function getFirstSessionGuidance(
   }
 
   return {
-    stateLabel: copy.exploreLabel,
-    objective: copy.exploreObjective,
-    detail: isFirstTimePlayer ? copy.exploreFirstDetail : copy.exploreDetail,
-    nextStepLabel: "Start the sweep",
+    stateLabel: "Prep / Sweep Ready",
+    objective: "Open the next sweep and set the loop in motion.",
+    detail:
+      (isFirstTimePlayer ? copy.exploreFirstDetail : copy.exploreDetail) +
+      explorationInstabilityDetailSuffix(player.voidInstability),
+    nextStepLabel: "Prep the sweep",
     nextAction: "explore",
     isFirstTimePlayer,
     schoolHint: copy.schoolHint,

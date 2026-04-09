@@ -29,6 +29,9 @@ import {
 import { getEmergingRoleHint } from "@/features/player/playerIdentity";
 import { VOID_EXPEDITION_PATH } from "@/features/void-maps/voidRoutes";
 import { getDoctrineQueueGate } from "@/features/progression/launchDoctrine";
+import { getGuildLedgerSliceForHuntResult } from "@/features/social/guildLiveLogic";
+import ExpeditionResultGlanceBoard from "@/components/expedition/ExpeditionResultGlanceBoard";
+import { buildHuntResultGlanceModel } from "@/features/expedition/expeditionResultGlanceModel";
 
 function formatResolvedAt(timestamp: number) {
   return new Date(timestamp).toLocaleString();
@@ -243,6 +246,41 @@ export default function BiotechLabsResultPage() {
       })
     : [];
 
+  const mercenaryLedgerSlice =
+    latestHuntResult && isFieldContractResult
+      ? getGuildLedgerSliceForHuntResult(
+          state.player,
+          latestHuntResult.resolvedAt,
+        )
+      : null;
+
+  const expeditionGlanceModel =
+    latestHuntResult !== null
+      ? buildHuntResultGlanceModel({
+          latest: latestHuntResult,
+          mission: resultMission,
+          isFieldContract: isFieldContractResult,
+          fieldRunFeedback: fieldRunFeedback,
+          isRealtimeBonusApplied: Boolean(isRealtimeBonusApplied),
+          resourceEntries,
+          fieldLootEntries,
+          finalCredits,
+          finalRankXp,
+          finalMastery,
+          finalInfluence,
+          playerCondition: state.player.condition,
+          playerHunger: state.player.hunger,
+          playerVoidStrain: state.player.voidInstability,
+          carryPressureSummary: latestHuntResult.carryPressureSummary,
+          warExchangeSellPressureLines:
+            latestHuntResult.warExchangeSellPressureLines,
+          nextStepHref,
+          nextStepLabel,
+          secondaryFieldStep,
+          shouldRouteToFeastHall,
+        })
+      : null;
+
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(30,120,80,0.22),rgba(5,8,20,1)_55%)] px-6 py-10 text-white md:px-10">
       <div className="mx-auto flex max-w-5xl flex-col gap-8">
@@ -265,6 +303,10 @@ export default function BiotechLabsResultPage() {
               : "Payout, field cost, and next move."
           }
         />
+
+        {expeditionGlanceModel ? (
+          <ExpeditionResultGlanceBoard model={expeditionGlanceModel} />
+        ) : null}
 
         <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/4 px-4 py-3 sm:flex-row sm:items-center sm:gap-5">
           <div className="relative mx-auto h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-emerald-400/25 bg-black/45 shadow-[0_0_20px_rgba(16,185,129,0.12)] sm:mx-0 md:h-[72px] md:w-[72px]">
@@ -410,6 +452,33 @@ export default function BiotechLabsResultPage() {
                 … Bonus fills in once realtime contribution settles (usually
                 within a few seconds).
               </p>
+            ) : null}
+            {mercenaryLedgerSlice && mercenaryLedgerSlice.total > 0 ? (
+              <div className="mt-4 rounded-xl border border-cyan-400/25 bg-cyan-950/20 px-4 py-3">
+                <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-100/75">
+                  Mercenary ledger (this settlement)
+                </div>
+                <p className="mt-1 text-sm font-semibold tabular-nums text-cyan-50/95">
+                  +{mercenaryLedgerSlice.total} guild contribution
+                </p>
+                <ul className="mt-2 space-y-1.5 text-[11px] leading-snug text-white/58">
+                  {mercenaryLedgerSlice.entries.map((e, i) => (
+                    <li key={`${e.at}-${e.reason}-${i}`}>
+                      <span className="tabular-nums text-cyan-200/85">
+                        +{e.amount}
+                      </span>
+                      {" · "}
+                      {e.reason}
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  href="/guild"
+                  className="mt-3 inline-flex text-[11px] font-semibold uppercase tracking-[0.12em] text-cyan-200/90 underline decoration-cyan-400/35 underline-offset-2 hover:text-white"
+                >
+                  Guild board
+                </Link>
+              </div>
             ) : null}
           </div>
         ) : null}

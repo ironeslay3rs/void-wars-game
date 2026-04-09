@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { formatResourceLabel } from "@/features/game/gameFeedback";
-import type { ResourceKey, ResourcesState } from "@/features/game/gameTypes";
+import type { MissionOriginTagId, ResourceKey, ResourcesState } from "@/features/game/gameTypes";
 import type { EncounterOutcome } from "@/features/combat/encounterEngine";
+import SettlementLoreOverlay from "@/components/settlement/SettlementLoreOverlay";
 
 function getConditionLabel(condition: number) {
   if (condition >= 85) return "Optimal";
@@ -51,6 +52,8 @@ export default function HuntResult({
   contractResources,
   contractConditionDelta,
   returnHref,
+  originTag,
+  resolvedAt,
 }: {
   creatureName: string;
   outcome: EncounterOutcome;
@@ -62,6 +65,8 @@ export default function HuntResult({
   contractResources: Partial<ResourcesState>;
   contractConditionDelta: number;
   returnHref: string;
+  originTag?: MissionOriginTagId;
+  resolvedAt?: number;
 }) {
   const lootEntries = Object.entries(loot).filter(([, v]) => typeof v === "number" && v > 0);
   const contractEntries = Object.entries(contractResources ?? {}).filter(
@@ -186,6 +191,8 @@ export default function HuntResult({
           )}
         </div>
       </div>
+
+      <SettlementLoreOverlay originTag={originTag} resolvedAt={resolvedAt} />
 
       <div className="flex flex-wrap gap-3">
         {needsRecovery ? (

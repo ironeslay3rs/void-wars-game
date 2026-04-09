@@ -46,6 +46,8 @@ export type ResourceKey =
   /** M6: restricted-war / mythic forge metal (boss-named pool). */
   | "ironHeart";
 
+export type RunArchetype = "safe" | "balanced" | "greedy" | "volatile";
+
 export type FeastHallOfferId =
   | "scavenger-broth"
   | "sample-stew"
@@ -55,13 +57,19 @@ export type NextRunModifierId =
   | "scrap-kit"
   | "ember-stim"
   | "frost-stabilizer"
-  | "void-extract";
+  | "void-extract"
+  | "heat-sink-patch"
+  | "salvage-rigging"
+  | "extract-balm";
 
 export type NextRunEffectKey =
   | "SCRAP_KIT"
   | "EMBER_STIM"
   | "FROST_STABILIZER"
-  | "VOID_EXTRACT";
+  | "VOID_EXTRACT"
+  | "HEAT_SINK_PATCH"
+  | "SALVAGE_RIGGING"
+  | "EXTRACT_BALM";
 
 export type NextRunModifiers = {
   id: NextRunModifierId;
@@ -78,11 +86,15 @@ export type NextRunModifiers = {
     rewardBonusPct?: number; // e.g. +15
     conditionDrainReduction?: number; // e.g. 3 (reduces drain)
     conditionDrainPenalty?: number; // e.g. 4 (adds risk)
+    /** Flat points trimmed from run heat after this settlement’s heat tick (prep kits). */
+    runInstabilityGainReduction?: number;
   };
   /** Applied to shell-only combat feel (client practice). */
   applyInField?: {
     shellDamageBoostPct?: number; // e.g. 25
     floatDamageBoostPct?: number; // e.g. 25 (display-only)
+    /** Orb + extract salvage amounts multiplied during the primed run. */
+    fieldLootBonusPct?: number;
   };
 };
 
@@ -143,6 +155,47 @@ export type LatestHuntResult = {
   // Aliases for run-complete UI readability
   kills?: number;
   damage?: number;
+
+  /** M1 — citadel carry meter readout after this settlement (no hidden overload). */
+  carryPressureSummary?: string;
+  /** M1 — War Exchange sell-demand lines for materials in this payout window. */
+  warExchangeSellPressureLines?: string[];
+};
+
+/** Queued void hunting contract — captured at pickup for readable expedition context. */
+export type ExpeditionContractSnapshot = {
+  contractId: string;
+  targetLabel: string;
+  deployZoneId?: VoidZoneId;
+  expectedRewardSummary: string;
+  riskStrainPotential: string;
+  queuedAt: number;
+};
+
+/**
+ * Single ledger object for void-field extraction (orb haul → citadel bank).
+ * Produced only by `COMMIT_VOID_FIELD_EXTRACTION` in the game reducer.
+ */
+export type VoidFieldExtractionLedgerResult = {
+  zoneName: string;
+  zoneId?: string;
+  resolvedAt: number;
+  kills: number;
+  /** Run ledger totals attempted at the gate (pre-bank). */
+  ledgerLootAttempted: Partial<ResourcesState>;
+  resourcesBanked: Partial<ResourcesState>;
+  /** Boosted amounts that could not fit (overload / capacity gate). */
+  resourcesRejected: Partial<ResourcesState>;
+  pickupStrainFromBanking: number;
+  extractionStrainDelta: number;
+  rankXpGained: number;
+  conditionSpent: number;
+  carryBefore: { used: number; max: number; isOverloaded: boolean };
+  carryAfter: { used: number; max: number; isOverloaded: boolean };
+  /** Plain-language reason when salvage was trimmed or pack is overloaded. */
+  overloadWhy: string | null;
+  warExchangeSellPressureLines: string[];
+  resourcesAfterBanking: ResourcesState;
 };
 
 export type ActiveProcess = {
@@ -219,14 +272,28 @@ export type CanonBookRung =
   | "book-7"
   | "system";
 
+export type MissionOriginTagId =
+  | "bonehowl-remnant"
+  | "olympus-castoff"
+  | "crimson-altar-contraband"
+  | "pharos-surplus"
+  | "mandate-salvage"
+  | "mouth-of-inti-relic"
+  | "thousand-hands-fragment"
+  | "black-market-local";
+
 export type MissionDefinition = {
   id: string;
   category: MissionCategory;
   title: string;
   description: string;
+  /** Rumor-board flavor — how this mission sounds on the Black Market rumor board. */
+  rumorFlavor?: string;
   path: PathType | "neutral";
   /** Canon expansion rung for safe roadmap sequencing (Book 1-7). */
   canonBook?: CanonBookRung;
+  /** Where this opportunity leaked from (nation war, local scam, faction surplus). */
+  originTag?: MissionOriginTagId;
   durationHours: number;
   reward: MissionReward;
   /** Void theatre for hunting contracts — drives doctrine pressure drift. */
@@ -255,6 +322,12 @@ export type VoidRealtimeBinding = {
 
 export type CareerFocus = "combat" | "gathering" | "crafting";
 
+/** Phase 4 — one active broker work order tracked in the Crafting District. */
+export type CraftWorkOrderSlot = {
+  definitionId: string;
+  progress: number;
+};
+
 /** Void field shell combat — rigs influence posture/expose math (`resolveShellHit`). */
 export type FieldLoadoutProfile = "assault" | "support" | "breach";
 export type LoadoutSlotId =
@@ -265,9 +338,69 @@ export type LoadoutSlotId =
   | "professionBind";
 export type LoadoutSlotsState = Record<LoadoutSlotId, string | null>;
 
+/** Ephemeral UI feedback after `CRAFT_RECIPE` (not persisted across hydrate). */
+export type LastCraftOutcome = {
+  at: number;
+  recipeId: string;
+  recipeName: string;
+  ok: boolean;
+  /** Present when `ok`; false = failed bind (mats still spent). */
+  success: boolean | null;
+  detail: string;
+};
+
+/** Ephemeral UI feedback after `INSTALL_MINOR_RUNE` (not persisted across hydrate). */
+export type LastRuneInstallOutcome =
+  | { at: number; school: PathType; ok: true; newDepth: number }
+  | { at: number; school: PathType; ok: false; reason: string };
+
+export type MythicGateBreakthroughKind =
+  | "l3-rare-rune-set"
+  | "rune-crafter-license"
+  | "convergence-prime";
+
+/** Ephemeral banner + pulse after `ATTEMPT_MYTHIC_UNLOCK` (cleared on save load). */
+export type LastMythicGateBreakthrough = {
+  at: number;
+  gate: MythicGateBreakthroughKind;
+  headline: string;
+  detail: string;
+};
+
+/**
+ * Hidden convergence tracking — seeded in PlayerState but never surfaced in UI.
+ * The fusion of Body + Mind + Soul is the forbidden truth of the Sevenfold Rune
+ * universe. This data exists so the architecture supports late-game discovery
+ * without refactoring. No reducer writes to this yet.
+ */
+export type CrossSchoolExposure = {
+  /** Count of off-path materials the player has held (even briefly). */
+  offPathMaterialsEncountered: number;
+  /** Has the player ever experienced a mismatch event? */
+  mismatchEncountered: boolean;
+  /** Has the player used ANY material from each school? */
+  schoolsExposed: { bio: boolean; mecha: boolean; pure: boolean };
+  /** Hidden counter: increments on cross-school actions. */
+  anomalyScore: number;
+};
+
 export type PlayerState = {
   playerName: string;
+  /**
+   * True only after the player completes the New Game flow (`createNewPlayer`).
+   * Used to force Puppy-first onboarding; legacy saves infer when the field is absent.
+   */
+  characterCreated: boolean;
   factionAlignment: FactionAlignment;
+  /**
+   * Phase 6 / The Open World Awakens: the player's chosen school within their
+   * empire. One of the 7 canonical school ids (e.g. "bonehowl-of-fenrir") or
+   * null when unbound or pre-Phase 6 saves load. The school must always belong
+   * to the empire indicated by `factionAlignment`. Stored as `string | null`
+   * here to avoid a circular import; consumers should validate against
+   * features/schools/schoolData when reading.
+   */
+  affinitySchoolId: string | null;
   /** Hub / profile portrait only — not used on Void Field. */
   characterPortraitId: CharacterPortraitId;
   /**
@@ -295,6 +428,11 @@ export type PlayerState = {
   nextRunModifiers: NextRunModifiers | null;
   /** Idempotency: which hunt process already received on-start modifiers. */
   nextRunModifiersAppliedForProcessId: string | null;
+  /**
+   * Set on Expedition deploy when readiness band is "ready". Consumed on first
+   * hunting-ground settlement: small condition cushion on closeout (client-only).
+   */
+  expeditionReadyStabilityPending: boolean;
 
   rank: string;
   rankLevel: number;
@@ -305,15 +443,74 @@ export type PlayerState = {
   influence: number;
   hasBiotechSpecimenLead: boolean;
 
+  /**
+   * Phase 3 — Void strain from contracts and survival pressure. High values add
+   * extra condition loss on mission resolution; decays when stable, falls on recovery.
+   */
+  voidInstability: number;
+
+  /**
+   * Per-run "heat" (0–100): climbs during hunts, realtime raids, and gray-market moves.
+   * Resets on void extraction or returning to hub. Separate from void strain.
+   */
+  runInstability: number;
+  /** Recent run-heat events (threshold crosses + context); capped in helpers. */
+  runInstabilityLog: Array<{ at: number; message: string }>;
+
+  /**
+   * Optional one-shot payout amp from intentional "push heat" (expires wall-clock).
+   * Consumed on next mission/hunt settlement while valid.
+   */
+  runHeatPushBoost: { rewardMult: number; expiresAt: number } | null;
+
+  /**
+   * Greed streak: counts consecutive contract settlements that end with run heat ≥ 40.
+   * Resets below threshold, on vent below 40, hub/extract, or meltdown.
+   */
+  instabilityStreakTurns: number;
+
+  /**
+   * Auto-detected run style from recent settlements (avg heat), greed streak, and vent/push usage.
+   * Updated when a contract settles.
+   */
+  runArchetype: RunArchetype;
+  /** Rolling post-settlement run heat samples (0–100) for averaging / volatility. */
+  runStyleRiSamples: number[];
+  /** Lifetime tally: successful vent heat actions (feeds “safe”). */
+  runStyleVentCount: number;
+  /** Lifetime tally: successful push heat actions (feeds “greedy”). */
+  runStylePushCount: number;
+
   resources: ResourcesState;
   /** Field pickups accrued during the currently running hunt (cleared on run start/end). */
   fieldLootGainedThisRun: Partial<ResourcesState>;
+
+  /**
+   * M1 expedition contract snapshots (hunting-ground rows only), keyed by `queueId`.
+   * Dropped when that row resolves or is removed from the queue.
+   */
+  expeditionContractSnapshots: Record<string, ExpeditionContractSnapshot>;
+
+  /**
+   * M1 void-field extraction outcome (single action path). Ephemeral UI payload; null on fresh hydrate.
+   */
+  lastVoidFieldExtractionLedger: VoidFieldExtractionLedgerResult | null;
 
   /** M3→M4: War Exchange storefront stock state. */
   market: MarketState;
 
   /** M3 crafting output: lightweight crafted item inventory (non-resource). */
   craftedInventory: Record<string, number>;
+
+  /** Phase 4 — optional district work order (craft / bind quota + claim reward). */
+  craftWorkOrder: CraftWorkOrderSlot | null;
+
+  /**
+   * Phase 4 — stall/workshop rent timeline (wall clock, evaluated on survival ticks).
+   * When rent is due and credits are short, `stallArrearsCount` rises (broker markup).
+   */
+  lastStallRentResolvedAt: number;
+  stallArrearsCount: number;
 
   knownRecipes: string[];
   unlockedRoutes: string[];
@@ -341,6 +538,11 @@ export type PlayerState = {
   zoneRunStreak: number;
 
   missionQueue: MissionQueueEntry[];
+  /**
+   * UI / copy: concurrent run-pressure tags (queued contracts + optional field thread).
+   * Derived — do not mutate directly; `gameReducer` and save load recompute.
+   */
+  activeRuns: string[];
   maxMissionQueueSlots: number;
 
   /** Hour 20–40 mastery spine: per-school depth, capacity pools, hybrid drain. */
@@ -364,6 +566,31 @@ export type PlayerState = {
 
   /** M6 mythic ladder + arena rated shell. */
   mythicAscension: MythicAscensionState;
+
+  /** Cleared after UI reads it; always null on save hydrate. */
+  lastCraftOutcome: LastCraftOutcome | null;
+
+  /** Cleared after UI reads it; always null on save hydrate. */
+  lastRuneInstallOutcome: LastRuneInstallOutcome | null;
+
+  /** Mythic gate just cleared — strong log line + UI pulse; null on hydrate. */
+  lastMythicGateBreakthrough: LastMythicGateBreakthrough | null;
+
+  /**
+   * Hidden convergence seed — tracks cross-school material exposure.
+   * No reducer writes to this in Phase 1. No UI reads it.
+   * Exists so the data shape supports late-game discovery without refactoring.
+   */
+  crossSchoolExposure: CrossSchoolExposure;
+
+  /**
+   * Ephemeral anomaly toast — fires ONCE per cross-school combination.
+   * Cleared after UI reads it; null on save hydrate.
+   */
+  lastAnomalyToast: { text: string; school: PathType; at: number } | null;
+
+  /** Broker interaction cooldowns — maps brokerId to last-interaction timestamp. */
+  brokerCooldowns: Record<string, number>;
 };
 
 /* =========================
@@ -388,13 +615,42 @@ export type GameAction =
   | { type: "UNEQUIP_LOADOUT_ITEM"; payload: { slot: LoadoutSlotId } }
   | { type: "SET_FACTION_ALIGNMENT"; payload: PathType }
   | { type: "ADD_RESOURCE"; payload: { key: ResourceKey; amount: number } }
-  | { type: "ADD_FIELD_LOOT"; payload: { key: ResourceKey; amount: number } }
+  | {
+      type: "ADD_FIELD_LOOT";
+      payload: {
+        key: ResourceKey;
+        amount: number;
+        /** When true, only bank resources + strain — skip `fieldLootGainedThisRun` (orb picks already recorded). */
+        skipRunLedger?: boolean;
+      };
+    }
+  | {
+      type: "VOID_FIELD_ORB_COLLECTED";
+      payload: { key: ResourceKey; amount: number };
+    }
+  /**
+   * M1 — Bank `fieldLootGainedThisRun` through one reducer path (strain, carry, War Exchange copy).
+   * Server-authoritative amounts still arrive via `VOID_FIELD_ORB_COLLECTED` first.
+   */
+  | {
+      type: "COMMIT_VOID_FIELD_EXTRACTION";
+      payload: {
+        kills: number;
+        zoneName: string;
+        zoneId?: string;
+        nowMs?: number;
+      };
+    }
   | { type: "SPEND_RESOURCE"; payload: { key: ResourceKey; amount: number } }
   | { type: "GAIN_RANK_XP"; payload: number }
   | { type: "SET_RANK_LEVEL"; payload: number }
   | { type: "SET_RANK_NAME"; payload: string }
   | { type: "ADJUST_CONDITION"; payload: number }
+  /** Phase 5 — ranked / tournament arena SR (clamped shell ladder). */
+  | { type: "APPLY_ARENA_RANKED_SR_DELTA"; payload: number }
   | { type: "ADJUST_HUNGER"; payload: number }
+  /** Phase 3 — apply Void strain delta (e.g. void field extraction). Clamped 0–100. */
+  | { type: "APPLY_VOID_INSTABILITY_DELTA"; payload: number }
   | { type: "RECOVER_CONDITION" }
   | { type: "CRAFT_MOSS_RATION" }
   | { type: "CONSUME_MOSS_RATION" }
@@ -402,6 +658,12 @@ export type GameAction =
   | { type: "MARKET_BUY"; payload: { listingId: string } }
   | { type: "MARKET_SELL"; payload: { key: ResourceKey; amount: number } }
   | { type: "CRAFT_RECIPE"; payload: { recipeId: string } }
+  | { type: "CLEAR_LAST_CRAFT_OUTCOME" }
+  | { type: "ACCEPT_CRAFT_WORK_ORDER"; payload: { definitionId: string } }
+  | { type: "CLAIM_CRAFT_WORK_ORDER" }
+  | { type: "ABANDON_CRAFT_WORK_ORDER" }
+  /** Phase 4 — clear stall arrears (one payment for all missed periods). */
+  | { type: "PAY_STALL_ARREARS" }
   | { type: "CRAFT_NEXT_RUN_MODIFIER"; payload: { modifierId: NextRunModifierId } }
   | { type: "USE_FEAST_HALL_OFFER"; payload: { offerId: FeastHallOfferId } }
   | { type: "RESOLVE_HUNT"; payload: { missionId: string; resolvedAt?: number } }
@@ -444,7 +706,6 @@ export type GameAction =
       payload: { queueId: string; removedAt?: number };
     }
   | { type: "PROCESS_MISSION_QUEUE"; payload: { now: number } }
-  | { type: "CLAIM_MISSION"; payload: { queueId: string; claimedAt?: number } }
   | { type: "ADD_RECIPE"; payload: string }
   | {
       type: "VOID_MARKET_TRADE";
@@ -455,6 +716,7 @@ export type GameAction =
       };
     }
   | { type: "INSTALL_MINOR_RUNE"; payload: { school: PathType } }
+  | { type: "CLEAR_LAST_RUNE_INSTALL_OUTCOME" }
   | { type: "UNLOCK_ROUTE"; payload: string }
   | { type: "SET_CURRENT_ROUTE"; payload: RouteNodeId }
   | { type: "REFRESH_AVAILABLE_ROUTES" }
@@ -462,8 +724,20 @@ export type GameAction =
   | { type: "CLAIM_FACTION_HQ_STIPEND" }
   | {
       type: "ATTEMPT_MYTHIC_UNLOCK";
-      payload: "l3-rare-rune-set" | "rune-crafter-license";
+      payload:
+        | "l3-rare-rune-set"
+        | "rune-crafter-license"
+        | "convergence-prime";
     }
+  | {
+      type: "REDEEM_RUNE_KNIGHT_VALOR";
+      payload:
+        | "mastery-boon"
+        | "influence-seal"
+        | "ivory-prestige-rite"
+        | "arena-edge-sigil";
+    }
+  | { type: "CONSUME_ARENA_EDGE_SIGIL" }
   | { type: "GUILD_CREATE"; payload: { guildName: string } }
   | { type: "GUILD_JOIN"; payload: { guildCode: string } }
   | { type: "GUILD_LEAVE" }
@@ -482,4 +756,17 @@ export type GameAction =
   | { type: "SET_ATTUNEMENT_STATE"; payload: AttunementState }
   | { type: "SET_GATE_STATUS"; payload: GateStatus }
   | { type: "HYDRATE_STATE"; payload: GameState }
-  | { type: "RESET_GAME" };
+  | { type: "RESET_GAME" }
+  | {
+      type: "SET_EXPEDITION_READY_STABILITY_PENDING";
+      payload: { value: boolean };
+    }
+  | { type: "RESET_RUN_INSTABILITY" }
+  | { type: "VENT_RUN_INSTABILITY" }
+  | { type: "PUSH_RUN_INSTABILITY"; payload?: { nowMs?: number } }
+  | { type: "BROKER_INTERACT"; payload: { brokerId: string } }
+  | { type: "SET_AFFINITY_SCHOOL"; payload: { schoolId: string | null } }
+  | {
+      type: "RECORD_CROSS_SCHOOL_EVENT";
+      payload: { school: PathType };
+    };

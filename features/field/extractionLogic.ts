@@ -8,8 +8,8 @@ export type ExtractionSummary = {
   conditionSpent: number;
 };
 
-const XP_PER_KILL = 12;
-const CONDITION_PER_KILL = 2;
+export const VOID_FIELD_EXTRACTION_XP_PER_KILL = 12;
+export const VOID_FIELD_EXTRACTION_CONDITION_PER_KILL = 2;
 
 export function buildExtractionSummary(params: {
   zoneName: string;
@@ -21,8 +21,8 @@ export function buildExtractionSummary(params: {
     zoneName: params.zoneName,
     kills,
     lootCollected: params.lootCollected,
-    xpEarned: kills * XP_PER_KILL,
-    conditionSpent: kills * CONDITION_PER_KILL,
+    xpEarned: kills * VOID_FIELD_EXTRACTION_XP_PER_KILL,
+    conditionSpent: kills * VOID_FIELD_EXTRACTION_CONDITION_PER_KILL,
   };
 }
 

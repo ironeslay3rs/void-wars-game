@@ -16,7 +16,6 @@ export type MasteryScreenData = {
   eyebrow: string;
   title: string;
   subtitle: string;
-  cards: StatCard[];
   sections: MasterySection[];
 };
 
@@ -25,24 +24,6 @@ export const masteryScreenData: MasteryScreenData = {
   title: "School Mastery",
   subtitle:
     "M2 functional: depth + capacity + Executional tiers (L2/L3) drive gates, theme-aligned field/contract yields, hybrid tax, zone deploy rules (see Void Expedition chips), Crafting relic refines, and recipe depth checks.",
-
-  cards: [
-    {
-      label: "School rails",
-      value: "03",
-      hint: "Bio, Mecha, Pure — parallel tracks; depth and minors per school.",
-    },
-    {
-      label: "Sevenfold cap",
-      value: "L7",
-      hint: "Rune depth L1–L7 from main ladder + minor installs (see tree below).",
-    },
-    {
-      label: "Gates",
-      value: "Live",
-      hint: "Example: Rift Maw needs deepest-school depth 3+; sigil + risky kits need depth.",
-    },
-  ],
 
   sections: [
     {
@@ -58,7 +39,8 @@ export const masteryScreenData: MasteryScreenData = {
     },
     {
       title: "Respec window (later)",
-      description: "Narrow correction before hard lock — not wired in M1.",
+      description:
+        "Narrow correction window before hard lock — ships after the M1 slice stabilizes.",
       body: masteryFrameworkScaffold.respecWindowHook.implementationNote,
     },
     {

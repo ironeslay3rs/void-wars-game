@@ -1,0 +1,20 @@
+# Example: Caddy v2 — automatic HTTPS (Let's Encrypt) for self-hosted Phase 10.
+# Replace domains; point DNS A/AAAA records at this host.
+#
+# Prereq: publish ports 80/443 from Caddy; docker compose internal network names `web` / `realtime`.
+#
+# docker run -d --name caddy -p 80:80 -p 443:443 \
+#   -v $PWD/Caddyfile:/etc/caddy/Caddyfile:ro \
+#   --network void-wars-game_default caddy:2-alpine
+#
+# (Network name may be `void-wars-game_default` or `<folder>_default` — use `docker network ls`.)
+
+app.your-domain.com {
+	encode zstd gzip
+	reverse_proxy web:3000
+}
+
+realtime.your-domain.com {
+	encode zstd gzip
+	reverse_proxy realtime:3002
+}

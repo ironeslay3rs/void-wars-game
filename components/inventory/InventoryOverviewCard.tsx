@@ -28,7 +28,7 @@ const DISCARDABLE_COMMON_KEYS: ResourceKey[] = [
 ];
 
 const RESOURCE_SLOT_TOOLTIPS: Partial<Record<ResourceKey, string>> = {
-  credits: "Universal payment used across market and services.",
+  credits: "Universal payment used across Black Market services and trade.",
   ironOre: "Raw salvage from the field. Refine into usable stock.",
   scrapAlloy: "Refined salvage used for early crafting and loadout preparation.",
   runeDust: "Binding reagent used for rations, sigils, and rune-linked crafts.",

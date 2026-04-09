@@ -79,8 +79,8 @@ export const friendShellEntries: FriendShellEntry[] = [
     title: "Citadel Broker",
     faction: "Bio",
     presence: "online",
-    note: "Trading route gossip and trench reports through neutral channels.",
-    statusLine: "Watching the board now.",
+    note: "Moves trench gossip through neutral Black Market lanes where survival matters more than faction bragging.",
+    statusLine: "Watching the board under Black Market law.",
   },
 ];
 
@@ -131,7 +131,7 @@ export const friendChatShellMessages: Record<string, ChatShellMessage[]> = {
     {
       id: "grave-1",
       sender: "friend",
-      text: "Neutral brokers are hearing Black Market traffic again. Feast Hall is moving more bodies than usual.",
+      text: "Neutral brokers are hearing Black Market traffic again. Feast Hall is taking more bodies, which means survival pressure is spiking below the citadel.",
       timestamp: "22:03",
     },
     {
@@ -174,20 +174,20 @@ export const mailEntries: MailEntry[] = [
     body: [
       "Operative, your last return from the outer districts has been entered into the salvage book.",
       "No discrepancies were found in the haul count. The Citadel will hold the record until you require a formal audit.",
-      "Attached below: ledger abstract and a placeholder recovery chit for future system wiring.",
+      "Attached below: a stamped ledger abstract and a sealed recovery chit — archival copies only until a payout is formally claimed.",
     ],
     attachments: [
       {
         id: "ledger-abstract",
         label: "Ledger Abstract",
         type: "document",
-        detail: "Archival document placeholder only.",
+        detail: "Citadel-stamped summary — read-only archive.",
       },
       {
         id: "recovery-chit",
         label: "Recovery Chit",
         type: "reward",
-        detail: "Presentational reward placeholder only.",
+        detail: "Sealed token — cosmetic until tied to a live relief event.",
       },
     ],
   },
@@ -198,18 +198,18 @@ export const mailEntries: MailEntry[] = [
     category: "Citadel Notice",
     receivedAt: "Yesterday / 22:03",
     unread: false,
-    preview: "Feast Hall traffic is rising. Terms remain fixed under market law.",
+    preview: "Feast Hall traffic is rising. Neutral ground remains open, but Black Market law has not softened.",
     body: [
-      "Traffic through the Black Market has increased, especially through Gluttony and Feast Hall.",
-      "Terms remain fixed. The market will not recognize panic as a bargaining right.",
-      "This circular is archived for awareness only and carries no live claim path in the current build.",
+      "Traffic through the Black Market has increased, especially through Gluttony and Feast Hall. The citadel is taking in the desperate again.",
+      "Terms remain fixed. The Black Market will not recognize panic as a bargaining right, and neutral ground only holds as long as the law is obeyed.",
+      "Trade, recovery, and survival lanes remain open. Come prepared, pay what is owed, and leave with your footing intact if you can.",
     ],
     attachments: [
       {
         id: "market-bulletin",
-        label: "Market Bulletin",
+        label: "Black Market Bulletin",
         type: "document",
-        detail: "Reference notice placeholder only.",
+        detail: "Reference notice from the neutral citadel ledger.",
       },
     ],
   },
@@ -224,14 +224,14 @@ export const mailEntries: MailEntry[] = [
     body: [
       "A partial signal packet was recovered from the trench relay grid and reconstructed for archive review.",
       "Most of the live routing data was lost before recovery. What remains is a record, not an active contact thread.",
-      "Attached below: one signal fragment placeholder held only as a visual shell.",
+      "Attached: one degraded fragment — archive only; do not treat as a live ping.",
     ],
     attachments: [
       {
         id: "signal-fragment",
         label: "Signal Fragment",
         type: "document",
-        detail: "Archival signal placeholder only.",
+        detail: "Partial decode — not a contact line.",
       },
     ],
   },

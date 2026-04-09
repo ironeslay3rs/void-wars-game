@@ -1,4 +1,5 @@
 import type { ArenaAccent } from "@/features/arena/arenaTypes";
+import type { ArenaMatchModeId } from "@/features/arena/arenaMatchModes";
 
 export function formatFactionLabel(faction: string) {
   if (faction === "unbound") return "Unbound";
@@ -18,6 +19,12 @@ export function getConditionLabel(condition: number) {
 export function getArenaEligibility(condition: number) {
   if (condition >= 40) return "Eligible";
   return "Restricted";
+}
+
+/** Ranked/tournament queue requires condition; practice always queues. */
+export function canEnterArenaQueue(modeId: ArenaMatchModeId, condition: number) {
+  if (modeId === "practice") return true;
+  return condition >= 40;
 }
 
 export function getFactionAccent(faction: string): ArenaAccent {

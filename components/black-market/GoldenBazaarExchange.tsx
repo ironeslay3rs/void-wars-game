@@ -3,6 +3,9 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useGame } from "@/features/game/gameContext";
+import BrokerCard from "@/components/shared/BrokerCard";
+import OpenFaceLink from "@/components/schools/OpenFaceLink";
+import { getBrokersByDistrict } from "@/features/lore/brokerData";
 import {
   quoteVoidMarketBuy,
   quoteVoidMarketSell,
@@ -46,6 +49,9 @@ export default function GoldenBazaarExchange() {
       <h2 className="mt-2 text-xl font-black text-white md:text-2xl">
         Black Market trade desk
       </h2>
+      <div className="mt-3">
+        <OpenFaceLink laneId="golden-bazaar" />
+      </div>
       <p className="mt-2 max-w-3xl text-sm text-white/65">
         Browse listings, buy with credits, and sell from stock. Buys include a{" "}
         {Math.round(VOID_MARKET_BUY_TAX_RATE * 100)}% transaction tax; sells pay a{" "}
@@ -135,6 +141,12 @@ export default function GoldenBazaarExchange() {
           >
             Buy {u} {VOID_MARKET_COMMODITY_LABEL[commodity]}
           </button>
+          {!canBuy ? (
+            <p className="mt-2 text-[11px] leading-relaxed text-rose-200/85">
+              Short {Math.max(0, buyTotal - res.credits)} credits for this debit (
+              {buyTotal} cr).
+            </p>
+          ) : null}
         </div>
 
         <div className="rounded-xl border border-amber-400/25 bg-amber-950/15 p-4">
@@ -174,8 +186,22 @@ export default function GoldenBazaarExchange() {
           >
             Sell {u} {VOID_MARKET_COMMODITY_LABEL[commodity]}
           </button>
+          {!canSell ? (
+            <p className="mt-2 text-[11px] leading-relaxed text-rose-200/85">
+              Hold {res[commodity] ?? 0} / {u}{" "}
+              {VOID_MARKET_COMMODITY_LABEL[commodity]} — sell less or gather more.
+            </p>
+          ) : null}
         </div>
       </div>
+      {getBrokersByDistrict("golden-bazaar").length > 0 ? (
+        <div className="mt-4 space-y-3">
+          <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/40">Brokers</div>
+          {getBrokersByDistrict("golden-bazaar").map((b) => (
+            <BrokerCard key={b.id} broker={b} />
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }

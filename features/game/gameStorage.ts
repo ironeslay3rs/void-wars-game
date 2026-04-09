@@ -2,6 +2,7 @@ import { isCharacterPortraitId } from "@/features/characters/characterPortraits"
 import { initialGameState } from "@/features/game/initialGameState";
 import type {
   ActiveProcess,
+  ExpeditionContractSnapshot,
   GameState,
   LatestHuntResult,
   MissionCategory,
@@ -20,16 +21,21 @@ import {
 import {
   createInitialRuneMastery,
   normalizeRuneDepthFromMinors,
+  type EffectiveCapacityOptions,
 } from "@/features/mastery/runeMasteryLogic";
 import {
   normalizePlayerFactionWorldSlice,
   parseVoidZoneId,
 } from "@/features/factions/factionWorldLogic";
+import { isRunArchetype } from "@/features/game/runArchetypeLogic";
 import { normalizeMythicAscension } from "@/features/progression/mythicAscensionLogic";
+import { normalizeCraftWorkOrderSlot } from "@/features/economy/craftWorkOrderData";
+import { resolveCharacterCreated } from "@/features/player/characterCreatedGate";
 import {
   normalizeGuildContracts,
   normalizeGuildRoster,
 } from "@/features/social/guildLiveLogic";
+import { deriveActiveRuns } from "@/features/game/lib/runPressure";
 
 export const SAVE_VERSION = 4;
 
@@ -131,7 +137,10 @@ function clampInt(n: number, min: number, max: number) {
   return Math.min(max, Math.max(min, Math.floor(n)));
 }
 
-function normalizeRuneMastery(value: unknown): PlayerRuneMasteryState {
+function normalizeRuneMastery(
+  value: unknown,
+  relief: EffectiveCapacityOptions,
+): PlayerRuneMasteryState {
   const base = createInitialRuneMastery();
   if (!isRecord(value)) {
     return base;
@@ -196,13 +205,16 @@ function normalizeRuneMastery(value: unknown): PlayerRuneMasteryState {
       ? Math.max(0, Math.floor(value.hybridDrainStacks))
       : base.hybridDrainStacks;
 
-  return normalizeRuneDepthFromMinors({
-    depthBySchool,
-    minorCountBySchool,
-    capacity,
-    capacityMax,
-    hybridDrainStacks,
-  });
+  return normalizeRuneDepthFromMinors(
+    {
+      depthBySchool,
+      minorCountBySchool,
+      capacity,
+      capacityMax,
+      hybridDrainStacks,
+    },
+    relief,
+  );
 }
 
 function normalizeLatestHuntResult(value: unknown): LatestHuntResult | null {
@@ -369,7 +381,51 @@ function normalizeLatestHuntResult(value: unknown): LatestHuntResult | null {
     result.damage = damageCandidate;
   }
 
+  if (
+    typeof (value as Record<string, unknown>).carryPressureSummary === "string"
+  ) {
+    result.carryPressureSummary = (value as Record<string, unknown>)
+      .carryPressureSummary as string;
+  }
+
+  const warLines = (value as Record<string, unknown>)
+    .warExchangeSellPressureLines;
+  if (Array.isArray(warLines)) {
+    result.warExchangeSellPressureLines = warLines
+      .filter((x): x is string => typeof x === "string")
+      .slice(0, 12);
+  }
+
   return result;
+}
+
+function normalizeExpeditionContractSnapshots(
+  value: unknown,
+): Record<string, ExpeditionContractSnapshot> {
+  if (!isRecord(value)) return {};
+  const out: Record<string, ExpeditionContractSnapshot> = {};
+  for (const [queueId, rawSnap] of Object.entries(value)) {
+    if (typeof queueId !== "string" || !isRecord(rawSnap)) continue;
+    if (typeof rawSnap.contractId !== "string") continue;
+    if (typeof rawSnap.targetLabel !== "string") continue;
+    if (typeof rawSnap.expectedRewardSummary !== "string") continue;
+    if (typeof rawSnap.riskStrainPotential !== "string") continue;
+    if (
+      typeof rawSnap.queuedAt !== "number" ||
+      !Number.isFinite(rawSnap.queuedAt)
+    ) {
+      continue;
+    }
+    out[queueId] = {
+      contractId: rawSnap.contractId,
+      targetLabel: rawSnap.targetLabel,
+      deployZoneId: parseVoidZoneId(rawSnap.deployZoneId),
+      expectedRewardSummary: rawSnap.expectedRewardSummary,
+      riskStrainPotential: rawSnap.riskStrainPotential,
+      queuedAt: rawSnap.queuedAt,
+    };
+  }
+  return out;
 }
 
 function normalizeBehaviorStats(value: unknown) {
@@ -576,23 +632,39 @@ function normalizePlayer(value: unknown): PlayerState {
       ? (nextRunModifiersCandidate as PlayerState["nextRunModifiers"])
       : initialGameState.player.nextRunModifiers;
 
-  return {
+  const playerName =
+    typeof raw.playerName === "string"
+      ? raw.playerName
+      : initialGameState.player.playerName;
+
+  const factionAlignment =
+    raw.factionAlignment === "unbound" ||
+    raw.factionAlignment === "bio" ||
+    raw.factionAlignment === "mecha" ||
+    raw.factionAlignment === "pure"
+      ? raw.factionAlignment
+      : raw.factionAlignment === "spirit"
+        ? "pure"
+        : initialGameState.player.factionAlignment;
+
+  const mythicAscension = normalizeMythicAscension(
+    (raw as Record<string, unknown>).mythicAscension,
+  );
+
+  const normalized: PlayerState = {
     ...initialGameState.player,
 
-    playerName:
-      typeof raw.playerName === "string"
-        ? raw.playerName
-        : initialGameState.player.playerName,
+    playerName,
+    factionAlignment,
 
-    factionAlignment:
-      raw.factionAlignment === "unbound" ||
-      raw.factionAlignment === "bio" ||
-      raw.factionAlignment === "mecha" ||
-      raw.factionAlignment === "pure"
-        ? raw.factionAlignment
-        : raw.factionAlignment === "spirit"
-          ? "pure"
-        : initialGameState.player.factionAlignment,
+    characterCreated: resolveCharacterCreated({
+      stored:
+        typeof raw.characterCreated === "boolean"
+          ? raw.characterCreated
+          : undefined,
+      playerName,
+      factionAlignment,
+    }),
 
     characterPortraitId:
       typeof raw.characterPortraitId === "string" &&
@@ -654,6 +726,13 @@ function normalizePlayer(value: unknown): PlayerState {
         ? raw.nextRunModifiersAppliedForProcessId
         : initialGameState.player.nextRunModifiersAppliedForProcessId,
 
+    expeditionReadyStabilityPending:
+      typeof (raw as Record<string, unknown>).expeditionReadyStabilityPending ===
+      "boolean"
+        ? (raw as { expeditionReadyStabilityPending: boolean })
+            .expeditionReadyStabilityPending
+        : initialGameState.player.expeditionReadyStabilityPending,
+
     rank:
       typeof raw.rank === "string" ? raw.rank : initialGameState.player.rank,
 
@@ -687,11 +766,116 @@ function normalizePlayer(value: unknown): PlayerState {
         ? raw.hasBiotechSpecimenLead
         : initialGameState.player.hasBiotechSpecimenLead,
 
+    voidInstability:
+      typeof raw.voidInstability === "number" &&
+      Number.isFinite(raw.voidInstability)
+        ? Math.max(
+            0,
+            Math.min(100, Math.round(raw.voidInstability)),
+          )
+        : initialGameState.player.voidInstability,
+
+    runInstability:
+      typeof (raw as Record<string, unknown>).runInstability === "number" &&
+      Number.isFinite((raw as { runInstability: number }).runInstability)
+        ? Math.max(
+            0,
+            Math.min(100, Math.round((raw as { runInstability: number }).runInstability)),
+          )
+        : initialGameState.player.runInstability,
+
+    runInstabilityLog: Array.isArray(
+      (raw as Record<string, unknown>).runInstabilityLog,
+    )
+      ? ((raw as { runInstabilityLog: unknown[] }).runInstabilityLog
+          .filter(
+            (e): e is { at: number; message: string } =>
+              !!e &&
+              typeof e === "object" &&
+              typeof (e as { at?: unknown }).at === "number" &&
+              typeof (e as { message?: unknown }).message === "string",
+          )
+          .slice(-30))
+      : initialGameState.player.runInstabilityLog,
+
+    runHeatPushBoost: (() => {
+      const v = (raw as Record<string, unknown>).runHeatPushBoost;
+      if (!v || typeof v !== "object") return initialGameState.player.runHeatPushBoost;
+      const o = v as Record<string, unknown>;
+      const rewardMult =
+        typeof o.rewardMult === "number" && o.rewardMult > 1 ? o.rewardMult : null;
+      const expiresAt =
+        typeof o.expiresAt === "number" && Number.isFinite(o.expiresAt)
+          ? o.expiresAt
+          : null;
+      if (rewardMult === null || expiresAt === null) {
+        return initialGameState.player.runHeatPushBoost;
+      }
+      return { rewardMult, expiresAt };
+    })(),
+
+    instabilityStreakTurns: (() => {
+      const v = (raw as Record<string, unknown>).instabilityStreakTurns;
+      return typeof v === "number" && Number.isFinite(v)
+        ? Math.max(0, Math.min(999, Math.floor(v)))
+        : initialGameState.player.instabilityStreakTurns;
+    })(),
+
+    runArchetype: isRunArchetype(
+      (raw as Record<string, unknown>).runArchetype,
+    )
+      ? (raw as { runArchetype: typeof initialGameState.player.runArchetype })
+          .runArchetype
+      : initialGameState.player.runArchetype,
+    runStyleRiSamples: Array.isArray(
+      (raw as Record<string, unknown>).runStyleRiSamples,
+    )
+      ? (raw as { runStyleRiSamples: unknown[] }).runStyleRiSamples
+          .filter((x): x is number => typeof x === "number" && Number.isFinite(x))
+          .map((x) => clampInt(Math.round(x), 0, 100))
+          .slice(-12)
+      : initialGameState.player.runStyleRiSamples,
+    runStyleVentCount: (() => {
+      const v = (raw as Record<string, unknown>).runStyleVentCount;
+      return typeof v === "number" && Number.isFinite(v)
+        ? Math.max(0, Math.min(9999, Math.floor(v)))
+        : initialGameState.player.runStyleVentCount;
+    })(),
+    runStylePushCount: (() => {
+      const v = (raw as Record<string, unknown>).runStylePushCount;
+      return typeof v === "number" && Number.isFinite(v)
+        ? Math.max(0, Math.min(9999, Math.floor(v)))
+        : initialGameState.player.runStylePushCount;
+    })(),
+
+    craftWorkOrder: normalizeCraftWorkOrderSlot(
+      (raw as { craftWorkOrder?: unknown }).craftWorkOrder,
+    ),
+
+    lastStallRentResolvedAt: (() => {
+      const v = (raw as Record<string, unknown>).lastStallRentResolvedAt;
+      return typeof v === "number" && Number.isFinite(v)
+        ? v
+        : initialGameState.player.lastStallRentResolvedAt;
+    })(),
+
+    stallArrearsCount: (() => {
+      const v = (raw as Record<string, unknown>).stallArrearsCount;
+      return typeof v === "number" && Number.isFinite(v)
+        ? Math.max(0, Math.min(99, Math.floor(v)))
+        : initialGameState.player.stallArrearsCount;
+    })(),
+
     resources: normalizeResources(raw.resources),
     fieldLootGainedThisRun:
       raw.fieldLootGainedThisRun !== undefined
         ? normalizePartialResources(raw.fieldLootGainedThisRun)
         : initialGameState.player.fieldLootGainedThisRun,
+
+    expeditionContractSnapshots: normalizeExpeditionContractSnapshots(
+      (raw as Record<string, unknown>).expeditionContractSnapshots,
+    ),
+    lastVoidFieldExtractionLedger: null,
 
     knownRecipes: Array.isArray(raw.knownRecipes)
       ? raw.knownRecipes.filter(
@@ -700,9 +884,9 @@ function normalizePlayer(value: unknown): PlayerState {
       : initialGameState.player.knownRecipes,
 
     unlockedRoutes: Array.isArray(raw.unlockedRoutes)
-      ? raw.unlockedRoutes.filter(
-          (route): route is string => typeof route === "string",
-        )
+      ? raw.unlockedRoutes
+          .filter((route): route is string => typeof route === "string")
+          .map((route) => (route === "spirit-sanctum" ? "pure-sanctum" : route))
       : initialGameState.player.unlockedRoutes,
 
     navigation: isRecord(raw.navigation)
@@ -783,6 +967,10 @@ function normalizePlayer(value: unknown): PlayerState {
 
     runeMastery: normalizeRuneMastery(
       (raw as Record<string, unknown>).runeMastery,
+      {
+        crafterHybridRelief: mythicAscension.runeCrafterLicense,
+        convergenceHybridRelief: mythicAscension.convergencePrimed,
+      },
     ),
 
     ...normalizePlayerFactionWorldSlice(raw as PlayerState),
@@ -792,9 +980,28 @@ function normalizePlayer(value: unknown): PlayerState {
       (raw as Record<string, unknown>).guildContracts,
     ),
 
-    mythicAscension: normalizeMythicAscension(
-      (raw as Record<string, unknown>).mythicAscension,
-    ),
+    mythicAscension,
+
+    brokerCooldowns:
+      isRecord((raw as Record<string, unknown>).brokerCooldowns)
+        ? (Object.fromEntries(
+            Object.entries(
+              (raw as Record<string, unknown>).brokerCooldowns as Record<string, unknown>,
+            ).filter(
+              ([, v]) => typeof v === "number" && Number.isFinite(v as number),
+            ),
+          ) as Record<string, number>)
+        : {},
+
+    affinitySchoolId:
+      typeof (raw as Record<string, unknown>).affinitySchoolId === "string"
+        ? ((raw as Record<string, unknown>).affinitySchoolId as string)
+        : null,
+  };
+
+  return {
+    ...normalized,
+    activeRuns: deriveActiveRuns(normalized),
   };
 }
 

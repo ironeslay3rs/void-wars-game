@@ -23,7 +23,7 @@ export default function InventoryCategoriesCard() {
           value: player.resources.credits,
           tier: "Currency",
           tooltip:
-            "Universal payment. Spent on market trades, services, and recovery.",
+            "Universal payment. Spent on Black Market trades, services, and recovery.",
         },
         {
           label: "Moss Rations",
@@ -84,7 +84,8 @@ export default function InventoryCategoriesCard() {
           label: "Coilbound Lattice",
           value: player.resources.coilboundLattice,
           tier: "Boss",
-          tooltip: "Boss-grade extract. Reserved for later-tier crafting sinks.",
+          tooltip:
+            "Boss-grade extract — bank it for high-tier refinement and war-economy gates when those lanes open.",
         },
         {
           label: "Ash Synod Relic",

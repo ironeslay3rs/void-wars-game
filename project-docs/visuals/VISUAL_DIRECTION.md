@@ -34,6 +34,8 @@ UI = identity and detail
 
 \- Minimal text
 
+\- **Mockup reference pack:** high-fidelity layout targets live in `UI_MOCKUP_REFERENCE.md` (copy PNGs into `visuals/mockups/`). Use for composition and tone; ship art only via `ASSET_PIPELINE.md`.
+
 
 
 \## Visual Layers

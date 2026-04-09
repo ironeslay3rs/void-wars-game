@@ -1,32 +1,22 @@
 import type { ResourceKey, ResourcesState } from "@/features/game/gameTypes";
+import { getResourceDisplayName } from "@/features/lore/resourceFlavorData";
 
+/** Known resource keys for safe lookup. */
+const KNOWN_RESOURCE_KEYS = new Set<string>([
+  "credits", "ironOre", "scrapAlloy", "runeDust", "emberCore",
+  "bioSamples", "mossRations", "coilboundLattice", "ashSynodRelic",
+  "vaultLatticeShard", "ironHeart",
+]);
+
+/**
+ * Resource display name using lore-flavored names from the Sevenfold Rune universe.
+ * E.g., "bioSamples" → "Predator Marrow", "scrapAlloy" → "Pharos Scrap".
+ */
 export function formatResourceLabel(key: string) {
-  switch (key) {
-    case "credits":
-      return "Credits";
-    case "ironOre":
-      return "Iron Ore";
-    case "scrapAlloy":
-      return "Scrap Alloy";
-    case "runeDust":
-      return "Rune Dust";
-    case "emberCore":
-      return "Ember Core";
-    case "bioSamples":
-      return "Bio Samples";
-    case "mossRations":
-      return "Moss Rations";
-    case "coilboundLattice":
-      return "Coilbound Lattice";
-    case "ashSynodRelic":
-      return "Ash Synod Relic";
-    case "vaultLatticeShard":
-      return "Vault Lattice Shard";
-    case "ironHeart":
-      return "Ironheart";
-    default:
-      return key;
+  if (KNOWN_RESOURCE_KEYS.has(key)) {
+    return getResourceDisplayName(key as ResourceKey);
   }
+  return key;
 }
 
 export function getResourceTier(key: ResourceKey): "common" | "rare" | "apex" {

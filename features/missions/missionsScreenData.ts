@@ -23,23 +23,23 @@ export const missionsScreenData: MissionsScreenData = {
   eyebrow: "Void Wars / Mission Protocol",
   title: "Mission Systems",
   subtitle:
-    "Track contracts, objectives, and operation flow across combat, gathering, and advancement loops.",
+    "Queue timed contracts on your stack. When timers pay out, prep the next push — then deploy from Command when you are ready to enter the field.",
 
   cards: [
     {
       label: "Types",
       value: "03",
-      hint: "Combat / Gathering / Story",
+      hint: "Combat, gathering, and story beats on the contract board.",
     },
     {
       label: "Ops",
       value: "12",
-      hint: "Planned mission categories",
+      hint: "Rotating operations you can queue on the shared timer stack.",
     },
     {
       label: "Status",
-      value: "Alpha",
-      hint: "First-pass mission shell",
+      value: "Live",
+      hint: "Queue, timers, and payouts are wired — treat this as your ops spine.",
     },
   ],
 
@@ -47,14 +47,14 @@ export const missionsScreenData: MissionsScreenData = {
     {
       title: "Mission Categories",
       description:
-        "Core mission families that define how players progress through the world.",
+        "Contracts cluster into combat pressure, gathering hauls, and story-forward pushes — pick what the lane needs.",
       items: ["Combat Contracts", "Gathering Runs", "Story Operations"],
     },
     {
-      title: "Objective Console",
+      title: "Objective rhythm",
       description:
-        "Reserved for mission flow, reward logic, and objective state tracking.",
-      body: "Reserved for briefing panels, reward breakdowns, timer logic, and objective progression.",
+        "Each job states duration, cost to the body, and payout — read before you stack timers.",
+      body: "Briefings and reward lines stay tied to the live board; if something is greyed out, doctrine or path is telling you to recover first.",
     },
   ],
 };

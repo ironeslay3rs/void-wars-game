@@ -36,7 +36,7 @@ export default function MechaFoundryPage() {
         <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           <SectionCard
             title="Upgrade Bays"
-            description="Reserved for frame upgrades, weapon tuning, module installation, and precision enhancement systems."
+            description="Frame calibration, weapon mounts, and module sockets — Chrome Synod precision work stages here before full forge loops land."
           >
             <div className="space-y-3">
               {["Frame Calibration", "Weapon Mounting", "Module Socketing"].map(
@@ -56,7 +56,7 @@ export default function MechaFoundryPage() {
 
           <SectionCard
             title="Systems Console"
-            description="Future diagnostics, stat changes, and enhancement validation."
+            description="Synod readouts for frame health, load stress, and upgrade validation—treat this bay as your diagnostics spine until full forge loops land."
           >
             <div className="space-y-3">
               <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-white/70">

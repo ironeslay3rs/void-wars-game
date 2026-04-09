@@ -22,6 +22,10 @@ export function useVoidFieldLootDropSpawns(
   mobsForField: MobEntity[],
   zoneId: VoidZoneId,
   fieldLootAmountMultiplier = 1,
+  options?: {
+    /** When true, skip client roll (realtime server sends authoritative `mob_defeated.lootLines`). */
+    skipClientRollForMobEntityId?: (mobEntityId: string) => boolean;
+  },
 ) {
   const [drops, setDrops] = useState<VoidFieldLootDropVfx[]>([]);
   const prevRef = useRef<Map<string, MobSnap>>(new Map());
@@ -36,33 +40,38 @@ export function useVoidFieldLootDropSpawns(
       seen.add(mob.mobEntityId);
       const old = prev.get(mob.mobEntityId);
       if (old !== undefined && old.hp > 0 && mob.hp <= 0) {
-        const isBoss = mob.isBoss ?? isVoidFieldShellBossMobId(mob.mobEntityId);
-        const rolled = rollVoidFieldLoot({
-          zoneLootTheme: zone.lootTheme,
-          mobId: mob.mobId,
-          isBoss,
-          seed: `death-${mob.mobEntityId}-${mob.spawnedAt}`,
-        });
-        rolled.forEach((line, idx) => {
-          const amt = Math.max(
-            1,
-            Math.round(line.amount * fieldLootAmountMultiplier),
-          );
-          additions.push(
-            createVoidFieldLootDropVfx(
-              mob.x,
-              mob.y,
-              line.resource,
-              amt,
-              `death-${mob.mobEntityId}-${mob.spawnedAt}-${idx}`,
-            ),
-          );
-        });
+        if (!options?.skipClientRollForMobEntityId?.(mob.mobEntityId)) {
+          const isBoss = mob.isBoss ?? isVoidFieldShellBossMobId(mob.mobEntityId);
+          const rolled = rollVoidFieldLoot({
+            zoneLootTheme: zone.lootTheme,
+            mobId: mob.mobId,
+            isBoss,
+            seed: `death-${mob.mobEntityId}-${mob.spawnedAt}`,
+          });
+          rolled.forEach((line, idx) => {
+            const amt = Math.max(
+              1,
+              Math.round(line.amount * fieldLootAmountMultiplier),
+            );
+            additions.push(
+              createVoidFieldLootDropVfx(
+                mob.x,
+                mob.y,
+                line.resource,
+                amt,
+                `death-${mob.mobEntityId}-${mob.spawnedAt}-${idx}`,
+              ),
+            );
+          });
+        }
       }
     }
 
     for (const [id, old] of prev) {
       if (!seen.has(id) && old.hp > 0) {
+        if (options?.skipClientRollForMobEntityId?.(id)) {
+          continue;
+        }
         // If a mob disappears while alive, still emit a small normal drop.
         // We don't know mobId here; treat as generic normal.
         const rolled = rollVoidFieldLoot({
@@ -97,7 +106,7 @@ export function useVoidFieldLootDropSpawns(
       setDrops((d) => [...additions, ...d].slice(0, MAX_DROPS));
     });
     return () => cancelAnimationFrame(raf);
-  }, [mobsForField, zoneId, fieldLootAmountMultiplier]);
+  }, [mobsForField, zoneId, fieldLootAmountMultiplier, options?.skipClientRollForMobEntityId]);
 
   const removeDrop = useCallback((id: string) => {
     setDrops((d) => d.filter((x) => x.id !== id));

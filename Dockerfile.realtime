@@ -1,0 +1,21 @@
+# Void realtime WebSocket server. Pulls full repo source so `@/` imports in `features/` resolve via tsconfig.
+# Runtime: set REDIS_URL / DATABASE_URL when using auction persistence (optional).
+
+FROM node:20-bookworm-slim
+WORKDIR /app
+ENV NEXT_TELEMETRY_DISABLED=1
+
+RUN apt-get update -y \
+  && apt-get install -y --no-install-recommends openssl ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+
+COPY package.json package-lock.json ./
+RUN npm ci
+
+COPY . .
+
+ENV VOID_WS_HOST=0.0.0.0
+ENV VOID_WS_PORT=3002
+EXPOSE 3002
+
+CMD ["npx", "tsx", "server/void-realtime/wsServer.ts"]

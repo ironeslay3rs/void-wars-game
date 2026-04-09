@@ -1,14 +1,10 @@
-type ArenaMode = {
-  title: string;
-  subtitle: string;
-  body: string;
-};
+import type { ArenaMode } from "@/features/arena/arenaTypes";
 
 type ArenaModesCardProps = {
   battleModes: ArenaMode[];
   chipClassName: string;
   panelClassName: string;
-  selectedModeTitle: string;
+  selectedModeId: string;
   onSelectMode: (mode: ArenaMode) => void;
 };
 
@@ -16,17 +12,17 @@ export default function ArenaModesCard({
   battleModes,
   chipClassName,
   panelClassName,
-  selectedModeTitle,
+  selectedModeId,
   onSelectMode,
 }: ArenaModesCardProps) {
   return (
     <div className="space-y-3">
       {battleModes.map((entry) => {
-        const isSelected = entry.title === selectedModeTitle;
+        const isSelected = entry.id === selectedModeId;
 
         return (
           <button
-            key={entry.title}
+            key={entry.id}
             type="button"
             onClick={() => onSelectMode(entry)}
             className={[

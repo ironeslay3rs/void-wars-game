@@ -2,313 +2,85 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import {
-  ArrowLeft,
-  Flame,
-  Soup,
-  TriangleAlert,
-  UtensilsCrossed,
-} from "lucide-react";
+import { ArrowLeft, Flame, Soup, TriangleAlert } from "lucide-react";
 import SectionCard from "@/components/shared/SectionCard";
+import OpenFaceLink from "@/components/schools/OpenFaceLink";
+import FeastHallBrokers from "@/components/black-market/feast-hall/FeastHallBrokers";
+import FeastHallLoreCards from "@/components/black-market/feast-hall/FeastHallLoreCards";
+import OperativeReadiness from "@/components/black-market/feast-hall/OperativeReadiness";
 import { feastHallOffers } from "@/features/black-market/feastHallData";
+import { resourceCostShortfall } from "@/features/black-market/sinLaneDealHelpers";
 import { useGame } from "@/features/game/gameContext";
+import { formatResourceLabel } from "@/features/game/gameFeedback";
 import type { FeastHallOfferId, ResourceKey } from "@/features/game/gameTypes";
 import { useRecoveryCooldown } from "@/features/status/useRecoveryCooldown";
 
-function formatResourceLabel(resource: ResourceKey) {
-  if (resource === "bioSamples") {
-    return "Bio Samples";
-  }
-
-  return resource.charAt(0).toUpperCase() + resource.slice(1);
-}
-
 function formatCost(cost: Partial<Record<ResourceKey, number>>) {
-  const costEntries = Object.entries(cost).filter(
-    (entry): entry is [ResourceKey, number] => typeof entry[1] === "number",
-  );
-
-  return costEntries
-    .map(([resource, amount]) => `${amount} ${formatResourceLabel(resource)}`)
-    .join(" - ");
+  return Object.entries(cost)
+    .filter((e): e is [ResourceKey, number] => typeof e[1] === "number")
+    .map(([r, a]) => `${a} ${formatResourceLabel(r)}`)
+    .join(" · ");
 }
 
-function getConditionTone(condition: number) {
-  if (condition < 40) return "critical";
-  if (condition < 60) return "strained";
-  if (condition < 85) return "stable";
-  return "primed";
+function formatHungerEffect(d: number) {
+  return d === 0 ? "No hunger change" : d > 0 ? `+${d} hunger` : `${d} hunger`;
 }
 
-function getConditionMessage(condition: number) {
-  if (condition < 40) {
-    return "Critical. The next expedition push should begin with recovery, not bravado.";
-  }
+type FeastHallScreenProps = { embedded?: boolean };
 
-  if (condition < 60) {
-    return "Strained. The Feast Hall is the fastest way to stop the loop from collapsing.";
-  }
-
-  if (condition < 85) {
-    return "Stable. Recovery is optional, but a stronger plate can still harden the next sortie.";
-  }
-
-  return "Primed. Save your salvage unless you want a deliberate Gluttony spike before a run.";
-}
-
-function formatHungerEffect(hungerDelta: number) {
-  if (hungerDelta === 0) {
-    return "No hunger change";
-  }
-
-  return hungerDelta > 0 ? `+${hungerDelta} hunger` : `${hungerDelta} hunger`;
-}
-
-function getFeastHallNextStep(params: {
-  condition: number;
-  hunger: number;
-  isRecoveryOnCooldown: boolean;
-  credits: number;
-  bioSamples: number;
-}) {
-  const { condition, hunger, isRecoveryOnCooldown, credits, bioSamples } = params;
-
-  if (isRecoveryOnCooldown) {
-    return "Kitchen lockout is active. Use the cooldown window to check Contract Board progress, visit Crafting District utility, or hold until service opens again.";
-  }
-
-  if (condition < 60) {
-    return "Condition is still the main blocker. Take a plate now if you can afford it, then decide whether to reopen the next run or bind utility in the Crafting District.";
-  }
-
-  if (hunger < 35 && bioSamples > 0) {
-    return "Condition is steadier, but stores are running thin. Feast Hall can stabilize now, then Crafting District can turn salvage into Moss Rations before the next run.";
-  }
-
-  if (credits <= 0 && bioSamples <= 0) {
-    return "No payment means no plate. Return to contracts or hunting for more salvage, then come back when recovery is worth buying.";
-  }
-
-  return "Readiness is holding. If you do not need another plate, leave here and either reopen a contract or start the next field run.";
-}
-
-type FeastHallScreenProps = {
-  embedded?: boolean;
-};
-
-export default function FeastHallScreen({
-  embedded = false,
-}: FeastHallScreenProps) {
+export default function FeastHallScreen({ embedded = false }: FeastHallScreenProps) {
   const { state, dispatch } = useGame();
   const { player } = state;
   const [serviceFeedback, setServiceFeedback] = useState<string | null>(null);
   const { isRecoveryOnCooldown, recoveryCooldownRemainingSeconds } =
     useRecoveryCooldown(player.conditionRecoveryAvailableAt);
-  const conditionTone = getConditionTone(player.condition);
 
   function canAffordOffer(cost: Partial<Record<ResourceKey, number>>) {
-    const costEntries = Object.entries(cost).filter(
-      (entry): entry is [ResourceKey, number] => typeof entry[1] === "number",
-    );
-
-    return costEntries.every(
-      ([resource, amount]) => player.resources[resource] >= amount,
-    );
+    return Object.entries(cost)
+      .filter((e): e is [ResourceKey, number] => typeof e[1] === "number")
+      .every(([r, a]) => player.resources[r] >= a);
   }
 
   function handleUseOffer(offerId: FeastHallOfferId) {
-    const offer = feastHallOffers.find((entry) => entry.id === offerId);
-
-    if (!offer) {
-      setServiceFeedback("Service not recognized. The kitchen rejects the order.");
-      return;
-    }
-
-    if (player.condition >= 100) {
-      setServiceFeedback(
-        "Condition already full. Keep your salvage for the next extraction cycle.",
-      );
-      return;
-    }
-
-    if (isRecoveryOnCooldown) {
-      setServiceFeedback(
-        `Kitchen still cooling down. Next service opens in ${recoveryCooldownRemainingSeconds}s.`,
-      );
-      return;
-    }
-
-    if (!canAffordOffer(offer.cost)) {
-      setServiceFeedback(
-        `Insufficient payment for ${offer.title}. Secure more credits or salvage first.`,
-      );
-      return;
-    }
-
+    const offer = feastHallOffers.find((e) => e.id === offerId);
+    if (!offer) { setServiceFeedback("Service not recognized."); return; }
+    if (player.condition >= 100) { setServiceFeedback("Condition already full."); return; }
+    if (isRecoveryOnCooldown) { setServiceFeedback(`Kitchen cooling down. ${recoveryCooldownRemainingSeconds}s.`); return; }
+    if (!canAffordOffer(offer.cost)) { setServiceFeedback(`Insufficient payment for ${offer.title}.`); return; }
     dispatch({ type: "USE_FEAST_HALL_OFFER", payload: { offerId } });
     setServiceFeedback(
-      `${offer.title} served: +${offer.conditionGain} condition, ${formatHungerEffect(offer.hungerDelta)}, and a ${Math.ceil(offer.cooldownMs / 1000)}s lockout.`,
+      `${offer.title} served: +${offer.conditionGain} condition, ${formatHungerEffect(offer.hungerDelta)}, ${Math.ceil(offer.cooldownMs / 1000)}s lockout.`,
     );
   }
 
   const content = (
-    <>
-      <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-        <SectionCard
-          title="Gluttony / Feast Hall"
-          description="Book 1's first live Black Market lane: a recovery house where hunger, condition, and salvage are all part of the same decision."
-        >
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="rounded-2xl border border-amber-400/20 bg-amber-500/10 p-4">
-              <div className="text-[11px] uppercase tracking-[0.22em] text-amber-100/75">
-                Neutral Law
-              </div>
-              <p className="mt-2 text-sm leading-6 text-white/72">
-                Deals are sacred in the Black Market. The Feast Hall honors that
-                law with fixed terms, clean payment, and no haggling after the
-                first bite.
-              </p>
-            </div>
+    <div className="flex flex-col gap-8">
+      <div>
+        <OpenFaceLink laneId="feast-hall" />
+      </div>
 
-            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-              <div className="text-[11px] uppercase tracking-[0.22em] text-white/50">
-                Pure / Ember Vault
-              </div>
-              <p className="mt-2 text-sm leading-6 text-white/72">
-                The lane draws from the Mouth of Inti and Pure rite-pressure,
-                but sells survival first: eat now, endure longer, pay in credits
-                or salvage—then go back to work.
-              </p>
-            </div>
+      {/* Brokers FIRST — Mama Sol + Lars visible immediately */}
+      <FeastHallBrokers />
 
-            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-              <div className="text-[11px] uppercase tracking-[0.22em] text-white/50">
-                Loop Fit
-              </div>
-              <p className="mt-2 text-sm leading-6 text-white/72">
-                Eat in the citadel, steady the body, then return to the front.
-                Recovery here is strong, but every plate still burns hunger and
-                keeps survival pressure alive.
-              </p>
-            </div>
-          </div>
-        </SectionCard>
+      {/* Two-column: Lore | Readiness */}
+      <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+        <FeastHallLoreCards />
+        <OperativeReadiness serviceFeedback={serviceFeedback} />
+      </div>
 
-        <SectionCard
-          title="Operative Readiness"
-          description="Live readout from existing condition, hunger, cooldown, and resource state."
-        >
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-              <div className="text-[11px] uppercase tracking-[0.22em] text-white/45">
-                Condition
-              </div>
-              <div className="mt-2 text-3xl font-black uppercase">
-                {player.condition}%
-              </div>
-              <div className="mt-2 text-sm text-white/65">
-                {getConditionMessage(player.condition)}
-              </div>
-              <div className="mt-4 h-2 rounded-full bg-white/10">
-                <div
-                  className={[
-                    "h-full rounded-full transition-all",
-                    conditionTone === "critical"
-                      ? "bg-red-400"
-                      : conditionTone === "strained"
-                        ? "bg-amber-300"
-                        : conditionTone === "stable"
-                          ? "bg-emerald-300"
-                          : "bg-cyan-300",
-                  ].join(" ")}
-                  style={{ width: `${player.condition}%` }}
-                />
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-              <div className="text-[11px] uppercase tracking-[0.22em] text-white/45">
-                Hall Access
-              </div>
-              <div className="mt-2 flex items-center gap-2 text-lg font-semibold text-white">
-                <UtensilsCrossed className="h-5 w-5 text-amber-300" />
-                {isRecoveryOnCooldown
-                  ? "Kitchen cooling down"
-                  : "Kitchen ready"}
-              </div>
-              <div className="mt-2 text-sm text-white/65">
-                {isRecoveryOnCooldown
-                  ? `Next contract can begin in ${recoveryCooldownRemainingSeconds}s.`
-                  : "No recovery lockout is active. Feast Hall plates restore condition, but richer contracts burn more hunger and make the next decision sharper."}
-              </div>
-              <div className="mt-4 rounded-xl border border-cyan-400/20 bg-cyan-400/8 px-4 py-3 text-sm text-cyan-50/88">
-                {getFeastHallNextStep({
-                  condition: player.condition,
-                  hunger: player.hunger,
-                  isRecoveryOnCooldown,
-                  credits: player.resources.credits,
-                  bioSamples: player.resources.bioSamples,
-                })}
-              </div>
-              <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-3">
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-white/45">
-                    Credits
-                  </div>
-                  <div className="mt-1 font-semibold text-white">
-                    {player.resources.credits}
-                  </div>
-                </div>
-                <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-3">
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-white/45">
-                    Bio Samples
-                  </div>
-                  <div className="mt-1 font-semibold text-white">
-                    {player.resources.bioSamples}
-                  </div>
-                </div>
-                <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-3">
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-white/45">
-                    Hunger
-                  </div>
-                  <div className="mt-1 font-semibold text-white">
-                    {player.hunger}%
-                  </div>
-                </div>
-              </div>
-              {serviceFeedback ? (
-                <div className="mt-4 rounded-xl border border-amber-300/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-50/90">
-                  {serviceFeedback}
-                </div>
-              ) : null}
-            </div>
-          </div>
-        </SectionCard>
-      </section>
-
-      <section className="grid gap-6 lg:grid-cols-3">
+      {/* Meal cards */}
+      <div className="grid gap-6 lg:grid-cols-3">
         {feastHallOffers.map((offer) => {
           const affordable = canAffordOffer(offer.cost);
-          const disabled =
-            isRecoveryOnCooldown || !affordable || player.condition >= 100;
+          const disabled = isRecoveryOnCooldown || !affordable || player.condition >= 100;
           const isRecommended =
-            !isRecoveryOnCooldown &&
-            player.condition < 60 &&
-            ((offer.id === "sample-stew" &&
-              player.resources.credits < 10 &&
-              player.resources.bioSamples >= 4) ||
-              (offer.id === "scavenger-broth" &&
-                player.resources.credits >= 10) ||
-              (offer.id === "mouth-of-inti" &&
-                player.condition < 35 &&
-                affordable));
+            !isRecoveryOnCooldown && player.condition < 60 &&
+            ((offer.id === "sample-stew" && player.resources.credits < 10 && player.resources.bioSamples >= 4) ||
+             (offer.id === "scavenger-broth" && player.resources.credits >= 10) ||
+             (offer.id === "mouth-of-inti" && player.condition < 35 && affordable));
 
           return (
-            <SectionCard
-              key={offer.id}
-              title={offer.title}
-              description={offer.description}
-            >
+            <SectionCard key={offer.id} title={offer.title} description={offer.description}>
               <div className="space-y-4">
                 <div className="flex items-center justify-between gap-3">
                   <span className="rounded-full border border-amber-300/30 bg-amber-300/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-amber-100">
@@ -328,48 +100,16 @@ export default function FeastHallScreen({
                 <div className="grid gap-3 text-sm text-white/75">
                   <div className="flex items-start gap-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3">
                     <Soup className="mt-0.5 h-4 w-4 text-amber-300" />
-                    <div>
-                      <div className="font-semibold text-white">Cost</div>
-                      <div className="mt-1 text-white/65">
-                        {formatCost(offer.cost)}
-                      </div>
-                    </div>
+                    <div><div className="font-semibold text-white">Cost</div><div className="mt-1 text-white/65">{formatCost(offer.cost)}</div></div>
                   </div>
-
                   <div className="flex items-start gap-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3">
                     <Flame className="mt-0.5 h-4 w-4 text-emerald-300" />
-                    <div>
-                      <div className="font-semibold text-white">Immediate</div>
-                      <div className="mt-1 text-white/65">
-                        Restore {offer.conditionGain} condition,{" "}
-                        {formatHungerEffect(offer.hungerDelta)}, and set a{" "}
-                        {Math.ceil(offer.cooldownMs / 1000)}s kitchen lockout (recovery
-                        disabled).
-                      </div>
-                    </div>
+                    <div><div className="font-semibold text-white">Immediate</div><div className="mt-1 text-white/65">Restore {offer.conditionGain} condition, {formatHungerEffect(offer.hungerDelta)}, {Math.ceil(offer.cooldownMs / 1000)}s lockout.</div></div>
                   </div>
-
-                  <div className="flex items-start gap-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3">
-                    <div className="mt-0.5 h-4 w-4 rounded-full bg-amber-400/20 ring-1 ring-amber-300/35" />
-                    <div>
-                      <div className="font-semibold text-white">Next run</div>
-                      <div className="mt-1 text-white/65">
-                        {offer.nextRunEffect}
-                      </div>
-                    </div>
-                  </div>
-
                   <div className="flex items-start gap-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3">
                     <TriangleAlert className="mt-0.5 h-4 w-4 text-amber-200" />
-                    <div>
-                      <div className="font-semibold text-white">Tradeoff</div>
-                      <div className="mt-1 text-white/65">{offer.riskNote}</div>
-                    </div>
+                    <div><div className="font-semibold text-white">Tradeoff</div><div className="mt-1 text-white/65">{offer.riskNote}</div></div>
                   </div>
-                </div>
-
-                <div className="rounded-xl border border-dashed border-white/10 px-4 py-3 text-sm text-white/58">
-                  {offer.useCase}
                 </div>
 
                 <button
@@ -383,25 +123,25 @@ export default function FeastHallScreen({
                       : "border-amber-300/35 bg-amber-300/12 text-amber-50 hover:border-amber-200/50 hover:bg-amber-300/18",
                   ].join(" ")}
                 >
-                  {player.condition >= 100
-                    ? "Condition already full"
-                    : isRecoveryOnCooldown
-                      ? `Kitchen locked for ${recoveryCooldownRemainingSeconds}s`
-                      : affordable
-                        ? `Take ${offer.title}`
-                        : "Insufficient payment"}
+                  {player.condition >= 100 ? "Condition full"
+                    : isRecoveryOnCooldown ? `Locked ${recoveryCooldownRemainingSeconds}s`
+                    : affordable ? `Take ${offer.title}`
+                    : "Insufficient payment"}
                 </button>
+                {!affordable && !isRecoveryOnCooldown && player.condition < 100 ? (
+                  <p className="mt-2 text-[11px] leading-snug text-rose-200/80">
+                    {resourceCostShortfall(offer.cost, player.resources)}
+                  </p>
+                ) : null}
               </div>
             </SectionCard>
           );
         })}
-      </section>
-    </>
+      </div>
+    </div>
   );
 
-  if (embedded) {
-    return content;
-  }
+  if (embedded) return content;
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(180,110,30,0.24),_rgba(5,8,20,1)_58%)] px-6 py-10 text-white md:px-10">
@@ -415,7 +155,6 @@ export default function FeastHallScreen({
             Back to Black Market
           </Link>
         </div>
-
         {content}
       </div>
     </main>

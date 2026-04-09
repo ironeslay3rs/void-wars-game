@@ -251,7 +251,7 @@ export default function AuctionHousePage() {
             Auction House
           </h1>
           <p className="mt-2 max-w-3xl text-sm text-white/70">
-            Player listings for ranked gear. Post crafted equipment, browse current market,
+            Player listings for ranked gear. Post crafted equipment, browse current Black Market listings,
             and buy upgrades from other operatives.
           </p>
         </div>

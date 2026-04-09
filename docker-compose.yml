@@ -1,0 +1,70 @@
+# Phase 10 — full stack for self-hosted studio / NAS (adjust domains & secrets).
+# Usage:
+#   cp .env.selfhosted.example .env
+#   docker compose --env-file .env up -d --build
+#
+# Web client needs NEXT_PUBLIC_* at **image build** time (see Dockerfile ARGs).
+# For a quick local smoke without TLS, use `deploy/caddy/Caddyfile.example` as a reference only.
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}
+        NEXT_PUBLIC_VOID_WS_URL: ${NEXT_PUBLIC_VOID_WS_URL:-wss://localhost:3002}
+    ports:
+      - "${WEB_HOST_PORT:-3000}:3000"
+    environment:
+      NODE_ENV: production
+      # Server-side / secrets (optional — many M1 flows are client-only + Supabase)
+      DATABASE_URL: ${DATABASE_URL:-}
+      REDIS_URL: ${REDIS_URL:-}
+    depends_on:
+      - realtime
+    restart: unless-stopped
+
+  realtime:
+    build:
+      context: .
+      dockerfile: Dockerfile.realtime
+    ports:
+      - "${REALTIME_HOST_PORT:-3002}:3002"
+    environment:
+      VOID_WS_HOST: 0.0.0.0
+      VOID_WS_PORT: 3002
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:${POSTGRES_PASSWORD:-dev}@postgres:5432/${POSTGRES_DB:-void_wars}
+    depends_on:
+      redis:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dev}
+      POSTGRES_DB: ${POSTGRES_DB:-void_wars}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-void_wars}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  redis_data:
+  postgres_data:

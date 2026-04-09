@@ -11,6 +11,7 @@ import {
 } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { GameProvider } from "@/features/game/gameContext";
+import AnomalyToast from "@/components/shared/AnomalyToast";
 import {
   clearStoredAuthSession,
   loadStoredAuthSession,
@@ -195,7 +196,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           >
             Logout
           </button>
-          <GameProvider>{children}</GameProvider>
+          <GameProvider>
+            {children}
+            <AnomalyToast />
+          </GameProvider>
         </>
       );
     }

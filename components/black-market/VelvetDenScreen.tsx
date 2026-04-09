@@ -3,7 +3,12 @@
 import { useState } from "react";
 import BazaarSubpageNav from "@/components/bazaar/BazaarSubpageNav";
 import ScreenHeader from "@/components/shared/ScreenHeader";
+import BrokerCard from "@/components/shared/BrokerCard";
+import OpenFaceLink from "@/components/schools/OpenFaceLink";
+import { getBrokersByDistrict } from "@/features/lore/brokerData";
+import { resourceCostShortfall } from "@/features/black-market/sinLaneDealHelpers";
 import { useGame } from "@/features/game/gameContext";
+import type { ResourceKey } from "@/features/game/gameTypes";
 
 type Deal = {
   id: string;
@@ -88,6 +93,8 @@ export default function VelvetDenScreen() {
           subtitle="Pay for presence. Desire costs extra. The Den feeds every hunger the void creates."
         />
 
+        <OpenFaceLink laneId="velvet-den" />
+
         {toast && (
           <div className="rounded-2xl border border-rose-400/30 bg-rose-500/10 px-5 py-4 text-sm text-rose-100">
             {toast}
@@ -132,10 +139,28 @@ export default function VelvetDenScreen() {
                 >
                   {affordable ? "Fulfill Desire" : "Insufficient Funds"}
                 </button>
+                {!affordable ? (
+                  <p className="mt-2 text-[10px] leading-snug text-rose-200/80">
+                    {resourceCostShortfall(
+                      deal.cost as Partial<Record<ResourceKey, number>>,
+                      state.player.resources,
+                    )}
+                  </p>
+                ) : null}
               </div>
             );
           })}
         </div>
+        {getBrokersByDistrict("velvet-den").length > 0 ? (
+          <div className="mt-6 space-y-3">
+            <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/40">Brokers</div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {getBrokersByDistrict("velvet-den").map((b) => (
+                <BrokerCard key={b.id} broker={b} />
+              ))}
+            </div>
+          </div>
+        ) : null}
       </div>
     </main>
   );

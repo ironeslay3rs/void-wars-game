@@ -1,8 +1,8 @@
 "use client";
 
 import ScreenHeader from "@/components/shared/ScreenHeader";
+import ScreenDataStatStrip from "@/components/shared/ScreenDataStatStrip";
 import SectionCard from "@/components/shared/SectionCard";
-import PlaceholderPanel from "@/components/shared/PlaceholderPanel";
 import MasteryDepthPanel from "@/components/career/MasteryDepthPanel";
 import { careerScreenData } from "@/features/career/careerScreenData";
 
@@ -20,16 +20,13 @@ export default function CareerScreen() {
 
         <MasteryDepthPanel />
 
-        <div className="grid gap-6 md:grid-cols-3">
-          {careerScreenData.cards.map((card) => (
-            <PlaceholderPanel
-              key={card.label}
-              label={card.label}
-              value={card.value}
-              hint={card.hint}
-            />
-          ))}
+        <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/45">
+          Protocol snapshot
         </div>
+        <ScreenDataStatStrip
+          cards={careerScreenData.cards}
+          ariaLabel="Career protocol snapshot"
+        />
 
         <div className="grid gap-6 lg:grid-cols-2">
           {careerScreenData.sections.map((section) => (
@@ -38,7 +35,7 @@ export default function CareerScreen() {
               title={section.title}
               description={section.description}
             >
-              <div className="rounded-xl border border-dashed border-white/10 p-6 text-sm text-white/50">
+              <div className="rounded-xl border border-white/12 bg-black/25 p-6 text-sm leading-relaxed text-white/62">
                 {section.body}
               </div>
             </SectionCard>

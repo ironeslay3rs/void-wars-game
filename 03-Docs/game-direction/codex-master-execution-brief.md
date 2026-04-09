@@ -1,145 +1,521 @@
 # Void Wars: Oblivion — Codex Master Execution Brief
 
-## Role Summary
-This brief converts the approved full-product doctrine into a production-safe execution contract with:
-- exact milestone sequence,
-- clear 4-person ownership boundaries,
-- feature gates per phase,
-- explicit M1 scope controls.
+## Purpose
+This is the master implementation brief for the full product direction of `Void Wars: Oblivion`.
 
-This document is implementation-focused and canon-locked.
+It turns the approved game vision into:
+- exact milestone order,
+- clear ownership boundaries,
+- phase gates,
+- scope guardrails,
+- implementation-safe delivery rules.
+
+This brief is canon-locked and architecture-aware. **Treat this file as the Codex master execution brief** — milestone order, phase gates, and team split live here (especially §8–§9); keep them aligned with the running app.
+
+**See also:** `fusion-doctrine.md` (borrowed-pattern merge rules), `docs/game-canon-registry.md`, `docs/black-market-law.md`, `project-docs/visuals/UI_MOCKUP_REFERENCE.md` (layout / tone reference mockups; Pure not Spirit in shipped UI).
 
 ---
 
-## Canon and Naming Lock (Non-Negotiable)
+## 1. Final Product Target
 
-### Locked truths
-- Void = 3D prison.
-- Fusion = body + mind + soul (late-game truth).
-- Bio = Verdant Coil.
-- Mecha = Chrome Synod.
-- Pure = Ember Vault.
-- Black Market = neutral survivor citadel.
-- Book 1 = current implementation scope.
+`Void Wars: Oblivion` should ship as a web-first, systems-heavy, identity-driven dark cultivation war RPG.
 
-### Player-facing naming
-Use only:
+It is:
+- not a twitch MMO,
+- not a passive idle menu game,
+- expandable over time,
+- mobile-usable later,
+- self-hosted only after the core loop proves itself.
+
+North star:
+
+**Growth brings power, war gives purpose, and every ascent risks corruption.**
+
+### Identity stack
+
+| Layer | Role |
+| --- | --- |
+| Book canon | truth and tone |
+| Overmortal | progression spine |
+| AFK Journey | readability / presentation layer |
+| Vampire Wars | conflict / faction pressure reference |
+| Darkest Dungeon | consequence / expedition weight reference |
+
+### Naming law
+
+Launch-facing naming must use:
 - Bio
 - Mecha
 - Pure
 
-Do not surface `Spirit` in launch-facing UI or progression copy.
-
-### Tone lock
-Survival-first, war-scarred, costly progression, readable pressure, consequence-forward.
+Do not surface `Spirit` in player-facing UI unless compatibility work explicitly requires it.
 
 ---
 
-## Final Product Target
-Void Wars: Oblivion ships as a web-first, systems-heavy, identity-driven dark cultivation war RPG.
+## 2. What the Final Game Is
 
-North star:
-**growth brings power, war gives purpose, and every ascent risks corruption.**
+The full game is built around one question:
 
-Target experience:
-- not twitch-MMO first,
-- not passive idle-menu filler,
-- expandable toward deeper social/economy/war layers,
-- self-hosting only after core loop retention is proven.
-
----
-
-## Core Experience Spine
-
-### Central question
 **What kind of being am I becoming inside the Void?**
 
-### Full arc (player truth)
-- 0-3h: survive,
-- 3-10h: become someone,
-- 10-20h: choose what shapes you,
-- late game: no single path is enough; fusion is the highest truth.
+Everything supports that:
+- path identity,
+- dangerous progression,
+- consequence,
+- profession interdependence,
+- faction war,
+- lore as gameplay.
 
-### Starting fantasy (must stay fragile)
-Player starts as Puppy: unmarked, weak, hungry, undefined.
+### End-state platform vision
+
+A self-hosted, expandable dark faction RPG platform where players choose Bio, Mecha, or Pure, grow through missions and professions, fight inside a living war economy, face corruption and consequence, and eventually rise into elite wartime roles shaped by Rune Crafters and Rune Knights.
 
 ---
 
-## Permanent Screen Pillars
-- Home
-- Career
-- Mastery
-- Professions
-- Market
+## 3. Player Fantasy and Long Arc
+
+The full player arc is:
+- 0–3 hours: survive
+- 3–10 hours: become someone
+- 10–20 hours: choose what will shape you
+- late game: learn that no single path is enough; fusion becomes the highest truth
+
+### Starting state
+
+The player starts as:
+- Puppy
+- unmarked
+- weak
+- hungry
+- undefined
+
+This fragile start is non-negotiable.
+
+The game is not about spawning as a hero.
+It is about proving you deserve to keep power at all.
+
+---
+
+## 4. Gameplay Formula
+
+### Core loop
+
+Log in -> review pressure/readiness -> claim offline output / status -> choose contract, hunt, market, or arena action -> resolve encounter -> harvest / loot / process -> upgrade mastery / profession / loadout -> queue next cycle
+
+### Emotional loop
+
+survive -> stabilize -> specialize -> profit -> hybridize -> converge
+
+### Social loop
+
+Guilds should naturally want:
+- fighters
+- gatherers
+- crafters
+- brokers
+- specialists
+- hybrid experts
+
+No single role should dominate the whole society.
+
+---
+
+## 5. System Pillars
+
+### A. Identity and progression
+
+Core spine:
+- First Mark
+- Main Rune
+- Mastery tree
+- Career Focus
+- Profession path
+- Hybrid temptation
+- Convergence late game
+
+Rule:
+- early game rewards stronger purity
+- mid game rewards experimentation
+- late game reveals fusion as final truth
+
+### B. Path law
+
+The three paths must feel fundamentally different:
+- Bio = instinct, adaptation, body pressure
+- Mecha = structure, precision, engineered scaling
+- Pure = soul, memory, meaning, highest long-term ceiling
+
+They may solve similar problems, but never through the same truth.
+
+### C. Consequence
+
+Power must cost something:
+- condition
+- corruption
+- overload
+- fracture
+- instability
+- Void pressure
+- rune backlash
+- soul damage
+
+### D. Professions and economy
+
+The economy is player-driven and world-supported:
+- gatherers feed the world
+- refiners convert chaos into usable inputs
+- crafters keep armies operational
+- Rune Crafters become strategic apex enablers
+- Rune Knights become top wartime output later
+
+### E. War and world pressure
+
+The world should not feel like disconnected menus.
+It should feel contested, alive, and ideologically shaped.
+
+The war layer comes after the loop is fun, not before.
+
+---
+
+## 6. Permanent Screen Pillars
+
+The final screen pillars are:
+- Home — identity, current state, pressure, next action
+- Career — rank, breakthroughs, long-term advancement
+- Mastery — doctrines, path specialization, divergence
+- Professions — gathering, refining, crafting, Rune Crafter lane
+- Market — player economy, listings, commissions, demand
+- Arena — build proof, rankings, prestige
+- Guild — social identity, shared contracts, contribution
+- Inventory / Status — loadout, materials, condition, corruption, readiness
+- Missions / Factions — chapter pressure, return loop, war stakes
+
+Concept coverage (existing art / mock direction already maps here): main menu, mastery, professions, Black Market UI, hunt rewards, crafting, inventory, PvP ruleset, city hub map, status pages, Hollowfang boss sheet — use these as the visual spine while systems catch up; do not block shell work waiting for final art.
+
+Screen law:
+- state must be readable,
+- next action must be obvious,
+- pressure must stay visible,
+- the world must not collapse into menu clutter.
+
+---
+
+## 7. World Structure
+
+The hub remains the lived-in center of the game.
+
+Permanent districts:
+- Void Market
+- Black Market
+- Mercenary Guild
+- Mecha Foundry
+- Crafting District
+- Pure enclave
 - Arena
-- Guild
-- Inventory / Status
-- Missions / Factions
+- Teleport Gate
+- Faction HQs
 
-Screen law: readable state, clear next action, pressure visibility, no menu sprawl.
+### Black Market law
+
+The Black Market is not best at Bio, Mecha, or Pure purity.
+It is best at unstable, memorable, improvised combinations.
+
+That identity must remain intact.
+
+### Expansion rule
+
+Each major expansion should feel like a force mutating the city.
+
+First major expansion remains:
+- Fenrir’s Wrath / The Coliseum
 
 ---
 
-## 4-Person Ownership Model (Permanent)
+## 8. Team Implementation Model
 
-### 1) Layout Lead
-Owns route wrappers and screen composition boundaries.
+Keep the 4-person structure permanent.
+
+### 1. Layout lead
+- Owns route wrappers, shells, framing
 - Primary scope: `app/**/page.tsx`
-- Rule: routes stay thin; no domain logic embedded.
+- Rule: routes stay thin
 
-### 2) UI Systems Lead
-Owns reusable view systems.
+### 2. UI systems lead
+- Owns reusable panels, cards, widgets
 - Primary scope: `components/**`
-- Rule: presentation only; no gameplay rules hardcoded in UI.
+- Rule: no gameplay rules in UI
 
-### 3) Data / Config Lead
-Owns game logic, progression, resources, balancing inputs.
-- Primary scope: `features/**`, `data/**`, selected `lib/**`
-- Rule: deterministic, composable, feature-local logic.
+### 3. Data / config lead
+- Owns labels, values, tokens, mock/system data, gameplay rules
+- Primary scope: `features/**`, selected registries under `lib/**`
+- Rule: deterministic, composable, modular logic
 
-### 4) Asset / Integration Lead
-Owns visual integration pipeline.
+### 4. Asset / integration lead
+- Owns exports, icons, backgrounds, asset wiring
 - Primary scope: `public/assets/**`, `lib/assets.ts`
-- Rule: never ship `/incoming` or `/_incoming` references in production wiring.
+- Rule: no asset-path scatter, no shipping `/incoming`
+
+### Permanent feature split
+
+Every feature must stay split into:
+- visual assets
+- UI components
+- screen composition
+- logic/data
 
 ---
 
-## Milestone Matrix (Execution Control)
+## 9. Final Implementation Phases
 
-| Milestone ID | Maps to Phase | Delivery Target | Mandatory Exit Gate |
-| --- | --- | --- | --- |
-| M1.0 | Phase 0 | Doctrine + architecture lock | Canon naming lock and architecture separation verified |
-| M1.1 | Phase 1 | Home shell v1 readability | Player can identify pressure/readiness/next action in one screen |
-| M1.2 | Phase 2 | First playable Black Market loop | New player completes one full prepare->deploy->extract->recover loop |
-| M1.3 | Phase 3 | Progression depth baseline | Early decisions create meaningful path divergence |
-| M1.4 | Phase 4 | Crafting economy baseline | Crafter lane is viable and economically relevant |
-| M1.5 | Phase 5 | Tactical encounter baseline | Preparation quality materially changes outcomes |
-| M1.6 | Phase 6 | Faction pressure baseline | Market and mission choices reflect persistent war pressure |
-| M2.0 | Phases 7-8 | Mythic economy + social dependence | Rune hierarchy and guild systems become load-bearing |
-| M3.0 | Phases 9-10 | Late-game convergence + platform path | Fusion pacing proven and ops complexity justified |
+## Phase 0 — Doctrine and architecture lock
 
-### Milestone sequencing rule
-No milestone may advance unless the previous milestone's exit gate is met in-player, not only in code.
+Before more feature work:
+- lock canon language
+- lock Bio / Mecha / Pure naming
+- lock 4-person modular structure
+- lock home shell ownership
+- lock reusable UI language
+- lock no giant files / no random inline data / no asset path scatter
+
+### Exit gate
+- No player-facing `Spirit`
+- `app/` thin, `components/` UI, `features/` logic
+- no god files
+- Puppy-first entry: new saves complete **New Game** (`characterCreated`) before hub play; no parallel Home stacks — canonical **`GameHudShell` + `components/home/HomeHudClient`**
+- Shipped bazaar ids/URLs use **Pure** naming (e.g. `pure-enclave`, `/bazaar/pure-enclave`; legacy `spirit-enclave` redirects only)
+
+## Phase 1 — Homepage shell v1
+
+Build:
+- `page.tsx`
+- `GameHudShell` + `components/home/HomeHudClient` (canonical home stack)
+- chrome frame
+- top bar
+- command menu / left rail (live: `MainMenuLeftRail` + center/right rails)
+- path cards
+- condition widget
+- resource bar
+- bottom nav
+- data/config files
+- centralized `assets.ts`
+
+### Exit gate
+A player can identify identity, pressure, readiness, and next action from one screen.
+
+## Phase 2 — Foundation slice
+
+Ship the first playable Black Market loop:
+- Puppy creation/start
+- first rumor / bad deal
+- first event / consequence
+- first hunt / first prey
+- first broker
+- first market understanding
+- first Mark eligibility
+- first simple combat resolution
+- persistence between sessions
+
+### Exit gate
+A new player understands the fantasy and wants to return.
+
+## Phase 3 — Progression depth
+
+Build:
+- mastery
+- path identity feel
+- early corruption / consequence
+- one or two professions
+- doctrine/readiness/gating systems
+- path-shaped growth rhythm
+
+**Repo (M1):** Void instability (strain) tracks mission/hunt/exploration payouts, extra condition drain on resolve, survival decay when stable, exploration credit tithe, path-aligned mastery bonus, recovery/ration relief, void field extraction + broker field loot pickup strain, Home + Status + field HUD surfacing, launch directive when strain is high.
+
+### Exit gate
+Growth feels meaningful, not cosmetic.
+
+## Phase 4 — Crafting economy
+
+Build:
+- gathering
+- refining
+- crafting categories
+- market prototype
+- player contracts
+- profession value
+- school-shaped harvest outcomes
+- item sinks / taxes / upkeep
+
+**Repo (M1):** `refining` recipe category; path-aligned +1 staple on successful refine (`pathRefiningYield.ts`); War Exchange sell tithe `WAR_EXCHANGE_SELL_BROKER_CUT` + **stall arrears buy markup** (`stallUpkeep.ts`, `marketActions.ts`, `StallArrearsCallout`). **Gathering:** `pathGatheringYield.ts` — path-themed loot bias (void field / encounter / realtime). **Contracts:** `craftWorkOrder` + rotating 3-offer board (`getRotatingWorkOrderCatalog`, 7-day epoch). **Upkeep:** wall-clock stall rent, arrears, payoff action — wired through survival ticks and bazaar UI.
+
+### Exit gate
+A crafter-focused player has a compelling playstyle.
+
+## Phase 5 — Tactical encounter layer
+
+Build:
+- preparation-driven encounter resolution
+- loadouts
+- enemy variety
+- risk/reward texture
+- arena rules
+- behavior profile / doctrine-driven combat logic
+
+Combat stays system-resolved and preparation-driven, not twitch-first.
+
+**Repo (M1 — closed):** Arena match: loadout modifiers, archetypes, `?mode=` stakes, practice scaling, **SR + payout** by archetype, **telegraph** cadence, **tournament bracket round shell** (display + win counter / reset). Shell void strikes use loadout attack mult. Optional later: deeper enemy AI, PvE incoming parity.
+
+### Exit gate
+Preparation materially improves outcomes.
+
+## Phase 6 — Faction war layer
+
+Build:
+- contested zones
+- faction influence
+- school pressure
+- regional events
+- contribution systems
+- war demand affecting market value
+
+### Exit gate
+The world feels alive and larger than the individual player.
+
+**Repo (M1 start):** Weekly-rotating **contested void sector** (`contestedZone.ts`) drives a **War Exchange buy demand** multiplier on tagged listings (`warDemandMarket.ts`, wired in `applyMarketBuy`). `WarFrontDemandCallout` on **War Exchange** and **Void Expedition** (highlights deploy into hot sector). Next: sell-side war pricing, faction contribution pressure, scripted regional events.
+
+## Phase 7 — High-end crafting and rune hierarchy
+
+Build:
+- Rune Crafter progression
+- restricted war economy
+- rare unstable materials
+- advanced runes
+- late hybrid systems
+- Rune Knight enablement
+
+### Exit gate
+The war economy becomes mythic and strategic, not cosmetic.
+
+## Phase 8 — Guild and social layer
+
+Build:
+- guild contracts
+- contribution ranks
+- shared objectives
+- faction participation
+- social routines
+- rivalry / belonging / coordination
+
+### Exit gate
+Guild participation creates real dependence, not just chat presence.
+
+**Repo (M1 — Phase 8 closed for vertical slice):** Local guild roster (`gameActions` GUILD_*), contribution ledger + mercenary rank (`guildLiveLogic`, Home `MissionPanel`), shared contracts with zone/contested stacking, pledge-theater bonuses (`applyTheaterGuildBonusesToBase`), hunt result ledger slice, **capacity-safe** `GUILD_CLAIM_CONTRACT` + Guild page carry-trim toast.
+
+## Phase 9 — Mythic late game
+
+Build:
+- advanced hybrid unlocks
+- Convergence arc
+- Rune Knight prestige
+- empire-scale war stakes
+- deeper Void truths
+- long-form chapter revelations
+
+### Exit gate
+Fusion lands as earned late truth: body + frame + soul.
+
+**Repo (M1 — Phase 9 started):** `mythicAscension.convergencePrimed` + **File convergence** on Mastery Mythic ladder (Rune Crafter license, rank 5+, two schools at rune depth 3+); `ATTEMPT_MYTHIC_UNLOCK` payload `convergence-prime`; Rune Knight + Professions copy when primed. **Gameplay:** `convergenceHybridRelief` stacks with Crafter in `getEffectiveCapacityMax` / installs / save hydration (`effectiveHybridReliefFromMythic`). Further prestige / empire stakes / revelations remain gated.
+
+## Phase 10 — Self-hosted platform path
+
+Only after the product earns it:
+- staging
+- Docker stack
+- reverse proxy
+- backup flow
+- NAS deployment path
+- self-hosted studio platform
+
+**Repo (scaffold):** `Dockerfile` (Next `standalone`) + `Dockerfile.realtime` + `docker-compose.yml` (web, WS, Redis, Postgres); `deploy/caddy/Caddyfile.example`; `scripts/ops/backup-postgres.sh`; runbook `project-docs/ops/PHASE10_SELF_HOSTED_RUNBOOK.md`. Default prod path remains Vercel + managed WS until you choose self-host.
+
+### Exit gate
+Retention and product value justify ops complexity.
 
 ---
 
-## Ownership-to-File Map (Exact Working Surface)
+## 10. Content Roadmap by Chapter / Arc
 
-### Layout Lead (routes only)
+Campaign order:
+1. Awakening
+2. School Pressure
+3. Rune Truth
+4. War Escalation
+5+. Mythic Revelation
+
+### Chapter law
+
+Ship content in that order.
+Later arcs may foreshadow early, but not become fully playable ahead of their gate.
+
+---
+
+## 11. Monetization Law
+
+Monetization must stay canon-safe.
+
+Allowed:
+- listing fees
+- transaction tax
+- convenience
+- preservation / continuity systems
+- prestige cosmetics
+
+Forbidden:
+- direct dev-sold power injection
+
+### Black Market monetization model
+
+- Favor Writs = play-earned standing
+- premium = comfort / continuity / protection / faster recovery
+- cosmetics = prestige expressions of truth — not fake skin-swaps that break species identity or canon tone
+
+---
+
+## 12. Guardrails
+
+### Do not
+
+- build the giant war map before the loop is fun
+- let crafting become generic side content
+- bury the player in systems before the fantasy is clear
+- let one mixed branch touch everything without scope discipline
+- treat the world like menus instead of a lived-in place
+
+### Do
+
+- build the proof of the world first
+- preserve survival pressure
+- keep professions meaningful
+- keep the Black Market personal and dangerous
+- make fusion the late-game truth, not the early-game shortcut
+
+---
+
+## 13. File Ownership Map
+
+### Layout / route lead
 - `app/home/page.tsx`
 - `app/new-game/page.tsx`
 - `app/missions/page.tsx`
-- `app/hunt/page.tsx`
-- `app/bazaar/**/page.tsx`
 - `app/status/page.tsx`
 - `app/inventory/page.tsx`
 - `app/mastery/page.tsx`
 - `app/professions/page.tsx`
 - `app/arena/**/page.tsx`
+- `app/bazaar/**/page.tsx`
 - `app/factions/page.tsx`
 - `app/guild/page.tsx`
 
-### UI Systems Lead (presentation only)
+### UI systems lead
 - `components/layout/**`
 - `components/home/**`
 - `components/missions/**`
@@ -152,7 +528,7 @@ No milestone may advance unless the previous milestone's exit gate is met in-pla
 - `components/black-market/**`
 - `components/bazaar/**`
 
-### Data / Config Lead (rules + state)
+### Data / config lead
 - `features/game/**`
 - `features/player/**`
 - `features/resources/**`
@@ -165,390 +541,42 @@ No milestone may advance unless the previous milestone's exit gate is met in-pla
 - `features/professions/**`
 - `features/navigation/**`
 - `features/status/**`
-- `lib/assets.ts` (references only, no raw asset placement)
 
-### Asset / Integration Lead (asset movement and registration)
-- `public/assets/maps/**`
-- `public/assets/maps/void-fields/**`
-- `public/assets/icons/**`
-- `public/assets/icons/skills/**`
-- `public/assets/icons/items/**`
-- `public/assets/backgrounds/**`
-- `public/assets/ui/**`
-- `public/assets/factions/**`
-- `public/assets/creatures/**`
-- `public/assets/bosses/**`
-- `lib/assets.ts` (production path registry updates)
-
-### Ownership conflict rule
-If one change requires touching more than two ownership areas, split into separate slices unless explicitly approved as a coordinated integration task.
+### Asset / integration lead
+- `public/assets/**`
+- `lib/assets.ts`
 
 ---
 
-## Execution Order with Gates (Master Sequence)
+## 14. Delivery Rules Per Task
 
-## Active Build Queue (M1 Implementation Order)
+Before implementing:
+1. Define exact scope
+2. List exact files
+3. State what is not included
 
-These are the currently actionable, bounded slices for M1 hardening and first-playable loop completion.
-
-### Slice A — Home shell readability pass
-**Primary files**
-- `app/home/page.tsx`
-- `components/layout/LeftCommandMenu.tsx`
-- `components/home/HomeResourceStrip.tsx`
-
-**Gate**
-- Center content is readable at common desktop widths.
-- Left command stack is fully visible with no clipping.
-
-**Not included**
-- New combat systems
-- New economy systems
-
-### Slice B — Inventory capacity enforcement
-**Primary files**
-- `features/resources/inventoryLogic.ts`
-- `components/inventory/InventoryOverviewCard.tsx`
-- `components/inventory/OverloadWarning.tsx`
-
-**Gate**
-- Capacity overflow is visible and mechanically meaningful.
-- Overloaded state blocks unsafe gain patterns.
-
-### Slice C — Loadout equip loop
-**Primary files**
-- `features/player/loadoutState.ts`
-- `app/loadout/page.tsx`
-- `components/shared/ItemPicker.tsx`
-
-**Gate**
-- Player can equip and unequip one valid item per slot flow.
-
-### Slice D — Black Market transaction baseline
-**Primary files**
-- `features/market/marketData.ts`
-- `features/market/marketActions.ts`
-- `app/bazaar/war-exchange/page.tsx`
-
-**Gate**
-- Buy and sell actions update inventory and credits coherently.
-
-### Slice E — Mission execution and result handoff
-**Primary files**
-- `features/missions/missionRunner.ts`
-- `components/missions/MissionTimer.tsx`
-- `components/missions/MissionResult.tsx`
-
-**Gate**
-- Queue -> countdown -> result -> state update path completes.
-
-### Slice F — New game onboarding to first loop
-**Primary files**
-- `app/new-game/page.tsx`
-- `features/player/playerFactory.ts`
-- `components/onboarding/SchoolSelector.tsx`
-
-**Gate**
-- New player reaches home in valid Puppy state with starter resources.
-
-### Slice G — Crafting district production loop
-**Primary files**
-- `features/crafting/recipeData.ts`
-- `features/crafting/craftActions.ts`
-- `app/bazaar/crafting-district/page.tsx`
-
-**Gate**
-- Craft action consumes required inputs and yields registered output.
-
-### Slice H — Hunt encounter result loop
-**Primary files**
-- `features/combat/creatureData.ts`
-- `features/combat/encounterEngine.ts`
-- `app/hunt/page.tsx`
-- `components/hunt/HuntResult.tsx`
-
-**Gate**
-- One deploy encounter can resolve and return rewards/costs visibly.
-
-### Queue discipline rule
-Only one slice should be active in implementation at a time unless a documented blocker requires a paired follow-up.
-
----
-
-## Phase 0 — Doctrine + Architecture Lock
-**Goal:** prevent drift before feature growth.
-
-### Required outputs
-- Canon-safe naming and terminology lock (Bio/Mecha/Pure).
-- Layer enforcement (`app` routes, `components` UI, `features` logic).
-- Home shell ownership and reusable UI language formalized.
-- No giant files, no random inline data, no asset-path scatter.
-
-### Gate to pass
-- No launch-facing `Spirit` strings.
-- No new parallel subsystem when existing loop can be extended.
-
-### Not included
-- New war systems,
-- economy expansion,
-- speculative Book 2+ implementation.
-
----
-
-## Phase 1 — Homepage Shell V1
-**Goal:** establish the modular command deck baseline.
-
-### Required slice
-- `app/home/page.tsx`
-- `components/layout/HomeShell.tsx`
-- top bar, command menu, path cards,
-- condition widget, resource bar, bottom nav,
-- config/data ownership,
-- centralized asset references.
-
-### Gate to pass
-A player can understand identity, pressure, readiness, and next action within one screen.
-
----
-
-## Phase 2 — Foundation Slice (First Playable Black Market Loop)
-**Goal:** first retention-worthy loop.
-
-### Required beats
-- Puppy creation/start,
-- first rumor/bad deal,
-- first consequence event,
-- first hunt/prey,
-- first broker interaction,
-- first market understanding,
-- first Mark eligibility,
-- first simple combat resolution,
-- persistence between sessions.
-
-### Gate to pass
-A new player understands the fantasy and wants to return.
-
----
-
-## Phase 3 — Progression Depth
-**Goal:** growth feels real, not cosmetic.
-
-### Required systems
-- mastery progression,
-- differentiated path feel,
-- early corruption/consequence,
-- one to two professions,
-- readiness/doctrine/gating logic,
-- path-shaped growth rhythm.
-
-### Gate to pass
-Early decisions create meaningful identity divergence.
-
----
-
-## Phase 4 — Crafting Economy
-**Goal:** profession interdependence becomes real.
-
-### Required systems
-- gathering,
-- refining,
-- crafting categories,
-- market prototype,
-- player contracts,
-- school-shaped harvest outcomes,
-- item sinks/taxes/upkeep.
-
-### Gate to pass
-Crafter-focused players have a compelling viable lane.
-
----
-
-## Phase 5 — Tactical Encounter Layer
-**Goal:** preparation-driven conflict depth.
-
-### Required systems
-- loadouts,
-- enemy variety,
-- risk/reward texture,
-- arena rules,
-- doctrine/behavior-influenced combat outcomes.
-
-### Gate to pass
-Combat outcome quality clearly tracks with preparation quality.
-
----
-
-## Phase 6 — Faction War Layer
-**Goal:** the world feels contested and alive.
-
-### Required systems
-- contested zones,
-- faction influence,
-- school pressure,
-- regional events,
-- contribution systems,
-- war-demand impact on market value.
-
-### Gate to pass
-Players feel persistent war pressure beyond a single session.
-
----
-
-## Phase 7 — High-End Crafting + Rune Hierarchy
-**Goal:** unlock strategic mythic economy lanes.
-
-### Required systems
-- Rune Crafter progression,
-- restricted war-economy lanes,
-- rare unstable materials,
-- advanced runes,
-- late hybrid systems,
-- Rune Knight enablement hooks.
-
-### Gate to pass
-High-tier crafting shapes war outcomes rather than pure vanity.
-
----
-
-## Phase 8 — Guild + Social Dependence
-**Goal:** social systems become load-bearing.
-
-### Required systems
-- guild contracts,
-- contribution ranks,
-- shared objectives,
-- faction participation,
-- rivalry/belonging/coordination loops.
-
-### Gate to pass
-Guild participation provides practical progression leverage.
-
----
-
-## Phase 9 — Mythic Late Game
-**Goal:** deliver convergence truth at earned pacing.
-
-### Required systems
-- advanced hybrid unlocks,
-- Convergence arc,
-- Rune Knight prestige,
-- empire-scale war stakes,
-- deeper Void truths,
-- long-form chapter revelations.
-
-### Gate to pass
-Fusion is earned as late truth, never early shortcut.
-
----
-
-## Phase 10 — Self-Hosted Platform Path
-**Goal:** operational maturity after product proof.
-
-### Required outputs
-- staging environment,
-- Docker stack,
-- reverse proxy,
-- backup flow,
-- NAS deployment pathway,
-- studio self-host operating baseline.
-
-### Gate to pass
-Core loop, retention, and ops burden justify self-hosting.
-
----
-
-## Chapter / Arc Content Gating
-
-Content rollout order remains:
-1. Awakening
-2. School Pressure
-3. Rune Truth
-4. War Escalation
-5+. Mythic Revelation
-
-Implementation rule:
-- Chapter assets, systems, and mission chains must ship in this order.
-- Later chapter hooks are allowed only as non-playable foreshadowing until their chapter gate opens.
-
----
-
-## World and Hub Structure Law
-The hub remains a lived-in wartime center with permanent districts:
-- Void Market
-- Black Market
-- Mercenary Guild
-- Mecha Foundry
-- Crafting District
-- Pure enclave
-- Arena
-- Teleport Gate
-- Faction HQs
-
-Black Market identity rule:
-It is not the best at Bio, Mecha, or Pure purity lanes; it is best at unstable, memorable, improvised combinations.
-
----
-
-## Monetization Law (Canon-Safe)
-Allowed directions:
-- listing fees,
-- transaction tax,
-- convenience,
-- continuity/preservation systems,
-- prestige cosmetics.
-
-Forbidden direction:
-- direct dev-sold power injection that bypasses survival/progression pressure.
-
----
-
-## M1 Guardrails (Active Now)
-Do not:
-- build the giant war map first,
-- expand crafting into disconnected bloat,
-- frontload systems before fantasy clarity,
-- let one branch touch everything,
-- reduce the world to detached menus.
-
-Do:
-- preserve survival pressure,
-- keep profession value real,
-- keep Black Market personal and dangerous,
-- keep fusion as late-game truth,
-- prioritize vertical slice completion over broad expansion.
-
----
-
-## Feature Gate Checklist (Per Task)
-Before merge, every bounded slice should confirm:
-1. Canon-safe naming and tone.
-2. Layered architecture compliance.
-3. Scope discipline (small, local diff).
-4. No `/incoming` production path usage.
-5. Clear next-action readability for player.
-6. Targeted validation performed and reported.
-7. Save/persistence compatibility for the touched loop.
-
-### Required validation command baseline
-- `git diff --check`
-- `npx tsc --noEmit` (when TypeScript/runtime files are touched)
-- `npx eslint <edited files>` (when linted source files are touched)
-
-### Required task return payload
-Every implementation task must report:
+For each implementation slice, report:
 1. Role Summary
 2. Exact Files Changed
-3. Scope Decision (included / not included)
+3. Scope Decision
 4. What Changed
-5. Validation (commands + results)
+5. Validation
 6. Known Issues / follow-ups
 
-### Scope budget defaults
-- Prefer 1-3 files per task.
-- 4-6 files allowed only when a single user-facing behavior crosses layers.
-- 7+ files requires explicit justification and pre-approved integration scope.
+### Scope defaults
+
+- Prefer 1–3 files per task
+- 4–6 files only when one user-facing behavior crosses layers
+- 7+ files requires explicit integration justification
+
+### Validation baseline
+
+- `git diff --check`
+- `npx tsc --noEmit` when TS/runtime files change
+- `npx eslint <edited files>` when linted source files change
 
 ---
 
-## One-Line Execution Doctrine
-**Build in this order: identity -> playable Black Market slice -> progression depth -> crafting economy -> tactical encounters -> faction war -> Rune Crafter/Rune Knight mythic layer -> social dependence -> self-hosted platform path.**
+## 15. One-Line Execution Doctrine
+
+**Build Void Wars: Oblivion in this order: identity -> playable Black Market slice -> progression depth -> crafting economy -> tactical encounters -> faction war -> Rune Crafter/Rune Knight mythic layer -> social systems -> self-hosted platform.**

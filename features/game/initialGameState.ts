@@ -10,8 +10,10 @@ import { createInitialMarketState } from "@/features/market/marketActions";
 
 export const initialGameState: GameState = {
   player: {
-    playerName: "Iron",
+    playerName: "",
+    characterCreated: false,
     factionAlignment: "unbound",
+    affinitySchoolId: null,
     characterPortraitId: DEFAULT_CHARACTER_PORTRAIT_ID,
     careerFocus: null,
     fieldLoadoutProfile: "assault",
@@ -25,8 +27,9 @@ export const initialGameState: GameState = {
     activeFeastHallOfferId: null,
     nextRunModifiers: null,
     nextRunModifiersAppliedForProcessId: null,
+    expeditionReadyStabilityPending: false,
 
-    rank: "Initiate",
+    rank: "Unmarked",
     rankLevel: 1,
     rankXp: 0,
     rankXpToNext: 100,
@@ -34,23 +37,38 @@ export const initialGameState: GameState = {
     masteryProgress: 0,
     influence: 0,
     hasBiotechSpecimenLead: false,
+    voidInstability: 0,
+    runInstability: 0,
+    runInstabilityLog: [],
+    runHeatPushBoost: null,
+    instabilityStreakTurns: 0,
+    runArchetype: "balanced",
+    runStyleRiSamples: [],
+    runStyleVentCount: 0,
+    runStylePushCount: 0,
 
     resources: {
-      credits: 250,
-      ironOre: 20,
-      scrapAlloy: 15,
-      runeDust: 10,
-      emberCore: 2,
+      credits: 0,
+      ironOre: 0,
+      scrapAlloy: 0,
+      runeDust: 0,
+      emberCore: 0,
       bioSamples: 0,
-      mossRations: 2,
+      mossRations: 0,
       coilboundLattice: 0,
       ashSynodRelic: 0,
       vaultLatticeShard: 0,
       ironHeart: 0,
     },
     fieldLootGainedThisRun: {},
+    expeditionContractSnapshots: {},
+    lastVoidFieldExtractionLedger: null,
     market: createInitialMarketState(),
     craftedInventory: {},
+    craftWorkOrder: null,
+
+    lastStallRentResolvedAt: Date.now(),
+    stallArrearsCount: 0,
 
     knownRecipes: [],
     unlockedRoutes: ["home", "bazaar"],
@@ -91,6 +109,7 @@ export const initialGameState: GameState = {
     lastCompletedZoneId: null,
     zoneRunStreak: 0,
     missionQueue: [],
+    activeRuns: [],
     maxMissionQueueSlots: 3,
 
     runeMastery: createInitialRuneMastery(),
@@ -103,16 +122,31 @@ export const initialGameState: GameState = {
     lastFactionHqStipendAt: 0,
 
     mythicAscension: initialMythicAscension(),
+    lastCraftOutcome: null,
+    lastRuneInstallOutcome: null,
+    lastMythicGateBreakthrough: null,
+
+    crossSchoolExposure: {
+      offPathMaterialsEncountered: 0,
+      mismatchEncountered: false,
+      schoolsExposed: { bio: false, mecha: false, pure: false },
+      anomalyScore: 0,
+    },
+    lastAnomalyToast: null,
+    brokerCooldowns: {},
   },
 
   missions: [
     {
       id: "voidfield-prowl",
       category: "operation",
-      title: "Prowl the Voidfield",
+      title: "Prowl the Voidfield Perimeter",
       description:
-        "Send a short-range hunt beyond the citadel perimeter and return with salvage, residue, and whatever survived the pass.",
+        "A short-range scavenge beyond the citadel wall. Whatever the last patrol left behind is yours — if something else hasn't claimed it first.",
+      rumorFlavor:
+        "Stall 4 says the last sweep team came back light. Either the field is dry or something ate the good stuff before they got there. — Lower Ring board",
       path: "neutral",
+      originTag: "black-market-local",
       canonBook: "book-1",
       durationHours: 0.0125,
       reward: {
@@ -130,10 +164,13 @@ export const initialGameState: GameState = {
     {
       id: "outer-wastes-scavenge",
       category: "operation",
-      title: "Scavenge the Outer Wastes",
+      title: "Strip the Outer Wastes",
       description:
-        "Search broken trade routes and ruined outskirts for salvage, loose credits, and old alloy fragments.",
+        "Broken trade routes and collapsed outskirts. Credits wash out of the rubble if you know where to dig. The Mandate left precision parts in the wreckage.",
+      rumorFlavor:
+        "A Mandate salvage team never came back for their shipment. Their loss. Stall 12 is paying for alloy fragments, no questions. — Mercenary Guild board",
       path: "neutral",
+      originTag: "mandate-salvage",
       canonBook: "book-1",
       durationHours: 0.0028,
       reward: {
@@ -151,10 +188,13 @@ export const initialGameState: GameState = {
     {
       id: "bio-hunt-specimen",
       category: "operation",
-      title: "Track a Mutant Specimen",
+      title: "Track a Bonehowl Specimen",
       description:
-        "Hunt an unstable creature beyond the district wall and recover viable tissue samples.",
+        "A wounded beast escaped from a Bonehowl hunting party. Smells like cold iron and wet fur. Your blood already wants what it's carrying.",
+      rumorFlavor:
+        "A Bonehowl deserter says there's a wounded Fenrir pup in the lower tunnels. Could be bait. Could be blood worth more than you've ever held. The broker wants proof before paying. — Stall 7, Lower Ring",
       path: "bio",
+      originTag: "bonehowl-remnant",
       canonBook: "book-1",
       durationHours: 0.0042,
       reward: {
@@ -172,10 +212,13 @@ export const initialGameState: GameState = {
     {
       id: "mecha-salvage-convoy",
       category: "operation",
-      title: "Recover Synod Salvage",
+      title: "Recover Pharos Surplus",
       description:
-        "Strip usable parts from a ruined convoy and return with alloys, cores, and market-grade scrap.",
+        "A wrecked convoy from Ra's divine factories. Every component works perfectly. None of them feel alive. Strip what you can carry.",
+      rumorFlavor:
+        "A Pharos shipment got hit between checkpoints. The cargo is pristine — sun-forged alloy, divine-grade servomotors, the works. The Synod won't miss it if you're fast. — Chrome Synod defector, Mecha Foundry",
       path: "mecha",
+      originTag: "pharos-surplus",
       canonBook: "book-1",
       durationHours: 0.0042,
       reward: {
@@ -193,10 +236,13 @@ export const initialGameState: GameState = {
     {
       id: "pure-ember-trial",
       category: "operation",
-      title: "Complete an Ember Trial",
+      title: "Recover a Mouth of Inti Relic",
       description:
-        "Enter a guided memory rite to sharpen attunement and gather refined rune residue.",
+        "A fire-touched artifact surfaced in the lower market. It whispers when you hold it. The Ember Vault wants it back — but the broker wants payment first.",
+      rumorFlavor:
+        "A relic dealer in the Ember Vault says she found something that remembers. Soul shards don't store spells — they store the memory of when reality once listened. She wants rune dust as payment, not credits. — Ember Vault, candle row",
       path: "pure",
+      originTag: "mouth-of-inti-relic",
       canonBook: "book-1",
       durationHours: 0.0028,
       reward: {
@@ -216,8 +262,11 @@ export const initialGameState: GameState = {
       category: "hunting-ground",
       title: "Cull a Rustfang Pack",
       description:
-        "Deploy a mercenary field team into the outer trenchline to bring back alloy scrap, credits, and stripped ore.",
+        "Mandate-bred scavengers have infested the Ash Relay trenchline. They strip alloy and ore from every wreck. Kill them and take what they've hoarded.",
+      rumorFlavor:
+        "The Rustfangs are back in the relay. Mandate engineering in a feral shell — their jaws strip alloy cleaner than any tool in the district. The bounty is for proof of kill and whatever ore they've swallowed. — Mercenary Guild, hunt board",
       path: "neutral",
+      originTag: "mandate-salvage",
       canonBook: "book-1",
       deployZoneId: "ash-relay",
       durationHours: 0.0042,
@@ -236,10 +285,13 @@ export const initialGameState: GameState = {
     {
       id: "hg-bio-snag-run",
       category: "hunting-ground",
-      title: "Run a Bio Sample Sweep",
+      title: "Sweep the Bonehowl Growth Pits",
       description:
-        "Send a containment squad through the growth pits to recover raw tissue, saleable residue, and viable biotech samples.",
+        "The Howling Scar breeds things that shouldn't survive. Tissue, saleable residue, viable samples — the Coil's castoffs are worth more than they think.",
+      rumorFlavor:
+        "An Olympus tissue broker needs fresh samples from the growth pits. She's paying above rate because the last team came back with... changes. Bring containment gear. — Biotech Labs contact, lower market",
       path: "neutral",
+      originTag: "olympus-castoff",
       canonBook: "book-1",
       deployZoneId: "howling-scar",
       durationHours: 0.0056,
@@ -258,10 +310,13 @@ export const initialGameState: GameState = {
     {
       id: "hg-scrapyard-burrower",
       category: "hunting-ground",
-      title: "Flush a Scrapyard Burrower",
+      title: "Flush a Rift Maw Burrower",
       description:
-        "Track a burrowing scavenger through ruined machine nests and return with alloy fragments, ore, and bounty credit.",
+        "Something in the Rift Maw has been eating Thousand Hands relics and Pharos components alike. It burrows through machine nests and leaves behind fragments worth more than the bounty.",
+      rumorFlavor:
+        "The burrower in the Rift Maw swallowed something from a Thousand Hands shipment. The Golden Bazaar wants it back — they're paying in alloy and ore, plus bounty credit for the kill. Don't let it dig deeper. — Golden Bazaar, stall 19",
       path: "neutral",
+      originTag: "thousand-hands-fragment",
       canonBook: "book-1",
       deployZoneId: "rift-maw",
       durationHours: 0.007,

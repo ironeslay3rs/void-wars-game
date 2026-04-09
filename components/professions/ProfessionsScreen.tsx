@@ -2,14 +2,17 @@
 
 import Link from "next/link";
 import ScreenHeader from "@/components/shared/ScreenHeader";
+import ScreenDataStatStrip from "@/components/shared/ScreenDataStatStrip";
 import SectionCard from "@/components/shared/SectionCard";
-import PlaceholderPanel from "@/components/shared/PlaceholderPanel";
 import { professionsScreenData } from "@/features/professions/professionsScreenData";
 import { useGame } from "@/features/game/gameContext";
 
 export default function ProfessionsScreen() {
   const { state } = useGame();
-  const runeCrafter = state.player.mythicAscension.runeCrafterLicense;
+  const mythic = state.player.mythicAscension;
+  const runeCrafter = mythic.runeCrafterLicense;
+  const l3Unlocked = mythic.l3RareRuneSetUnlocked;
+  const convergence = mythic.convergencePrimed;
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(80,60,100,0.22),_rgba(5,8,20,1)_55%)] px-6 py-10 text-white md:px-10">
@@ -22,6 +25,29 @@ export default function ProfessionsScreen() {
           subtitle={professionsScreenData.subtitle}
         />
 
+        {l3Unlocked && !runeCrafter ? (
+          <div className="rounded-2xl border border-amber-400/30 bg-amber-950/20 px-5 py-4 text-sm text-amber-100/95">
+            <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-amber-200/85">
+              Phase 7 · Obsidian cycle
+            </span>
+            <p className="mt-2 font-semibold text-white">L3 rare lattice open</p>
+            <p className="mt-1 text-white/65">
+              Crafting District runs the{" "}
+              <span className="text-white/88">Obsidian Cycle Core</span> (war
+              metal bind). Failed attempts spike{" "}
+              <span className="text-white/88">Void infusion</span>—recover before
+              chaining. Earn the Rune Crafter license on{" "}
+              <Link
+                href="/mastery"
+                className="text-cyan-200 underline decoration-cyan-400/35 underline-offset-2"
+              >
+                Mastery
+              </Link>{" "}
+              to unlock lattice channel refining and hybrid relief.
+            </p>
+          </div>
+        ) : null}
+
         {runeCrafter ? (
           <div className="rounded-2xl border border-violet-400/35 bg-violet-950/25 px-5 py-4 text-sm text-violet-100/95">
             <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-violet-200/80">
@@ -29,28 +55,49 @@ export default function ProfessionsScreen() {
             </span>
             <p className="mt-2 font-semibold text-white">Rune Crafter</p>
             <p className="mt-1 text-white/65">
-              Mythic ladder — visit{" "}
+              Mythic ladder + district obsidian/lattice crafts; one hybrid drain
+              stack is forgiven for capacity
+              {convergence ? " (a second stack is also forgiven when Convergence is filed on the Mythic ladder)" : ""}
+              . Visit{" "}
               <Link
                 href="/mastery"
                 className="text-cyan-200 underline decoration-cyan-400/35 underline-offset-2"
               >
                 Mastery
               </Link>{" "}
-              for forge gates (L3 → Saint seal).
+              for Saint seal progression.
             </p>
           </div>
         ) : null}
 
-        <div className="grid gap-6 md:grid-cols-3">
-          {professionsScreenData.cards.map((card) => (
-            <PlaceholderPanel
-              key={card.label}
-              label={card.label}
-              value={card.value}
-              hint={card.hint}
-            />
-          ))}
+        {convergence ? (
+          <div className="rounded-2xl border border-cyan-400/30 bg-cyan-950/20 px-5 py-4 text-sm text-cyan-100/95">
+            <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-200/80">
+              Phase 9 · Convergence
+            </span>
+            <p className="mt-2 font-semibold text-white">Hybrid resonance filed</p>
+            <p className="mt-1 text-white/65">
+              Registry recognizes tri-school strain: extra forgiveness on rune capacity
+              ceilings so deep hybrid builds stay playable. Requires Rune Crafter
+              standing — file it on{" "}
+              <Link
+                href="/mastery"
+                className="text-cyan-200 underline decoration-cyan-400/35 underline-offset-2"
+              >
+                Mastery
+              </Link>
+              .
+            </p>
+          </div>
+        ) : null}
+
+        <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/45">
+          Protocol snapshot
         </div>
+        <ScreenDataStatStrip
+          cards={professionsScreenData.cards}
+          ariaLabel="Professions protocol snapshot"
+        />
 
         <SectionCard
           title="Profession doctrine"
@@ -121,7 +168,7 @@ export default function ProfessionsScreen() {
               title={section.title}
               description={section.description}
             >
-              <div className="space-y-4 rounded-xl border border-white/10 bg-white/[0.03] p-5 text-sm text-white/65">
+              <div className="space-y-4 rounded-xl border border-white/12 bg-black/25 p-5 text-sm leading-relaxed text-white/65">
                 {section.body ? <p className="leading-6">{section.body}</p> : null}
 
                 {section.items ? (

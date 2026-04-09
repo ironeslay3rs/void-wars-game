@@ -1,11 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import MissionResult from "@/components/missions/MissionResult";
 import MissionTimer from "@/components/missions/MissionTimer";
+import QuickDiscardResourceButtons from "@/components/inventory/QuickDiscardResourceButtons";
 import ScreenHeader from "@/components/shared/ScreenHeader";
+import ScreenDataManualSections from "@/components/shared/ScreenDataManualSections";
+import ScreenDataStatStrip from "@/components/shared/ScreenDataStatStrip";
+import RunInstabilityBar from "@/components/shared/RunInstabilityBar";
 import SectionCard from "@/components/shared/SectionCard";
+import MissionOriginBadge from "@/components/missions/MissionOriginBadge";
 import { useGame } from "@/features/game/gameContext";
 import { missionsScreenData } from "@/features/missions/missionsScreenData";
 import type {
@@ -24,6 +29,23 @@ import {
   getCanonBookLockReason,
   isCanonBookMissionUnlocked,
 } from "@/features/progression/canonBookGate";
+import {
+  checkCapacity,
+  getOverflowPenalty,
+  INVENTORY_CAPACITY_MAX,
+} from "@/features/resources/inventoryLogic";
+import WarFrontSnapshotCallout from "@/components/shared/WarFrontSnapshotCallout";
+import { getDoctrinePressureStrip } from "@/features/world/missionDoctrineStrip";
+import { getWarFrontSnapshot } from "@/features/world/warFrontSnapshot";
+import { voidZoneById, type VoidZoneId } from "@/features/void-maps/zoneData";
+import { CARGO_INFUSION_HEADING } from "@/features/status/voidInfusionMetaphor";
+import {
+  MISSIONS_PLAYBOOK_TITLE,
+  getMissionConsequenceHint,
+  getMissionsPlaybookCallout,
+  getMissionsPlaybookLines,
+} from "@/features/guidance/missionsPlaybookCopy";
+import { getMissionQueueBlockHint } from "@/features/guidance/missionBlockReasonCopy";
 
 type QueuedMissionView = MissionQueueEntry & {
   mission: MissionDefinition;
@@ -37,6 +59,8 @@ type CompletionFeedback = {
   influence: number;
   conditionDelta: number;
   resources: Array<[string, number]>;
+  originTag?: import("@/features/game/gameTypes").MissionOriginTagId;
+  resolvedAt: number;
 };
 
 type MissionBlockReason =
@@ -234,6 +258,8 @@ function buildCompletionFeedback(completedMissions: MissionDefinition[]): Comple
       influence,
       conditionDelta,
       resources,
+      originTag: mission.originTag,
+      resolvedAt: Date.now(),
     };
   }
 
@@ -246,6 +272,8 @@ function buildCompletionFeedback(completedMissions: MissionDefinition[]): Comple
     influence,
     conditionDelta,
     resources,
+    originTag: completedMissions[0]?.originTag,
+    resolvedAt: Date.now(),
   };
 }
 
@@ -368,6 +396,27 @@ export default function MissionsScreen() {
     return () => window.clearTimeout(timeout);
   }, [boardFeedback]);
 
+  const carryCapacity = useMemo(
+    () => checkCapacity(state.player.resources, INVENTORY_CAPACITY_MAX),
+    [state.player.resources],
+  );
+  const carryOverloadPenalty = carryCapacity.isOverloaded
+    ? getOverflowPenalty(carryCapacity)
+    : null;
+  const carryPct = Math.min(100, Math.max(0, carryCapacity.percent));
+  const carryNearCap = !carryCapacity.isOverloaded && carryPct >= 85;
+  const doctrineStrip = getDoctrinePressureStrip(state.player, now);
+  const playbookCallout = getMissionsPlaybookCallout({
+    queueLen: missionQueue.length,
+    queueFull: isQueueFull,
+    launchLocked: hasLaunchQueueLock,
+    inProgress: inProgressEntries.length,
+  });
+  const missionConsequenceHint = getMissionConsequenceHint({
+    condition: state.player.condition,
+    hunger: state.player.hunger,
+  });
+
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(70,90,120,0.18),_rgba(5,8,20,0.96)_55%)] px-4 py-6 text-white md:px-6 md:py-8 xl:px-8">
       <div className="mx-auto flex max-w-6xl flex-col gap-6">
@@ -378,6 +427,144 @@ export default function MissionsScreen() {
           title={missionsScreenData.title}
           subtitle={missionsScreenData.subtitle}
         />
+
+        <ScreenDataStatStrip
+          cards={missionsScreenData.cards}
+          ariaLabel="Mission protocol snapshot"
+        />
+
+        <ScreenDataManualSections
+          sections={missionsScreenData.sections}
+          ariaLabel="Mission protocol field manual"
+        />
+
+        <RunInstabilityBar />
+
+        <section
+          className="rounded-2xl border border-cyan-400/22 bg-[linear-gradient(165deg,rgba(12,28,42,0.88),rgba(8,10,18,0.94))] px-4 py-4 text-[11px] leading-relaxed text-white/82 shadow-[0_12px_40px_rgba(0,0,0,0.28)] md:text-sm"
+          aria-label={MISSIONS_PLAYBOOK_TITLE}
+        >
+          <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-200/75">
+            {MISSIONS_PLAYBOOK_TITLE}
+          </div>
+          <ol className="mt-3 list-decimal space-y-2.5 pl-4 marker:font-semibold marker:text-cyan-400/55">
+            {getMissionsPlaybookLines().map((line, index) => (
+              <li key={index}>{line}</li>
+            ))}
+          </ol>
+          <p className="mt-3 border-t border-cyan-400/18 pt-3 text-[11px] leading-snug text-white/72">
+            <span className="font-bold uppercase tracking-[0.12em] text-cyan-200/70">
+              Consequence ·{" "}
+            </span>
+            {missionConsequenceHint}
+          </p>
+          {playbookCallout ? (
+            <p className="mt-3 border-t border-cyan-400/18 pt-3 text-[11px] font-semibold leading-snug text-amber-100/88">
+              <span className="font-bold uppercase tracking-[0.12em] text-amber-200/75">
+                Now ·{" "}
+              </span>
+              {playbookCallout}
+            </p>
+          ) : null}
+        </section>
+
+        <div className="rounded-2xl border border-rose-400/22 bg-rose-950/14 px-4 py-3 text-[11px] leading-relaxed text-white/80 md:text-sm">
+          <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/45">
+            {doctrineStrip.title}
+          </div>
+          <div className="mt-1 font-semibold text-rose-100/90">
+            {doctrineStrip.contestedLine}
+          </div>
+          {doctrineStrip.stakesLine ? (
+            <p className="mt-1 text-rose-50/82">{doctrineStrip.stakesLine}</p>
+          ) : null}
+          <p className="mt-1 text-white/60">{doctrineStrip.pressureLine}</p>
+          {doctrineStrip.commodityLine ? (
+            <p className="mt-1 text-amber-200/85">{doctrineStrip.commodityLine}</p>
+          ) : null}
+          {doctrineStrip.sectorWinnerLine ? (
+            <div className="mt-2 rounded-xl border border-amber-300/25 bg-black/30 px-3 py-2">
+              <div className="text-[9px] font-bold uppercase tracking-[0.16em] text-amber-200/70">
+                {doctrineStrip.sectorControlTitle}
+              </div>
+              <p className="mt-1 text-[11px] font-semibold text-amber-50/95">
+                {doctrineStrip.sectorWinnerLine}
+              </p>
+              {doctrineStrip.warConsequenceLine ? (
+                <p className="mt-1 text-[11px] leading-relaxed text-rose-100/82">
+                  {doctrineStrip.warConsequenceLine}
+                </p>
+              ) : null}
+              {doctrineStrip.warMechanicalLine ? (
+                <p className="mt-1 text-[10px] leading-relaxed text-white/55">
+                  {doctrineStrip.warMechanicalLine}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+          {doctrineStrip.warFrontSnapshot ? (
+            <WarFrontSnapshotCallout
+              snapshot={doctrineStrip.warFrontSnapshot}
+              showZoneTitle={false}
+              className="mt-2 border-rose-400/20 bg-black/28"
+            />
+          ) : null}
+        </div>
+
+        {carryOverloadPenalty ? (
+          <div className="rounded-2xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-[11px] leading-relaxed text-red-100/95 shadow-[0_8px_28px_rgba(0,0,0,0.25)] md:text-sm">
+            <div className="font-bold uppercase tracking-[0.12em] text-red-200">
+              {CARGO_INFUSION_HEADING} · hold over capacity
+            </div>
+            <div className="mt-1 text-red-100/90">
+              Timers run ×{carryOverloadPenalty.missionSpeedPenalty.toFixed(1)}, field movement −
+              {carryOverloadPenalty.movementPenaltyPct}%, mission pay −
+              {carryOverloadPenalty.missionRewardPenaltyPct}%.
+            </div>
+            <div className="mt-2 flex flex-wrap gap-1.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-red-50/95 md:text-[11px]">
+              <span className="rounded-md border border-red-200/35 bg-black/25 px-2 py-0.5">
+                Time ×{carryOverloadPenalty.missionSpeedPenalty.toFixed(1)}
+              </span>
+              <span className="rounded-md border border-red-200/35 bg-black/25 px-2 py-0.5">
+                Move −{carryOverloadPenalty.movementPenaltyPct}%
+              </span>
+              <span className="rounded-md border border-red-200/35 bg-black/25 px-2 py-0.5">
+                Pay −{carryOverloadPenalty.missionRewardPenaltyPct}%
+              </span>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Link
+                href="/inventory"
+                className="rounded-lg border border-red-300/40 bg-red-500/15 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-red-50 hover:border-red-200/60 md:text-[11px]"
+              >
+                Inventory
+              </Link>
+              <Link
+                href="/bazaar/war-exchange"
+                className="rounded-lg border border-red-200/45 bg-black/30 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-red-50 hover:border-red-100/70 md:text-[11px]"
+              >
+                Sell surplus
+              </Link>
+            </div>
+            <QuickDiscardResourceButtons
+              wrapClassName="mt-2 flex flex-wrap gap-2"
+              buttonClassName="rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-white/75 hover:border-white/30 hover:bg-white/10 md:text-xs"
+            />
+          </div>
+        ) : carryNearCap ? (
+          <div className="rounded-2xl border border-amber-400/28 bg-amber-500/10 px-4 py-3 text-[11px] leading-snug text-amber-100/90 md:flex md:flex-wrap md:items-center md:justify-between md:gap-3 md:text-sm">
+            <span>
+              Carry near cap ({carryCapacity.used}/{carryCapacity.max}). Sell or discard before
+              you stack long operations.
+            </span>
+            <Link
+              href="/bazaar/war-exchange"
+              className="mt-2 inline-block shrink-0 font-bold uppercase tracking-widest text-amber-50 underline decoration-amber-400/50 underline-offset-2 hover:text-amber-100 md:mt-0"
+            >
+              War Exchange →
+            </Link>
+          </div>
+        ) : null}
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard
@@ -423,6 +610,8 @@ export default function MissionsScreen() {
               formatRewardLabel={formatRewardLabel}
               onReturn={() => setCompletionFeedback(null)}
               returnLabel="Queue next"
+              originTag={completionFeedback.originTag}
+              resolvedAt={completionFeedback.resolvedAt}
             />
           </SectionCard>
         ) : null}
@@ -438,17 +627,36 @@ export default function MissionsScreen() {
                   mission.reward.resources ?? {},
                 ).filter(([, v]) => typeof v === "number" && v !== 0);
                 const isCanonUnlocked = isCanonBookMissionUnlocked(mission.canonBook);
+                const deployId = mission.deployZoneId;
+                const zoneSnap =
+                  deployId && deployId in voidZoneById
+                    ? getWarFrontSnapshot(
+                        state.player,
+                        deployId as VoidZoneId,
+                      )
+                    : null;
                 return (
                   <div
                     key={mission.id}
                     className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4"
                   >
-                    <h3 className="text-base font-semibold text-white">
-                      {mission.title}
-                    </h3>
+                    <div className="flex items-start justify-between gap-2">
+                      <h3 className="text-base font-semibold text-white">
+                        {mission.title}
+                      </h3>
+                      {mission.originTag ? (
+                        <MissionOriginBadge originTagId={mission.originTag} />
+                      ) : null}
+                    </div>
                     <p className="mt-1 text-sm text-white/60">
-                      {mission.description}
+                      {mission.rumorFlavor ?? mission.description}
                     </p>
+                    {zoneSnap ? (
+                      <WarFrontSnapshotCallout
+                        snapshot={zoneSnap}
+                        className="mt-2 border-emerald-400/20 bg-black/35"
+                      />
+                    ) : null}
                     <div className="mt-3 flex flex-wrap gap-1.5">
                       {resourceRewards.map(([k, v]) => (
                         <span
@@ -586,6 +794,10 @@ export default function MissionsScreen() {
                             {formatCanonBookLabel(mission.canonBook)}
                           </span>
 
+                          {mission.originTag ? (
+                            <MissionOriginBadge originTagId={mission.originTag} />
+                          ) : null}
+
                           <span className="rounded-full border border-white/10 bg-black/20 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/60">
                             {formatDuration(mission.durationHours)}
                           </span>
@@ -610,7 +822,7 @@ export default function MissionsScreen() {
                         </div>
 
                         <p className="mt-2 text-sm leading-6 text-white/65">
-                          {mission.description}
+                          {mission.rumorFlavor ?? mission.description}
                         </p>
 
                         <p className="mt-2 text-xs uppercase tracking-[0.14em] text-white/40">
@@ -709,6 +921,21 @@ export default function MissionsScreen() {
                                     ? "Future Book"
                                     : "Queue Mission"}
                         </button>
+                        {blockReason !== null ? (
+                          <p className="mt-2 text-[10px] leading-snug text-white/45">
+                            {getMissionQueueBlockHint({
+                              reason: blockReason,
+                              missionTitle: mission.title,
+                              pathLabel: formatPathLabel(mission.path),
+                              canonLockDetail: getCanonBookLockReason(
+                                mission.canonBook,
+                              ),
+                              queueLen: missionQueue.length,
+                              queueCap: doctrineQueueCap,
+                              launchLockDetail: doctrineQueueGate.reason,
+                            })}
+                          </p>
+                        ) : null}
                       </div>
                     </div>
                   </div>
@@ -732,6 +959,11 @@ export default function MissionsScreen() {
                     queuedEntries.map((entry) => {
                       const status = getQueueStatus(entry, now);
                       const isActive = status === "active";
+                      const qz = entry.mission.deployZoneId;
+                      const queueSnap =
+                        qz && qz in voidZoneById
+                          ? getWarFrontSnapshot(state.player, qz as VoidZoneId)
+                          : null;
 
                       return (
                         <div
@@ -760,6 +992,14 @@ export default function MissionsScreen() {
                                   </>
                                 )}
                               </div>
+                              {queueSnap ? (
+                                <div className="mt-2">
+                                  <WarFrontSnapshotCallout
+                                    snapshot={queueSnap}
+                                    className="border-amber-400/20 bg-black/30"
+                                  />
+                                </div>
+                              ) : null}
                             </div>
 
                             <span

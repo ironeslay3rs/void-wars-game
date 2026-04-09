@@ -23,23 +23,23 @@ export const inventoryScreenData: InventoryScreenData = {
   eyebrow: "Void Wars / Inventory Protocol",
   title: "Inventory Systems",
   subtitle:
-    "Track equipment, materials, and carried assets across combat, crafting, and gathering loops.",
+    "Everything you are carrying counts toward cargo pressure — sell, craft, or discard before overload taxes your missions and the field.",
 
   cards: [
     {
       label: "Tabs",
       value: "03",
-      hint: "Gear / Materials / Consumables",
+      hint: "Gear, materials, and consumables — scan by category.",
     },
     {
-      label: "Slots",
-      value: "24",
-      hint: "Planned starter storage grid",
+      label: "Cap",
+      value: "100%",
+      hint: "Overload slows missions and field movement — stay under the line.",
     },
     {
       label: "Status",
-      value: "Alpha",
-      hint: "First-pass inventory shell",
+      value: "Live",
+      hint: "Stores reflect your real haul; War Exchange is your relief valve.",
     },
   ],
 
@@ -47,14 +47,14 @@ export const inventoryScreenData: InventoryScreenData = {
     {
       title: "Inventory Categories",
       description:
-        "Core storage groups that organize player items and carried resources.",
+        "Gear you wear, materials you bank, consumables you burn — each bucket feeds crafting and survival pressure differently.",
       items: ["Gear", "Materials", "Consumables"],
     },
     {
-      title: "Capacity Console",
+      title: "Carry pressure",
       description:
-        "Reserved for slot usage, weight logic, and storage expansion systems.",
-      body: "Reserved for inventory limits, sorting controls, stack rules, and bag expansion progression.",
+        "Cargo infusion is not cosmetic — near-cap warns you early; overload stacks penalties on timers and movement.",
+      body: "Use category chips to find weight fast, then dump surplus at War Exchange or craft it into something useful.",
     },
   ],
 };

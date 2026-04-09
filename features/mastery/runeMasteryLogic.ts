@@ -40,11 +40,51 @@ export function createInitialRuneMastery(): PlayerRuneMasteryState {
   };
 }
 
+export type EffectiveCapacityOptions = {
+  /** Rune Crafter license: treats one hybrid stack as forgiven for ceiling shrink (Phase 7). */
+  crafterHybridRelief?: boolean;
+  /** Phase 9 convergence filing: forgives one additional hybrid stack for ceiling shrink (stacks with Crafter). */
+  convergenceHybridRelief?: boolean;
+};
+
+function hybridReliefStackCount(options?: EffectiveCapacityOptions): number {
+  return (
+    (options?.crafterHybridRelief ? 1 : 0) +
+    (options?.convergenceHybridRelief ? 1 : 0)
+  );
+}
+
+/** Hybrid stacks that still tighten Blood / Frame / Resonance ceilings after mythic relief. */
+export function getEffectiveHybridDrainStackCount(
+  mastery: PlayerRuneMasteryState,
+  options?: EffectiveCapacityOptions,
+): number {
+  return Math.max(
+    0,
+    mastery.hybridDrainStacks - hybridReliefStackCount(options),
+  );
+}
+
+/** Map mythic ladder flags to capacity relief (installs, UI, hydration). */
+export function effectiveHybridReliefFromMythic(mythic: {
+  runeCrafterLicense: boolean;
+  convergencePrimed: boolean;
+}): EffectiveCapacityOptions {
+  return {
+    crafterHybridRelief: mythic.runeCrafterLicense,
+    convergenceHybridRelief: mythic.convergencePrimed,
+  };
+}
+
 export function getEffectiveCapacityMax(
   mastery: PlayerRuneMasteryState,
+  options?: EffectiveCapacityOptions,
 ): RuneCapacityState {
-  const shrink =
-    mastery.hybridDrainStacks * HYBRID_CAP_SHRINK_PER_STACK;
+  const effectiveHybridStacks = getEffectiveHybridDrainStackCount(
+    mastery,
+    options,
+  );
+  const shrink = effectiveHybridStacks * HYBRID_CAP_SHRINK_PER_STACK;
   return {
     blood: Math.max(MIN_EFFECTIVE_CAP, mastery.capacityMax.blood - shrink),
     frame: Math.max(MIN_EFFECTIVE_CAP, mastery.capacityMax.frame - shrink),
@@ -87,8 +127,11 @@ export function maxRuneDepthAcrossSchools(
   );
 }
 
-function clampCapacityToEffectiveMax(mastery: PlayerRuneMasteryState) {
-  const eff = getEffectiveCapacityMax(mastery);
+function clampCapacityToEffectiveMax(
+  mastery: PlayerRuneMasteryState,
+  options?: EffectiveCapacityOptions,
+) {
+  const eff = getEffectiveCapacityMax(mastery, options);
   const next = { ...mastery.capacity };
   (Object.keys(next) as RuneCapacityPool[]).forEach((k) => {
     next[k] = Math.min(next[k], eff[k]);
@@ -192,9 +235,10 @@ export function tryInstallMinorRune(
     hybridDrainStacks,
   };
 
+  const relief = effectiveHybridReliefFromMythic(player.mythicAscension);
   nextMastery = {
     ...nextMastery,
-    capacity: clampCapacityToEffectiveMax(nextMastery),
+    capacity: clampCapacityToEffectiveMax(nextMastery, relief),
   };
 
   return {
@@ -209,6 +253,7 @@ export function tryInstallMinorRune(
 /** Sync depths from minor counts (repair saves after rule tweaks). */
 export function normalizeRuneDepthFromMinors(
   mastery: PlayerRuneMasteryState,
+  options?: EffectiveCapacityOptions,
 ): PlayerRuneMasteryState {
   const depthBySchool = { ...mastery.depthBySchool };
   for (const s of RUNE_SCHOOLS) {
@@ -220,6 +265,6 @@ export function normalizeRuneDepthFromMinors(
   return {
     ...mastery,
     depthBySchool,
-    capacity: clampCapacityToEffectiveMax(mastery),
+    capacity: clampCapacityToEffectiveMax(mastery, options),
   };
 }

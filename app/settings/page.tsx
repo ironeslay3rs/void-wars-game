@@ -27,19 +27,23 @@ export default function SettingsPage() {
         <div className="grid gap-6 lg:grid-cols-2">
           <SectionCard
             title="Client Preferences"
-            description="Reserved for interface settings, accessibility, and player comfort options."
+            description="Graphics, audio, accessibility, and UI comfort — the live shell follows browser and OS defaults until dedicated routing ships."
           >
-            <div className="rounded-xl border border-dashed border-white/10 p-6 text-sm text-white/50">
-              Reserved for graphics controls, sound, accessibility, and UI behavior.
+            <div className="rounded-xl border border-dashed border-white/10 p-6 text-sm leading-relaxed text-white/55">
+              This slice does not expose granular graphics or sound toggles. Use your
+              browser or OS accessibility settings; in-client volume and quality
+              controls follow when the account shell graduates past M1.
             </div>
           </SectionCard>
 
           <SectionCard
             title="Account Systems"
-            description="Future account settings, session preferences, and profile controls."
+            description="Session, profile, and connected services — tied to your auth provider in this web client."
           >
-            <div className="rounded-xl border border-dashed border-white/10 p-6 text-sm text-white/50">
-              Reserved for account identity, profile settings, and connected systems.
+            <div className="rounded-xl border border-dashed border-white/10 p-6 text-sm leading-relaxed text-white/55">
+              Account identity flows through the same login you used to open the
+              wasteland record. Deeper profile and linked-device controls ship when
+              the account shell graduates past M1.
             </div>
           </SectionCard>
         </div>

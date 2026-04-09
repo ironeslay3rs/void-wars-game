@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { canonPathFactions } from "@/features/canonRegistry";
 import { factionData } from "@/features/factions/factionData";
 import { useGame } from "@/features/game/gameContext";
@@ -91,6 +92,8 @@ export default function StatusHeroCard() {
   const rankProgress = getProgressPercent(player.rankXp, player.rankXpToNext);
   const selectedFaction =
     player.factionAlignment === "unbound" ? null : player.factionAlignment;
+  const needsRecoveryPriority =
+    player.condition < 40 || player.hunger < 40;
 
   function handleRecoverCondition() {
     if (!canRecoverCondition) return;
@@ -112,6 +115,39 @@ export default function StatusHeroCard() {
 
   return (
     <div className="rounded-[26px] border border-white/10 bg-[linear-gradient(180deg,rgba(16,20,34,0.82),rgba(7,9,16,0.94))] p-5 shadow-[0_18px_56px_rgba(0,0,0,0.35)] backdrop-blur md:p-6">
+      {needsRecoveryPriority ? (
+        <div className="mb-5 rounded-[22px] border border-amber-400/35 bg-[linear-gradient(165deg,rgba(60,28,8,0.5),rgba(12,8,6,0.92))] px-4 py-4 shadow-[0_12px_40px_rgba(0,0,0,0.35)]">
+          <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-200/75">
+            Recovery priority
+          </div>
+          <p className="mt-2 text-sm leading-relaxed text-amber-50/95">
+            Condition or hunger is in the danger band. The contract stack and the
+            Void both tax a weak body — buy time in the Black Market, use the
+            tools below, then return to{" "}
+            <Link
+              href="/home"
+              className="font-semibold text-amber-100 underline decoration-amber-400/45 underline-offset-2 hover:text-white"
+            >
+              Command
+            </Link>{" "}
+            when you are steady.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Link
+              href="/bazaar/black-market"
+              className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-amber-300/40 bg-amber-500/15 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.12em] text-amber-50 hover:border-amber-200/55 hover:bg-amber-500/22"
+            >
+              Black Market
+            </Link>
+            <Link
+              href="/missions"
+              className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.12em] text-white/80 hover:border-white/25 hover:bg-white/10"
+            >
+              Review contracts
+            </Link>
+          </div>
+        </div>
+      ) : null}
       <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <div className="space-y-6">
           <div className="rounded-[24px] border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.05),rgba(255,255,255,0.01))] p-5">

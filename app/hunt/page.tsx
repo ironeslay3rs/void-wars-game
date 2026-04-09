@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import ScreenHeader from "@/components/shared/ScreenHeader";
 import HuntResult from "@/components/hunt/HuntResult";
+import HuntNarration from "@/components/hunt/HuntNarration";
 import { useGame } from "@/features/game/gameContext";
 import { voidZoneById, type VoidZoneId } from "@/features/void-maps/zoneData";
 import { pickCreatureForZone } from "@/features/combat/creatureData";
@@ -27,6 +28,9 @@ export default function HuntPage() {
     : voidZoneById["howling-scar"];
 
   const { state, dispatch } = useGame();
+
+  // Look up the resolved mission to get its originTag for settlement lore
+  const resolvedMission = state.missions.find((m) => m.id === missionId);
 
   const [seed] = useState(() => {
     return `${missionId}-${zone.id}-${state.player.playerName}-${Date.now()}`;
@@ -194,9 +198,7 @@ export default function HuntPage() {
           ) : null}
 
           {phase === "resolving" ? (
-            <div className="mt-6 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/70">
-              Resolving encounter…
-            </div>
+            <HuntNarration alignment={state.player.factionAlignment} durationMs={2600} />
           ) : null}
         </section>
 
@@ -212,6 +214,8 @@ export default function HuntPage() {
             contractResources={contractResources}
             contractConditionDelta={contractConditionDelta}
             returnHref={returnHref}
+            originTag={resolvedMission?.originTag}
+            resolvedAt={Date.now()}
           />
         ) : null}
       </div>

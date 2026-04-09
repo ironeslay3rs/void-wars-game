@@ -1,4 +1,5 @@
 import type { GameState } from "@/features/game/gameTypes";
+import { getCurrentAscensionStep } from "@/features/progression/ascensionStep";
 import { getHungerPressureEffects } from "@/features/status/survival";
 import { getNextRunModifierDefinitionById } from "@/features/crafting-district/nextRunModifiersData";
 
@@ -8,6 +9,21 @@ export function getFactionAlignment(state: GameState) {
 
 export function hasChosenPath(state: GameState) {
   return state.player.factionAlignment !== "unbound";
+}
+
+/**
+ * True if the player has completed the New Game onboarding flow.
+ * Handles legacy saves where characterCreated may not exist — infers
+ * from having a non-unbound faction or any progression.
+ */
+export function selectHasCreatedCharacter(state: GameState) {
+  if (state.player.characterCreated) return true;
+  // Legacy save inference: if they have a faction or progression, they've played
+  return (
+    state.player.factionAlignment !== "unbound" ||
+    state.player.rankLevel > 1 ||
+    state.player.influence > 0
+  );
 }
 
 export function hasUnlockedRoutes(state: GameState) {
@@ -28,6 +44,9 @@ export function canAccessTeleportGate(state: GameState) {
 }
 
 export function canContinueGame(state: GameState) {
+  if (!state.player.characterCreated) {
+    return false;
+  }
   return (
     hasChosenPath(state) ||
     state.player.rankLevel > 1 ||
@@ -48,7 +67,11 @@ export function getContinueRoute(state: GameState) {
 }
 
 export type ProgressionMeaningChip = {
-  id: "hunger-pressure" | "primed-modifier" | "next-unlock";
+  id:
+    | "hunger-pressure"
+    | "primed-modifier"
+    | "next-unlock"
+    | "ascension-tension";
   label: string;
 };
 
@@ -73,6 +96,7 @@ function pickMax2Chips(candidates: Array<ProgressionMeaningChip | null>) {
 
 export function getProgressionMeaning(state: GameState): ProgressionMeaning {
   const { player } = state;
+  const mythic = player.mythicAscension;
   const hungerEffects = getHungerPressureEffects(player.hunger);
   const hasHungerPressure = hungerEffects.tier !== "fed";
 
@@ -90,10 +114,22 @@ export function getProgressionMeaning(state: GameState): ProgressionMeaning {
 
   const nextUnlockChip: ProgressionMeaningChip = {
     id: "next-unlock",
-    label: `Next Unlock: Rank ${player.rankLevel + 1}`,
+    label: mythic.convergencePrimed
+      ? `Knight Valor: ${mythic.runeKnightValor}/99`
+      : `Next Unlock: Rank ${player.rankLevel + 1}`,
   };
 
-  const chips = pickMax2Chips([hungerChip, primedChip, nextUnlockChip]);
+  const ascensionNear = getCurrentAscensionStep(state).nearBreakthroughLine;
+  const ascensionTensionChip: ProgressionMeaningChip | null = ascensionNear
+    ? { id: "ascension-tension", label: ascensionNear }
+    : null;
+
+  const chips = pickMax2Chips([
+    ascensionTensionChip,
+    hungerChip,
+    primedChip,
+    nextUnlockChip,
+  ]);
 
   const enablement: string[] = [];
   const last = player.lastHuntResult;
@@ -131,11 +167,21 @@ export function getProgressionMeaning(state: GameState): ProgressionMeaning {
     enablement.unshift(`Primed kit ready: ${primed.effectKey}.`);
   }
 
+  const objectiveLine = mythic.convergencePrimed
+    ? mythic.runeKnightValor < 3
+      ? "Win ranked or tournament arena rounds to bank Knight valor."
+      : "Spend Knight valor on Mythic ladder boons or Arena Edge Sigils."
+    : "Prime convergence on the Mythic ladder, then start banking Knight valor.";
+
+  const whyLine = mythic.convergencePrimed
+    ? "Valor spend converts prestige into immediate power and progression pressure."
+    : "Convergence unlocks Phase 9 prestige loops and valor-backed spend decisions.";
+
   return {
     objectiveTitle: "Progression Objective",
-    objectiveLine: "Prime one next-run kit before your next deployment.",
+    objectiveLine,
     whyTitle: "Why it matters",
-    whyLine: "A primed kit converts this haul into visible field advantage.",
+    whyLine,
     chips,
     huntResultEnablement: enablement.slice(0, 3),
   };

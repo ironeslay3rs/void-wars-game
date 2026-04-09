@@ -5,6 +5,9 @@ import CityHomeScene from "@/components/home/CityHomeScene";
 import TopBar from "@/components/layout/TopBar";
 import HomeHudClient from "@/components/home/HomeHudClient";
 
+// AnomalyToast is mounted globally inside GameProvider (features/auth/AuthProvider)
+// so the convergence reveal can fire on any route, not just /home.
+
 export default function GameHudShell() {
   return (
     <main className="safe-min-h-screen relative overflow-hidden bg-black text-white">

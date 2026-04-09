@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { assets } from "@/lib/assets";
 import { useGame } from "@/features/game/gameContext";
+import { blackMarketZoneRegistry } from "@/features/black-market/blackMarketScreenData";
 
 type ZoneDef = {
   id: string;
@@ -35,6 +36,8 @@ const ZONES: ZoneDef[] = [
     height: "28%",
     href: "/bazaar/black-market/feast-hall",
   },
+  // Arena has its own top-level route at /arena — not inside black-market hierarchy.
+  // This is intentional: Arena is a major game system (PvP, ranked, tournaments).
   {
     id: "arena-of-blood",
     label: "Arena of Blood",
@@ -70,14 +73,14 @@ const ZONES: ZoneDef[] = [
   },
   {
     id: "golden-bazaar",
-    label: "Auction House",
+    label: "Golden Bazaar",
     sin: "Greed",
-    desc: "Player market listings, bids, and ranked gear trade",
+    desc: "Legal commodity desk — taxed trades (player auction is a separate route)",
     left: "6%",
     top: "52%",
     width: "16%",
     height: "14%",
-    href: "/bazaar/auction-house",
+    href: "/bazaar/black-market/golden-bazaar",
   },
   {
     id: "ivory-tower",
@@ -103,7 +106,17 @@ const ZONES: ZoneDef[] = [
   },
 ];
 
-function ZoneChrome({ label, sin, desc }: { label: string; sin: string; desc: string }) {
+function ZoneChrome({
+  label,
+  sin,
+  desc,
+  registryChip,
+}: {
+  label: string;
+  sin: string;
+  desc: string;
+  registryChip?: string;
+}) {
   return (
     <>
       <span
@@ -121,6 +134,11 @@ function ZoneChrome({ label, sin, desc }: { label: string; sin: string; desc: st
         <span className="text-[9px] font-semibold uppercase tracking-[0.2em] text-white/45">
           {sin}
         </span>
+        {registryChip ? (
+          <span className="rounded border border-amber-400/25 bg-amber-500/10 px-1.5 py-0.5 text-[7px] font-bold uppercase tracking-[0.18em] text-amber-100/85">
+            {registryChip}
+          </span>
+        ) : null}
         <span className="mt-0.5 max-w-[120px] text-[8px] leading-tight text-white/30 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100">
           {desc}
         </span>
@@ -130,11 +148,11 @@ function ZoneChrome({ label, sin, desc }: { label: string; sin: string; desc: st
 }
 
 const RESOURCE_LABELS: { key: "credits" | "scrapAlloy" | "emberCore" | "runeDust" | "bioSamples"; label: string }[] = [
-  { key: "credits",    label: "Credits" },
+  { key: "credits",    label: "Coin" },
   { key: "scrapAlloy", label: "Scrap" },
   { key: "emberCore",  label: "Ember" },
-  { key: "runeDust",   label: "Rune" },
-  { key: "bioSamples", label: "Bio" },
+  { key: "runeDust",   label: "Soul" },
+  { key: "bioSamples", label: "Ichor" },
 ];
 
 export default function BlackMarketMap() {
@@ -171,6 +189,8 @@ export default function BlackMarketMap() {
           width: zone.width,
           height: zone.height,
         };
+        const reg = blackMarketZoneRegistry[zone.id];
+        const registryChip = reg?.chip;
 
         if ("placeholder" in zone && zone.placeholder) {
           return (
@@ -182,22 +202,33 @@ export default function BlackMarketMap() {
               className="group absolute z-2 cursor-pointer rounded-xl border border-transparent bg-transparent text-left transition-colors hover:border-white/10 focus:outline-none focus-visible:border-amber-300/50 focus-visible:ring-2 focus-visible:ring-amber-400/40"
               style={style}
             >
-              <ZoneChrome label={zone.label} sin={zone.sin} desc={zone.desc} />
+              <ZoneChrome
+                label={zone.label}
+                sin={zone.sin}
+                desc={zone.desc}
+                registryChip={registryChip}
+              />
             </button>
           );
         }
 
         const href = zone.href;
+        const ariaNote = registryChip ? `${zone.label}, ${zone.sin} — ${registryChip}` : `${zone.label}, ${zone.sin}`;
         return (
           <Link
             key={zone.id}
             href={href}
             title={`${zone.label} — ${zone.desc}`}
-            aria-label={`${zone.label}, ${zone.sin}`}
+            aria-label={ariaNote}
             className="group absolute z-2 rounded-xl border border-transparent bg-transparent transition-colors hover:border-white/12 focus:outline-none focus-visible:border-amber-300/50 focus-visible:ring-2 focus-visible:ring-amber-400/40"
             style={style}
           >
-            <ZoneChrome label={zone.label} sin={zone.sin} desc={zone.desc} />
+            <ZoneChrome
+              label={zone.label}
+              sin={zone.sin}
+              desc={zone.desc}
+              registryChip={registryChip}
+            />
           </Link>
         );
       })}
