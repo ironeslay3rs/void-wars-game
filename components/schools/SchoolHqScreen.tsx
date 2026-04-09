@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useRef } from "react";
 
 import ScreenHeader from "@/components/shared/ScreenHeader";
 import SectionCard from "@/components/shared/SectionCard";
@@ -38,10 +39,26 @@ const COUNTERMEASURE_LABELS: Record<School["countermeasure"], string> = {
 };
 
 export default function SchoolHqScreen({ school }: SchoolHqScreenProps) {
-  const { state } = useGame();
+  const { state, dispatch } = useGame();
   const empire = getEmpireById(school.empireId);
   const playerAlignment = state.player.factionAlignment;
   const isAligned = playerAlignment === school.empireId;
+
+  // Phase 7 / convergence wire-up: visiting a school HQ whose empire is NOT
+  // the player's alignment is a cross-school exposure event. The reducer
+  // silently tracks it via the convergence seed and may fire a one-shot
+  // anomaly toast on the very first off-school touch.
+  const lastFiredForSchoolRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (playerAlignment === "unbound") return;
+    if (playerAlignment === school.empireId) return;
+    if (lastFiredForSchoolRef.current === school.id) return;
+    lastFiredForSchoolRef.current = school.id;
+    dispatch({
+      type: "RECORD_CROSS_SCHOOL_EVENT",
+      payload: { school: school.empireId },
+    });
+  }, [dispatch, playerAlignment, school.empireId, school.id]);
 
   // Sister schools — others in the same empire
   const sisters = getSchoolsByEmpire(school.empireId).filter(

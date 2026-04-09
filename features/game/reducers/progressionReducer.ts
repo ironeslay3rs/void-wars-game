@@ -15,8 +15,7 @@ import {
   canUnlockL3RareRuneSet,
 } from "@/features/progression/mythicAscensionLogic";
 import { tryInstallMinorRune } from "@/features/mastery/runeMasteryLogic";
-import { trackCrossSchoolExposure } from "@/features/convergence/convergenceSeed";
-import { getAnomalyFlavorLine } from "@/features/convergence/anomalyFlavorData";
+import { applyCrossSchoolExposureToPlayer } from "@/features/convergence/convergenceSeed";
 import type { GameReducerResult } from "@/features/game/reducers/sharedReducerUtils";
 import { updateSingleResource } from "@/features/game/reducers/sharedReducerUtils";
 
@@ -149,25 +148,18 @@ export function handleProgressionAction(
           lastRuneInstallOutcome: { at, school, ok: true, newDepth },
         },
       };
-      // Silent convergence seed: track cross-school rune installs
-      const wasExposed = nextState.player.crossSchoolExposure.schoolsExposed[school];
-      const exposure = trackCrossSchoolExposure(nextState, { school });
-      if (exposure) {
-        const anomalyLine = !wasExposed
-          ? getAnomalyFlavorLine(nextState.player.factionAlignment, school)
-          : null;
-        nextState.player = {
-          ...nextState.player,
-          crossSchoolExposure: {
-            ...nextState.player.crossSchoolExposure,
-            ...exposure,
-          },
-          lastAnomalyToast: anomalyLine
-            ? { text: anomalyLine, school, at: Date.now() }
-            : nextState.player.lastAnomalyToast,
-        };
-      }
+      // Silent convergence seed: track cross-school rune installs.
+      nextState.player = applyCrossSchoolExposureToPlayer(nextState, school);
       return nextState;
+    }
+
+    case "RECORD_CROSS_SCHOOL_EVENT": {
+      const nextPlayer = applyCrossSchoolExposureToPlayer(
+        state,
+        action.payload.school,
+      );
+      if (nextPlayer === state.player) return state;
+      return { ...state, player: nextPlayer };
     }
 
     case "CLEAR_LAST_RUNE_INSTALL_OUTCOME":
