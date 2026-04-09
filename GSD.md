@@ -136,3 +136,64 @@ Smoke: [steps from Verification column]
 ---
 
 *Last seeded: 2026-04-04. Revise status cells as loops are proven. Session log: Wave A — `CRAFT_RECIPE` toasts; void market sell `war.sellMult` parity; next-run kit preflight; bazaar shortfall hints. Wave B — loadout slot hints, deploy loadout nudge, bazaar Void Market node, Black Market honesty pass (map Greed fix, sin-lane shortfalls, hub strip). Wave C (slice) — mastery install toasts, live `/mastery` stat cards, `runeMasteryLogic` + install-outcome reducer tests.*
+
+---
+
+## 2026-04-09 — M2 sealed: integrate-home-guide branch consolidation
+
+WIP audit + 16 commits landed on `integrate-home-guide`. `npx tsc --noEmit` clean (exit 0). Status cells unchanged pending smoke verification — the commits below are *capability* deltas, not promotions to 🟢.
+
+**State layer (keystone, `bea5396`)**
+- `features/game/gameTypes.ts`: `MissionOriginTagId`, `CrossSchoolExposure` (hidden seed for M5), `lastAnomalyToast`, `brokerCooldowns`, `BROKER_INTERACT`, `activeRuns`, `MissionDefinition.{originTag, rumorFlavor}`.
+- `features/game/lib/runPressure.{ts,test.ts}` for shared run-pressure math.
+- Reducers updated: economy, mission, progression.
+
+**Lore + brokers (`399926e`)**
+- New `features/lore/` (broker, broker interaction, canon lines, district, market events, nation, pressure voice, puppy onboarding, resource flavor, settlement flavor).
+- New shared components: `BrokerCard`, `BrokerInteractionModal`, `CanonQuote`, `LoadingQuote`, `ResourceTooltip`, `ScreenDataStatStrip`, `ScreenDataManualSections`.
+- BrokerCard rolled into 9 district screens (Arena, Ivory Tower, Mirror House, Silent Garden, Velvet Den, Golden Bazaar, Black Market Map, Hunting Ground, Inventory).
+
+**Convergence seed (`7d7c721`, M5 prep)**
+- `features/convergence/{convergenceSeed,anomalyFlavorData}.ts` + `AnomalyToast`. Architecture in place; no reducer writes to it yet.
+
+**Black Market (`18eb1e4`, `fbe78d4`)**
+- FeastHallScreen decomposed into `feast-hall/{FeastHallBrokers,FeastHallLoreCards,OperativeReadiness}` (−374 lines on the parent shell).
+- New `/bazaar/ember-vault` district route (canonical Pure/Rune market location per `lore-canon/01 Master Canon/Locations/Black Market.md`).
+
+**Mastery (`48a51e4`)**
+- `features/mastery/{doctrineData,doctrineEncounterCheck}.ts` (21 doctrine lines, 7 per school).
+- `DoctrineMilestone` card + `DoctrineEncounterOverlay`.
+
+**Missions / Hunt (`14ab2d6`)**
+- `features/missions/missionOriginTags.ts` + `MissionOriginBadge` rendered in MissionsScreen + MissionResult.
+- `features/hunt/huntNarrationData.ts` + `HuntNarration` + `SettlementLoreOverlay` for post-hunt lore beats.
+
+**Home + Upgrades (`78a7aae`, `9bba505`)**
+- `features/upgrades/` scaffold (types, hub data, roadmap data + test, selectors), `/upgrades` route, `UpgradeHub` + `UpgradeRoadmapSection`, `UpgradeNudge` on home rail.
+- HomeHudClient integrated: guide rail + upgrade nudge + market event headline.
+- `MarketEventHeadline` reads from `features/lore/marketEventData`.
+- Status screen: `StatusHeroCard` + `StatusLoadoutSnapshotCard`.
+
+**Guidance (`96c9165`)**
+- `features/guidance/{homeCommandCopy,missionBlockReasonCopy,missionsPlaybookCopy}.ts` (each with unit tests).
+
+**Onboarding (`5b038c1`)**
+- `app/new-game/page.tsx` + `components/onboarding/SchoolSelector.tsx` overhaul.
+
+**PWA + infra (`1184aef`, `7a8bcc6`)**
+- `app/manifest.ts`, dynamic icon/opengraph/twitter routes, `lib/siteUrl.ts`, 11 route loading states.
+- Playwright e2e scaffold (`playwright.config.ts`, `e2e/`).
+
+**Loops affected (need smoke verification before status promotion):**
+- *Black Market sin venues* (🟡): brokers + lore cards present on every lane; FeastHall decomposed.
+- *Mastery / Mythic* (🟡): doctrine milestones + encounter overlay added.
+- *Mission queue (AFK)* (🟡): origin tags + rumor flavor + run pressure surface.
+- *Hunt resolve (legacy path)* (🟡): hunt narration + settlement overlay.
+- *Home command deck* (🟢): guide rail + upgrade nudge + market event headline (status maintained, depth added).
+
+**Known gaps still open after M2:**
+- Realtime mob loot parity (shell ↔ server-authoritative) — M3.
+- Combat engine ↔ field flow integration — M3.
+- 7-school dual-face slice (open schools tied to black market lanes) — M4 (pivoted from convergence per 2026-04-09 canon check).
+- Convergence wire-up — M5 (pushed from M4; seed already in state shape).
+
