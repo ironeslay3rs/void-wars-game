@@ -4,6 +4,7 @@ import { useState } from "react";
 import BazaarSubpageNav from "@/components/bazaar/BazaarSubpageNav";
 import ScreenHeader from "@/components/shared/ScreenHeader";
 import BrokerCard from "@/components/shared/BrokerCard";
+import OpenFaceLink from "@/components/schools/OpenFaceLink";
 import { getBrokersByDistrict } from "@/features/lore/brokerData";
 import { resourceCostShortfall } from "@/features/black-market/sinLaneDealHelpers";
 import { useGame } from "@/features/game/gameContext";
@@ -95,6 +96,8 @@ export default function SilentGardenScreen() {
           title="Silent Garden"
           subtitle="Wait. Become. The still ones endure what the restless never survive."
         />
+
+        <OpenFaceLink laneId="silent-garden" />
 
         {toast && (
           <div className="rounded-2xl border border-green-400/30 bg-green-500/10 px-5 py-4 text-sm text-green-100">

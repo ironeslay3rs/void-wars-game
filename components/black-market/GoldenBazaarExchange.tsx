@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useGame } from "@/features/game/gameContext";
 import BrokerCard from "@/components/shared/BrokerCard";
+import OpenFaceLink from "@/components/schools/OpenFaceLink";
 import { getBrokersByDistrict } from "@/features/lore/brokerData";
 import {
   quoteVoidMarketBuy,
@@ -48,6 +49,9 @@ export default function GoldenBazaarExchange() {
       <h2 className="mt-2 text-xl font-black text-white md:text-2xl">
         Black Market trade desk
       </h2>
+      <div className="mt-3">
+        <OpenFaceLink laneId="golden-bazaar" />
+      </div>
       <p className="mt-2 max-w-3xl text-sm text-white/65">
         Browse listings, buy with credits, and sell from stock. Buys include a{" "}
         {Math.round(VOID_MARKET_BUY_TAX_RATE * 100)}% transaction tax; sells pay a{" "}

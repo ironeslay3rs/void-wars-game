@@ -4,6 +4,7 @@ import { useState } from "react";
 import BazaarSubpageNav from "@/components/bazaar/BazaarSubpageNav";
 import ScreenHeader from "@/components/shared/ScreenHeader";
 import BrokerCard from "@/components/shared/BrokerCard";
+import OpenFaceLink from "@/components/schools/OpenFaceLink";
 import { getBrokersByDistrict } from "@/features/lore/brokerData";
 import { resourceCostShortfall } from "@/features/black-market/sinLaneDealHelpers";
 import { useGame } from "@/features/game/gameContext";
@@ -102,6 +103,8 @@ export default function MirrorHouseScreen() {
           title="Mirror House"
           subtitle="Buy another's face. Sell your own. Identity is the oldest currency in the waste."
         />
+
+        <OpenFaceLink laneId="mirror-house" />
 
         {toast && (
           <div className="rounded-2xl border border-teal-400/30 bg-teal-500/10 px-5 py-4 text-sm text-teal-100">

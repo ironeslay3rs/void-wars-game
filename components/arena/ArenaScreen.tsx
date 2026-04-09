@@ -23,6 +23,7 @@ import {
 } from "@/features/arena/arenaView";
 import { useGame } from "@/features/game/gameContext";
 import BrokerCard from "@/components/shared/BrokerCard";
+import OpenFaceLink from "@/components/schools/OpenFaceLink";
 import { getBrokersByDistrict } from "@/features/lore/brokerData";
 
 export default function ArenaScreen() {
@@ -84,6 +85,8 @@ export default function ArenaScreen() {
           title={arenaScreenData.title}
           subtitle={arenaScreenData.subtitle}
         />
+
+        <OpenFaceLink laneId="arena-of-blood" />
 
         <div className="grid gap-6 md:grid-cols-3">
           {liveCards.map((card) => (

@@ -4,6 +4,7 @@ import { useState } from "react";
 import BazaarSubpageNav from "@/components/bazaar/BazaarSubpageNav";
 import ScreenHeader from "@/components/shared/ScreenHeader";
 import BrokerCard from "@/components/shared/BrokerCard";
+import OpenFaceLink from "@/components/schools/OpenFaceLink";
 import { getBrokersByDistrict } from "@/features/lore/brokerData";
 import { resourceCostShortfall } from "@/features/black-market/sinLaneDealHelpers";
 import { useGame } from "@/features/game/gameContext";
@@ -91,6 +92,8 @@ export default function VelvetDenScreen() {
           title="Velvet Den"
           subtitle="Pay for presence. Desire costs extra. The Den feeds every hunger the void creates."
         />
+
+        <OpenFaceLink laneId="velvet-den" />
 
         {toast && (
           <div className="rounded-2xl border border-rose-400/30 bg-rose-500/10 px-5 py-4 text-sm text-rose-100">

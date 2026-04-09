@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { ArrowLeft, Flame, Soup, TriangleAlert } from "lucide-react";
 import SectionCard from "@/components/shared/SectionCard";
+import OpenFaceLink from "@/components/schools/OpenFaceLink";
 import FeastHallBrokers from "@/components/black-market/feast-hall/FeastHallBrokers";
 import FeastHallLoreCards from "@/components/black-market/feast-hall/FeastHallLoreCards";
 import OperativeReadiness from "@/components/black-market/feast-hall/OperativeReadiness";
@@ -54,6 +55,10 @@ export default function FeastHallScreen({ embedded = false }: FeastHallScreenPro
 
   const content = (
     <div className="flex flex-col gap-8">
+      <div>
+        <OpenFaceLink laneId="feast-hall" />
+      </div>
+
       {/* Brokers FIRST — Mama Sol + Lars visible immediately */}
       <FeastHallBrokers />
 

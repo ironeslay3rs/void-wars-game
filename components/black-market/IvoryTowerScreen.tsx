@@ -4,6 +4,7 @@ import { useState } from "react";
 import BazaarSubpageNav from "@/components/bazaar/BazaarSubpageNav";
 import ScreenHeader from "@/components/shared/ScreenHeader";
 import BrokerCard from "@/components/shared/BrokerCard";
+import OpenFaceLink from "@/components/schools/OpenFaceLink";
 import { getBrokersByDistrict } from "@/features/lore/brokerData";
 import { resourceCostShortfall } from "@/features/black-market/sinLaneDealHelpers";
 import { useGame } from "@/features/game/gameContext";
@@ -108,6 +109,8 @@ export default function IvoryTowerScreen() {
           title="Ivory Tower"
           subtitle="Ascend, or be consumed by the gap. The Tower sells what lesser vaults cannot hold."
         />
+
+        <OpenFaceLink laneId="ivory-tower" />
 
         {toast && (
           <div className="rounded-2xl border border-yellow-400/30 bg-yellow-500/10 px-5 py-4 text-sm text-yellow-100">
