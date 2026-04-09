@@ -1,8 +1,13 @@
 @import "tailwindcss";
 
+html,
+body {
+  background-color: #050812;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #050812;
+  --foreground: #e5e5e5;
   --font-geist-sans: "Segoe UI", "Helvetica Neue", Arial, Helvetica, sans-serif;
   --font-geist-mono:
     "Cascadia Code", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
@@ -57,6 +62,24 @@ body {
   padding-right: max(1.5rem, var(--safe-area-inset-right));
   padding-bottom: max(1rem, var(--safe-area-inset-bottom));
   padding-left: max(1.5rem, var(--safe-area-inset-left));
+}
+
+/* Home — emotional run-pressure line under primary command */
+.command-pressure-line {
+  margin: 0;
+  text-align: center;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  font-style: italic;
+  color: rgb(255 255 255 / 0.72);
+  letter-spacing: 0.02em;
+  text-wrap: balance;
+}
+
+@media (min-width: 640px) {
+  .command-pressure-line {
+    font-size: 0.875rem;
+  }
 }
 
 /* Touch-friendly interactive elements */
