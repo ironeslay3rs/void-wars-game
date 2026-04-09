@@ -268,3 +268,84 @@ remains green (70/70 tests passing). Typecheck clean after every phase.
 - Phase 8 — Realtime mob loot parity (parallel technical track; lives at
   `features/void-maps/realtime/`)
 
+---
+
+## 2026-04-09 — Open World Awakens — Phases 6-8 shipped (full plan complete)
+
+Three independent slices landed in one session: school affinity,
+convergence wire-up, and realtime loot parity. Full suite green
+(89/89 tests passing). Typecheck clean after every phase.
+
+**Phase 6 — First-session school affinity (`cf496fd`)**
+- `PlayerState.affinitySchoolId` (string | null) + `SET_AFFINITY_SCHOOL`
+  action wired through `playerIdentityReducer`. `SET_FACTION_ALIGNMENT`
+  now clears the affinity (switching empires invalidates the prior pick).
+- `gameStorage` normalizes the field on load; legacy saves get `null`.
+- `createNewPlayer()` accepts `affinitySchoolId`.
+- `components/onboarding/SchoolAffinityPicker.tsx` — picks one of the
+  empire's 2-3 schools as the open-face affinity, surfacing sin, nation,
+  and paired lane on each card.
+- `/new-game` step 2 grows: `SchoolSelector` picks empire, picker fades
+  in below for affinity choice. `canNextFrom2` requires both. Step 4
+  confirmation reads "You stand with the [School Name] in [Nation]. The
+  [Lane] is your shadow walk in Blackcity."
+- `components/home/AffinityBadge.tsx` — compact card on the home command
+  deck showing school + empire + shadow lane, all clickable. Renders
+  nothing for unbound players or pre-Phase 6 saves.
+
+**Phase 7 — Convergence wire-up (`39aff38`)**
+- `applyCrossSchoolExposureToPlayer()` helper consolidates the
+  `trackCrossSchoolExposure` + `getAnomalyFlavorLine` + `lastAnomalyToast`
+  bookkeeping that was inline in `INSTALL_MINOR_RUNE`. Reducers now have
+  a one-liner contract.
+- New `RECORD_CROSS_SCHOOL_EVENT` action wired in `progressionReducer`.
+- `SchoolHqScreen` dispatches the action exactly once per off-empire
+  school visit via a per-school ref guard.
+- `AnomalyToast` moved INSIDE `GameProvider` (in `AuthProvider`) so the
+  Book 6 reveal can fire on any authenticated route. `GameHudShell`
+  drops its local mount to avoid double-rendering.
+- `convergenceSeed.test.ts` — 12 tests pinning unbound no-op, same-school
+  no-op, encounter and anomaly counters, mismatchEncountered threshold
+  (5 touches across 2 schools), one-shot toast firing, school identity
+  updates on second-school touch, derived helpers.
+
+**Phase 8 — Realtime mob loot parity (`f4ad433`)**
+- `features/void-maps/realtime/resolveAuthoritativeMobLoot.ts` — pure
+  helper that resolves a `mob_defeated` event into loot lines. Trusts the
+  server when present, falls back to a deterministic client roll using
+  the same `rollVoidFieldLoot()` shell mobs already use when the server
+  is silent. Closes the gap where pre-M4 servers (or any silent server)
+  would silently rob the player of loot from server-authoritative mobs.
+- `VoidRealtimeBridge.mob_defeated` handler now calls the helper instead
+  of inlining the trust check — code shrinks and intent gets clearer.
+- `resolveAuthoritativeMobLoot.test.ts` — 7 tests covering trust-the-
+  server, fallback when undefined, fallback when empty array, degenerate
+  empty result on unknown zone, deterministic seed reproducibility, boss
+  mob fallback path.
+
+**GSD status promotions earned (pending smoke verification):**
+- *Void field (realtime shell)* (🟡 → on track for 🟢) — server mob loot
+  is now robust against missing `lootLines`.
+
+**Loops affected:**
+- *Void field boss* (🟡): boss fallback path tested, drop is now
+  deterministic.
+- *Onboarding* (🟢): now teaches the dual-face structure in step 2.
+- *Home command deck* (🟢): affinity badge surfaces the player's school.
+
+**The full Open World Awakens plan is now COMPLETE. All 8 phases shipped.**
+
+Player success criteria from `docs/big-plan-open-world-awakens.md` plus
+the three follow-on phases:
+
+1. ✅ Open `/empires` and immediately understand there are 3 empires
+2. ✅ Click any empire and see its 2-3 child schools
+3. ✅ Open `/schools` and see all 7 schools organized by empire
+4. ✅ Click any school and see its sin, nation, lane pairing, pressure
+5. ✅ Walk into any black market lane and click through to its school
+6. ✅ See any mission's origin tag resolve to a real school name
+7. ✅ Read any zone's doctrine pressure as a school name
+8. ✅ NEW (P6) Pick a school in the New Game flow and see it on home
+9. ✅ NEW (P7) Visit an off-empire school HQ and feel the convergence toast fire
+10. ✅ NEW (P8) Get loot from every realtime kill — even if the server forgets to send it
+
