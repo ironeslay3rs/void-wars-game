@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import type { FactionAlignment } from "@/features/game/gameTypes";
 import type { DoctrinePressure } from "@/features/factions/factionWorldTypes";
 import {
@@ -12,6 +14,12 @@ import {
   voidZones,
   type VoidZoneId,
 } from "@/features/void-maps/zoneData";
+import { getEmpireById } from "@/features/empires/empireSelectors";
+import {
+  getEmpireRoute,
+  getSchoolRoute,
+  getSchoolsByEmpire,
+} from "@/features/schools/schoolSelectors";
 
 function barColor(path: "bio" | "mecha" | "pure") {
   if (path === "bio") return "bg-emerald-400/90";
@@ -74,13 +82,19 @@ export function ZoneDoctrinePressurePanel({
               className="rounded-xl border border-white/10 bg-black/25 p-4"
             >
               <div className="flex items-start justify-between gap-3">
-                <div>
+                <div className="flex-1">
                   <h3 className="text-base font-semibold text-white">
                     {zone.label}
                   </h3>
                   <p className="mt-1 text-xs text-white/50">
-                    Dominant:{" "}
-                    <span className="text-white/80">{pathLabel(dom)}</span>
+                    Held by{" "}
+                    <Link
+                      href={getEmpireRoute(dom)}
+                      className="text-white/85 underline-offset-2 hover:underline"
+                      style={{ color: getEmpireById(dom).accentHex }}
+                    >
+                      the {getEmpireById(dom).name}
+                    </Link>
                     {factionAlignment !== "unbound" ? (
                       <span className={` ml-2 ${pressureTone(localKind)}`}>
                         ·{" "}
@@ -92,6 +106,22 @@ export function ZoneDoctrinePressurePanel({
                       </span>
                     ) : null}
                   </p>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {getSchoolsByEmpire(dom).map((s) => (
+                      <Link
+                        key={s.id}
+                        href={getSchoolRoute(s.id)}
+                        className="rounded-md border px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-white/85 transition hover:bg-white/10"
+                        style={{
+                          borderColor: `${s.accentHex}55`,
+                          color: s.accentHex,
+                        }}
+                        title={`${s.name} — ${s.nation} (${s.pantheon})`}
+                      >
+                        {s.shortName}
+                      </Link>
+                    ))}
+                  </div>
                 </div>
               </div>
 
