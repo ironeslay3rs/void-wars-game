@@ -23,7 +23,7 @@ Working doc for **closing loops**, **auditing flows**, and **shipping incrementa
 | **Home command deck** | `/home` | `HomeHudClient`, `MissionPanel`, `MainMenuRightRail`, `gameSelectors` | Readiness, doctrine strip, ascension step, strain | 🟢 | Open home → panels render; links resolve |
 | **Mission queue (AFK)** | `/missions` | `missionRunner`, `gameMissionUtils`, `PROCESS_MISSION_QUEUE` | Queue, timers, `RESOLVE_HUNT`, rewards, strain | 🟡 | Queue mission → completes → resources/XP/strain update |
 | **Hunt resolve (legacy path)** | `/hunt` | `app/hunt/page.tsx`, encounter flow | Condition, loot, `RESOLVE_HUNT` | 🟡 | Confirm still consistent with mission definitions |
-| **Void field (realtime shell)** | `/void-field`, `/deploy-into-void/field`, `/bazaar/void-field` | `features/void-maps/`, `VoidRealtimeBridge`, `rollVoidFieldLoot` | Deploy, `ADD_FIELD_LOOT`, `APPLY_VOID_INSTABILITY_DELTA`, extraction | 🟡 | Deploy → loot → extract → ledger + strain; see task queue for server mob parity |
+| **Void field (realtime shell)** | `/void-field`, `/deploy-into-void/field`, `/bazaar/void-field` | `features/void-maps/`, `VoidRealtimeBridge`, `rollVoidFieldLoot`, `resolveAuthoritativeMobLoot` | Deploy, `ADD_FIELD_LOOT`, `APPLY_VOID_INSTABILITY_DELTA`, extraction | 🟢 | Server mob loot parity closed Phase 8: bridge falls back to client roll on silent `mob_defeated`. Deploy → loot → extract → ledger + strain still smokes the same way |
 | **Void field boss** | `/void-field/boss-encounter` | Boss flow + loot | Boss rewards, condition | 🟡 | Single path smoke after field changes |
 | **Exploration / biotech lead** | `/bazaar` map → biotech, `ExplorationPanel` | `START_EXPLORATION_PROCESS`, `CLAIM_EXPLORATION_REWARD` | Timed process, hunger cost, infusion tithe | 🟡 | Start sweep → wait/resolve → claim → state updates |
 | **Arena** | `/arena`, `/arena/match`, `/bazaar/arena` | `features/combat`, arena SR, mythic valor | `APPLY_ARENA_RANKED_SR_DELTA`, valor gains when converged | 🟢 | Match → SR/valor change where applicable |
@@ -348,4 +348,60 @@ the three follow-on phases:
 8. ✅ NEW (P6) Pick a school in the New Game flow and see it on home
 9. ✅ NEW (P7) Visit an off-empire school HQ and feel the convergence toast fire
 10. ✅ NEW (P8) Get loot from every realtime kill — even if the server forgets to send it
+
+---
+
+## 2026-04-09 — Static smoke pass + GSD promotion
+
+Ran `npx next build` after Phases 6-8: zero errors, zero warnings, all 10
+new routes generate (`/empires`, `/empires/{bio,mecha,pure}`, `/schools`,
+`/schools/[7 slugs]`). Full vitest suite still 89/89 green.
+
+**Static walk of the 10 success criteria:**
+- App routes for `/empires` + `/schools` exist and consume canonical
+  data via `getAllEmpires()` / `getSchoolsByEmpire()`.
+- `EmpireDetailScreen` consumes `SchoolListByEmpire` for child schools.
+- `SchoolHqScreen` reads sin / nation / pantheon / laneRoute / pressure /
+  countermeasure / breakthrough from `school` prop, fed by static params.
+- `OpenFaceLink` is imported into all 7 sin lanes (Arena, Feast Hall,
+  Mirror House, Velvet Den, Golden Bazaar, Ivory Tower, Silent Garden).
+- `MissionOriginBadge` resolves through `getSchoolForOriginTag()`.
+- `ZoneDoctrinePressurePanel` reads `getEmpireById(dom).name` and
+  iterates `getSchoolsByEmpire(dom)`.
+- `affinitySchoolId` flows through `gameTypes` → `initialGameState` →
+  `gameStorage` (load normalize) → `playerIdentityReducer`
+  (`SET_AFFINITY_SCHOOL`, cleared on `SET_FACTION_ALIGNMENT`) →
+  `playerFactory.createNewPlayer` → `SchoolAffinityPicker` (picks) →
+  `AffinityBadge` (surfaces on home).
+- `RECORD_CROSS_SCHOOL_EVENT` action lives in `gameTypes` and is
+  handled in `progressionReducer` via the new
+  `applyCrossSchoolExposureToPlayer` helper. `SchoolHqScreen` dispatches
+  it once per off-empire visit.
+- `AnomalyToast` mounted globally inside `GameProvider` (in
+  `AuthProvider`).
+- `resolveAuthoritativeMobLoot` is wired into `VoidRealtimeBridge`'s
+  `mob_defeated` handler with full server / fallback / empty branches
+  pinned by 7 tests.
+
+**One technical-debt cleanup found mid-walk:**
+`features/game/reducers/missionReducer.ts` had two inline copies of the
+convergence pattern that should have used the new helper from Phase 7.
+Refactored both to call `applyCrossSchoolExposureToPlayer`. Hunt loot
+ledger + expedition contract test files (24 tests) still pass.
+
+**Status promotion:**
+- *Void field (realtime shell)* 🟡 → 🟢 — the gap that kept it yellow
+  ("see task queue for server mob parity") is exactly the gap Phase 8
+  closes, and the helper is test-pinned.
+
+**Cells that did NOT promote (need actual click-through):**
+- Mission queue (AFK), Hunt resolve, Black Market sin venues, Path
+  districts, Mastery / Mythic, Exploration / biotech lead — Phase 6-8
+  changes are additive but the original verification flows still need
+  manual smoke.
+
+**Caveat:** This was a STATIC smoke pass — `next build` plus grep / read
+verification. It catches build breakage, route generation failure, and
+import drift, but does not exercise actual UI flows in a browser. Full
+browser smoke is a future task.
 

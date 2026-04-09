@@ -21,8 +21,7 @@ import {
 } from "@/features/game/gameMissionUtils";
 import { updateRunArchetypeAfterSettlement } from "@/features/game/runArchetypeLogic";
 import type { GameAction, GameState, PathType, PlayerState } from "@/features/game/gameTypes";
-import { trackCrossSchoolExposure } from "@/features/convergence/convergenceSeed";
-import { getAnomalyFlavorLine } from "@/features/convergence/anomalyFlavorData";
+import { applyCrossSchoolExposureToPlayer } from "@/features/convergence/convergenceSeed";
 import { getDoctrineQueueGate } from "@/features/progression/launchDoctrine";
 import {
   applyPathAlignedMasteryBonus,
@@ -252,24 +251,13 @@ export function handleMissionAction(
         });
       }
 
-      // Silent convergence seed: track cross-school mission loot
+      // Silent convergence seed: track cross-school mission loot.
       if (mission.path !== "neutral") {
         const mSchool = mission.path as PathType;
-        const wasExposed = resolvedPlayer.crossSchoolExposure.schoolsExposed[mSchool];
-        const missionState: GameState = { ...state, player: resolvedPlayer };
-        const exposure = trackCrossSchoolExposure(missionState, { school: mSchool });
-        if (exposure) {
-          const anomalyLine = !wasExposed
-            ? getAnomalyFlavorLine(resolvedPlayer.factionAlignment, mSchool)
-            : null;
-          resolvedPlayer = {
-            ...resolvedPlayer,
-            crossSchoolExposure: { ...resolvedPlayer.crossSchoolExposure, ...exposure },
-            lastAnomalyToast: anomalyLine
-              ? { text: anomalyLine, school: mSchool, at: Date.now() }
-              : resolvedPlayer.lastAnomalyToast,
-          };
-        }
+        resolvedPlayer = applyCrossSchoolExposureToPlayer(
+          { ...state, player: resolvedPlayer },
+          mSchool,
+        );
       }
 
       return {
@@ -607,25 +595,14 @@ export function handleMissionAction(
         (queueEntry) => queueEntry.queueId !== entry.queueId,
       );
 
-      // Silent convergence seed: track cross-school mission claims
+      // Silent convergence seed: track cross-school mission claims.
       let claimFinalPlayer = { ...nextPlayer, missionQueue: nextQueue };
       if (mission.path !== "neutral") {
         const cSchool = mission.path as PathType;
-        const wasExposed = claimFinalPlayer.crossSchoolExposure.schoolsExposed[cSchool];
-        const claimState: GameState = { ...state, player: claimFinalPlayer };
-        const exposure = trackCrossSchoolExposure(claimState, { school: cSchool });
-        if (exposure) {
-          const anomalyLine = !wasExposed
-            ? getAnomalyFlavorLine(claimFinalPlayer.factionAlignment, cSchool)
-            : null;
-          claimFinalPlayer = {
-            ...claimFinalPlayer,
-            crossSchoolExposure: { ...claimFinalPlayer.crossSchoolExposure, ...exposure },
-            lastAnomalyToast: anomalyLine
-              ? { text: anomalyLine, school: cSchool, at: Date.now() }
-              : claimFinalPlayer.lastAnomalyToast,
-          };
-        }
+        claimFinalPlayer = applyCrossSchoolExposureToPlayer(
+          { ...state, player: claimFinalPlayer },
+          cSchool,
+        );
       }
 
       return {
