@@ -2,15 +2,18 @@ export default function InventoryOperationsCard() {
   const storagePanels = [
     {
       title: "Quick Slots",
-      body: "Reserved for consumables, combat tools, and ready-use utility items.",
+      body:
+        "Fast-use combat stims and tools are reserved for a later shell — for now, pack through Stores and Crafting before you enter pressure.",
     },
     {
-      title: "Vault Access",
-      body: "Future long-term storage expansion for rare materials, named items, and Black Market reserves.",
+      title: "Cargo truth",
+      body:
+        "There is no off-site vault: if it is in Stores, it counts toward cargo pressure and overload penalties on missions and the field.",
     },
     {
-      title: "Sorting Rules",
-      body: "Later this panel can control filtering by rarity, faction path, profession type, and crafting relevance.",
+      title: "Sorting",
+      body:
+        "Category chips above keep the haul readable — dump weight at War Exchange before you queue long contracts.",
     },
   ];
 

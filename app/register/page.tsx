@@ -46,7 +46,7 @@ export default function RegisterPage() {
             Register
           </h1>
           <p className="text-sm text-white/60">
-            Create your account and bind a persistent wasteland record to it.
+            Create an account — the citadel opens a persistent wasteland record tied to your credentials.
           </p>
         </div>
 

@@ -2,17 +2,17 @@ export const settingsScreenData = {
   eyebrow: "System Control",
   title: "Settings",
   subtitle:
-    "Adjust interface behavior, future account systems, and quality-of-life preferences for your Void Wars session.",
+    "Session-facing controls and account posture — granular toggles arrive as the client shell hardens past M1.",
   cards: [
     {
       label: "Audio",
       value: "Normal",
-      hint: "Base audio profile for the current prototype build.",
+      hint: "Browser default mix until in-client routing lands.",
     },
     {
       label: "Graphics",
       value: "High",
-      hint: "Placeholder graphics state for visual testing.",
+      hint: "Client default render — no in-game quality slider in this slice.",
     },
     {
       label: "Notifications",

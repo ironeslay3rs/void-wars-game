@@ -84,7 +84,8 @@ export default function InventoryCategoriesCard() {
           label: "Coilbound Lattice",
           value: player.resources.coilboundLattice,
           tier: "Boss",
-          tooltip: "Boss-grade extract. Reserved for later-tier crafting sinks.",
+          tooltip:
+            "Boss-grade extract — bank it for high-tier refinement and war-economy gates when those lanes open.",
         },
         {
           label: "Ash Synod Relic",

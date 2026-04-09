@@ -30,7 +30,7 @@ export default function PureEnclavePage() {
         <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           <SectionCard
             title="Resonance Chambers"
-            description="Reserved for soul attunement, ember rites, and rune-memory progression."
+            description="Ember Vault attunement, ember rites, and rune-memory work — scaffolded here for Pure-path depth."
           >
             <div className="space-y-3">
               {["Soul Alignment", "Rune Memory", "Resonance Trial"].map(
@@ -48,10 +48,12 @@ export default function PureEnclavePage() {
 
           <SectionCard
             title="Pure Console"
-            description="Future attunement state, soul capacity, and resonance tracking."
+            description="Attunement state, soul-path pressure, and resonance tracking — consolidates here as Pure mastery deepens."
           >
-            <div className="rounded-xl border border-dashed border-white/10 p-6 text-sm text-white/50">
-              Reserved for Pure-path status, resonance depth, and rune-linked outcomes.
+            <div className="rounded-xl border border-dashed border-white/10 p-6 text-sm leading-relaxed text-white/55">
+              Detailed Pure readouts still wire in through Mastery, Status, and field
+              returns. Treat this wing as the Ember Vault staging floor — not a dead
+              end.
             </div>
           </SectionCard>
         </div>

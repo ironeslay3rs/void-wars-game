@@ -1,8 +1,9 @@
+// CANON SOURCE: Book 4 — "I am standing at the long table in the Ember Vault"
 export const pureEnclaveScreenData = {
-  eyebrow: "Bazaar / Ember Vault Enclave",
-  title: "Ember Vault Enclave",
+  eyebrow: "Blackcity / Ember Vault",
+  title: "Ember Vault",
   subtitle:
-    "Attune the soul, recover rune memory, and deepen Pure-side Ember Vault progression.",
+    "Where Pure-school business happens in Blackcity. Memory, fire, and soul — traded at tables where Soul Crystals sit in bowls.",
   cards: [
     {
       label: "Attunement State",

@@ -229,7 +229,7 @@ function VoidExpeditionScreenInner() {
           Back to Home
         </Link>
         <div className="rounded-lg border border-fuchsia-300/35 bg-fuchsia-500/12 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-fuchsia-100">
-          Deploy Map
+          Realm chart
         </div>
       </div>
 
@@ -260,6 +260,33 @@ function VoidExpeditionScreenInner() {
           activeHunt ? "top-[11rem] md:top-[10.5rem]" : "top-[4.25rem]",
         ].join(" ")}
       >
+        {!activeHunt ? (
+          <div className="rounded-xl border border-fuchsia-500/28 bg-black/70 px-4 py-3 text-[11px] leading-relaxed text-fuchsia-50/90 shadow-lg backdrop-blur-md">
+            <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-fuchsia-200/70">
+              Realm deploy
+            </div>
+            <p className="mt-1.5 text-white/80">
+              Choose a realm, then{" "}
+              <span className="font-semibold text-fuchsia-100">Deploy</span> — the
+              hunt queues and the void field opens. If Deploy is locked, fix your
+              contract stack on{" "}
+              <Link
+                href="/missions"
+                className="font-semibold text-fuchsia-100 underline decoration-fuchsia-400/40 underline-offset-2 hover:text-white"
+              >
+                Missions
+              </Link>{" "}
+              or stabilize from{" "}
+              <Link
+                href="/home"
+                className="font-semibold text-fuchsia-100 underline decoration-fuchsia-400/40 underline-offset-2 hover:text-white"
+              >
+                Command
+              </Link>
+              .
+            </p>
+          </div>
+        ) : null}
         <WarFrontDemandCallout
           nowMs={now}
           playerFaction={state.player.factionAlignment}

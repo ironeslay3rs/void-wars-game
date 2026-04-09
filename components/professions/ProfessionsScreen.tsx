@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import ScreenHeader from "@/components/shared/ScreenHeader";
+import ScreenDataStatStrip from "@/components/shared/ScreenDataStatStrip";
 import SectionCard from "@/components/shared/SectionCard";
-import PlaceholderPanel from "@/components/shared/PlaceholderPanel";
 import { professionsScreenData } from "@/features/professions/professionsScreenData";
 import { useGame } from "@/features/game/gameContext";
 
@@ -91,16 +91,13 @@ export default function ProfessionsScreen() {
           </div>
         ) : null}
 
-        <div className="grid gap-6 md:grid-cols-3">
-          {professionsScreenData.cards.map((card) => (
-            <PlaceholderPanel
-              key={card.label}
-              label={card.label}
-              value={card.value}
-              hint={card.hint}
-            />
-          ))}
+        <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/45">
+          Protocol snapshot
         </div>
+        <ScreenDataStatStrip
+          cards={professionsScreenData.cards}
+          ariaLabel="Professions protocol snapshot"
+        />
 
         <SectionCard
           title="Profession doctrine"
@@ -171,7 +168,7 @@ export default function ProfessionsScreen() {
               title={section.title}
               description={section.description}
             >
-              <div className="space-y-4 rounded-xl border border-white/10 bg-white/[0.03] p-5 text-sm text-white/65">
+              <div className="space-y-4 rounded-xl border border-white/12 bg-black/25 p-5 text-sm leading-relaxed text-white/65">
                 {section.body ? <p className="leading-6">{section.body}</p> : null}
 
                 {section.items ? (

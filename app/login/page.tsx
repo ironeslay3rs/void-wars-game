@@ -40,7 +40,7 @@ export default function LoginPage() {
             Sign In
           </h1>
           <p className="text-sm text-white/60">
-            Access your wasteland record and continue from your own save.
+            The Black Market remembers your wasteland record — sign in to resume where pressure last left you.
           </p>
         </div>
 

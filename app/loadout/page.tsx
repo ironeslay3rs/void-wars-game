@@ -92,7 +92,7 @@ export default function LoadoutPage() {
           backLabel="Back to Home"
           eyebrow="Operations / Field loadout"
           title="Combat loadout"
-          subtitle="Rigs change posture pressure and expose damage on the void field (local shell drills). School passives unlock from path depth and Executional tier."
+          subtitle="Rig profile sets posture pressure, expose windows, and strike math on the void field. Path depth feeds school passives — tune here before you deploy."
         />
 
         <section className="rounded-2xl border border-cyan-400/25 bg-cyan-950/20 p-6">

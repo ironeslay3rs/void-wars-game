@@ -37,7 +37,7 @@ export const professionsScreenData: ProfessionsScreenData = {
   eyebrow: "Void Wars / War Professions Doctrine",
   title: "Profession Systems",
   subtitle:
-    "Professions are not side jobs. They are the engine that converts expedition pressure into crafted power, ascension leverage, and faction war readiness.",
+    "Professions are not side jobs — they are how expedition wounds and rare hauls become gear, rites, and war readiness. Start from the snapshot, then read the doctrine blocks below.",
 
   cards: [
     {

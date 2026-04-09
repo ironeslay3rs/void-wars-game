@@ -174,20 +174,20 @@ export const mailEntries: MailEntry[] = [
     body: [
       "Operative, your last return from the outer districts has been entered into the salvage book.",
       "No discrepancies were found in the haul count. The Citadel will hold the record until you require a formal audit.",
-      "Attached below: ledger abstract and a placeholder recovery chit for future system wiring.",
+      "Attached below: a stamped ledger abstract and a sealed recovery chit — archival copies only until a payout is formally claimed.",
     ],
     attachments: [
       {
         id: "ledger-abstract",
         label: "Ledger Abstract",
         type: "document",
-        detail: "Archival document placeholder only.",
+        detail: "Citadel-stamped summary — read-only archive.",
       },
       {
         id: "recovery-chit",
         label: "Recovery Chit",
         type: "reward",
-        detail: "Presentational reward placeholder only.",
+        detail: "Sealed token — cosmetic until tied to a live relief event.",
       },
     ],
   },
@@ -224,14 +224,14 @@ export const mailEntries: MailEntry[] = [
     body: [
       "A partial signal packet was recovered from the trench relay grid and reconstructed for archive review.",
       "Most of the live routing data was lost before recovery. What remains is a record, not an active contact thread.",
-      "Attached below: one signal fragment placeholder held only as a visual shell.",
+      "Attached: one degraded fragment — archive only; do not treat as a live ping.",
     ],
     attachments: [
       {
         id: "signal-fragment",
         label: "Signal Fragment",
         type: "document",
-        detail: "Archival signal placeholder only.",
+        detail: "Partial decode — not a contact line.",
       },
     ],
   },

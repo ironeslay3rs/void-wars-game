@@ -37,7 +37,7 @@ export const careerScreenData: CareerScreenData = {
   eyebrow: "Void Wars / Career Protocol",
   title: "Career Systems",
   subtitle:
-    "Role identity and Sevenfold mastery on this page. Career focus drives field and crafting modifiers — set it on the Character screen.",
+    "Role identity and Sevenfold depth live here — tie them to Character for portrait, focus, and the modifiers that follow you into the field.",
 
   cards: [
     {
@@ -53,7 +53,7 @@ export const careerScreenData: CareerScreenData = {
     {
       label: "Career Focus",
       value: "Live",
-      hint: "Combat / Gathering / Crafting — drives field pickup amounts, shell damage, and Crafting District discounts.",
+      hint: "Set Combat, Gathering, or Crafting on Character — it shifts pickups, shell pressure, and district craft costs.",
     },
   ],
 
