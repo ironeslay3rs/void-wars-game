@@ -6,8 +6,11 @@ import MissionResult from "@/components/missions/MissionResult";
 import MissionTimer from "@/components/missions/MissionTimer";
 import QuickDiscardResourceButtons from "@/components/inventory/QuickDiscardResourceButtons";
 import ScreenHeader from "@/components/shared/ScreenHeader";
+import ScreenDataManualSections from "@/components/shared/ScreenDataManualSections";
+import ScreenDataStatStrip from "@/components/shared/ScreenDataStatStrip";
 import RunInstabilityBar from "@/components/shared/RunInstabilityBar";
 import SectionCard from "@/components/shared/SectionCard";
+import MissionOriginBadge from "@/components/missions/MissionOriginBadge";
 import { useGame } from "@/features/game/gameContext";
 import { missionsScreenData } from "@/features/missions/missionsScreenData";
 import type {
@@ -36,6 +39,13 @@ import { getDoctrinePressureStrip } from "@/features/world/missionDoctrineStrip"
 import { getWarFrontSnapshot } from "@/features/world/warFrontSnapshot";
 import { voidZoneById, type VoidZoneId } from "@/features/void-maps/zoneData";
 import { CARGO_INFUSION_HEADING } from "@/features/status/voidInfusionMetaphor";
+import {
+  MISSIONS_PLAYBOOK_TITLE,
+  getMissionConsequenceHint,
+  getMissionsPlaybookCallout,
+  getMissionsPlaybookLines,
+} from "@/features/guidance/missionsPlaybookCopy";
+import { getMissionQueueBlockHint } from "@/features/guidance/missionBlockReasonCopy";
 
 type QueuedMissionView = MissionQueueEntry & {
   mission: MissionDefinition;
@@ -49,6 +59,8 @@ type CompletionFeedback = {
   influence: number;
   conditionDelta: number;
   resources: Array<[string, number]>;
+  originTag?: import("@/features/game/gameTypes").MissionOriginTagId;
+  resolvedAt: number;
 };
 
 type MissionBlockReason =
@@ -246,6 +258,8 @@ function buildCompletionFeedback(completedMissions: MissionDefinition[]): Comple
       influence,
       conditionDelta,
       resources,
+      originTag: mission.originTag,
+      resolvedAt: Date.now(),
     };
   }
 
@@ -258,6 +272,8 @@ function buildCompletionFeedback(completedMissions: MissionDefinition[]): Comple
     influence,
     conditionDelta,
     resources,
+    originTag: completedMissions[0]?.originTag,
+    resolvedAt: Date.now(),
   };
 }
 
@@ -390,6 +406,16 @@ export default function MissionsScreen() {
   const carryPct = Math.min(100, Math.max(0, carryCapacity.percent));
   const carryNearCap = !carryCapacity.isOverloaded && carryPct >= 85;
   const doctrineStrip = getDoctrinePressureStrip(state.player, now);
+  const playbookCallout = getMissionsPlaybookCallout({
+    queueLen: missionQueue.length,
+    queueFull: isQueueFull,
+    launchLocked: hasLaunchQueueLock,
+    inProgress: inProgressEntries.length,
+  });
+  const missionConsequenceHint = getMissionConsequenceHint({
+    condition: state.player.condition,
+    hunger: state.player.hunger,
+  });
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(70,90,120,0.18),_rgba(5,8,20,0.96)_55%)] px-4 py-6 text-white md:px-6 md:py-8 xl:px-8">
@@ -402,7 +428,45 @@ export default function MissionsScreen() {
           subtitle={missionsScreenData.subtitle}
         />
 
+        <ScreenDataStatStrip
+          cards={missionsScreenData.cards}
+          ariaLabel="Mission protocol snapshot"
+        />
+
+        <ScreenDataManualSections
+          sections={missionsScreenData.sections}
+          ariaLabel="Mission protocol field manual"
+        />
+
         <RunInstabilityBar />
+
+        <section
+          className="rounded-2xl border border-cyan-400/22 bg-[linear-gradient(165deg,rgba(12,28,42,0.88),rgba(8,10,18,0.94))] px-4 py-4 text-[11px] leading-relaxed text-white/82 shadow-[0_12px_40px_rgba(0,0,0,0.28)] md:text-sm"
+          aria-label={MISSIONS_PLAYBOOK_TITLE}
+        >
+          <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-200/75">
+            {MISSIONS_PLAYBOOK_TITLE}
+          </div>
+          <ol className="mt-3 list-decimal space-y-2.5 pl-4 marker:font-semibold marker:text-cyan-400/55">
+            {getMissionsPlaybookLines().map((line, index) => (
+              <li key={index}>{line}</li>
+            ))}
+          </ol>
+          <p className="mt-3 border-t border-cyan-400/18 pt-3 text-[11px] leading-snug text-white/72">
+            <span className="font-bold uppercase tracking-[0.12em] text-cyan-200/70">
+              Consequence ·{" "}
+            </span>
+            {missionConsequenceHint}
+          </p>
+          {playbookCallout ? (
+            <p className="mt-3 border-t border-cyan-400/18 pt-3 text-[11px] font-semibold leading-snug text-amber-100/88">
+              <span className="font-bold uppercase tracking-[0.12em] text-amber-200/75">
+                Now ·{" "}
+              </span>
+              {playbookCallout}
+            </p>
+          ) : null}
+        </section>
 
         <div className="rounded-2xl border border-rose-400/22 bg-rose-950/14 px-4 py-3 text-[11px] leading-relaxed text-white/80 md:text-sm">
           <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/45">
@@ -546,6 +610,8 @@ export default function MissionsScreen() {
               formatRewardLabel={formatRewardLabel}
               onReturn={() => setCompletionFeedback(null)}
               returnLabel="Queue next"
+              originTag={completionFeedback.originTag}
+              resolvedAt={completionFeedback.resolvedAt}
             />
           </SectionCard>
         ) : null}
@@ -574,11 +640,16 @@ export default function MissionsScreen() {
                     key={mission.id}
                     className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4"
                   >
-                    <h3 className="text-base font-semibold text-white">
-                      {mission.title}
-                    </h3>
+                    <div className="flex items-start justify-between gap-2">
+                      <h3 className="text-base font-semibold text-white">
+                        {mission.title}
+                      </h3>
+                      {mission.originTag ? (
+                        <MissionOriginBadge originTagId={mission.originTag} />
+                      ) : null}
+                    </div>
                     <p className="mt-1 text-sm text-white/60">
-                      {mission.description}
+                      {mission.rumorFlavor ?? mission.description}
                     </p>
                     {zoneSnap ? (
                       <WarFrontSnapshotCallout
@@ -723,6 +794,10 @@ export default function MissionsScreen() {
                             {formatCanonBookLabel(mission.canonBook)}
                           </span>
 
+                          {mission.originTag ? (
+                            <MissionOriginBadge originTagId={mission.originTag} />
+                          ) : null}
+
                           <span className="rounded-full border border-white/10 bg-black/20 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/60">
                             {formatDuration(mission.durationHours)}
                           </span>
@@ -747,7 +822,7 @@ export default function MissionsScreen() {
                         </div>
 
                         <p className="mt-2 text-sm leading-6 text-white/65">
-                          {mission.description}
+                          {mission.rumorFlavor ?? mission.description}
                         </p>
 
                         <p className="mt-2 text-xs uppercase tracking-[0.14em] text-white/40">
@@ -846,6 +921,21 @@ export default function MissionsScreen() {
                                     ? "Future Book"
                                     : "Queue Mission"}
                         </button>
+                        {blockReason !== null ? (
+                          <p className="mt-2 text-[10px] leading-snug text-white/45">
+                            {getMissionQueueBlockHint({
+                              reason: blockReason,
+                              missionTitle: mission.title,
+                              pathLabel: formatPathLabel(mission.path),
+                              canonLockDetail: getCanonBookLockReason(
+                                mission.canonBook,
+                              ),
+                              queueLen: missionQueue.length,
+                              queueCap: doctrineQueueCap,
+                              launchLockDetail: doctrineQueueGate.reason,
+                            })}
+                          </p>
+                        ) : null}
                       </div>
                     </div>
                   </div>

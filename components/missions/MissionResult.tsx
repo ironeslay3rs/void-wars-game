@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import SettlementLoreOverlay from "@/components/settlement/SettlementLoreOverlay";
+import type { MissionOriginTagId } from "@/features/game/gameTypes";
 
 type MissionResultProps = {
   title: string;
@@ -13,6 +15,8 @@ type MissionResultProps = {
   formatRewardLabel: (key: string) => string;
   onReturn?: () => void;
   returnLabel?: string;
+  originTag?: MissionOriginTagId;
+  resolvedAt?: number;
 };
 
 export default function MissionResult(props: MissionResultProps) {
@@ -27,6 +31,8 @@ export default function MissionResult(props: MissionResultProps) {
     formatRewardLabel,
     onReturn,
     returnLabel = "Back to board",
+    originTag,
+    resolvedAt,
   } = props;
   const [displayRankXp, setDisplayRankXp] = useState(0);
   const [displayMastery, setDisplayMastery] = useState(0);
@@ -85,6 +91,8 @@ export default function MissionResult(props: MissionResultProps) {
             </span>
           ))}
         </div>
+
+        <SettlementLoreOverlay originTag={originTag} resolvedAt={resolvedAt} />
 
         {onReturn ? (
           <button
