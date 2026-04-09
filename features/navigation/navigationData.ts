@@ -38,7 +38,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     },
   },
   {
-    id: "spirit-sanctum",
+    id: "pure-sanctum",
     label: "Ember Vault",
     description: "Attunement, resonance, and ember-aligned Pure rites.",
     requirement: {

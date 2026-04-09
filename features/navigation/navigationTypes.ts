@@ -4,7 +4,7 @@ export type RouteNodeId =
   | "forge"
   | "arena"
   | "mecha-foundry"
-  | "spirit-sanctum"
+  | "pure-sanctum"
   | "gate";
 
 export type RouteRequirement = {

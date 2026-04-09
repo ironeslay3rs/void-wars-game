@@ -62,7 +62,7 @@ export const bazaarDistrictData: BazaarDistrict[] = [
   },
   {
     id: "pure-enclave",
-    title: "Ember Vault Enclave",
+    title: "Ember Vault",
     subtitle: "Ritual Sanctum",
     description:
       "Pure-path soul rites, resonance chambers, and Ember Vault progression.",
