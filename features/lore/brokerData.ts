@@ -1,4 +1,5 @@
 import type { PathType } from "@/features/game/gameTypes";
+import type { InstitutionId } from "@/features/institutions/institutionTypes";
 import type { NationId } from "@/features/lore/nationData";
 import type { DistrictId } from "@/features/lore/districtData";
 
@@ -13,6 +14,12 @@ import type { DistrictId } from "@/features/lore/districtData";
  * personalities are game-specific design for Void Wars: Oblivion.
  * Nation origins and school alignments follow the game's nation-sin-school
  * mapping (also game-specific — see nationData.ts).
+ *
+ * Phase 9 / Sin Institutions: a sin-aligned broker carries an
+ * `institutionId` that names the operating org they used to work for (or
+ * still secretly do). Three brokers remain institution-less by design —
+ * Mama Sol (the Cook archetype), The Warden (no school of any kind), and
+ * Nails (Gate engineer, no faction).
  */
 
 export type BrokerEntry = {
@@ -21,6 +28,8 @@ export type BrokerEntry = {
   title: string;
   districtId: DistrictId;
   school: PathType | "neutral";
+  /** Phase 9 — operating org affiliation. Null for canonically faction-less brokers. */
+  institutionId: InstitutionId | null;
   nationOrigin: NationId | null;
   backstory: string;
   personality: string;
@@ -38,6 +47,7 @@ export const brokers: BrokerEntry[] = [
     title: "Bonehowl Deserter",
     districtId: "feast-hall",
     school: "bio",
+    institutionId: "bonehowl-syndicate",
     nationOrigin: "norway",
     backstory:
       "Lars deserted from Fenrir's third hunting cadre after a Wrath-surge left half his unit mutated beyond recognition. He took what blood vials he could carry and walked south until the Black Market swallowed him.",
@@ -51,6 +61,7 @@ export const brokers: BrokerEntry[] = [
     title: "Memory Ash Dealer",
     districtId: "pure-enclave",
     school: "pure",
+    institutionId: "inti-court",
     nationOrigin: "peru",
     backstory:
       "Hazel absorbed too many fragmented souls during a Mouth of Inti excavation. She speaks in half-finished sentences because three other people's memories keep interrupting her own. The relic trade is all she has left.",
@@ -64,6 +75,7 @@ export const brokers: BrokerEntry[] = [
     title: "Pharos Defector",
     districtId: "mecha-foundry",
     school: "mecha",
+    institutionId: "pharos-conclave",
     nationOrigin: "egypt",
     backstory:
       "Kessler was a fourth-tier frame architect in Ra's divine factories before Pride's obsession with aesthetic perfection drove her out. She kept the Pharos serial number as a name because she doesn't remember the one her parents gave her.",
@@ -81,6 +93,7 @@ export const brokers: BrokerEntry[] = [
     title: "Feast Hall Matron",
     districtId: "feast-hall",
     school: "neutral",
+    institutionId: null,
     nationOrigin: null,
     backstory:
       "Nobody knows where Mama Sol came from. Some say she was a combat medic who defected from all three schools. The food always tastes like home, regardless of which home you came from. She has never explained how.",
@@ -94,6 +107,7 @@ export const brokers: BrokerEntry[] = [
     title: "Mirror House Intel Broker",
     districtId: "mirror-house",
     school: "bio",
+    institutionId: "olympus-concord",
     nationOrigin: "greece",
     backstory:
       "Glass was an Olympus flesh-sculptor who specialized in making people look like other people. She fled Greece when Envy's politics turned lethal. Now she sells information instead of faces — the margins are better and the clients are less likely to kill the product.",
@@ -107,6 +121,7 @@ export const brokers: BrokerEntry[] = [
     title: "Coliseum Overseer",
     districtId: "coliseum",
     school: "neutral",
+    institutionId: null,
     nationOrigin: null,
     backstory:
       "Nobody has ever heard the Warden speak outside the arena floor. On the floor, the Warden speaks once per match — the judgment. It is always final. Rumors say the Warden was the last survivor of a school that no longer exists.",
@@ -120,6 +135,7 @@ export const brokers: BrokerEntry[] = [
     title: "Mandate Salvage Specialist",
     districtId: "crafting-district",
     school: "mecha",
+    institutionId: "mandate-bureau",
     nationOrigin: "china",
     backstory:
       "Tomo was a patience-engineer in the Mandate's automation division — a role so slow that projects took decades. He defected because he wanted to build something he could finish in his own lifetime. The Black Market gave him that chance.",
@@ -133,6 +149,7 @@ export const brokers: BrokerEntry[] = [
     title: "Velvet Den Influence Broker",
     districtId: "velvet-den",
     school: "bio",
+    institutionId: "astarte-veil",
     nationOrigin: "lebanon",
     backstory:
       "Sable carried Crimson Altar pheromone tech out of Lebanon in her blood — literally. The Astarte cults engineered her as a social weapon. She decided to weaponize herself on her own terms instead.",
@@ -146,6 +163,7 @@ export const brokers: BrokerEntry[] = [
     title: "Ivory Tower Prestige Dealer",
     districtId: "ivory-tower",
     school: "mecha",
+    institutionId: "pharos-conclave",
     nationOrigin: "egypt",
     backstory:
       "A former Pharos aesthetician who built beauty into war machines. When Ra's engineers decided function mattered more than form, Ivory lost his purpose. He rebuilt it in the Black Market, where prestige is a product you can sell.",
@@ -159,6 +177,7 @@ export const brokers: BrokerEntry[] = [
     title: "Silent Garden Watcher",
     districtId: "silent-garden",
     school: "mecha",
+    institutionId: "mandate-bureau",
     nationOrigin: "china",
     backstory:
       "Root was a temporal-patience specialist in the Mandate — someone whose entire job was to wait and observe. When the Mandate decided observation was a form of Sloth and therefore a sin, Root walked out. Now she observes the Black Market. Nobody knows what she's waiting for.",
@@ -172,6 +191,7 @@ export const brokers: BrokerEntry[] = [
     title: "Thousand Hands Relic Smuggler",
     districtId: "golden-bazaar",
     school: "pure",
+    institutionId: "vishrava-ledger",
     nationOrigin: "india",
     backstory:
       "Ashveil was a vault-keeper for Vishrava's spiritual hoard before Greed consumed the institution. She smuggled fragments out one at a time, hidden in resonance-shielded containers. The Golden Bazaar pays well for what she carries.",
@@ -185,6 +205,7 @@ export const brokers: BrokerEntry[] = [
     title: "Teleport Gate Engineer",
     districtId: "teleport-gate",
     school: "neutral",
+    institutionId: null,
     nationOrigin: null,
     backstory:
       "Nails maintains the gate array — the only stable portal between the Black Market and the hunting zones. Nobody knows how she learned void-space stabilization. She doesn't talk about it. The gate works. That's enough.",
@@ -199,6 +220,7 @@ export const brokers: BrokerEntry[] = [
     title: "Mercenary Guild Recruiter",
     districtId: "mercenary-guild",
     school: "neutral",
+    institutionId: "bonehowl-syndicate",
     nationOrigin: "norway",
     backstory:
       "Former Bonehowl enforcer who lost half his jaw to a Verdant Coil beast and replaced it with Ironheart. Now runs recruitment for the Guild. He doesn't fight anymore — he decides who does.",

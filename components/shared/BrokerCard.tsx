@@ -8,6 +8,7 @@ import {
   PASSIVE_BROKER_IDS,
   SILENT_BROKER_IDS,
 } from "@/features/lore/brokerInteractionData";
+import { getInstitutionById } from "@/features/institutions/institutionSelectors";
 import BrokerInteractionModal from "@/components/shared/BrokerInteractionModal";
 
 const SCHOOL_ACCENT: Record<PathType | "neutral", string> = {
@@ -33,6 +34,10 @@ export default function BrokerCard({ broker }: { broker: BrokerEntry }) {
   const interaction = getBrokerInteraction(broker.id);
   const isSilent = SILENT_BROKER_IDS.has(broker.id);
   const isPassive = PASSIVE_BROKER_IDS.has(broker.id);
+  // Phase 9 / Sin Institutions: surface the operating org if any.
+  const institution = broker.institutionId
+    ? getInstitutionById(broker.institutionId)
+    : null;
 
   return (
     <>
@@ -46,11 +51,25 @@ export default function BrokerCard({ broker }: { broker: BrokerEntry }) {
               {broker.title}
             </div>
           </div>
-          {broker.nationOrigin ? (
-            <span className="shrink-0 rounded-md border border-white/10 bg-black/20 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.1em] text-white/35">
-              {broker.nationOrigin}
-            </span>
-          ) : null}
+          <div className="flex shrink-0 flex-col items-end gap-1">
+            {institution ? (
+              <span
+                className="rounded-md border px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.1em]"
+                style={{
+                  borderColor: `${institution.accentHex}55`,
+                  color: institution.accentHex,
+                }}
+                title={`${institution.name} — the ${institution.sin} institution`}
+              >
+                {institution.shortName}
+              </span>
+            ) : null}
+            {broker.nationOrigin ? (
+              <span className="rounded-md border border-white/10 bg-black/20 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.1em] text-white/35">
+                {broker.nationOrigin}
+              </span>
+            ) : null}
+          </div>
         </div>
 
         {broker.flavorQuote ? (
