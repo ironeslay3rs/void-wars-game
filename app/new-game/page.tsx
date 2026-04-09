@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import SchoolSelector from "@/components/onboarding/SchoolSelector";
 import { useGame } from "@/features/game/gameContext";
 import type { CareerFocus, PathType } from "@/features/game/gameTypes";
@@ -11,6 +10,10 @@ import {
   createNewPlayer,
   SCHOOL_STARTER_PACK_SUMMARY,
 } from "@/features/player/playerFactory";
+import {
+  onboardingNarrativeBeats,
+  consequenceBeats,
+} from "@/features/lore/puppyOnboardingData";
 
 type Step = 1 | 2 | 3 | 4;
 
@@ -32,6 +35,11 @@ export default function NewGamePage() {
   const canNextFrom2 = selectedSchool !== null;
   const canNextFrom3 = selectedCareer !== null;
   const canStart = canNextFrom1 && canNextFrom2 && canNextFrom3;
+
+  // Narrative beats
+  const step1Beat = onboardingNarrativeBeats[1];
+  const step4Beat = onboardingNarrativeBeats[4];
+  const step3Beat = selectedSchool ? consequenceBeats[selectedSchool] : null;
 
   function handleBegin() {
     if (!canStart || selectedSchool === null || selectedCareer === null) return;
@@ -60,10 +68,44 @@ export default function NewGamePage() {
               Void Wars: Oblivion
             </p>
             <h1 className="text-3xl font-black uppercase tracking-[0.08em] text-white">
-              New Game
+              {step === 1
+                ? step1Beat.title
+                : step === 2
+                  ? "The Deal"
+                  : step === 3
+                    ? step3Beat?.title ?? "The Consequence"
+                    : step4Beat.title}
             </h1>
-            <p className="text-sm text-white/60">
-              Step into the Hour 0–3 loop. Your first start is fragile on purpose.
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40">
+              {step === 1
+                ? step1Beat.eyebrow
+                : step === 2
+                  ? "Black Market · Lower Ring"
+                  : step === 3
+                    ? step3Beat?.eyebrow ?? "Something Changed"
+                    : step4Beat.eyebrow}
+            </p>
+          </div>
+
+          {/* Narrative flavor */}
+          <div className="mt-6 rounded-2xl border border-white/8 bg-black/25 px-5 py-4">
+            <p className="text-sm leading-relaxed text-white/65">
+              {step === 1
+                ? step1Beat.flavor
+                : step === 2
+                  ? "Three brokers. Three stalls. Each one has something that shouldn't be for sale. You didn't come here to browse. You came because something in this market is calling to you — and you're too hungry to walk away."
+                  : step === 3
+                    ? step3Beat?.flavor
+                    : step4Beat.flavor}
+            </p>
+            <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/35">
+              {step === 1
+                ? step1Beat.guidance
+                : step === 2
+                  ? "Choose the broker. This sets your path."
+                  : step === 3
+                    ? step3Beat?.guidance
+                    : step4Beat.guidance}
             </p>
           </div>
 
@@ -82,9 +124,7 @@ export default function NewGamePage() {
                   ) : (
                     <>
                       Every path starts with <span className="text-white/75">500 credits</span>{" "}
-                      plus school-weighted salvage (ores, alloy, samples, rune dust, moss
-                      rations; Pure adds ember cores). Pick a school in step 2 for exact
-                      tallies.
+                      plus school-weighted salvage. Pick a broker in step 2 for exact tallies.
                     </>
                   )}
                 </div>
@@ -100,11 +140,11 @@ export default function NewGamePage() {
                   value={callsign}
                   onChange={(e) => setCallsign(e.target.value)}
                   className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/40"
-                  placeholder="Enter callsign"
+                  placeholder="What does the market call you?"
                   autoComplete="nickname"
                 />
                 <div className="text-[11px] text-white/45">
-                  Shown on HUD and contracts. Keep it short.
+                  Shown on HUD and contracts. The broker needs a name before the deal.
                 </div>
               </label>
             ) : null}
@@ -121,6 +161,9 @@ export default function NewGamePage() {
                 <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-white/45">
                   Step 3 — Choose career focus
                 </div>
+                <p className="text-xs text-white/50">
+                  The deal changed you. Now choose how you survive — with firepower, salvage instinct, or workshop discipline.
+                </p>
                 <div className="grid gap-3 md:grid-cols-3">
                   {(["combat", "gathering", "crafting"] as CareerFocus[]).map((focus) => {
                     const active = selectedCareer === focus;
@@ -141,10 +184,10 @@ export default function NewGamePage() {
                         </div>
                         <div className="mt-2 text-xs leading-relaxed text-white/70">
                           {focus === "combat"
-                            ? "Shell drill damage bias. Prep for posture/expose identity."
+                            ? "The thing inside you wants to fight. Void-field damage and posture — for operatives who solve problems with firepower."
                             : focus === "gathering"
-                              ? "Field pickup efficiency. Better salvage returns under pressure."
-                              : "District cost reduction and profession tier value."}
+                              ? "Your instincts say hoard. Better salvage and pickup returns when the lane turns rough."
+                              : "Your hands know things your mind doesn't yet. Crafting costs bend in your favor — sustain the long war."}
                         </div>
                         {active ? (
                           <div className="mt-4 inline-flex rounded-full border border-white/12 bg-white/5 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/80">
@@ -164,28 +207,20 @@ export default function NewGamePage() {
                   Step 4 — Confirmation
                 </div>
                 <div className="mt-2 text-white/85">
-                  You are about to enter as <span className="font-black">{normalizedCallsign || "—"}</span>,
-                  leaning <span className="font-black uppercase">{selectedSchool ?? "—"}</span>,
-                  focus <span className="font-black uppercase">{selectedCareer ?? "—"}</span>.
+                  You are <span className="font-black">{normalizedCallsign || "—"}</span>.
+                  The <span className="font-black uppercase">{selectedSchool ?? "—"}</span> deal
+                  is inside you now. Career focus:{" "}
+                  <span className="font-black uppercase">{selectedCareer ?? "—"}</span>.
                 </div>
                 <div className="mt-2 text-white/75">
                   You start as <span className="font-semibold">Puppy</span> with 100% condition.
+                  The Black Market records your first oath.
                 </div>
-                <div className="mt-3 border-l-2 border-amber-200/35 pl-3 text-xs leading-relaxed text-amber-100/85">
-                  The gate opens on your signal. The Black Market records your first oath, then sends you to the hub.
+                <div className="mt-3 border-l-2 border-amber-200/35 pl-3 text-xs italic leading-relaxed text-amber-100/85">
+                  &ldquo;No one in the Black Market stays alive for free.&rdquo;
                 </div>
               </div>
             ) : null}
-
-            <div className="rounded-2xl border border-white/10 bg-black/25 px-4 py-4">
-              <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-white/45">
-                First action
-              </div>
-              <p className="mt-2 text-sm text-white/70">
-                After you begin, open <span className="font-semibold text-white">Exploration</span>{" "}
-                on Home to find a biotech signal and trigger your first hunt.
-              </p>
-            </div>
 
             <div className="flex flex-wrap gap-2">
               {step > 1 ? (
@@ -221,7 +256,7 @@ export default function NewGamePage() {
                       : "cursor-not-allowed border-white/10 bg-white/[0.03] text-white/30",
                   ].join(" ")}
                 >
-                  Next
+                  {step === 1 ? "Enter the Market" : step === 2 ? "Take the Deal" : "Accept"}
                 </button>
               ) : (
                 <button
@@ -235,15 +270,9 @@ export default function NewGamePage() {
                       : "cursor-not-allowed border-white/10 bg-white/[0.03] text-white/30",
                   ].join(" ")}
                 >
-                  Confirm & Begin
+                  Begin
                 </button>
               )}
-            </div>
-
-            <div className="flex flex-wrap items-center justify-end gap-3 text-xs text-white/55">
-              <Link className="hover:text-white" href="/character">
-                Character screen →
-              </Link>
             </div>
           </div>
         </section>
@@ -251,4 +280,3 @@ export default function NewGamePage() {
     </main>
   );
 }
-
