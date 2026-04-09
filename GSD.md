@@ -405,3 +405,78 @@ verification. It catches build breakage, route generation failure, and
 import drift, but does not exercise actual UI flows in a browser. Full
 browser smoke is a future task.
 
+---
+
+## 2026-04-09 — Phase 9: Sin Institutions + 2 unlocks shipped
+
+Three commits past the smoke pass. Full suite up from 89 → **114 tests
+passing** (16 files). Typecheck clean after every commit. Branch is now
+**41 commits ahead of `main`**.
+
+**Phase 9 — Sin Institutions (`98d9737`)**
+- New `features/institutions/{institutionTypes,institutionData,institutionSelectors}.ts`.
+- Seven institutions, one per sin: Bonehowl Syndicate (Wrath, canon-locked
+  via Puppy spinoff), Court of the Sun-Mouth (Gluttony), Olympus Concord
+  (Envy), Astarte Veil (Lust), Vishrava Ledger (Greed), Pharos Conclave
+  (Pride), Mandate Bureau (Sloth). Six game-specific entries flagged via
+  `canonSource: "game-specific"`.
+- `features/institutions/institutionSelectors.test.ts` — 10 tests pinning
+  the structure (unique sin / school / lane joins, school↔institution↔
+  lane round trips, canon source flags).
+- `components/schools/SchoolHqScreen.tsx` gains an "Operating institution"
+  section above the lore card with name, tagline, methods, social stance,
+  and a "Canon" / "Game lore" chip whose hover discloses the source.
+
+**Unlock 1 — Brokers carry institutionId (`584a3a6`)**
+- `features/lore/brokerData.ts` — `BrokerEntry.institutionId` field added.
+  10 of 13 brokers populated (Discount Lars and Iron Jaw both → Bonehowl
+  Syndicate; Hazel → Inti Court; Glass → Olympus Concord; Sable → Astarte
+  Veil; Ashveil → Vishrava Ledger; Kessler-9 + Old Ivory → Pharos
+  Conclave; Tomo Wrench + Root → Mandate Bureau). Mama Sol, The Warden,
+  and Nails stay null by canonical design.
+- `components/shared/BrokerCard.tsx` — institution chip renders above the
+  nation badge in the card's top-right. Hover reveals
+  "[Name] — the [sin] institution".
+- `features/lore/brokerInstitution.test.ts` — 8 tests pinning every join
+  + the Bio/Mecha/Pure empire alignment guard.
+
+**Unlock 2 — Mission origin tags carry institutionId (`85d12d8`)**
+- `features/missions/missionOriginTags.ts` — `MissionOriginTag.institutionId`
+  added. 7 sin-aligned tags map (e.g. `bonehowl-remnant` →
+  `bonehowl-syndicate`); `black-market-local` stays null.
+- `components/missions/MissionOriginBadge.tsx` — hover title now reads the
+  full lineage: "Bonehowl Syndicate → Bonehowl of Fenrir — Norway (Norse)
+  · Wrath-fueled beast war remnants...". Click target stays the school HQ
+  (institutions don't have routes yet).
+- `features/missions/missionOriginInstitution.test.ts` — 7 tests pinning
+  joins + the `tag.institution.sin === tag.school.sin` cross-tagging
+  guard.
+
+**The narrative loop is closed.** Players see the SAME institution name on
+both ends of every contract: the broker who hands it out (unlock 1) AND
+the mission origin badge tooltip the broker hands them (unlock 2). When
+Discount Lars at the Feast Hall offers a `bonehowl-remnant` contract,
+both surfaces say **Bonehowl Syndicate**.
+
+**Status promotions earned (pending smoke):**
+- *Black Market sin venues* (🟡): brokers now carry institutional identity
+  on every district screen — the lanes feel more like real survivor
+  organizations and less like flat shopping pages.
+- *Mission queue (AFK)* (🟡): origin badges now have a load-bearing
+  three-tier lineage (institution → school → nation) instead of just a
+  flat name.
+
+Both still hold at 🟡 because the underlying loops (deal-taking, queue
+ticking) weren't touched — only their identity layer.
+
+**New player success criteria added (now 13 / 13):**
+- (12) See which institution employs each broker on every district screen
+- (13) Hover any mission origin badge to read the full institution → school → nation lineage
+
+**PR draft (`.github/PR_DRAFT.md`) reflects all 41 commits / 114 tests / 13
+criteria.**
+
+**Next session unlock candidates** (none picked yet):
+1. War Exchange institutional pressure (Vishrava Ledger raises Greed weeks) — first economic hook
+2. Mythic ladder gated by institutional influence — depth slice
+3. Hearts vs Spades faction testing — Book 5 PvP scope
