@@ -706,7 +706,6 @@ export type GameAction =
       payload: { queueId: string; removedAt?: number };
     }
   | { type: "PROCESS_MISSION_QUEUE"; payload: { now: number } }
-  | { type: "CLAIM_MISSION"; payload: { queueId: string; claimedAt?: number } }
   | { type: "ADD_RECIPE"; payload: string }
   | {
       type: "VOID_MARKET_TRADE";

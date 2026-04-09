@@ -14,7 +14,6 @@ import {
   canAccessMission,
   getMissionById,
   getResolvedConditionDelta,
-  mergeDoctrineWarIntoReward,
   processMissionQueue,
   rebuildMissionQueueSchedule,
   syncMirroredHuntActiveProcess,
@@ -26,7 +25,6 @@ import { getDoctrineQueueGate } from "@/features/progression/launchDoctrine";
 import {
   applyPathAlignedMasteryBonus,
   getExplorationInstabilitySurchargeCredits,
-  withVoidInstabilityDelta,
 } from "@/features/progression/phase3Progression";
 import {
   applyRunInstabilityMissionSettlement,
@@ -512,104 +510,6 @@ export function handleMissionAction(
 
     case "PROCESS_MISSION_QUEUE":
       return processMissionQueue(state, action.payload.now);
-
-    case "CLAIM_MISSION": {
-      const missionQueue = Array.isArray(state.player.missionQueue)
-        ? state.player.missionQueue
-        : [];
-
-      const claimIndex = missionQueue.findIndex(
-        (entry) => entry.queueId === action.payload.queueId,
-      );
-
-      if (claimIndex === -1) {
-        return state;
-      }
-
-      const entry = missionQueue[claimIndex];
-
-      if (entry.completedAt === null) {
-        return state;
-      }
-
-      const mission = getMissionById(state.missions, entry.missionId);
-      if (!mission) {
-        return {
-          ...state,
-          player: {
-            ...state.player,
-            missionQueue: missionQueue.filter(
-              (queueEntry) => queueEntry.queueId !== entry.queueId,
-            ),
-          },
-        };
-      }
-
-      const rewardWithPathMastery = applyPathAlignedMasteryBonus(
-        mission.reward,
-        mission.path,
-        state.player.factionAlignment,
-      );
-      const doctrineMerged = mergeDoctrineWarIntoReward(
-        rewardWithPathMastery,
-        mission,
-        state.player,
-      );
-      const riSettled = applyRunInstabilityMissionSettlement(
-        state.player,
-        doctrineMerged.reward,
-        {
-          missionId: mission.id,
-          resolvedAt: action.payload.claimedAt ?? Date.now(),
-          isHuntingGround: mission.category === "hunting-ground",
-        },
-      );
-      const playerAfterRiTrim = applyPrimedPrepRunInstabilityTrim(
-        riSettled.player,
-        riSettled.player.nextRunModifiers,
-        mission.category === "hunting-ground",
-      );
-      const stabilityApplied = maybeApplyExpeditionReadyStabilityToReward(
-        playerAfterRiTrim,
-        riSettled.reward,
-        mission.category === "hunting-ground",
-      );
-      let claimedPlayer = applyMissionRewardWithVoidStrain(
-        stabilityApplied.player,
-        stabilityApplied.reward,
-        mission.path,
-      );
-      if (doctrineMerged.extraVoidInstability > 0) {
-        claimedPlayer = withVoidInstabilityDelta(
-          claimedPlayer,
-          doctrineMerged.extraVoidInstability,
-        );
-      }
-      const nextPlayer = updateRunArchetypeAfterSettlement(
-        applyActivityHungerCost(
-          claimedPlayer,
-          mission.category === "hunting-ground" ? "hunt" : "mission",
-        ),
-      );
-      const nextQueue = missionQueue.filter(
-        (queueEntry) => queueEntry.queueId !== entry.queueId,
-      );
-
-      // Silent convergence seed: track cross-school mission claims.
-      let claimFinalPlayer = { ...nextPlayer, missionQueue: nextQueue };
-      if (mission.path !== "neutral") {
-        const cSchool = mission.path as PathType;
-        claimFinalPlayer = applyCrossSchoolExposureToPlayer(
-          { ...state, player: claimFinalPlayer },
-          cSchool,
-        );
-      }
-
-      return {
-        ...state,
-        player: claimFinalPlayer,
-      };
-    }
 
     case "SET_EXPEDITION_READY_STABILITY_PENDING":
       return {

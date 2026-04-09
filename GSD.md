@@ -502,18 +502,20 @@ Three independent triggers — robust against tab-switch drift.
   - `PROCESS_MISSION_QUEUE` (from the processor hook + `onMissionComplete()`
     boundary trigger at `MissionsScreen` line 988)
   - `RESOLVE_HUNT` (legacy `/hunt` page only — NOT used by /missions)
-  - `CLAIM_MISSION` (**dead code**, see finding)
+  - ~~`CLAIM_MISSION`~~ **Retired 2026-04-09** (see finding + resolution below).
 
-  **🚨 Finding 1 — CLAIM_MISSION is dead code.**
+  **🚨 Finding 1 — CLAIM_MISSION was dead code. Retired.**
   The reducer case at `features/game/reducers/missionReducer.ts:516`
-  exists and runs the full claim → reward → strain → convergence-seed
-  pipeline, but **no UI dispatches it**. `processMissionQueue` in
+  existed and ran the full claim → reward → strain → convergence-seed
+  pipeline, but **no UI dispatched it**. `processMissionQueue` in
   `features/game/gameMissionUtils.ts:475` only adds entries to
   `remainingQueue` when `!isFinished` (`entry.endsAt > now`); finished
   entries are settled inline and never persisted in a "claimable" state.
   The functional loop is **auto-resolve**, not queue-and-claim.
-  Either delete `CLAIM_MISSION` or wire a UI for it. Filing as a debt
-  item — not blocking promotion since the player loop works.
+  **Resolution:** reducer case + `gameTypes` action entry deleted; two
+  now-orphaned imports (`mergeDoctrineWarIntoReward`,
+  `withVoidInstabilityDelta`) also removed. Auto-resolve remains the
+  canonical path.
 
 **Step 3 — Trace resources.** Settled rewards flow through a long but
 correct pipeline (in `gameMissionUtils.ts:475`):
@@ -571,7 +573,7 @@ visible chip — no orphan UI, no silent grants.
   | Convergence seed fires via Phase 7 helper | ✅ |
   | Canon naming consistent (no Spirit drift) | ✅ |
   | All UI promises grant resources | ✅ |
-  | `CLAIM_MISSION` reducer case has no caller | ⚠️ dead code |
+  | `CLAIM_MISSION` reducer case has no caller | ✅ retired 2026-04-09 |
 
 **Status promotion:** **Mission queue (AFK) 🟡 → 🟢.** The audit
 trace turns up no functional gap — every reward path is wired, every
@@ -581,7 +583,8 @@ which the static audit can't substitute for, but the code-side smoke
 is now exhaustive enough to promote with confidence.
 
 **Debt filed (not blocking promotion):**
-- `CLAIM_MISSION` is dead code. Either delete the reducer case + the
-  `gameTypes` action, or wire a "complete-but-claim-required" UI flow
-  for content that needs settle confirmation. Recommend deletion
-  since the auto-resolve UX is the canonical path.
+- ~~`CLAIM_MISSION` is dead code.~~ **Resolved 2026-04-09.** Reducer
+  case + `gameTypes` action + two now-orphaned imports
+  (`mergeDoctrineWarIntoReward`, `withVoidInstabilityDelta`) deleted.
+  Auto-resolve is the canonical mission-settle path. 114/114 tests
+  still pass, typecheck clean.
