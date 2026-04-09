@@ -35,7 +35,9 @@ export default function EmpireOverviewCard({
       <h3 className="mt-1 text-2xl font-black uppercase tracking-[0.05em] text-white">
         {empire.name}
       </h3>
-      <p className="mt-1 text-sm italic text-white/65">"{empire.tagline}"</p>
+      <p className="mt-1 text-sm italic text-white/65">
+        &ldquo;{empire.tagline}&rdquo;
+      </p>
       <p className="mt-3 text-sm leading-6 text-white/65">
         {empire.philosophy}
       </p>

@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import EmpireOverviewCard from "@/components/empires/EmpireOverviewCard";
 import ScreenHeader from "@/components/shared/ScreenHeader";
 import SectionCard from "@/components/shared/SectionCard";
@@ -48,12 +50,12 @@ export default function EmpiresIndexPage() {
 
         <div className="rounded-xl border border-white/10 bg-black/20 p-4 text-center text-sm text-white/55">
           Looking for the schools below the empires?{" "}
-          <a
+          <Link
             href="/schools"
             className="text-white/85 underline-offset-4 hover:underline"
           >
             See all 7 schools →
-          </a>
+          </Link>
         </div>
       </div>
     </main>

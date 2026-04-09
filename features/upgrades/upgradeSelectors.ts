@@ -117,7 +117,7 @@ function craftableRecipeOptions(state: GameState): UpgradeOption[] {
 
     const matEntries = Object.entries(recipe.materials) as [ResourceKey, number][];
     let metCount = 0;
-    let totalMats = matEntries.length;
+    const totalMats = matEntries.length;
     const costs: UpgradeOption["costs"] = [];
 
     for (const [key, need] of matEntries) {

@@ -158,6 +158,9 @@ export default function HomeHudClient() {
   }, [pathname, state.player.runInstability, dispatch]);
 
   const hasCharacter = selectHasCreatedCharacter(state);
+  // Ambient Black Market flavor — stable per session, changes on remount.
+  // Must be declared before any early return to satisfy Rules of Hooks.
+  const marketQuote = useMemo(() => getRandomCanonLine("market"), []);
 
   // New player — show onboarding CTA instead of full Command Deck
   if (!hasCharacter) {
@@ -196,8 +199,6 @@ export default function HomeHudClient() {
   const commandFooter = getHomeCommandFooter(primaryAction);
   const vitalsCritical =
     state.player.condition < 40 || state.player.hunger < 40;
-  // Ambient Black Market flavor — stable per session, changes on remount
-  const marketQuote = useMemo(() => getRandomCanonLine("market"), []);
   const homeScrollTop = vitalsCritical
     ? HOME_MOBILE_SCROLL_TOP_CRITICAL
     : HOME_MOBILE_SCROLL_TOP;

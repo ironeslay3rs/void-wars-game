@@ -55,7 +55,7 @@ export default function EmpireDetailScreen({ empire }: EmpireDetailScreenProps) 
           >
             <div className="space-y-4 text-sm leading-6 text-white/75">
               <p className="text-base italic text-white/85">
-                "{empire.claim}"
+                &ldquo;{empire.claim}&rdquo;
               </p>
               <p>{empire.philosophy}</p>
               <p>{empire.longForm}</p>

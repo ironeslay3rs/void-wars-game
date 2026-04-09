@@ -153,7 +153,9 @@ export default function SchoolHqScreen({ school }: SchoolHqScreenProps) {
                       : "Game lore"}
                 </span>
               </div>
-              <p className="italic text-white/85">"{institution.tagline}"</p>
+              <p className="italic text-white/85">
+                &ldquo;{institution.tagline}&rdquo;
+              </p>
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
                   <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/45">

@@ -35,8 +35,8 @@ export default function SchoolAffinityPicker({
       </div>
       <p className="text-xs text-white/50">
         The deal opened a door inside your empire. Three schools (or two)
-        train in this empire's tradition. Each one wears a different sin in
-        the open. Pick the one whose shadow you can live with.
+        train in this empire&apos;s tradition. Each one wears a different sin
+        in the open. Pick the one whose shadow you can live with.
       </p>
 
       <div className="grid gap-3 md:grid-cols-3">

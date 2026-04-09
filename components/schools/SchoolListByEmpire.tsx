@@ -46,7 +46,7 @@ export default function SchoolListByEmpire({
             </h2>
           )}
           <p className="mt-1 text-xs italic text-white/55">
-            "{empire.tagline}"
+            &ldquo;{empire.tagline}&rdquo;
           </p>
         </div>
         <p className="text-[10px] uppercase tracking-[0.18em] text-white/35">
