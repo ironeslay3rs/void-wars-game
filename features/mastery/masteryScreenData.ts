@@ -39,7 +39,8 @@ export const masteryScreenData: MasteryScreenData = {
     },
     {
       title: "Respec window (later)",
-      description: "Narrow correction before hard lock — not wired in M1.",
+      description:
+        "Narrow correction window before hard lock — ships after the M1 slice stabilizes.",
       body: masteryFrameworkScaffold.respecWindowHook.implementationNote,
     },
     {

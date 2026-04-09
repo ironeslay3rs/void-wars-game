@@ -10,6 +10,14 @@ import RuneCapacityDisplay from "@/components/mastery/RuneCapacityDisplay";
 import { masteryScreenData } from "@/features/mastery/masteryScreenData";
 import { getMasteryHubCards } from "@/features/mastery/masteryHubCards";
 import { useGame } from "@/features/game/gameContext";
+import DoctrineMilestoneCard from "@/components/mastery/DoctrineMilestone";
+import {
+  schoolDoctrines,
+  getUnlockedDoctrines,
+  getNextLockedDoctrine,
+} from "@/features/mastery/doctrineData";
+import type { PathType } from "@/features/game/gameTypes";
+import DoctrineEncounterOverlay from "@/components/mastery/DoctrineEncounterOverlay";
 
 export default function MasteryScreen() {
   const { state } = useGame();
@@ -17,6 +25,7 @@ export default function MasteryScreen() {
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(70,60,120,0.22),_rgba(5,8,20,1)_55%)] px-6 py-10 text-white md:px-10">
+      <DoctrineEncounterOverlay />
       <div className="mx-auto flex max-w-7xl flex-col gap-8">
         <ScreenHeader
           backHref="/home"
@@ -38,6 +47,56 @@ export default function MasteryScreen() {
         </p>
 
         <MasteryDepthPanel />
+
+        {/* Doctrine milestones — the path teaches the player */}
+        {state.player.factionAlignment !== "unbound" ? (() => {
+          const school = state.player.factionAlignment as PathType;
+          const doctrine = schoolDoctrines[school];
+          const primaryDepth = state.player.runeMastery.depthBySchool[school];
+          const unlocked = getUnlockedDoctrines(school, primaryDepth);
+          const next = getNextLockedDoctrine(school, primaryDepth);
+          return (
+            <SectionCard
+              title={doctrine.name}
+              description={`"${doctrine.tagline}" — Embodies: ${doctrine.embodies}`}
+            >
+              <div className="space-y-3">
+                {unlocked.map((m) => (
+                  <DoctrineMilestoneCard
+                    key={m.depth}
+                    milestone={m}
+                    school={school}
+                    unlocked
+                    isNext={false}
+                  />
+                ))}
+                {next ? (
+                  <DoctrineMilestoneCard
+                    milestone={next}
+                    school={school}
+                    unlocked={false}
+                    isNext
+                  />
+                ) : null}
+                {doctrine.milestones
+                  .filter(
+                    (m) =>
+                      m.depth > primaryDepth &&
+                      (!next || m.depth !== next.depth),
+                  )
+                  .map((m) => (
+                    <DoctrineMilestoneCard
+                      key={m.depth}
+                      milestone={m}
+                      school={school}
+                      unlocked={false}
+                      isNext={false}
+                    />
+                  ))}
+              </div>
+            </SectionCard>
+          );
+        })() : null}
 
         <RuneCapacityDisplay runeMastery={state.player.runeMastery} />
 
