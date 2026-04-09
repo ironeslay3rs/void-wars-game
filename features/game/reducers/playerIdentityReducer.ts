@@ -67,10 +67,22 @@ export function handlePlayerIdentityAction(
         player: {
           ...state.player,
           factionAlignment: action.payload,
+          // Switching empires invalidates the old school affinity. The player
+          // must re-pick a school within their new empire.
+          affinitySchoolId: null,
           loadoutSlots: sanitizeLoadoutForFaction(
             state.player.loadoutSlots,
             action.payload,
           ),
+        },
+      };
+
+    case "SET_AFFINITY_SCHOOL":
+      return {
+        ...state,
+        player: {
+          ...state.player,
+          affinitySchoolId: action.payload.schoolId,
         },
       };
 

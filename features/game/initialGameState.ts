@@ -13,6 +13,7 @@ export const initialGameState: GameState = {
     playerName: "",
     characterCreated: false,
     factionAlignment: "unbound",
+    affinitySchoolId: null,
     characterPortraitId: DEFAULT_CHARACTER_PORTRAIT_ID,
     careerFocus: null,
     fieldLoadoutProfile: "assault",

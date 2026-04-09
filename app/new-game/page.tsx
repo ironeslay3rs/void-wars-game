@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import SchoolSelector from "@/components/onboarding/SchoolSelector";
+import SchoolAffinityPicker from "@/components/onboarding/SchoolAffinityPicker";
 import { useGame } from "@/features/game/gameContext";
 import type { CareerFocus, PathType } from "@/features/game/gameTypes";
 import { initialGameState } from "@/features/game/initialGameState";
@@ -14,6 +15,8 @@ import {
   onboardingNarrativeBeats,
   consequenceBeats,
 } from "@/features/lore/puppyOnboardingData";
+import { getSchoolById } from "@/features/schools/schoolSelectors";
+import type { SchoolId } from "@/features/schools/schoolTypes";
 
 type Step = 1 | 2 | 3 | 4;
 
@@ -29,10 +32,13 @@ export default function NewGamePage() {
   const normalizedCallsign = useMemo(() => normalizeCallsign(callsign), [callsign]);
   const [step, setStep] = useState<Step>(1);
   const [selectedSchool, setSelectedSchool] = useState<PathType | null>(null);
+  const [selectedAffinitySchool, setSelectedAffinitySchool] =
+    useState<SchoolId | null>(null);
   const [selectedCareer, setSelectedCareer] = useState<CareerFocus | null>(null);
 
   const canNextFrom1 = normalizedCallsign.length >= 2;
-  const canNextFrom2 = selectedSchool !== null;
+  // Step 2 now requires both an empire AND a child school affinity.
+  const canNextFrom2 = selectedSchool !== null && selectedAffinitySchool !== null;
   const canNextFrom3 = selectedCareer !== null;
   const canStart = canNextFrom1 && canNextFrom2 && canNextFrom3;
 
@@ -42,12 +48,19 @@ export default function NewGamePage() {
   const step3Beat = selectedSchool ? consequenceBeats[selectedSchool] : null;
 
   function handleBegin() {
-    if (!canStart || selectedSchool === null || selectedCareer === null) return;
+    if (
+      !canStart ||
+      selectedSchool === null ||
+      selectedCareer === null ||
+      selectedAffinitySchool === null
+    )
+      return;
 
     const player = createNewPlayer({
       name: normalizedCallsign,
       school: selectedSchool,
       career: selectedCareer,
+      affinitySchoolId: selectedAffinitySchool,
     });
     dispatch({
       type: "HYDRATE_STATE",
@@ -150,10 +163,23 @@ export default function NewGamePage() {
             ) : null}
 
             {step === 2 ? (
-              <SchoolSelector
-                value={selectedSchool}
-                onChange={(next) => setSelectedSchool(next)}
-              />
+              <div className="space-y-6">
+                <SchoolSelector
+                  value={selectedSchool}
+                  onChange={(next) => {
+                    setSelectedSchool(next);
+                    // Switching empire invalidates the prior school affinity.
+                    setSelectedAffinitySchool(null);
+                  }}
+                />
+                {selectedSchool ? (
+                  <SchoolAffinityPicker
+                    empire={selectedSchool}
+                    value={selectedAffinitySchool}
+                    onChange={(next) => setSelectedAffinitySchool(next)}
+                  />
+                ) : null}
+              </div>
             ) : null}
 
             {step === 3 ? (
@@ -212,6 +238,20 @@ export default function NewGamePage() {
                   is inside you now. Career focus:{" "}
                   <span className="font-black uppercase">{selectedCareer ?? "—"}</span>.
                 </div>
+                {selectedAffinitySchool ? (
+                  <div className="mt-2 text-white/75">
+                    You stand with the{" "}
+                    <span className="font-black">
+                      {getSchoolById(selectedAffinitySchool).name}
+                    </span>{" "}
+                    in {getSchoolById(selectedAffinitySchool).nation}. The
+                    {" "}
+                    <span className="font-semibold">
+                      {getSchoolById(selectedAffinitySchool).laneDisplay}
+                    </span>{" "}
+                    is your shadow walk in Blackcity.
+                  </div>
+                ) : null}
                 <div className="mt-2 text-white/75">
                   You start as <span className="font-semibold">Puppy</span> with 100% condition.
                   The Black Market records your first oath.

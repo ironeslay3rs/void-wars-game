@@ -392,6 +392,15 @@ export type PlayerState = {
    */
   characterCreated: boolean;
   factionAlignment: FactionAlignment;
+  /**
+   * Phase 6 / The Open World Awakens: the player's chosen school within their
+   * empire. One of the 7 canonical school ids (e.g. "bonehowl-of-fenrir") or
+   * null when unbound or pre-Phase 6 saves load. The school must always belong
+   * to the empire indicated by `factionAlignment`. Stored as `string | null`
+   * here to avoid a circular import; consumers should validate against
+   * features/schools/schoolData when reading.
+   */
+  affinitySchoolId: string | null;
   /** Hub / profile portrait only — not used on Void Field. */
   characterPortraitId: CharacterPortraitId;
   /**
@@ -756,4 +765,9 @@ export type GameAction =
   | { type: "RESET_RUN_INSTABILITY" }
   | { type: "VENT_RUN_INSTABILITY" }
   | { type: "PUSH_RUN_INSTABILITY"; payload?: { nowMs?: number } }
-  | { type: "BROKER_INTERACT"; payload: { brokerId: string } };
+  | { type: "BROKER_INTERACT"; payload: { brokerId: string } }
+  | { type: "SET_AFFINITY_SCHOOL"; payload: { schoolId: string | null } }
+  | {
+      type: "RECORD_CROSS_SCHOOL_EVENT";
+      payload: { school: PathType };
+    };

@@ -992,6 +992,11 @@ function normalizePlayer(value: unknown): PlayerState {
             ),
           ) as Record<string, number>)
         : {},
+
+    affinitySchoolId:
+      typeof (raw as Record<string, unknown>).affinitySchoolId === "string"
+        ? ((raw as Record<string, unknown>).affinitySchoolId as string)
+        : null,
   };
 
   return {

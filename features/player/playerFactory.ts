@@ -54,6 +54,8 @@ export function createNewPlayer(params: {
   name: string;
   school: PathType;
   career: CareerFocus;
+  /** Phase 6: which canonical school within the empire the player aligns with. */
+  affinitySchoolId?: string | null;
 }): PlayerState {
   const now = Date.now();
   const name = normalizeName(params.name);
@@ -66,6 +68,7 @@ export function createNewPlayer(params: {
     characterCreated: true,
     playerName: name.length >= 2 ? name : "Puppy",
     factionAlignment: school,
+    affinitySchoolId: params.affinitySchoolId ?? null,
     careerFocus: params.career,
 
     rank: "Puppy",
