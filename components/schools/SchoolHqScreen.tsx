@@ -7,6 +7,7 @@ import ScreenHeader from "@/components/shared/ScreenHeader";
 import SectionCard from "@/components/shared/SectionCard";
 import { getEmpireById } from "@/features/empires/empireSelectors";
 import { useGame } from "@/features/game/gameContext";
+import { getInstitutionForSchool } from "@/features/institutions/institutionSelectors";
 import {
   getEmpireRoute,
   getSchoolRoute,
@@ -65,6 +66,10 @@ export default function SchoolHqScreen({ school }: SchoolHqScreenProps) {
     (s) => s.id !== school.id,
   );
 
+  // Phase 9 / Sin Institutions: the operating organization that runs this
+  // school in the open and the paired lane in the shadow.
+  const institution = getInstitutionForSchool(school.id);
+
   return (
     <main
       className="min-h-screen px-6 py-10 text-white md:px-10"
@@ -108,6 +113,68 @@ export default function SchoolHqScreen({ school }: SchoolHqScreenProps) {
             ↓ Visit the shadow face: {school.laneDisplay}
           </Link>
         </div>
+
+        {institution ? (
+          <SectionCard
+            title="Operating institution"
+            description="Who actually runs this school and the paired lane."
+          >
+            <div className="space-y-3 text-sm leading-6 text-white/75">
+              <div className="flex flex-wrap items-baseline justify-between gap-3">
+                <div>
+                  <p
+                    className="text-[10px] font-bold uppercase tracking-[0.22em]"
+                    style={{ color: institution.accentHex }}
+                  >
+                    The {institution.sin} institution
+                  </p>
+                  <p className="mt-1 text-lg font-black uppercase tracking-[0.04em] text-white">
+                    {institution.name}
+                  </p>
+                </div>
+                <span
+                  className="rounded-lg border px-2 py-1 text-[10px] font-bold uppercase tracking-[0.16em]"
+                  style={{
+                    borderColor: `${institution.accentHex}55`,
+                    color: institution.accentHex,
+                  }}
+                  title={
+                    institution.canonSource === "puppy-spinoff"
+                      ? "Confirmed in the Puppy spinoff"
+                      : institution.canonSource === "book"
+                        ? "Confirmed in the main novels"
+                        : "Game-specific creative work — see VOID_WARS_CANON_GAPS.md"
+                  }
+                >
+                  {institution.canonSource === "puppy-spinoff"
+                    ? "Canon"
+                    : institution.canonSource === "book"
+                      ? "Canon"
+                      : "Game lore"}
+                </span>
+              </div>
+              <p className="italic text-white/85">"{institution.tagline}"</p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/45">
+                    Methods
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-white/70">
+                    {institution.methods}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/45">
+                    Social stance
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-white/70">
+                    {institution.socialStance}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </SectionCard>
+        ) : null}
 
         <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
           <SectionCard
