@@ -798,4 +798,5 @@ export type GameAction =
   | { type: "MANA_BURN_FOR_CONDITION" }
   | { type: "MANA_BURN_FOR_HUNGER" }
   | { type: "GRANT_PANTHEON_BLESSING"; payload: { pantheonId: string } }
-  | { type: "CLEAR_PANTHEON_BLESSING" };
+  | { type: "CLEAR_PANTHEON_BLESSING" }
+  | { type: "MANA_INSTALL_MINOR_RUNE"; payload: { school: PathType } };

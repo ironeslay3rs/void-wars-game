@@ -26,6 +26,10 @@ import {
 } from "@/features/mastery/runeMasteryTypes";
 import MasteryArcTimeline from "@/components/mastery/MasteryArcTimeline";
 import MasteryTreeVisual from "@/components/mastery/MasteryTreeVisual";
+import {
+  MANA_HYBRID_INSTALL_COST_BASE,
+  MANA_HYBRID_INSTALL_COST_PURE,
+} from "@/features/mana/manaTypes";
 
 const SCHOOL_LABEL: Record<RuneSchool, string> = {
   bio: "Bio",
@@ -329,6 +333,40 @@ export default function MasteryDepthPanel() {
               >
                 Install minor
               </button>
+              {(() => {
+                const manaCost =
+                  factionAlignment === "pure"
+                    ? MANA_HYBRID_INSTALL_COST_PURE
+                    : MANA_HYBRID_INSTALL_COST_BASE;
+                const isHybrid = primary !== null && school !== primary;
+                const canManaInstall =
+                  state.player.mana >= manaCost && !capped && affordable;
+                return (
+                  <button
+                    type="button"
+                    disabled={!canManaInstall}
+                    title={
+                      isHybrid
+                        ? `Spend ${manaCost} mana to soak the hybrid drain bump from this off-primary install.`
+                        : `Spend ${manaCost} mana to install ${SCHOOL_LABEL[school]} (no hybrid drain since this is your primary).`
+                    }
+                    onClick={() =>
+                      dispatch({
+                        type: "MANA_INSTALL_MINOR_RUNE",
+                        payload: { school },
+                      })
+                    }
+                    className="mt-2 rounded-lg border border-sky-300/30 bg-sky-500/8 py-2 text-[10px] font-bold uppercase tracking-wider text-sky-100/85 transition hover:bg-sky-500/14 disabled:cursor-not-allowed disabled:opacity-30"
+                  >
+                    Install w/ {manaCost} mana
+                    {isHybrid ? (
+                      <span className="ml-1 text-[8px] font-normal opacity-70">
+                        (soaks hybrid drain)
+                      </span>
+                    ) : null}
+                  </button>
+                );
+              })()}
             </div>
           );
         })}

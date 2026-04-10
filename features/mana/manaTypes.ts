@@ -66,3 +66,16 @@ export const MANA_BURN_CONDITION_GAIN = 8;
 
 export const MANA_BURN_HUNGER_COST = 15;
 export const MANA_BURN_HUNGER_GAIN = 12;
+
+/**
+ * Mana-funded rune install — pays mana on top of the normal capacity
+ * cost, and in exchange the install does NOT increment hybridDrainStacks
+ * for off-primary schools. Pure-aligned operatives pay the cheapest rate
+ * because the Pure empire is the canonical "memory" school.
+ *
+ * This is the first concrete coupling between mana and the mastery
+ * loop: mana absorbs the hybrid drain that would otherwise erode
+ * capacity over time.
+ */
+export const MANA_HYBRID_INSTALL_COST_BASE = 18;
+export const MANA_HYBRID_INSTALL_COST_PURE = 12;
