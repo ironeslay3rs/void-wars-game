@@ -45,6 +45,7 @@ import {
   PANTHEON_BLESSING_REWARD_BONUS_PCT,
   getPantheonMatchRewardMultiplier,
 } from "@/features/pantheons/pantheonReward";
+import { applyPantheonPerkToPlayer } from "@/features/pantheons/pantheonPerks";
 import {
   getBonehowlBountyRewardMultiplier,
   getMandateBureauTaxMultiplier,
@@ -851,6 +852,10 @@ export function processMissionQueue(state: GameState, now: number): GameState {
         pantheonBlessingPending: false,
       };
     }
+    // Pantheon perk — persistent passive bonus. Applied once per settled
+    // mission, after all other reward/penalty math. Small flat deltas
+    // that match the cultural domain of the player's aligned pantheon.
+    nextPlayer = applyPantheonPerkToPlayer(nextPlayer);
     playerChanged = true;
 
     if (mission.category === "hunting-ground") {
