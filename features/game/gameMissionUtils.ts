@@ -43,6 +43,7 @@ import {
 } from "@/features/mana/manaTypes";
 import {
   PANTHEON_BLESSING_REWARD_BONUS_PCT,
+  getPantheonMatchRewardMultiplier,
 } from "@/features/pantheons/pantheonReward";
 
 export function clamp(value: number, min: number, max: number) {
@@ -682,30 +683,40 @@ export function processMissionQueue(state: GameState, now: number): GameState {
     const rewardWithDoctrine = doctrineMerged.reward;
     const doctrineExtraVoid = doctrineMerged.extraVoidInstability;
 
-    // Pantheon visit blessing — applied after doctrine merge so the bonus
-    // composes on top of every other reward modifier. Consumed downstream
-    // when we set `pantheonBlessingPending: false` on the settled player.
+    // Pantheon reward bonuses — composed multiplicatively from two
+    // independent sources:
+    //   1. Visit blessing (one-shot, +10%, consumed downstream)
+    //   2. Pantheon match (always-on, +5% when this mission's origin tag
+    //      resolves to the player's aligned school)
+    // Both nudges sit in the small (5-10%) band so they compose with
+    // doctrine + fusion mods without dominating them.
     const pantheonBlessingActive = nextPlayer.pantheonBlessingPending === true;
     const pantheonBlessingMult = pantheonBlessingActive
       ? 1 + PANTHEON_BLESSING_REWARD_BONUS_PCT / 100
       : 1;
-    const rewardWithPantheonBlessing = pantheonBlessingActive
+    const pantheonMatchMult = getPantheonMatchRewardMultiplier(
+      nextPlayer,
+      mission.originTag,
+    );
+    const pantheonCompositeMult = pantheonBlessingMult * pantheonMatchMult;
+    const pantheonBonusActive = pantheonCompositeMult !== 1;
+    const rewardWithPantheonBlessing = pantheonBonusActive
       ? {
           ...rewardWithDoctrine,
-          rankXp: Math.round(rewardWithDoctrine.rankXp * pantheonBlessingMult),
+          rankXp: Math.round(rewardWithDoctrine.rankXp * pantheonCompositeMult),
           masteryProgress: Math.round(
-            rewardWithDoctrine.masteryProgress * pantheonBlessingMult,
+            rewardWithDoctrine.masteryProgress * pantheonCompositeMult,
           ),
           influence:
             typeof rewardWithDoctrine.influence === "number"
-              ? Math.round(rewardWithDoctrine.influence * pantheonBlessingMult)
+              ? Math.round(rewardWithDoctrine.influence * pantheonCompositeMult)
               : undefined,
           resources: rewardWithDoctrine.resources
             ? (Object.fromEntries(
                 Object.entries(rewardWithDoctrine.resources).map(
                   ([key, value]) => [
                     key,
-                    Math.round(value * pantheonBlessingMult),
+                    Math.round(value * pantheonCompositeMult),
                   ],
                 ),
               ) as typeof rewardWithDoctrine.resources)

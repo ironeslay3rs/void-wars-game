@@ -3,8 +3,11 @@ import { describe, expect, it } from "vitest";
 import { initialGameState } from "@/features/game/initialGameState";
 import {
   PANTHEON_BLESSING_REWARD_BONUS_PCT,
+  PANTHEON_MATCH_REWARD_BONUS_PCT,
   getPantheonBlessingRewardMultiplier,
+  getPantheonMatchRewardMultiplier,
   getPlayerAlignedPantheonId,
+  isMissionPantheonMatch,
   isPlayerAlignedPantheon,
 } from "@/features/pantheons/pantheonReward";
 
@@ -90,5 +93,79 @@ describe("getPantheonBlessingRewardMultiplier", () => {
   it("bonus pct is small enough to not dominate other reward math", () => {
     expect(PANTHEON_BLESSING_REWARD_BONUS_PCT).toBeGreaterThanOrEqual(5);
     expect(PANTHEON_BLESSING_REWARD_BONUS_PCT).toBeLessThanOrEqual(20);
+  });
+});
+
+describe("getPantheonMatchRewardMultiplier", () => {
+  it("returns the +5% bonus when origin tag school matches the player's affinity", () => {
+    // bonehowl-remnant resolves to Bonehowl of Fenrir.
+    expect(
+      getPantheonMatchRewardMultiplier(
+        { ...basePlayer, affinitySchoolId: "bonehowl-of-fenrir" },
+        "bonehowl-remnant",
+      ),
+    ).toBe(1 + PANTHEON_MATCH_REWARD_BONUS_PCT / 100);
+  });
+
+  it("returns 1 when origin tag resolves to a different school", () => {
+    expect(
+      getPantheonMatchRewardMultiplier(
+        { ...basePlayer, affinitySchoolId: "bonehowl-of-fenrir" },
+        "olympus-castoff",
+      ),
+    ).toBe(1);
+  });
+
+  it("returns 1 when origin tag is undefined", () => {
+    expect(
+      getPantheonMatchRewardMultiplier(
+        { ...basePlayer, affinitySchoolId: "bonehowl-of-fenrir" },
+        undefined,
+      ),
+    ).toBe(1);
+  });
+
+  it("returns 1 when player has no affinity school", () => {
+    expect(
+      getPantheonMatchRewardMultiplier(
+        { ...basePlayer, affinitySchoolId: null },
+        "bonehowl-remnant",
+      ),
+    ).toBe(1);
+  });
+
+  it("returns 1 when origin tag is the unmapped local one", () => {
+    expect(
+      getPantheonMatchRewardMultiplier(
+        { ...basePlayer, affinitySchoolId: "bonehowl-of-fenrir" },
+        "black-market-local",
+      ),
+    ).toBe(1);
+  });
+
+  it("match bonus is smaller than visit-blessing bonus (always-on vs one-shot)", () => {
+    expect(PANTHEON_MATCH_REWARD_BONUS_PCT).toBeLessThan(
+      PANTHEON_BLESSING_REWARD_BONUS_PCT,
+    );
+  });
+});
+
+describe("isMissionPantheonMatch", () => {
+  it("returns true when the multiplier is > 1", () => {
+    expect(
+      isMissionPantheonMatch(
+        { ...basePlayer, affinitySchoolId: "mouth-of-inti" },
+        "mouth-of-inti-relic",
+      ),
+    ).toBe(true);
+  });
+
+  it("returns false when the multiplier is 1", () => {
+    expect(
+      isMissionPantheonMatch(
+        { ...basePlayer, affinitySchoolId: "mouth-of-inti" },
+        "olympus-castoff",
+      ),
+    ).toBe(false);
   });
 });
