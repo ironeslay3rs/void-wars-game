@@ -784,4 +784,7 @@ export type GameAction =
   | { type: "MANA_SPEND"; payload: { amount: number; reason?: string } }
   | { type: "MANA_RESTORE_FULL" }
   | { type: "VENT_MANA_TO_VOID_INSTABILITY" }
-  | { type: "SET_MANA_MAX"; payload: { max: number } };
+  | { type: "SET_MANA_MAX"; payload: { max: number } }
+  | { type: "MANA_BURN_FOR_MASTERY" }
+  | { type: "MANA_BURN_FOR_CONDITION" }
+  | { type: "MANA_BURN_FOR_HUNGER" };

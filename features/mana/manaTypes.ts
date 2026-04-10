@@ -43,3 +43,26 @@ export const VENT_MANA_INSTABILITY_RELIEF = 10;
 export const MANA_PER_MISSION_SETTLEMENT = 5;
 export const MANA_PER_HUNTING_GROUND_SETTLEMENT = 7;
 export const MANA_PER_FEAST_HALL_OFFER = 8;
+
+/**
+ * Deepening slice — directed spends. Each is an atomic mana → benefit
+ * exchange that the reducer guards both ends of (afford check + cap check).
+ *
+ * - Mastery burn: pours mana into rune-school memory. Smaller bump than
+ *   a real install but always available.
+ * - Condition burn: a "self-stabilization" rite that turns positive
+ *   pressure into recovered condition without going through the citadel.
+ * - Hunger burn: distilled tribute, paid out of personal reserves.
+ *
+ * These three plus the existing void-instability vent give mana 4 total
+ * spend surfaces — enough that the resource feels load-bearing, not just
+ * decorative.
+ */
+export const MANA_BURN_MASTERY_COST = 15;
+export const MANA_BURN_MASTERY_GAIN = 5;
+
+export const MANA_BURN_CONDITION_COST = 20;
+export const MANA_BURN_CONDITION_GAIN = 8;
+
+export const MANA_BURN_HUNGER_COST = 15;
+export const MANA_BURN_HUNGER_GAIN = 12;

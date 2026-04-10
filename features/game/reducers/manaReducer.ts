@@ -2,6 +2,12 @@ import { clamp } from "@/features/game/gameMissionUtils";
 import type { GameAction, GameState } from "@/features/game/gameTypes";
 import type { GameReducerResult } from "@/features/game/reducers/sharedReducerUtils";
 import {
+  MANA_BURN_CONDITION_COST,
+  MANA_BURN_CONDITION_GAIN,
+  MANA_BURN_HUNGER_COST,
+  MANA_BURN_HUNGER_GAIN,
+  MANA_BURN_MASTERY_COST,
+  MANA_BURN_MASTERY_GAIN,
   VENT_MANA_COST,
   VENT_MANA_INSTABILITY_RELIEF,
 } from "@/features/mana/manaTypes";
@@ -84,6 +90,57 @@ export function handleManaAction(
           ...state.player,
           manaMax: max,
           mana: Math.min(state.player.mana, max),
+        },
+      };
+    }
+
+    case "MANA_BURN_FOR_MASTERY": {
+      if (state.player.mana < MANA_BURN_MASTERY_COST) return state;
+      if (state.player.masteryProgress >= 100) return state;
+      return {
+        ...state,
+        player: {
+          ...state.player,
+          mana: state.player.mana - MANA_BURN_MASTERY_COST,
+          masteryProgress: clamp(
+            state.player.masteryProgress + MANA_BURN_MASTERY_GAIN,
+            0,
+            100,
+          ),
+        },
+      };
+    }
+
+    case "MANA_BURN_FOR_CONDITION": {
+      if (state.player.mana < MANA_BURN_CONDITION_COST) return state;
+      if (state.player.condition >= 100) return state;
+      return {
+        ...state,
+        player: {
+          ...state.player,
+          mana: state.player.mana - MANA_BURN_CONDITION_COST,
+          condition: clamp(
+            state.player.condition + MANA_BURN_CONDITION_GAIN,
+            0,
+            100,
+          ),
+        },
+      };
+    }
+
+    case "MANA_BURN_FOR_HUNGER": {
+      if (state.player.mana < MANA_BURN_HUNGER_COST) return state;
+      if (state.player.hunger >= 100) return state;
+      return {
+        ...state,
+        player: {
+          ...state.player,
+          mana: state.player.mana - MANA_BURN_HUNGER_COST,
+          hunger: clamp(
+            state.player.hunger + MANA_BURN_HUNGER_GAIN,
+            0,
+            100,
+          ),
         },
       };
     }

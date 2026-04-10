@@ -12,6 +12,12 @@ import {
   getManaPercent,
 } from "@/features/mana/manaSelectors";
 import {
+  MANA_BURN_CONDITION_COST,
+  MANA_BURN_CONDITION_GAIN,
+  MANA_BURN_HUNGER_COST,
+  MANA_BURN_HUNGER_GAIN,
+  MANA_BURN_MASTERY_COST,
+  MANA_BURN_MASTERY_GAIN,
   VENT_MANA_COST,
   VENT_MANA_INSTABILITY_RELIEF,
 } from "@/features/mana/manaTypes";
@@ -117,6 +123,28 @@ export default function StatusHeroCard() {
   function handleVentMana() {
     if (!canVentMana) return;
     dispatch({ type: "VENT_MANA_TO_VOID_INSTABILITY" });
+  }
+
+  const canBurnForMastery =
+    canSpendMana(player, MANA_BURN_MASTERY_COST) && player.masteryProgress < 100;
+  const canBurnForCondition =
+    canSpendMana(player, MANA_BURN_CONDITION_COST) && player.condition < 100;
+  const canBurnForHunger =
+    canSpendMana(player, MANA_BURN_HUNGER_COST) && player.hunger < 100;
+
+  function handleBurnForMastery() {
+    if (!canBurnForMastery) return;
+    dispatch({ type: "MANA_BURN_FOR_MASTERY" });
+  }
+
+  function handleBurnForCondition() {
+    if (!canBurnForCondition) return;
+    dispatch({ type: "MANA_BURN_FOR_CONDITION" });
+  }
+
+  function handleBurnForHunger() {
+    if (!canBurnForHunger) return;
+    dispatch({ type: "MANA_BURN_FOR_HUNGER" });
   }
 
   function handleRecoverCondition() {
@@ -515,6 +543,60 @@ export default function StatusHeroCard() {
                 {!canVentMana && ventBlockReason ? (
                   <p className="mt-2 text-[11px] text-white/45">{ventBlockReason}</p>
                 ) : null}
+
+                <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+                  <button
+                    type="button"
+                    onClick={handleBurnForMastery}
+                    disabled={!canBurnForMastery}
+                    title={`Spend ${MANA_BURN_MASTERY_COST} ${manaDisplay.shortName} for +${MANA_BURN_MASTERY_GAIN} mastery progress.`}
+                    className={[
+                      "rounded-lg border px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.08em] transition",
+                      canBurnForMastery
+                        ? "border-violet-400/40 bg-violet-500/12 text-violet-100 hover:border-violet-300/55 hover:bg-violet-500/20"
+                        : "cursor-not-allowed border-white/10 bg-white/[0.03] text-white/30",
+                    ].join(" ")}
+                  >
+                    +{MANA_BURN_MASTERY_GAIN} Mastery
+                    <span className="block text-[9px] font-normal opacity-70">
+                      −{MANA_BURN_MASTERY_COST} {manaDisplay.shortName}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleBurnForCondition}
+                    disabled={!canBurnForCondition}
+                    title={`Spend ${MANA_BURN_CONDITION_COST} ${manaDisplay.shortName} for +${MANA_BURN_CONDITION_GAIN} condition.`}
+                    className={[
+                      "rounded-lg border px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.08em] transition",
+                      canBurnForCondition
+                        ? "border-rose-400/40 bg-rose-500/12 text-rose-100 hover:border-rose-300/55 hover:bg-rose-500/20"
+                        : "cursor-not-allowed border-white/10 bg-white/[0.03] text-white/30",
+                    ].join(" ")}
+                  >
+                    +{MANA_BURN_CONDITION_GAIN} Condition
+                    <span className="block text-[9px] font-normal opacity-70">
+                      −{MANA_BURN_CONDITION_COST} {manaDisplay.shortName}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleBurnForHunger}
+                    disabled={!canBurnForHunger}
+                    title={`Spend ${MANA_BURN_HUNGER_COST} ${manaDisplay.shortName} for +${MANA_BURN_HUNGER_GAIN} hunger.`}
+                    className={[
+                      "rounded-lg border px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.08em] transition",
+                      canBurnForHunger
+                        ? "border-amber-400/40 bg-amber-500/12 text-amber-100 hover:border-amber-300/55 hover:bg-amber-500/20"
+                        : "cursor-not-allowed border-white/10 bg-white/[0.03] text-white/30",
+                    ].join(" ")}
+                  >
+                    +{MANA_BURN_HUNGER_GAIN} Hunger
+                    <span className="block text-[9px] font-normal opacity-70">
+                      −{MANA_BURN_HUNGER_COST} {manaDisplay.shortName}
+                    </span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
