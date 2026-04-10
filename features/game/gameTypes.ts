@@ -815,4 +815,19 @@ export type GameAction =
         abilityId: import("@/features/combat/shellAbilities").ShellAbilityId;
         nowMs?: number;
       };
+    }
+  | {
+      type: "STRIKE_BLACK_MARKET_DEAL";
+      payload: {
+        /** Stable id for the deal — used for telemetry + toast keying. */
+        dealId: string;
+        /** Resource cost (already adjusted for institutional pressures). */
+        costs: Partial<ResourcesState>;
+        /** Resource grant (already adjusted for institutional pressures). */
+        resourceGains?: Partial<ResourcesState>;
+        /** Optional condition delta to apply on success. */
+        conditionGain?: number;
+        /** Optional hunger delta to apply on success. */
+        hungerGain?: number;
+      };
     };

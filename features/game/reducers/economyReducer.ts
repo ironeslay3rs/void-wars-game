@@ -7,7 +7,7 @@ import {
   getCraftWorkOrderById,
   withCraftWorkOrderProgress,
 } from "@/features/economy/craftWorkOrderData";
-import { addPartialResources } from "@/features/game/gameMissionUtils";
+import { addPartialResources, clamp } from "@/features/game/gameMissionUtils";
 import type { GameAction, GameState, ResourceKey } from "@/features/game/gameTypes";
 import { getBrokerInteraction } from "@/features/lore/brokerInteractionData";
 import { computeFactionHqStipend, FACTION_HQ_STIPEND_COOLDOWN_MS } from "@/features/factions/factionWorldLogic";
@@ -74,6 +74,69 @@ export function handleEconomyAction(
           ),
         },
       };
+
+    case "STRIKE_BLACK_MARKET_DEAL": {
+      // Atomic Black Market deal — single dispatch replaces the
+      // hand-wired ADD_RESOURCE / ADJUST_CONDITION / ADJUST_HUNGER
+      // chains the 4 district lanes (Ivory / Mirror / Silent / Velvet)
+      // used to ship before. Costs and grants are EXPECTED to be
+      // post-institutional-mult (the screen is the policy layer).
+      //
+      // Reducer responsibilities:
+      //   1. Verify the player can afford every cost key (fail-soft).
+      //   2. Subtract costs and add grants in one state update.
+      //   3. Apply condition / hunger deltas with clamps to [0,100].
+      //   4. No-op if costs are invalid (negative, fractional after floor).
+      const { costs, resourceGains, conditionGain, hungerGain } =
+        action.payload;
+
+      // Affordability gate
+      for (const [key, amount] of Object.entries(costs) as Array<
+        [ResourceKey, number | undefined]
+      >) {
+        if (typeof amount !== "number" || amount <= 0) continue;
+        if ((state.player.resources[key] ?? 0) < amount) {
+          return state;
+        }
+      }
+
+      let nextResources = { ...state.player.resources };
+      // Subtract costs
+      for (const [key, amount] of Object.entries(costs) as Array<
+        [ResourceKey, number | undefined]
+      >) {
+        if (typeof amount !== "number" || amount <= 0) continue;
+        nextResources = updateSingleResource(nextResources, key, -amount);
+      }
+      // Add grants
+      if (resourceGains) {
+        for (const [key, amount] of Object.entries(resourceGains) as Array<
+          [ResourceKey, number | undefined]
+        >) {
+          if (typeof amount !== "number" || amount <= 0) continue;
+          nextResources = updateSingleResource(nextResources, key, amount);
+        }
+      }
+
+      const nextCondition =
+        typeof conditionGain === "number" && conditionGain !== 0
+          ? clamp(state.player.condition + conditionGain, 0, 100)
+          : state.player.condition;
+      const nextHunger =
+        typeof hungerGain === "number" && hungerGain !== 0
+          ? clamp(state.player.hunger + hungerGain, 0, 100)
+          : state.player.hunger;
+
+      return {
+        ...state,
+        player: {
+          ...state.player,
+          resources: nextResources,
+          condition: nextCondition,
+          hunger: nextHunger,
+        },
+      };
+    }
 
     case "MARKET_BUY": {
       const result = applyMarketBuy(state, action.payload.listingId);

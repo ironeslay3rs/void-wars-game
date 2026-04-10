@@ -72,12 +72,21 @@ export default function SilentGardenScreen() {
 
   function handlePurchase(deal: Deal) {
     if (!canAfford(deal.cost)) return;
-    if (deal.cost.credits) dispatch({ type: "ADD_RESOURCE", payload: { key: "credits", amount: -deal.cost.credits } });
-    if (deal.cost.runeDust) dispatch({ type: "ADD_RESOURCE", payload: { key: "runeDust", amount: -deal.cost.runeDust } });
-    if (deal.grant.condition) dispatch({ type: "ADJUST_CONDITION", payload: deal.grant.condition });
-    if (deal.grant.hunger) dispatch({ type: "ADJUST_HUNGER", payload: deal.grant.hunger });
-    if (deal.grant.runeDust) dispatch({ type: "ADD_RESOURCE", payload: { key: "runeDust", amount: deal.grant.runeDust } });
-    if (deal.grant.emberCore) dispatch({ type: "ADD_RESOURCE", payload: { key: "emberCore", amount: deal.grant.emberCore } });
+    // Atomic STRIKE_BLACK_MARKET_DEAL — single dispatch replaces the
+    // previous hand-wired chain.
+    dispatch({
+      type: "STRIKE_BLACK_MARKET_DEAL",
+      payload: {
+        dealId: `silent-${deal.id}`,
+        costs: deal.cost as Partial<Record<ResourceKey, number>>,
+        resourceGains: {
+          ...(deal.grant.runeDust ? { runeDust: deal.grant.runeDust } : {}),
+          ...(deal.grant.emberCore ? { emberCore: deal.grant.emberCore } : {}),
+        },
+        conditionGain: deal.grant.condition,
+        hungerGain: deal.grant.hunger,
+      },
+    });
     setToast(`${deal.title} — stillness granted.`);
     window.setTimeout(() => setToast(null), 3000);
   }

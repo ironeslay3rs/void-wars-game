@@ -90,11 +90,19 @@ export default function VelvetDenScreen() {
 
   function handlePurchase(deal: Deal) {
     if (!canAfford(deal.cost)) return;
+    // Atomic STRIKE_BLACK_MARKET_DEAL — Astarte Veil cleansing tax has
+    // already been applied to the cost in the screen's `adjustedCost`
+    // helper. Reducer just spends + grants.
     const adj = adjustedCost(deal.cost);
-    if (adj.credits) dispatch({ type: "ADD_RESOURCE", payload: { key: "credits", amount: -adj.credits } });
-    if (adj.bioSamples) dispatch({ type: "ADD_RESOURCE", payload: { key: "bioSamples", amount: -adj.bioSamples } });
-    if (deal.grant.condition) dispatch({ type: "ADJUST_CONDITION", payload: deal.grant.condition });
-    if (deal.grant.hunger) dispatch({ type: "ADJUST_HUNGER", payload: deal.grant.hunger });
+    dispatch({
+      type: "STRIKE_BLACK_MARKET_DEAL",
+      payload: {
+        dealId: `velvet-${deal.id}`,
+        costs: adj as Partial<Record<ResourceKey, number>>,
+        conditionGain: deal.grant.condition,
+        hungerGain: deal.grant.hunger,
+      },
+    });
     setToast(`${deal.title} — fulfilled (Veil cleansing tax applied).`);
     window.setTimeout(() => setToast(null), 3000);
   }

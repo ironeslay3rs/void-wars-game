@@ -85,19 +85,29 @@ export default function MirrorHouseScreen() {
 
   function handlePurchase(deal: Deal) {
     if (!canAfford(deal.cost)) return;
-    if (deal.cost.credits) dispatch({ type: "ADD_RESOURCE", payload: { key: "credits", amount: -deal.cost.credits } });
-    if (deal.cost.runeDust) dispatch({ type: "ADD_RESOURCE", payload: { key: "runeDust", amount: -deal.cost.runeDust } });
-    if (deal.cost.bioSamples) dispatch({ type: "ADD_RESOURCE", payload: { key: "bioSamples", amount: -deal.cost.bioSamples } });
-    if (deal.grant.condition) {
-      const grantedCondition = Math.round(
-        deal.grant.condition * olympusConditionMult,
-      );
-      dispatch({ type: "ADJUST_CONDITION", payload: grantedCondition });
-    }
-    if (deal.grant.hunger) dispatch({ type: "ADJUST_HUNGER", payload: deal.grant.hunger });
-    if (deal.grant.runeDust) dispatch({ type: "ADD_RESOURCE", payload: { key: "runeDust", amount: deal.grant.runeDust } });
-    if (deal.grant.bioSamples) dispatch({ type: "ADD_RESOURCE", payload: { key: "bioSamples", amount: deal.grant.bioSamples } });
-    if (deal.grant.emberCore) dispatch({ type: "ADD_RESOURCE", payload: { key: "emberCore", amount: deal.grant.emberCore } });
+    // Atomic STRIKE_BLACK_MARKET_DEAL — replaces the previous hand-wired
+    // dispatch chain. Olympus Concord intel premium is applied to the
+    // condition grant in the screen (the policy layer), then the
+    // post-mult value is passed to the reducer.
+    const grantedCondition = deal.grant.condition
+      ? Math.round(deal.grant.condition * olympusConditionMult)
+      : undefined;
+    dispatch({
+      type: "STRIKE_BLACK_MARKET_DEAL",
+      payload: {
+        dealId: `mirror-${deal.id}`,
+        costs: deal.cost as Partial<Record<ResourceKey, number>>,
+        resourceGains: {
+          ...(deal.grant.runeDust ? { runeDust: deal.grant.runeDust } : {}),
+          ...(deal.grant.bioSamples
+            ? { bioSamples: deal.grant.bioSamples }
+            : {}),
+          ...(deal.grant.emberCore ? { emberCore: deal.grant.emberCore } : {}),
+        },
+        conditionGain: grantedCondition,
+        hungerGain: deal.grant.hunger,
+      },
+    });
     setToast(
       olympusConditionMult > 1
         ? `${deal.title} — Concord premium applied.`

@@ -84,11 +84,21 @@ export default function IvoryTowerScreen() {
 
   function handlePurchase(deal: Deal) {
     if (!canAfford(deal.cost)) return;
-    if (deal.cost.credits) dispatch({ type: "ADD_RESOURCE", payload: { key: "credits", amount: -deal.cost.credits } });
-    if (deal.cost.runeDust) dispatch({ type: "ADD_RESOURCE", payload: { key: "runeDust", amount: -deal.cost.runeDust } });
-    if (deal.grant.condition) dispatch({ type: "ADJUST_CONDITION", payload: deal.grant.condition });
-    if (deal.grant.runeDust) dispatch({ type: "ADD_RESOURCE", payload: { key: "runeDust", amount: deal.grant.runeDust } });
-    if (deal.grant.emberCore) dispatch({ type: "ADD_RESOURCE", payload: { key: "emberCore", amount: deal.grant.emberCore } });
+    // Atomic STRIKE_BLACK_MARKET_DEAL — replaces the previous hand-wired
+    // ADD_RESOURCE / ADJUST_CONDITION dispatch chain. Cost + grant land
+    // in one reducer pass.
+    dispatch({
+      type: "STRIKE_BLACK_MARKET_DEAL",
+      payload: {
+        dealId: `ivory-${deal.id}`,
+        costs: deal.cost as Partial<Record<ResourceKey, number>>,
+        resourceGains: {
+          ...(deal.grant.runeDust ? { runeDust: deal.grant.runeDust } : {}),
+          ...(deal.grant.emberCore ? { emberCore: deal.grant.emberCore } : {}),
+        },
+        conditionGain: deal.grant.condition,
+      },
+    });
     setToast(`${deal.title} — ascension recorded.`);
     window.setTimeout(() => setToast(null), 3000);
   }
