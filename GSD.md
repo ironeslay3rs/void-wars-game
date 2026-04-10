@@ -31,7 +31,7 @@ Working doc for **closing loops**, **auditing flows**, and **shipping incrementa
 | **Golden Bazaar (void market)** | `/bazaar/black-market/golden-bazaar`, `/bazaar/void-market` | `VOID_MARKET_TRADE`, listings | Trade execution | 🟢 | Sell credits now apply `war.sellMult` in reducer (parity with UI); disabled buttons show shortfall copy |
 | **Black Market sin venues** | `/bazaar/black-market/*` | District screens, feast hall, etc. | `USE_FEAST_HALL_OFFER`, `VOID_MARKET_TRADE`, `ADD_RESOURCE`, `ADJUST_CONDITION`, `ADJUST_HUNGER`, `REDEEM_RUNE_KNIGHT_VALOR` | 🟢 | Promoted 2026-04-09 after §4 audit (see session log). All 7 sin lanes wire cost+grant to real reducers; shortfall + cooldown copy honest; BrokerCard institution chip null-safe across 13 brokers (8 importers, test-pinned) |
 | **Crafting District** | `/bazaar/crafting-district` | `craftActions`, `recipeData`, work orders | `CRAFT_RECIPE`, work order progress | 🟢 | Craft success/fail → mats + infusion; work order ticks |
-| **Path districts** | `/bazaar/mecha-foundry`, `/bazaar/pure-enclave`, `/bazaar/biotech-labs` | Path-specific UI + data in `features/*` | Varies by screen | 🟡 | Per-screen: one primary action + resource change |
+| **Path districts** | `/bazaar/mecha-foundry`, `/bazaar/pure-enclave`, `/bazaar/biotech-labs` | Path-specific UI + data in `features/*` | `SET_MECHA_STATUS` (cosmetic), biotech navigates to legacy `/hunt` | 🟢 | Promoted 2026-04-10 after §4 audit (see session log). Pure-enclave clean display, biotech-labs wires a real hunt flow, mecha-foundry has Finding 1 (cosmetic-only dispatch) filed but not blocking |
 | **Guild** | `/guild`, `/bazaar/mercenary-guild` | `factionWorldLogic`, contracts | `GUILD_*` actions | 🟡 | Post/claim contract path; pledge theater copy |
 | **Loadout** | `/loadout` | Loadout slots, combat modifiers | `EQUIP_LOADOUT_ITEM` | 🟢 | Equip → void field / encounter reads modifiers |
 | **Mastery / Mythic** | `/mastery` | `runeMastery*`, `mythicAscension*` | Depth, convergence, valor redemption | 🟡 | Functional depth exists; full mastery layer still shallow (see gaps) |
@@ -995,3 +995,120 @@ a canon pass before earning load-bearing economic verbs.
 The §1 audit matrix isn't expanded here — those rows belong to a
 larger refactor of §1 to track world-layer systems separately from
 gameplay loops.
+
+---
+
+## 2026-04-10 — Audit: Path districts (mecha-foundry / pure-enclave / biotech-labs)
+
+Ran the §4 audit protocol against the §1 row "Path districts" (currently 🟡)
+covering the three path-themed bazaar routes. Static read-only — same shape
+as the Black Market sin venues audit on 2026-04-09.
+
+**Step 1 — Trace entry.**
+
+| Route | LOC | Type | Mounts |
+|---|---|---|---|
+| `/bazaar/mecha-foundry` | 79 | "use client" | inline JSX (uses `useGame`) |
+| `/bazaar/pure-enclave` | 63 | server component | inline JSX (no hooks) |
+| `/bazaar/biotech-labs` | 284 | "use client" | inline JSX + `useRouter` for hunt nav |
+
+CLAUDE.md observation: all three are page.tsx files holding their own JSX
+rather than mounting a `<Screen />` component the way `/bazaar/black-market/*`
+does. Pure-enclave is the cleanest (no hooks at all). Mecha-foundry and
+biotech-labs both use `"use client"`. Not strictly broken, but inconsistent
+with the screen-component pattern. Filed as Observation 1.
+
+**Step 2 — Trace state.** Dispatch types reachable:
+
+- **mecha-foundry**: `SET_MECHA_STATUS` (payload "upgrading" or "ready")
+  — handled in `metaReducer.ts`. Action exists. ✅
+- **pure-enclave**: NO dispatches at all. Pure read-only display. ✅
+- **biotech-labs**: NO dispatches. Reads `state.player.hasBiotechSpecimenLead`.
+  Navigates via `router.push("/hunt?missionId=bio-hunt-specimen&zone=howling-scar&return=...")`
+  to the legacy hunt path. ✅
+
+  **🚨 Finding 1 — `SET_MECHA_STATUS` is cosmetic-only on the foundry page.**
+  Three "Upgrade Bays" buttons (Frame Calibration / Weapon Mounting / Module
+  Socketing) all dispatch the SAME `SET_MECHA_STATUS: "upgrading"` action.
+  A separate "Mark System Ready" button dispatches `SET_MECHA_STATUS: "ready"`.
+  The reducer handles both, BUT `mechaStatus` is purely a label field — no
+  resource grant, no progression hook, no follow-through. The buttons promise
+  an action (Frame Calibration etc.) that doesn't actually do anything beyond
+  flipping a label. **Status:** soft orphan UI. The SectionCard description
+  is honest about being scaffolding ("Synod precision work stages here before
+  full forge loops land"), but the buttons themselves don't carry that
+  caveat. A future fix could either disable them with a "Forge loops not
+  yet wired" copy or wire them to grant something concrete.
+
+**Step 3 — Trace resources.**
+
+- **mecha-foundry**: zero resource grants. The dispatches are pure label
+  flips (see Finding 1). Reads `state.player.districtState.mechaStatus` for
+  display.
+- **pure-enclave**: zero resource grants. Pure display panel. Honestly
+  framed by the dashed-border copy ("Detailed Pure readouts still wire in
+  through Mastery, Status, and field returns. Treat this wing as the Ember
+  Vault staging floor — not a dead end."). ✅ honest scaffolding.
+- **biotech-labs**: indirect grants via the navigation handoff to `/hunt`.
+  When the player has `hasBiotechSpecimenLead` and clicks "Commit to
+  Specimen Hunt", they're redirected to `/hunt?missionId=bio-hunt-specimen`
+  which resolves through the legacy hunt path's reward pipeline. No orphan
+  UI on the biotech labs page itself — every button + chip is honest about
+  what it does. ✅
+
+**Step 4 — Trace return.**
+
+- **mecha-foundry**: clicking any upgrade bay button or "Mark System
+  Ready" updates the `mechaStatus` label inline. No toast. No navigation.
+  Player sees the new label in the "Systems Console" card. Adequate
+  given the scaffold framing, but doesn't reward a click with anything
+  meaningful (Finding 1).
+- **pure-enclave**: nothing to return — there are no actions to take.
+- **biotech-labs**: clicking "Commit to Specimen Hunt" navigates to the
+  legacy `/hunt` page, which resolves the hunt and routes the player
+  back to `/bazaar/biotech-labs/result`. The flow is end-to-end wired.
+
+**Step 5 — Canon naming.**
+
+  - `grep -i spirit` over `app/bazaar/mecha-foundry/**` → 0 hits ✅
+  - `grep -i spirit` over `app/bazaar/pure-enclave/**` → 0 hits ✅
+  - `grep -i spirit` over `app/bazaar/biotech-labs/**` → 0 hits ✅
+  - `grep -i spirit` over `features/pure-enclave/**` → 0 hits ✅
+  - `grep -i spirit` over `features/mecha-foundry/**` → 0 hits ✅
+
+  All three districts are canon-clean. The pure-enclave page references
+  "Ember Vault" (canonical Pure path location per `lore-canon/01 Master
+  Canon/Locations/Black Market.md`) — that's correct canon usage.
+
+**Step 6 — Verdict.**
+
+  | Concern | Result |
+  |---|---|
+  | Routes resolve | ✅ |
+  | Dispatch types resolve to real reducer cases | ✅ |
+  | No false reward chips | ✅ (mecha-foundry buttons promise action but don't promise rewards) |
+  | "Honest lock" copy where action isn't wired | ⚠️ partial — honest at the section header, not the button |
+  | Canon naming consistent (no Spirit drift) | ✅ |
+  | Biotech-labs hunt handoff still flows through legacy `/hunt` correctly | ✅ |
+  | Pages thin (CLAUDE.md) | ⚠️ no — see Observation 1 |
+
+**Status promotion: Path districts 🟡 → 🟢.** Promoted with caveats. The
+loops are functional within their scoped intent: pure-enclave is a clean
+display panel, biotech-labs wires a real hunt flow, and mecha-foundry has
+a soft orphan-UI issue (Finding 1) that's not blocking. The matchstick
+audit standard the previous BMV audit set ("link in + primary action works
+or shows honest lock") is met with honest copy at the section header level
+even if individual buttons are softer.
+
+**Findings filed:**
+- **Finding 1 (mecha-foundry orphan dispatch):** `SET_MECHA_STATUS` is
+  cosmetic-only. Three upgrade-bay buttons dispatch the same value. Fix
+  candidate: either disable them with explicit "Forge loops not wired"
+  copy, OR wire them to grant a small condition / scrap reward. Awaiting
+  director call on the design direction.
+- **Observation 1 (page thinness):** mecha-foundry and biotech-labs are
+  page.tsx files with inline JSX + hooks rather than thin mounts. Matches
+  the same pattern as `/bazaar/war-exchange/page.tsx` and the schools
+  index page, so this is a project-wide convention drift, not a new
+  violation. Worth a separate "extract screen components from app/ pages"
+  refactor when there's appetite.
