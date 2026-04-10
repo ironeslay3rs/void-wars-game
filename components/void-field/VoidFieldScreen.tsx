@@ -191,7 +191,12 @@ export default function VoidFieldScreen() {
   ]);
 
   const { mobsForField, applyShellMobDamage, bossChip } =
-    useVoidFieldShellMobPopulation(allocatedZone.id, realtime.mobs, state.player);
+    useVoidFieldShellMobPopulation(
+      allocatedZone.id,
+      realtime.mobs,
+      state.player,
+      selfPositionPctRef,
+    );
 
   const wsRealtimeMobIds = useMemo(
     () => new Set(realtime.mobs.map((m) => m.mobEntityId)),
