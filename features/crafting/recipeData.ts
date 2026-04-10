@@ -237,6 +237,46 @@ export const craftRecipes: CraftRecipe[] = [
       grant: { runeDust: 4, bioSamples: 6 },
     },
   },
+  // Phase 2 named material recipe sinks — each named mat now has at
+  // least one recipe that consumes it so boss drops have a downstream
+  // destination. These close the "ashSynodRelic has no recipe" and
+  // "coilboundLattice has no recipe" gaps.
+  {
+    id: "coilbound-stabilizer",
+    name: "Coilbound Stabilizer",
+    category: "hybrid",
+    craftTimeSeconds: 14,
+    successChance: 0.6,
+    materials: { coilboundLattice: 1, bioSamples: 12, scrapAlloy: 8 },
+    output: {
+      kind: "item",
+      item: {
+        id: "coilbound-stabilizer-t3",
+        name: "Coilbound Stabilizer",
+        rarity: "Rare",
+        kind: "armor",
+        rankTier: "T3",
+      },
+    },
+  },
+  {
+    id: "ash-synod-conduit",
+    name: "Ash Synod Conduit",
+    category: "structural",
+    craftTimeSeconds: 16,
+    successChance: 0.55,
+    materials: { ashSynodRelic: 1, scrapAlloy: 14, emberCore: 1 },
+    output: {
+      kind: "item",
+      item: {
+        id: "ash-synod-conduit-t3",
+        name: "Ash Synod Conduit",
+        rarity: "Rare",
+        kind: "armor",
+        rankTier: "T3",
+      },
+    },
+  },
 ];
 
 export const craftingCategoryLabels: Record<CraftingCategory, string> = {
