@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { playSound } from "@/features/audio/soundEngine";
 
 /**
  * Dramatic boss spawn banner — appears for 3s when a boss mob spawns
@@ -22,6 +23,7 @@ export default function BossSpawnBanner({
       setLastLabel(bossLabel);
       setVisible(true);
       setBannerKey((k) => k + 1);
+      playSound("boss-spawn");
       const t = window.setTimeout(() => setVisible(false), 3200);
       return () => window.clearTimeout(t);
     }

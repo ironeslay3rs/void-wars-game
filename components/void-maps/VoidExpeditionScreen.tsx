@@ -221,6 +221,16 @@ function VoidExpeditionScreenInner() {
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-black text-white">
+      {/* Zone expedition map background */}
+      <div
+        className="pointer-events-none absolute inset-0 z-0 bg-cover bg-center bg-no-repeat opacity-40"
+        style={{ backgroundImage: `url(/assets/maps/void-expedition-map.png)` }}
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute inset-0 z-0 bg-gradient-to-t from-black/80 via-transparent to-black/60"
+        aria-hidden
+      />
       <div className="absolute left-0 right-0 top-0 z-40 flex items-center justify-between px-3 py-3 md:px-5 md:py-4">
         <Link
           href="/home"

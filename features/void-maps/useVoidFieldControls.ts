@@ -73,6 +73,8 @@ export type UseVoidFieldControlsArgs = {
   autoStrikeEnabled: boolean;
   /** Effective range from equipped weapon profile. */
   strikeRangePct: number;
+  /** Callback to activate an ability by slot index (0-based). */
+  onActivateAbilityByIndex?: (index: number) => void;
 };
 
 /**
@@ -91,6 +93,7 @@ export function useVoidFieldControls({
   targetedMobEntityIdRef,
   autoStrikeEnabled,
   strikeRangePct,
+  onActivateAbilityByIndex,
 }: UseVoidFieldControlsArgs) {
   const mobsRef = useRef<MobEntity[]>(fieldMobs);
   const canAttackRef = useRef(isRunning);
@@ -200,6 +203,19 @@ export function useVoidFieldControls({
       if (dx !== 0 || dy !== 0) {
         e.preventDefault();
         setMoveTargetPct(pos.x + dx, pos.y + dy);
+        return;
+      }
+
+      // Hotkeys 1/2 for ability slots.
+      if (e.code === "Digit1" || e.code === "Numpad1") {
+        e.preventDefault();
+        onActivateAbilityByIndex?.(0);
+        return;
+      }
+      if (e.code === "Digit2" || e.code === "Numpad2") {
+        e.preventDefault();
+        onActivateAbilityByIndex?.(1);
+        return;
       }
     };
 
@@ -208,7 +224,7 @@ export function useVoidFieldControls({
     return () => {
       window.removeEventListener("keydown", onKeyDown as EventListener);
     };
-  }, [multiplayerEnabled, performStrike, selfPositionPctRef, setMoveTargetPct]);
+  }, [multiplayerEnabled, performStrike, selfPositionPctRef, setMoveTargetPct, onActivateAbilityByIndex]);
 
   useEffect(() => {
     if (!multiplayerEnabled || !autoStrikeEnabled) return;

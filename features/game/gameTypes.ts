@@ -816,6 +816,7 @@ export type GameAction =
         nowMs?: number;
       };
     }
+  | { type: "APPLY_DEATH_PENALTY" }
   | {
       type: "TRIGGER_CONVERGENCE_REVEAL";
       payload?: { nowMs?: number };

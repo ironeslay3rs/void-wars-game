@@ -312,6 +312,38 @@ export function handleSurvivalAction(
       };
     }
 
+    case "APPLY_DEATH_PENALTY": {
+      // Death penalty: lose 10% of every resource + condition reset to
+      // 20%. Applied when the player falls on the void field (condition
+      // reaches 0). The penalty makes combat have STAKES — you don't
+      // want to die because you lose real progress.
+      const DEATH_RESOURCE_LOSS_PCT = 0.10;
+      const DEATH_CONDITION_RESTORE = 20;
+      const nextResources = { ...state.player.resources };
+      for (const key of Object.keys(nextResources) as Array<
+        keyof typeof nextResources
+      >) {
+        const cur = nextResources[key];
+        if (typeof cur === "number" && cur > 0) {
+          nextResources[key] = Math.max(
+            0,
+            Math.floor(cur * (1 - DEATH_RESOURCE_LOSS_PCT)),
+          );
+        }
+      }
+      return {
+        ...state,
+        player: {
+          ...state.player,
+          condition: DEATH_CONDITION_RESTORE,
+          resources: nextResources,
+          // Clear field state so the player can't re-enter immediately.
+          voidRealtimeBinding: null,
+          fieldLootGainedThisRun: {},
+        },
+      };
+    }
+
     default:
       return null;
   }

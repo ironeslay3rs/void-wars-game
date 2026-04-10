@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useState, type MutableRefObject } from "react";
+import { playSound } from "@/features/audio/soundEngine";
 import type { VoidFieldLootDropVfx } from "@/features/void-maps/voidFieldLootDrops";
 
 const HOLD_MS = 420;
@@ -69,6 +70,7 @@ function LootDropItem({
       if (u < 1) {
         raf = requestAnimationFrame(tick);
       } else {
+        playSound("loot");
         onConsumed(drop.id);
       }
     };

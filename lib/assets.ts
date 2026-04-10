@@ -6,6 +6,8 @@ export const assets = {
 
   maps: {
     blackMarketHub: "/assets/maps/black-market-hub.png",
+    bazaarMainMap: "/assets/maps/bazaar-main-map.png",
+    voidExpeditionMap: "/assets/maps/void-expedition-map.png",
   },
 
   voidField: {
@@ -241,6 +243,31 @@ export const assets = {
     female02: "/assets/characters/female_02.png",
     elderMale: "/assets/characters/elder_male.png",
     elderFemale: "/assets/characters/elder_female.png",
+    portraitsSheet: "/assets/characters/portraits-sheet.png",
+  },
+
+  /** Organized _incoming sheets — sprite sheets for future slicing. */
+  sheets: {
+    blackMarketLanes: "/assets/icons/black-market-lanes.png",
+    minimapIndicators: "/assets/icons/minimap-indicators.png",
+    factionAttacks: "/assets/vfx/attacks/faction-attacks.jpg",
+    projectileImpacts: "/assets/vfx/attacks/projectile-impacts.jpg",
+    actionBarV1: "/assets/ui-buttons/action-bar-v1.jpg",
+    actionBarV2: "/assets/ui-buttons/action-bar-v2.jpg",
+    skillsSheet: "/assets/skill-icons/skills-sheet-15.png",
+    skillsSheetAlt: "/assets/skill-icons/skills-sheet-15-alt.png",
+    statusDebuffs: "/assets/status-effects/debuffs-poison-burn-shock-corrupt.jpg",
+    statusStates: "/assets/status-effects/states-exhausted-stabilized-enraged-mutated.jpg",
+    statusBuffs: "/assets/status-effects/buffs-infected-soulburn-shield-regen.jpg",
+    bioCreatures: "/assets/enemies/bio/bio-creatures-sheet.jpg",
+    infernalCreatures: "/assets/enemies/infernal/infernal-creatures-sheet.jpg",
+    spiritCreatures: "/assets/enemies/spirit/spirit-creatures-sheet.jpg",
+    mechaCreatures: "/assets/enemies/mecha/mecha-creatures-sheet.jpg",
+    factionBosses4: "/assets/enemies/faction-bosses-4.png",
+    creaturesSheet16: "/assets/enemies/creatures-sheet-16.png",
+    megaBosses4: "/assets/enemies/mega-bosses-4.png",
+    zoneBosses4: "/assets/enemies/zone-bosses-4.png",
+    eliteBosses4: "/assets/enemies/elite-bosses-4.png",
   },
 
   factions: {

@@ -50,6 +50,14 @@ import KillFeed, { type KillFeedEntry } from "@/components/void-field/KillFeed";
 import ExtractionSummary from "@/components/field/ExtractionSummary";
 import { voidInfusionHudLine } from "@/features/status/voidInfusionMetaphor";
 import { getAscensionTensionChipLine } from "@/features/progression/ascensionStep";
+import {
+  playSound,
+  startAmbient,
+  stopAmbient,
+  ZONE_AMBIENT_FREQ,
+} from "@/features/audio/soundEngine";
+import DeathOverlay from "@/components/void-field/DeathOverlay";
+import VirtualJoystick from "@/components/void-field/VirtualJoystick";
 import { getManaDisplay } from "@/features/mana/manaSelectors";
 import {
   SHELL_ABILITIES,
@@ -115,6 +123,13 @@ export default function VoidFieldScreen() {
 
   const allocatedZone = voidZoneById[initialZoneId];
   const zone = allocatedZone;
+
+  // Ambient zone drone — starts on field mount, stops on unmount.
+  useEffect(() => {
+    const freq = ZONE_AMBIENT_FREQ[initialZoneId] ?? 50;
+    startAmbient(freq);
+    return () => stopAmbient();
+  }, [initialZoneId]);
   const fieldMapSrc = voidFieldMapSrcForZone(allocatedZone.id);
 
   const activeHuntProcess =
@@ -447,9 +462,12 @@ export default function VoidFieldScreen() {
       const dealt = applyShellMobDamage(mobEntityId, dmg);
       if (dealt > 0) {
         pushLocalDamageFloat(mobEntityId, dealt);
-        // Screen shake on heavy hits (40+ damage).
+        // Sound + screen shake on heavy hits (40+ damage).
         if (dealt >= 40) {
           triggerScreenShake();
+          playSound("hit-heavy");
+        } else {
+          playSound("hit");
         }
       }
     },
@@ -490,6 +508,22 @@ export default function VoidFieldScreen() {
     state.player.voidRealtimeBinding,
   ]);
 
+  // Ability hotkey callback — maps index 0/1 to surge/wolf-leap.
+  const abilityHotkeyIds: ShellAbilityId[] = ["surge", "wolf-leap"];
+  const onActivateAbilityByIndex = useCallback(
+    (index: number) => {
+      const id = abilityHotkeyIds[index];
+      if (!id) return;
+      playSound("ability-activate");
+      dispatch({
+        type: "ACTIVATE_SHELL_ABILITY",
+        payload: { abilityId: id },
+      });
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [dispatch],
+  );
+
   const { performNearestStrike, tryDirectMobAttack } = useVoidFieldControls({
     multiplayerEnabled: true,
     connected: realtimeConnected,
@@ -503,6 +537,7 @@ export default function VoidFieldScreen() {
     targetedMobEntityIdRef,
     autoStrikeEnabled: autoStrikeActive,
     strikeRangePct,
+    onActivateAbilityByIndex,
   });
 
   const onFieldPointerDownWrapped = useCallback(
@@ -562,9 +597,10 @@ export default function VoidFieldScreen() {
       if (seenDeadMobIdsRef.current.has(mob.mobEntityId)) continue;
       seenDeadMobIdsRef.current.add(mob.mobEntityId);
       added += 1;
-      // Kill feed entry for each downed mob.
+      // Kill feed entry + sound for each downed mob.
       pushKillFeed(`Defeated ${mob.mobLabel}`);
-      // Screen shake on boss kill.
+      playSound("kill");
+      // Screen shake + boss sound on boss kill.
       if (mob.isBoss) {
         triggerScreenShake();
         pushKillFeed(`BOSS DOWN — ${mob.mobLabel}!`);
@@ -648,6 +684,7 @@ export default function VoidFieldScreen() {
 
   const handleActivateAbility = useCallback(
     (abilityId: string) => {
+      playSound("ability-activate");
       dispatch({
         type: "ACTIVATE_SHELL_ABILITY",
         payload: {
@@ -664,8 +701,25 @@ export default function VoidFieldScreen() {
       className="fixed inset-0 overflow-hidden bg-black text-white void-field-deploy-fadein"
     >
       {showDeployIntro ? <VoidFieldDeployIntro /> : null}
+      {state.player.condition <= 0 ? (
+        <DeathOverlay playerName={state.player.playerName} />
+      ) : null}
       <BossSpawnBanner bossLabel={bossChip === "Boss roaming" ? "Boss Roaming" : null} />
       <KillFeed entries={killFeedEntries} />
+      {/* Mobile virtual joystick — only mounts on touch devices */}
+      {"ontouchstart" in (typeof window !== "undefined" ? window : {}) ? (
+        <VirtualJoystick
+          onMove={(dx, dy) => {
+            const pos = selfPositionPctRef.current;
+            setMoveTargetPct(pos.x + dx, pos.y + dy);
+          }}
+          onRelease={() => {
+            // Stop movement on release by setting target = current position.
+            const pos = selfPositionPctRef.current;
+            setMoveTargetPct(pos.x, pos.y);
+          }}
+        />
+      ) : null}
 
       <div className="absolute inset-0">
         <VoidFieldCanvas
