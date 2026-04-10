@@ -30,6 +30,10 @@ import {
   MANA_HYBRID_INSTALL_COST_BASE,
   MANA_HYBRID_INSTALL_COST_PURE,
 } from "@/features/mana/manaTypes";
+import {
+  detectRuneSets,
+  getRuneSetRewardMultiplier,
+} from "@/features/mastery/runeSetDetection";
 
 const SCHOOL_LABEL: Record<RuneSchool, string> = {
   bio: "Bio",
@@ -209,6 +213,31 @@ export default function MasteryDepthPanel() {
       <div className="mt-5">
         <MasteryArcTimeline />
       </div>
+
+      {(() => {
+        const activeSets = detectRuneSets(runeMastery);
+        const setRewardMult = getRuneSetRewardMultiplier(runeMastery);
+        const setBonusPct = Math.round((setRewardMult - 1) * 100);
+        if (activeSets.length === 0) return null;
+        return (
+          <div className="mt-5 rounded-xl border border-cyan-400/25 bg-cyan-500/8 px-4 py-3">
+            <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-cyan-200/85">
+              Active rune sets — +{setBonusPct}% mission rewards
+            </div>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {activeSets.map((set) => (
+                <span
+                  key={set.school}
+                  className="rounded border border-cyan-300/30 bg-cyan-500/12 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-cyan-100"
+                >
+                  {SCHOOL_LABEL[set.school]} {set.tier}-set (+
+                  {set.rewardBonusPct}%)
+                </span>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       <div className="mt-5">
         <MasteryTreeVisual

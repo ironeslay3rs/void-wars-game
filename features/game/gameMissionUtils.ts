@@ -49,6 +49,7 @@ import {
   getBonehowlBountyRewardMultiplier,
   getMandateBureauTaxMultiplier,
 } from "@/features/institutions/institutionalPressure";
+import { getRuneSetRewardMultiplier } from "@/features/mastery/runeSetDetection";
 
 export function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
@@ -708,11 +709,13 @@ export function processMissionQueue(state: GameState, now: number): GameState {
       mission.originTag,
     );
     const mandateBureauTaxMult = getMandateBureauTaxMultiplier(nextPlayer);
+    const runeSetMult = getRuneSetRewardMultiplier(nextPlayer.runeMastery);
     const pantheonCompositeMult =
       pantheonBlessingMult *
       pantheonMatchMult *
       bonehowlBountyMult *
-      mandateBureauTaxMult;
+      mandateBureauTaxMult *
+      runeSetMult;
     const pantheonBonusActive = pantheonCompositeMult !== 1;
     const rewardWithPantheonBlessing = pantheonBonusActive
       ? {
