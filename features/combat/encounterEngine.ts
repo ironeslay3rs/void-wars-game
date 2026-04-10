@@ -3,6 +3,7 @@ import type { CreatureDefinition } from "@/features/combat/creatureData";
 import { getPathAlignedFieldLootMultiplier } from "@/features/economy/pathGatheringYield";
 import { rollVoidFieldLoot } from "@/features/void-maps/rollVoidFieldLoot";
 import { getPlayerLoadoutCombatModifiers } from "@/features/combat/loadoutCombatStats";
+import { getActiveShellDamageBonusPct } from "@/features/combat/shellAbilities";
 
 export type EncounterOutcome = "victory" | "defeat" | "retreat";
 
@@ -64,7 +65,14 @@ export function resolveEncounter(params: {
   const loadout = getPlayerLoadoutCombatModifiers(player);
   const careerBonus =
     player.careerFocus === "combat" ? 0.08 : player.careerFocus === "gathering" ? 0.03 : 0;
-  const power = (1 + rigBonus(player) + careerBonus) * loadout.attackMultiplier;
+  // M3: active shell buffs apply to encounter combat as a flat power boost.
+  // Surge (+50%) meaningfully improves the player's threat calc and win chance.
+  const buffBonusPct = getActiveShellDamageBonusPct(
+    player.activeShellBuffs ?? [],
+    Date.now(),
+  );
+  const buffMult = 1 + buffBonusPct / 100;
+  const power = (1 + rigBonus(player) + careerBonus) * loadout.attackMultiplier * buffMult;
 
   const playerAtk = 10 * power * conditionFactor;
   const playerDef = 6 * power * conditionFactor * loadout.defenseMultiplier;
