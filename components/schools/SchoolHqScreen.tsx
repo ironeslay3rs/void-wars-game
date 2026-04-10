@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef } from "react";
 
+import PantheonChip from "@/components/pantheons/PantheonChip";
 import ScreenHeader from "@/components/shared/ScreenHeader";
 import SectionCard from "@/components/shared/SectionCard";
 import { getEmpireById } from "@/features/empires/empireSelectors";
@@ -95,6 +96,7 @@ export default function SchoolHqScreen({ school }: SchoolHqScreenProps) {
           >
             ↑ {empire.name}
           </Link>
+          <PantheonChip schoolId={school.id} />
           {isAligned ? (
             <span
               className="rounded-lg border bg-white/5 px-3 py-2"

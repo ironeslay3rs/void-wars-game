@@ -12,6 +12,7 @@ export const homeMenuData: HomeMenuItem[] = [
   { id: "professions", label: "Professions", href: "/professions" },
   { id: "empires", label: "Empires", href: "/empires" },
   { id: "schools", label: "Schools", href: "/schools" },
+  { id: "pantheons", label: "Pantheons", href: "/pantheons" },
   { id: "market", label: "Black Market Exchange", href: "/bazaar/war-exchange" },
   { id: "black-market", label: "Black Market", href: "/bazaar/black-market" },
   { id: "loadout", label: "Loadout", href: "/loadout" },
