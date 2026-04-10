@@ -17,6 +17,7 @@ import {
 import { tryInstallMinorRune } from "@/features/mastery/runeMasteryLogic";
 import { getPrimaryRuneSchool } from "@/features/mastery/runeMasteryTypes";
 import { applyCrossSchoolExposureToPlayer } from "@/features/convergence/convergenceSeed";
+import { getPharosConclaveRegistryFee } from "@/features/institutions/institutionalPressure";
 import {
   MANA_HYBRID_INSTALL_COST_BASE,
   MANA_HYBRID_INSTALL_COST_PURE,
@@ -427,7 +428,14 @@ export function handleProgressionAction(
 
       if (action.payload === "ivory-prestige-rite") {
         const valorCost = 4;
-        const creditsCost = 120;
+        // Pharos Conclave registry surcharge — flat fee on top of the
+        // base 120 credit prestige price. Mecha-aligned operatives pay
+        // the cheapest registry fee (the Conclave is their institution).
+        const baseCreditsCost = 120;
+        const conclaveRegistryFee = getPharosConclaveRegistryFee(
+          p.factionAlignment,
+        );
+        const creditsCost = baseCreditsCost + conclaveRegistryFee;
         if (m.runeKnightValor < valorCost) return state;
         if ((p.resources.credits ?? 0) < creditsCost) return state;
         return {

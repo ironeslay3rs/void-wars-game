@@ -9,6 +9,7 @@ import { getBrokersByDistrict } from "@/features/lore/brokerData";
 import { resourceCostShortfall } from "@/features/black-market/sinLaneDealHelpers";
 import { useGame } from "@/features/game/gameContext";
 import type { ResourceKey } from "@/features/game/gameTypes";
+import { getOlympusConcordConditionMultiplier } from "@/features/institutions/institutionalPressure";
 
 type Deal = {
   id: string;
@@ -75,17 +76,33 @@ export default function MirrorHouseScreen() {
     return true;
   }
 
+  // Olympus Concord intel premium: Bio-aligned operatives get a +20%
+  // condition gain on every Mirror House deal (their institution rewards
+  // its own Aegean inheritors). Outsiders see the listed gain.
+  const olympusConditionMult = getOlympusConcordConditionMultiplier(
+    state.player.factionAlignment,
+  );
+
   function handlePurchase(deal: Deal) {
     if (!canAfford(deal.cost)) return;
     if (deal.cost.credits) dispatch({ type: "ADD_RESOURCE", payload: { key: "credits", amount: -deal.cost.credits } });
     if (deal.cost.runeDust) dispatch({ type: "ADD_RESOURCE", payload: { key: "runeDust", amount: -deal.cost.runeDust } });
     if (deal.cost.bioSamples) dispatch({ type: "ADD_RESOURCE", payload: { key: "bioSamples", amount: -deal.cost.bioSamples } });
-    if (deal.grant.condition) dispatch({ type: "ADJUST_CONDITION", payload: deal.grant.condition });
+    if (deal.grant.condition) {
+      const grantedCondition = Math.round(
+        deal.grant.condition * olympusConditionMult,
+      );
+      dispatch({ type: "ADJUST_CONDITION", payload: grantedCondition });
+    }
     if (deal.grant.hunger) dispatch({ type: "ADJUST_HUNGER", payload: deal.grant.hunger });
     if (deal.grant.runeDust) dispatch({ type: "ADD_RESOURCE", payload: { key: "runeDust", amount: deal.grant.runeDust } });
     if (deal.grant.bioSamples) dispatch({ type: "ADD_RESOURCE", payload: { key: "bioSamples", amount: deal.grant.bioSamples } });
     if (deal.grant.emberCore) dispatch({ type: "ADD_RESOURCE", payload: { key: "emberCore", amount: deal.grant.emberCore } });
-    setToast(`${deal.title} — deal struck.`);
+    setToast(
+      olympusConditionMult > 1
+        ? `${deal.title} — Concord premium applied.`
+        : `${deal.title} — deal struck.`,
+    );
     window.setTimeout(() => setToast(null), 3000);
   }
 

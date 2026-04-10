@@ -9,6 +9,7 @@ import { getBrokersByDistrict } from "@/features/lore/brokerData";
 import { resourceCostShortfall } from "@/features/black-market/sinLaneDealHelpers";
 import { useGame } from "@/features/game/gameContext";
 import type { ResourceKey } from "@/features/game/gameTypes";
+import { getAstarteVeilTaxMultiplier } from "@/features/institutions/institutionalPressure";
 
 type Deal = {
   id: string;
@@ -62,19 +63,39 @@ export default function VelvetDenScreen() {
   const credits = state.player.resources.credits ?? 0;
   const bioSamples = state.player.resources.bioSamples ?? 0;
 
+  // Astarte Veil cleansing tax: every Velvet Den deal pays a small Veil
+  // surcharge on top of the listed cost. Bio-aligned operatives pay the
+  // smallest premium because the Veil is their institution.
+  const veilTaxMult = getAstarteVeilTaxMultiplier(state.player.factionAlignment);
+
+  function adjustedCost(cost: Deal["cost"]): Deal["cost"] {
+    return {
+      credits:
+        cost.credits !== undefined
+          ? Math.ceil(cost.credits * veilTaxMult)
+          : undefined,
+      bioSamples:
+        cost.bioSamples !== undefined
+          ? Math.ceil(cost.bioSamples * veilTaxMult)
+          : undefined,
+    };
+  }
+
   function canAfford(cost: Deal["cost"]) {
-    if ((cost.credits ?? 0) > credits) return false;
-    if ((cost.bioSamples ?? 0) > bioSamples) return false;
+    const adj = adjustedCost(cost);
+    if ((adj.credits ?? 0) > credits) return false;
+    if ((adj.bioSamples ?? 0) > bioSamples) return false;
     return true;
   }
 
   function handlePurchase(deal: Deal) {
     if (!canAfford(deal.cost)) return;
-    if (deal.cost.credits) dispatch({ type: "ADD_RESOURCE", payload: { key: "credits", amount: -deal.cost.credits } });
-    if (deal.cost.bioSamples) dispatch({ type: "ADD_RESOURCE", payload: { key: "bioSamples", amount: -deal.cost.bioSamples } });
+    const adj = adjustedCost(deal.cost);
+    if (adj.credits) dispatch({ type: "ADD_RESOURCE", payload: { key: "credits", amount: -adj.credits } });
+    if (adj.bioSamples) dispatch({ type: "ADD_RESOURCE", payload: { key: "bioSamples", amount: -adj.bioSamples } });
     if (deal.grant.condition) dispatch({ type: "ADJUST_CONDITION", payload: deal.grant.condition });
     if (deal.grant.hunger) dispatch({ type: "ADJUST_HUNGER", payload: deal.grant.hunger });
-    setToast(`${deal.title} — fulfilled.`);
+    setToast(`${deal.title} — fulfilled (Veil cleansing tax applied).`);
     window.setTimeout(() => setToast(null), 3000);
   }
 
@@ -105,6 +126,7 @@ export default function VelvetDenScreen() {
           {DEALS.map((deal) => {
             const affordable = canAfford(deal.cost);
             const grants = formatGrant(deal.grant);
+            const adjCost = adjustedCost(deal.cost);
             return (
               <div
                 key={deal.id}
@@ -119,7 +141,12 @@ export default function VelvetDenScreen() {
                 </p>
                 <div className="mt-4 space-y-1">
                   <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">Cost</div>
-                  <div className="text-sm text-amber-200">{formatCost(deal.cost)}</div>
+                  <div className="text-sm text-amber-200">{formatCost(adjCost)}</div>
+                  {veilTaxMult > 1 ? (
+                    <div className="text-[9px] text-rose-200/65">
+                      Veil cleansing tax ×{veilTaxMult.toFixed(2)}
+                    </div>
+                  ) : null}
                 </div>
                 <div className="mt-3 flex flex-wrap gap-1.5">
                   {grants.map((g) => (

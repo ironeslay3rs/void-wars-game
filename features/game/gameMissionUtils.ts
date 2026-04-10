@@ -45,6 +45,10 @@ import {
   PANTHEON_BLESSING_REWARD_BONUS_PCT,
   getPantheonMatchRewardMultiplier,
 } from "@/features/pantheons/pantheonReward";
+import {
+  getBonehowlBountyRewardMultiplier,
+  getMandateBureauTaxMultiplier,
+} from "@/features/institutions/institutionalPressure";
 
 export function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
@@ -683,13 +687,14 @@ export function processMissionQueue(state: GameState, now: number): GameState {
     const rewardWithDoctrine = doctrineMerged.reward;
     const doctrineExtraVoid = doctrineMerged.extraVoidInstability;
 
-    // Pantheon reward bonuses — composed multiplicatively from two
-    // independent sources:
-    //   1. Visit blessing (one-shot, +10%, consumed downstream)
-    //   2. Pantheon match (always-on, +5% when this mission's origin tag
-    //      resolves to the player's aligned school)
-    // Both nudges sit in the small (5-10%) band so they compose with
-    // doctrine + fusion mods without dominating them.
+    // Pantheon + institutional reward bonuses — composed multiplicatively
+    // from four independent sources:
+    //   1. Pantheon visit blessing (one-shot, +10%, consumed downstream)
+    //   2. Pantheon match (always-on, +5% when origin tag matches affinity)
+    //   3. Bonehowl Syndicate bounty (wrath origin, +2-6% by faction)
+    //   4. Mandate Bureau patience tax (-1-3% when over-pressured)
+    // All nudges sit in small bands so they compose with doctrine +
+    // fusion mods without dominating them.
     const pantheonBlessingActive = nextPlayer.pantheonBlessingPending === true;
     const pantheonBlessingMult = pantheonBlessingActive
       ? 1 + PANTHEON_BLESSING_REWARD_BONUS_PCT / 100
@@ -698,7 +703,16 @@ export function processMissionQueue(state: GameState, now: number): GameState {
       nextPlayer,
       mission.originTag,
     );
-    const pantheonCompositeMult = pantheonBlessingMult * pantheonMatchMult;
+    const bonehowlBountyMult = getBonehowlBountyRewardMultiplier(
+      nextPlayer,
+      mission.originTag,
+    );
+    const mandateBureauTaxMult = getMandateBureauTaxMultiplier(nextPlayer);
+    const pantheonCompositeMult =
+      pantheonBlessingMult *
+      pantheonMatchMult *
+      bonehowlBountyMult *
+      mandateBureauTaxMult;
     const pantheonBonusActive = pantheonCompositeMult !== 1;
     const rewardWithPantheonBlessing = pantheonBonusActive
       ? {
