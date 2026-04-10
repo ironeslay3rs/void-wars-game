@@ -11,6 +11,7 @@ import HomeResourceStrip from "@/components/home/HomeResourceStrip";
 import UpgradeNudge from "@/components/home/UpgradeNudge";
 import MarketEventHeadline from "@/components/home/MarketEventHeadline";
 import AffinityBadge from "@/components/home/AffinityBadge";
+import ManaChip from "@/components/home/ManaChip";
 import { getFirstSessionGuidance } from "@/features/guidance/firstSessionGuidance";
 import { getHomeCommandFooter } from "@/features/guidance/homeCommandCopy";
 import { getRunPressureFromPlayer } from "@/features/game/lib/runPressure";
@@ -216,6 +217,7 @@ export default function HomeHudClient() {
           <PrimaryActionCard action={primaryAction} />
           <UpgradeNudge />
           <AffinityBadge />
+          <ManaChip />
           <MarketEventHeadline />
           <p
             className="command-pressure-line"

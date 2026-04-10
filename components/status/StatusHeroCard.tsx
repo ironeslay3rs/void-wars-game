@@ -6,6 +6,15 @@ import { canonPathFactions } from "@/features/canonRegistry";
 import { factionData } from "@/features/factions/factionData";
 import { useGame } from "@/features/game/gameContext";
 import { getFirstSessionGuidance } from "@/features/guidance/firstSessionGuidance";
+import {
+  canSpendMana,
+  getManaDisplay,
+  getManaPercent,
+} from "@/features/mana/manaSelectors";
+import {
+  VENT_MANA_COST,
+  VENT_MANA_INSTABILITY_RELIEF,
+} from "@/features/mana/manaTypes";
 import { useRecoveryCooldown } from "@/features/status/useRecoveryCooldown";
 import {
   CONDITION_PRESSURE_PENALTY,
@@ -94,6 +103,21 @@ export default function StatusHeroCard() {
     player.factionAlignment === "unbound" ? null : player.factionAlignment;
   const needsRecoveryPriority =
     player.condition < 40 || player.hunger < 40;
+
+  const manaDisplay = getManaDisplay(player.factionAlignment);
+  const manaPercent = getManaPercent(player);
+  const canVentMana =
+    canSpendMana(player, VENT_MANA_COST) && player.voidInstability > 0;
+  const ventBlockReason = !canSpendMana(player, VENT_MANA_COST)
+    ? `Need ${VENT_MANA_COST} ${manaDisplay.shortName}`
+    : player.voidInstability <= 0
+      ? "Void instability already steady"
+      : null;
+
+  function handleVentMana() {
+    if (!canVentMana) return;
+    dispatch({ type: "VENT_MANA_TO_VOID_INSTABILITY" });
+  }
 
   function handleRecoverCondition() {
     if (!canRecoverCondition) return;
@@ -451,6 +475,46 @@ export default function StatusHeroCard() {
                     style={{ width: `${player.masteryProgress}%` }}
                   />
                 </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between text-sm text-white/72">
+                  <span className="uppercase tracking-[0.08em]">
+                    {manaDisplay.longName}
+                  </span>
+                  <span>
+                    {player.mana}/{player.manaMax} ({manaPercent}%)
+                  </span>
+                </div>
+                <div className="mt-3 h-3 rounded-full bg-white/10">
+                  <div
+                    className="h-full rounded-full bg-[linear-gradient(90deg,rgba(56,189,248,0.7),rgba(14,165,233,1))]"
+                    style={{ width: `${manaPercent}%` }}
+                  />
+                </div>
+                <p className="mt-2 text-xs text-white/55">
+                  Spend {VENT_MANA_COST} {manaDisplay.shortName} to bleed{" "}
+                  {VENT_MANA_INSTABILITY_RELIEF} void instability. Earned from
+                  settled missions and Feast Hall services.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleVentMana}
+                  disabled={!canVentMana}
+                  className={[
+                    "mt-3 rounded-xl border px-4 py-3 text-xs font-semibold uppercase tracking-[0.08em] transition",
+                    canVentMana
+                      ? "border-sky-300/40 bg-sky-500/14 text-sky-50 hover:border-sky-200/55 hover:bg-sky-500/22"
+                      : "cursor-not-allowed border-white/10 bg-white/[0.03] text-white/30",
+                  ].join(" ")}
+                >
+                  {canVentMana
+                    ? `${manaDisplay.spendVerb} (${VENT_MANA_COST})`
+                    : (ventBlockReason ?? manaDisplay.spendVerb)}
+                </button>
+                {!canVentMana && ventBlockReason ? (
+                  <p className="mt-2 text-[11px] text-white/45">{ventBlockReason}</p>
+                ) : null}
               </div>
             </div>
           </div>

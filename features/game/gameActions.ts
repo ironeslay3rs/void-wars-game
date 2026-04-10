@@ -2,6 +2,7 @@ import type { GameAction, GameState } from "@/features/game/gameTypes";
 import { deriveActiveRuns } from "@/features/game/lib/runPressure";
 import { handleEconomyAction } from "@/features/game/reducers/economyReducer";
 import { handleHydrationAction } from "@/features/game/reducers/hydrationReducer";
+import { handleManaAction } from "@/features/game/reducers/manaReducer";
 import { handleMetaAction } from "@/features/game/reducers/metaReducer";
 import { handleMissionAction } from "@/features/game/reducers/missionReducer";
 import { handlePlayerIdentityAction } from "@/features/game/reducers/playerIdentityReducer";
@@ -18,6 +19,7 @@ const reducerHandlers = [
   handleEconomyAction,
   handleProgressionAction,
   handleVoidPressureAction,
+  handleManaAction,
   handleSocialAction,
   handleMissionAction,
   handleMetaAction,

@@ -22,6 +22,7 @@ import {
   SURVIVAL_TICK_INTERVAL_MS,
 } from "@/features/status/survival";
 import { processStallRentCharges } from "@/features/economy/stallUpkeep";
+import { MANA_PER_FEAST_HALL_OFFER } from "@/features/mana/manaTypes";
 import type { GameReducerResult } from "@/features/game/reducers/sharedReducerUtils";
 import { updateSingleResource } from "@/features/game/reducers/sharedReducerUtils";
 
@@ -290,6 +291,13 @@ export function handleSurvivalAction(
           conditionRecoveryAvailableAt: now + offer.cooldownMs,
           activeFeastHallOfferId: offer.id,
           resources: nextResources,
+          // Foundation mana grant: every Feast Hall plate restores a small
+          // amount of mana on top of the condition gain. Caps at manaMax.
+          mana: clamp(
+            player.mana + MANA_PER_FEAST_HALL_OFFER,
+            0,
+            player.manaMax,
+          ),
         },
       };
     }

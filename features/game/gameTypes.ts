@@ -450,6 +450,16 @@ export type PlayerState = {
   voidInstability: number;
 
   /**
+   * Mana — the canonical positive-pressure resource opposite to voidInstability.
+   * Tied to law, memory, power, and adaptation per `lore-canon/01 Master
+   * Canon/Mana/Mana System.md`. Earned from mission settlements and Feast Hall
+   * services; spent via the mana → void instability vent on the Status screen.
+   * School-flavored display name lives in `features/mana/manaSelectors.ts`.
+   */
+  mana: number;
+  manaMax: number;
+
+  /**
    * Per-run "heat" (0–100): climbs during hunts, realtime raids, and gray-market moves.
    * Resets on void extraction or returning to hub. Separate from void strain.
    */
@@ -769,4 +779,9 @@ export type GameAction =
   | {
       type: "RECORD_CROSS_SCHOOL_EVENT";
       payload: { school: PathType };
-    };
+    }
+  | { type: "MANA_GAIN"; payload: { amount: number; reason?: string } }
+  | { type: "MANA_SPEND"; payload: { amount: number; reason?: string } }
+  | { type: "MANA_RESTORE_FULL" }
+  | { type: "VENT_MANA_TO_VOID_INSTABILITY" }
+  | { type: "SET_MANA_MAX"; payload: { max: number } };

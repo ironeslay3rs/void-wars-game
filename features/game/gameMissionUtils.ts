@@ -37,6 +37,10 @@ import { applyPrimedPrepRunInstabilityTrim } from "@/features/crafting/prepRunHo
 import { maybeApplyExpeditionReadyStabilityToReward } from "@/features/expedition/expeditionReadiness";
 import { updateRunArchetypeAfterSettlement } from "@/features/game/runArchetypeLogic";
 import { withPostSettlementMarketLegibility } from "@/features/expedition/postRunMarketPressure";
+import {
+  MANA_PER_HUNTING_GROUND_SETTLEMENT,
+  MANA_PER_MISSION_SETTLEMENT,
+} from "@/features/mana/manaTypes";
 
 export function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
@@ -728,6 +732,19 @@ export function processMissionQueue(state: GameState, now: number): GameState {
       mission.category === "hunting-ground" ? "hunt" : "mission",
     );
     nextPlayer = updateRunArchetypeAfterSettlement(nextPlayer);
+    // Mana foundation: every settled mission grants a small amount of mana,
+    // with hunting-ground runs paying slightly more (more cycles, more
+    // pressure absorbed). Capped to manaMax to avoid overflow.
+    {
+      const manaGain =
+        mission.category === "hunting-ground"
+          ? MANA_PER_HUNTING_GROUND_SETTLEMENT
+          : MANA_PER_MISSION_SETTLEMENT;
+      nextPlayer = {
+        ...nextPlayer,
+        mana: clamp(nextPlayer.mana + manaGain, 0, nextPlayer.manaMax),
+      };
+    }
     playerChanged = true;
 
     if (mission.category === "hunting-ground") {

@@ -38,6 +38,8 @@ export const initialGameState: GameState = {
     influence: 0,
     hasBiotechSpecimenLead: false,
     voidInstability: 0,
+    mana: 50,
+    manaMax: 50,
     runInstability: 0,
     runInstabilityLog: [],
     runHeatPushBoost: null,

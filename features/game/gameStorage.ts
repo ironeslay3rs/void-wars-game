@@ -775,6 +775,26 @@ function normalizePlayer(value: unknown): PlayerState {
           )
         : initialGameState.player.voidInstability,
 
+    manaMax:
+      typeof (raw as Record<string, unknown>).manaMax === "number" &&
+      Number.isFinite((raw as { manaMax: number }).manaMax)
+        ? Math.max(1, Math.round((raw as { manaMax: number }).manaMax))
+        : initialGameState.player.manaMax,
+    mana: (() => {
+      const rawMax =
+        typeof (raw as Record<string, unknown>).manaMax === "number" &&
+        Number.isFinite((raw as { manaMax: number }).manaMax)
+          ? Math.max(1, Math.round((raw as { manaMax: number }).manaMax))
+          : initialGameState.player.manaMax;
+      const rawMana = (raw as Record<string, unknown>).mana;
+      if (typeof rawMana === "number" && Number.isFinite(rawMana)) {
+        return Math.max(0, Math.min(rawMax, Math.round(rawMana)));
+      }
+      // Legacy save with no mana field — fill to cap so the player isn't
+      // stuck looking at an empty bar after the migration.
+      return rawMax;
+    })(),
+
     runInstability:
       typeof (raw as Record<string, unknown>).runInstability === "number" &&
       Number.isFinite((raw as { runInstability: number }).runInstability)
