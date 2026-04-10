@@ -161,7 +161,7 @@ export default function BlackMarketMap() {
   return (
     <div className="relative h-full min-h-[calc(100dvh-4.5rem)] w-full overflow-hidden bg-black md:min-h-[calc(100dvh-4rem)]">
       <Image
-        src={assets.maps.blackMarketHub}
+        src={assets.maps.bazaarMainMap}
         alt="Black Market citadel — survivor hub map"
         fill
         priority
