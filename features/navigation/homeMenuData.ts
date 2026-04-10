@@ -17,6 +17,7 @@ export const homeMenuData: HomeMenuItem[] = [
   { id: "black-market", label: "Black Market", href: "/bazaar/black-market" },
   { id: "loadout", label: "Loadout", href: "/loadout" },
   { id: "arena", label: "Arena", href: "/arena" },
+  { id: "battlefield", label: "War Fronts", href: "/battlefield" },
   { id: "guild", label: "Guild", href: "/guild" },
   { id: "settings", label: "Settings", href: "/settings" },
 ];
