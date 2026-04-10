@@ -38,8 +38,10 @@ export const initialGameState: GameState = {
     influence: 0,
     hasBiotechSpecimenLead: false,
     voidInstability: 0,
-    mana: 50,
-    manaMax: 50,
+    // Loadout-aware mana max: assault default = 40. Switching profiles
+    // re-caps via SET_FIELD_LOADOUT_PROFILE.
+    mana: 40,
+    manaMax: 40,
     runInstability: 0,
     runInstabilityLog: [],
     runHeatPushBoost: null,

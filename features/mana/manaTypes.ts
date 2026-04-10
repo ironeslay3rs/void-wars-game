@@ -79,3 +79,27 @@ export const MANA_BURN_HUNGER_GAIN = 12;
  */
 export const MANA_HYBRID_INSTALL_COST_BASE = 18;
 export const MANA_HYBRID_INSTALL_COST_PURE = 12;
+
+/**
+ * Loadout-aware mana max — different shell loadouts hold different
+ * amounts of mana. Foundation slice that couples mana to loadout
+ * identity without touching combat math yet.
+ *
+ * Assault: highest base damage, lowest mana cap (40)
+ *   — body-forward, less ritual buffer.
+ * Support: balanced damage, highest mana cap (60)
+ *   — supplies the team, holds the largest pool.
+ * Breach: bursty damage, baseline mana cap (50)
+ *   — middle of the road by design.
+ */
+import type { FieldLoadoutProfile } from "@/features/game/gameTypes";
+
+export const LOADOUT_MANA_MAX: Record<FieldLoadoutProfile, number> = {
+  assault: 40,
+  support: 60,
+  breach: 50,
+};
+
+export function getManaMaxForLoadout(profile: FieldLoadoutProfile): number {
+  return LOADOUT_MANA_MAX[profile];
+}
