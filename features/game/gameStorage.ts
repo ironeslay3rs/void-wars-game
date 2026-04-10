@@ -1024,6 +1024,20 @@ function normalizePlayer(value: unknown): PlayerState {
         ? ((raw as { pantheonBlessingPending: boolean })
             .pantheonBlessingPending as boolean)
         : initialGameState.player.pantheonBlessingPending,
+
+    activeShellBuffs: Array.isArray(
+      (raw as Record<string, unknown>).activeShellBuffs,
+    )
+      ? ((raw as { activeShellBuffs: unknown[] }).activeShellBuffs.filter(
+          (b): b is import("@/features/combat/shellAbilities").ShellBuff =>
+            !!b &&
+            typeof b === "object" &&
+            typeof (b as { abilityId?: unknown }).abilityId === "string" &&
+            typeof (b as { expiresAt?: unknown }).expiresAt === "number" &&
+            typeof (b as { damageBonusPct?: unknown }).damageBonusPct ===
+              "number",
+        ) as import("@/features/combat/shellAbilities").ShellBuff[])
+      : [],
   };
 
   return {

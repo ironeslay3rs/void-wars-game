@@ -1,3 +1,8 @@
+import {
+  getShellAbility,
+  pruneExpiredShellBuffs,
+  SURGE_DAMAGE_BONUS_PCT,
+} from "@/features/combat/shellAbilities";
 import { clamp } from "@/features/game/gameMissionUtils";
 import type { GameAction, GameState } from "@/features/game/gameTypes";
 import type { GameReducerResult } from "@/features/game/reducers/sharedReducerUtils";
@@ -141,6 +146,35 @@ export function handleManaAction(
             0,
             100,
           ),
+        },
+      };
+    }
+
+    case "ACTIVATE_SHELL_ABILITY": {
+      const ability = getShellAbility(action.payload.abilityId);
+      if (!ability) return state;
+      if (state.player.mana < ability.manaCost) return state;
+      const nowMs = action.payload.nowMs ?? Date.now();
+      const pruned = pruneExpiredShellBuffs(
+        state.player.activeShellBuffs ?? [],
+        nowMs,
+      );
+      // One stack per ability type — re-activating refreshes the
+      // expiry rather than stacking multiple buffs of the same id.
+      const filtered = pruned.filter((b) => b.abilityId !== ability.id);
+      return {
+        ...state,
+        player: {
+          ...state.player,
+          mana: state.player.mana - ability.manaCost,
+          activeShellBuffs: [
+            ...filtered,
+            {
+              abilityId: ability.id,
+              expiresAt: nowMs + ability.durationMs,
+              damageBonusPct: SURGE_DAMAGE_BONUS_PCT,
+            },
+          ],
         },
       };
     }

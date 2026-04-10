@@ -610,6 +610,15 @@ export type PlayerState = {
    * walkable pantheon layer.
    */
   pantheonBlessingPending: boolean;
+
+  /**
+   * Active shell combat buffs from `ACTIVATE_SHELL_ABILITY` (e.g. Surge).
+   * Each entry has an `expiresAt` timestamp; selectors prune expired
+   * entries lazily so no background tick is required. Foundation slice
+   * for the M3 combat engine integration; current realtime combat code
+   * does not yet read this list.
+   */
+  activeShellBuffs: import("@/features/combat/shellAbilities").ShellBuff[];
 };
 
 /* =========================
@@ -799,4 +808,11 @@ export type GameAction =
   | { type: "MANA_BURN_FOR_HUNGER" }
   | { type: "GRANT_PANTHEON_BLESSING"; payload: { pantheonId: string } }
   | { type: "CLEAR_PANTHEON_BLESSING" }
-  | { type: "MANA_INSTALL_MINOR_RUNE"; payload: { school: PathType } };
+  | { type: "MANA_INSTALL_MINOR_RUNE"; payload: { school: PathType } }
+  | {
+      type: "ACTIVATE_SHELL_ABILITY";
+      payload: {
+        abilityId: import("@/features/combat/shellAbilities").ShellAbilityId;
+        nowMs?: number;
+      };
+    };

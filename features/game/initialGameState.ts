@@ -139,6 +139,7 @@ export const initialGameState: GameState = {
     lastAnomalyToast: null,
     brokerCooldowns: {},
     pantheonBlessingPending: false,
+    activeShellBuffs: [],
   },
 
   missions: [
