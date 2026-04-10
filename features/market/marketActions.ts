@@ -11,6 +11,10 @@ import {
   getWarExchangeBuyDemandMultiplier,
   getWarExchangeSellDemandMultiplier,
 } from "@/features/world/warDemandMarket";
+import {
+  getVishravaLedgerBuyMultiplierForFaction,
+  getVishravaLedgerSellMultiplierForFaction,
+} from "@/features/institutions/institutionalPressure";
 
 /** Brokers take a flat cut on War Exchange sales (Phase 4 — market / tax visibility). */
 export const WAR_EXCHANGE_SELL_BROKER_CUT = 0.1;
@@ -52,9 +56,16 @@ export function quoteSellPriceCredits(
     opts != null
       ? getWarExchangeSellDemandMultiplier(key, opts.playerFaction, opts.nowMs)
       : 1;
-  const adjustedGross = gross * demandMult;
+  // Phase 9 / institutional pressure: Vishrava Ledger pays "patience
+  // interest" on every War Exchange sell. Composes after war-front demand
+  // and before the broker tithe.
+  const ledgerSellMult =
+    opts != null
+      ? getVishravaLedgerSellMultiplierForFaction(opts.playerFaction)
+      : 1;
+  const adjustedGross = gross * demandMult * ledgerSellMult;
   const net = Math.floor(adjustedGross * (1 - WAR_EXCHANGE_SELL_BROKER_CUT));
-  return { base, gross, net, demandMult };
+  return { base, gross, net, demandMult, ledgerSellMult };
 }
 
 export function applyMarketBuy(state: GameState, listingId: string) {
@@ -74,7 +85,14 @@ export function applyMarketBuy(state: GameState, listingId: string) {
     state.player.factionAlignment,
     Date.now(),
   );
-  const priceCredits = Math.ceil(listing.priceCredits * buyMult * demandMult);
+  // Phase 9 / institutional pressure: Vishrava Ledger abacus tithe stacks
+  // multiplicatively after the war-front demand multiplier.
+  const ledgerBuyMult = getVishravaLedgerBuyMultiplierForFaction(
+    state.player.factionAlignment,
+  );
+  const priceCredits = Math.ceil(
+    listing.priceCredits * buyMult * demandMult * ledgerBuyMult,
+  );
 
   if (state.player.resources.credits < priceCredits) {
     return { next: state, ok: false, reason: "Insufficient credits." };

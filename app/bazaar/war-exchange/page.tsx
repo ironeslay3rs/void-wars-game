@@ -23,6 +23,10 @@ import {
 import { formatResourceLabel } from "@/features/game/gameFeedback";
 import { getStallBrokerBuyMarkupMultiplier } from "@/features/economy/stallUpkeep";
 import {
+  getVishravaLedgerBuyMultiplierForFaction,
+  getVishravaLedgerPressureCopy,
+} from "@/features/institutions/institutionalPressure";
+import {
   getWarExchangeBuyDemandMultiplier,
   getWarExchangeSellDemandMultiplier,
 } from "@/features/world/warDemandMarket";
@@ -84,6 +88,16 @@ export default function WarExchangePage() {
     [player.stallArrearsCount],
   );
 
+  const ledgerBuyMult = useMemo(
+    () => getVishravaLedgerBuyMultiplierForFaction(player.factionAlignment),
+    [player.factionAlignment],
+  );
+
+  const ledgerPressureCopy = useMemo(
+    () => getVishravaLedgerPressureCopy(player),
+    [player],
+  );
+
   const listingBuyTotal = (listing: MarketListing) =>
     Math.ceil(
       listing.priceCredits *
@@ -92,7 +106,8 @@ export default function WarExchangePage() {
           listing,
           player.factionAlignment,
           marketNow,
-        ),
+        ) *
+        ledgerBuyMult,
     );
 
   const sellQuote = (key: ResourceKey, amount: number) =>
@@ -155,6 +170,28 @@ export default function WarExchangePage() {
           obsidian-cycle forges in the Crafting District (Phase 7 restricted
           economy).
         </p>
+
+        <div
+          className="rounded-xl border border-amber-300/30 bg-amber-500/10 px-4 py-3"
+          title={ledgerPressureCopy.detail}
+        >
+          <div className="flex flex-wrap items-baseline justify-between gap-3">
+            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-200/85">
+              {ledgerPressureCopy.headline}
+            </p>
+            <div className="flex flex-wrap gap-2 text-[10px] font-semibold text-amber-100/85">
+              <span className="rounded border border-amber-300/30 bg-amber-500/12 px-2 py-0.5 uppercase tracking-[0.16em]">
+                Buys ×{ledgerPressureCopy.buyMult.toFixed(2)}
+              </span>
+              <span className="rounded border border-amber-300/30 bg-amber-500/12 px-2 py-0.5 uppercase tracking-[0.16em]">
+                Sells ×{ledgerPressureCopy.sellMult.toFixed(2)}
+              </span>
+            </div>
+          </div>
+          <p className="mt-2 text-xs leading-relaxed text-amber-50/85">
+            {ledgerPressureCopy.detail}
+          </p>
+        </div>
 
         <div className="flex flex-wrap gap-2">
           <button
@@ -283,10 +320,13 @@ export default function WarExchangePage() {
                       Price:{" "}
                       <span className="font-black text-white">{price}</span>{" "}
                       credits
-                      {buyMult > 1 || Math.abs(warDm - 1) > 0.005 ? (
+                      {buyMult > 1 ||
+                      Math.abs(warDm - 1) > 0.005 ||
+                      Math.abs(ledgerBuyMult - 1) > 0.005 ? (
                         <span className="mt-0.5 block text-[11px] text-amber-200/80">
                           List {l.priceCredits} cr · stall ×{buyMult.toFixed(2)} · war
-                          front ×{warDm.toFixed(2)}
+                          front ×{warDm.toFixed(2)} · ledger ×
+                          {ledgerBuyMult.toFixed(2)}
                         </span>
                       ) : null}
                       {!canAfford ? (
@@ -436,10 +476,12 @@ export default function WarExchangePage() {
                         {listing.name} for{" "}
                         <span className="font-black text-white">{charge}</span>{" "}
                         credits.
-                        {buyMult > 1 || Math.abs(warDm - 1) > 0.005 ? (
+                        {buyMult > 1 ||
+                        Math.abs(warDm - 1) > 0.005 ||
+                        Math.abs(ledgerBuyMult - 1) > 0.005 ? (
                           <span className="mt-1 block text-[11px] text-amber-200/85">
                             List {listing.priceCredits} cr · stall ×{buyMult.toFixed(2)} · war
-                            ×{warDm.toFixed(2)}
+                            ×{warDm.toFixed(2)} · ledger ×{ledgerBuyMult.toFixed(2)}
                           </span>
                         ) : null}
                         {grantEntries.length > 0 ? (
