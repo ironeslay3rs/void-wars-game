@@ -18,6 +18,7 @@ import { tryInstallMinorRune } from "@/features/mastery/runeMasteryLogic";
 import { getPrimaryRuneSchool } from "@/features/mastery/runeMasteryTypes";
 import { applyCrossSchoolExposureToPlayer } from "@/features/convergence/convergenceSeed";
 import { applyConvergenceReveal } from "@/features/convergence/convergenceReveal";
+import { isConvergenceHybridDrainFree } from "@/features/convergence/convergencePayoff";
 import { getPharosConclaveRegistryFee } from "@/features/institutions/institutionalPressure";
 import {
   MANA_HYBRID_INSTALL_COST_BASE,
@@ -173,11 +174,15 @@ export function handleProgressionAction(
       // mana surcharge, in exchange for absorbing the hybrid drain stack
       // bump that off-primary installs would normally incur. Pure-aligned
       // operatives pay the cheapest mana rate (canonical "memory" school).
+      //
+      // Convergence payoff: converged players pay ZERO mana for the drain
+      // soak — the convergence subsidizes cross-school exploration.
       const school = action.payload.school;
       const at = Date.now();
-      const manaCost = getManaHybridInstallCostForPlayer(
-        state.player.factionAlignment,
-      );
+      const convergedFree = isConvergenceHybridDrainFree(state.player);
+      const manaCost = convergedFree
+        ? 0
+        : getManaHybridInstallCostForPlayer(state.player.factionAlignment);
 
       // Affordance check first — fail-soft if mana is short.
       if (state.player.mana < manaCost) {

@@ -22,7 +22,7 @@
 
 import type { FieldLoadoutProfile } from "@/features/game/gameTypes";
 
-export type ShellAbilityId = "surge";
+export type ShellAbilityId = "surge" | "wolf-leap";
 
 export type ShellAbilityDefinition = {
   id: ShellAbilityId;
@@ -43,6 +43,9 @@ export type ShellAbilityDefinition = {
 export const SURGE_DAMAGE_BONUS_PCT = 50;
 export const SURGE_DURATION_MS = 8_000;
 
+export const WOLF_LEAP_DAMAGE_REDUCTION_PCT = 30;
+export const WOLF_LEAP_DURATION_MS = 6_000;
+
 export const SHELL_ABILITIES: Record<ShellAbilityId, ShellAbilityDefinition> = {
   surge: {
     id: "surge",
@@ -57,6 +60,21 @@ export const SHELL_ABILITIES: Record<ShellAbilityId, ShellAbilityDefinition> = {
       "Bonehowl call it the wolf-leap; the Pharos call it the line-of-" +
       "sight commit. By any name, Surge is the answer to a window that " +
       "won't open twice.",
+  },
+  "wolf-leap": {
+    id: "wolf-leap",
+    name: "Wolf-Leap",
+    manaCost: 12,
+    durationMs: WOLF_LEAP_DURATION_MS,
+    loadoutAffinity: "breach",
+    description: `A pursuit-break charge that reduces incoming damage by ${WOLF_LEAP_DAMAGE_REDUCTION_PCT}% for ${WOLF_LEAP_DURATION_MS / 1000}s. The Bonehowl discipline of motion-as-survival.`,
+    longForm:
+      "The wolf-leap is the Bonehowl's answer to escalation — when the " +
+      "pressure is rising and retreat is fatal, the pack commits forward " +
+      "and trades proximity for initiative. The operative strikes through " +
+      "the pursuit line and lands behind it. In game terms, the ability " +
+      "grants a damage reduction window that lets the player absorb a " +
+      "burst they couldn't otherwise survive.",
   },
 };
 
@@ -75,6 +93,8 @@ export type ShellBuff = {
   /** Snapshot of the granted bonus pct so combat math is stable across
    *  ability data tweaks. */
   damageBonusPct: number;
+  /** Incoming damage reduction pct (defensive buffs like Wolf-Leap). */
+  damageReductionPct: number;
 };
 
 /**
@@ -99,6 +119,21 @@ export function getActiveShellDamageBonusPct(
 ): number {
   return pruneExpiredShellBuffs(buffs, nowMs).reduce(
     (acc, b) => acc + b.damageBonusPct,
+    0,
+  );
+}
+
+/**
+ * Total damage REDUCTION pct from all active defensive buffs at `nowMs`.
+ * Returns 0 when no active buffs grant damage reduction. Used by the
+ * encounter engine to soften incoming creature damage.
+ */
+export function getActiveShellDamageReductionPct(
+  buffs: ShellBuff[],
+  nowMs: number,
+): number {
+  return pruneExpiredShellBuffs(buffs, nowMs).reduce(
+    (acc, b) => acc + b.damageReductionPct,
     0,
   );
 }

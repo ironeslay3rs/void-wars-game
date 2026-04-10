@@ -3,6 +3,7 @@ import type {
   FactionAlignment,
   FieldLoadoutProfile,
 } from "@/features/game/gameTypes";
+import type { ShellBuff } from "@/features/combat/shellAbilities";
 import type { PlayerPresence } from "@/features/void-maps/realtime/voidRealtimeProtocol";
 import type { RuneSchool } from "@/features/mastery/runeMasteryTypes";
 import { RUNE_SCHOOLS } from "@/features/mastery/runeMasteryTypes";
@@ -14,6 +15,8 @@ export type StrikeSnapshot = {
   fieldLoadoutProfile: FieldLoadoutProfile;
   depthBySchool: Record<RuneSchool, number>;
   minorCountBySchool: Record<RuneSchool, number>;
+  /** M3: active shell ability buffs (e.g. Surge). Empty array when none. */
+  activeShellBuffs: ShellBuff[];
 };
 
 export function strikeSnapshotFromPlayer(player: PlayerState): StrikeSnapshot {
@@ -22,6 +25,7 @@ export function strikeSnapshotFromPlayer(player: PlayerState): StrikeSnapshot {
     fieldLoadoutProfile: player.fieldLoadoutProfile,
     depthBySchool: { ...player.runeMastery.depthBySchool },
     minorCountBySchool: { ...player.runeMastery.minorCountBySchool },
+    activeShellBuffs: player.activeShellBuffs ?? [],
   };
 }
 
@@ -44,6 +48,7 @@ export function defaultStrikeSnapshot(
     fieldLoadoutProfile: "assault",
     depthBySchool: { ...base.depthBySchool },
     minorCountBySchool: { ...base.minorCountBySchool },
+    activeShellBuffs: [],
   };
 }
 
@@ -86,6 +91,7 @@ export function strikeSnapshotFromJoinPayload(payload: {
     fieldLoadoutProfile: profile,
     depthBySchool,
     minorCountBySchool,
+    activeShellBuffs: [],
   };
 }
 

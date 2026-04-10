@@ -10,6 +10,7 @@ import {
   getShellPostureFillSchoolMultSnap,
   getShellStrikeSchoolDamageMultSnap,
 } from "@/features/combat/fieldCombatIdentity";
+import { getActiveShellDamageBonusPct } from "@/features/combat/shellAbilities";
 import {
   getExecutionalTier,
   maxRuneDepthAcrossSchools,
@@ -59,10 +60,20 @@ export function resolveShellHitWithSnapshot(
   const archetype = mob.shellArchetype;
   const rm = syntheticRuneMasteryFromSnapshot(snap);
 
+  // M3: active shell buff damage multiplier (e.g. Surge +50%).
+  // Composes multiplicatively BEFORE loadout + school mults so the
+  // buff scales with the player's full kit, not just base damage.
+  const buffBonusPct = getActiveShellDamageBonusPct(
+    snap.activeShellBuffs ?? [],
+    Date.now(),
+  );
+  const buffMult = 1 + buffBonusPct / 100;
+
   let dmg = Math.max(
     1,
     Math.round(
       rawBaseDamage *
+        buffMult *
         getFieldLoadoutStrikeMult(profile) *
         getShellStrikeSchoolDamageMultSnap(snap),
     ),

@@ -46,6 +46,8 @@ import {
   getPantheonMatchRewardMultiplier,
 } from "@/features/pantheons/pantheonReward";
 import { applyPantheonPerkToPlayer } from "@/features/pantheons/pantheonPerks";
+import { getConvergenceRewardMultiplier } from "@/features/convergence/convergencePayoff";
+import { applySchoolMasteryPassive } from "@/features/mastery/schoolMasteryPassives";
 import {
   getBonehowlBountyRewardMultiplier,
   getMandateBureauTaxMultiplier,
@@ -717,12 +719,14 @@ export function processMissionQueue(state: GameState, now: number): GameState {
     );
     const mandateBureauTaxMult = getMandateBureauTaxMultiplier(nextPlayer);
     const runeSetMult = getRuneSetRewardMultiplier(nextPlayer.runeMastery);
+    const convergenceMult = getConvergenceRewardMultiplier(nextPlayer);
     const pantheonCompositeMult =
       pantheonBlessingMult *
       pantheonMatchMult *
       bonehowlBountyMult *
       mandateBureauTaxMult *
-      runeSetMult;
+      runeSetMult *
+      convergenceMult;
     const pantheonBonusActive = pantheonCompositeMult !== 1;
     const rewardWithPantheonBlessing = pantheonBonusActive
       ? {
@@ -856,6 +860,11 @@ export function processMissionQueue(state: GameState, now: number): GameState {
     // mission, after all other reward/penalty math. Small flat deltas
     // that match the cultural domain of the player's aligned pantheon.
     nextPlayer = applyPantheonPerkToPlayer(nextPlayer);
+    // Per-school mastery passive (Bio: +3 condition, Mecha: -2 void
+    // instability, Pure: +3 mana) — fires when primary school depth
+    // meets the threshold. Distinct from pantheon perks (cultural) and
+    // rune set bonuses (reward mult).
+    nextPlayer = applySchoolMasteryPassive(nextPlayer);
     playerChanged = true;
 
     if (mission.category === "hunting-ground") {
