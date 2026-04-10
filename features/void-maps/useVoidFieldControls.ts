@@ -177,10 +177,29 @@ export function useVoidFieldControls({
   useEffect(() => {
     if (!multiplayerEnabled) return;
 
+    // Keyboard movement step size: ~5% of field per keypress.
+    // Held keys repeat via the browser's key repeat, giving smooth
+    // arrow/WASD traversal alongside the existing click-to-move.
+    const KEYBOARD_STEP_PCT = 5;
+
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.code === "Space") {
         e.preventDefault();
         performStrike();
+        return;
+      }
+
+      // Arrow keys + WASD → move the player in the pressed direction.
+      const pos = selfPositionPctRef.current;
+      let dx = 0;
+      let dy = 0;
+      if (e.code === "ArrowUp" || e.code === "KeyW") dy = -KEYBOARD_STEP_PCT;
+      if (e.code === "ArrowDown" || e.code === "KeyS") dy = KEYBOARD_STEP_PCT;
+      if (e.code === "ArrowLeft" || e.code === "KeyA") dx = -KEYBOARD_STEP_PCT;
+      if (e.code === "ArrowRight" || e.code === "KeyD") dx = KEYBOARD_STEP_PCT;
+      if (dx !== 0 || dy !== 0) {
+        e.preventDefault();
+        setMoveTargetPct(pos.x + dx, pos.y + dy);
       }
     };
 
@@ -189,7 +208,7 @@ export function useVoidFieldControls({
     return () => {
       window.removeEventListener("keydown", onKeyDown as EventListener);
     };
-  }, [multiplayerEnabled, performStrike]);
+  }, [multiplayerEnabled, performStrike, selfPositionPctRef, setMoveTargetPct]);
 
   useEffect(() => {
     if (!multiplayerEnabled || !autoStrikeEnabled) return;
