@@ -49,7 +49,13 @@ import {
   getBonehowlBountyRewardMultiplier,
   getMandateBureauTaxMultiplier,
 } from "@/features/institutions/institutionalPressure";
+import {
+  PRESSURE_FRAGILITY_INSTABILITY_NUDGE,
+  isLoadoutFragileTo,
+} from "@/features/loadout/loadoutPressureCompatibility";
 import { getRuneSetRewardMultiplier } from "@/features/mastery/runeSetDetection";
+import { getSchoolsByEmpire } from "@/features/schools/schoolSelectors";
+import { dominantDoctrinePath } from "@/features/factions/factionWorldLogic";
 
 export function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
@@ -783,6 +789,35 @@ export function processMissionQueue(state: GameState, now: number): GameState {
         playerAfterInstability,
         doctrineExtraVoid,
       );
+    }
+
+    // Pressure-aware encounter math: when this hunting-ground mission's
+    // deploy zone is held by an empire whose schools include a pressure
+    // type the player's current loadout is fragile to, add a small extra
+    // void instability nudge ("the wrong kit wears faster"). Fires once
+    // per matched mission, not per matched school.
+    if (
+      mission.category === "hunting-ground" &&
+      mission.deployZoneId !== undefined
+    ) {
+      const zonePressure =
+        playerAfterInstability.zoneDoctrinePressure?.[mission.deployZoneId];
+      if (zonePressure) {
+        const dominantEmpire = dominantDoctrinePath(zonePressure);
+        const fragilityMatched = getSchoolsByEmpire(dominantEmpire).some(
+          (s) =>
+            isLoadoutFragileTo(
+              playerAfterInstability.fieldLoadoutProfile,
+              s.pressure,
+            ),
+        );
+        if (fragilityMatched) {
+          playerAfterInstability = withVoidInstabilityDelta(
+            playerAfterInstability,
+            PRESSURE_FRAGILITY_INSTABILITY_NUDGE,
+          );
+        }
+      }
     }
     const appliedResourceGain = getAppliedResourceGain(
       playerBeforeReward.resources,
