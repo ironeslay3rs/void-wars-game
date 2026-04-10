@@ -45,6 +45,8 @@ import VoidFieldControls from "@/components/void-field/VoidFieldControls";
 import VoidFieldDeployIntro from "@/components/void-field/VoidFieldDeployIntro";
 import VoidFieldHud from "@/components/void-field/VoidFieldHud";
 import { useVoidFieldLocalPlayer } from "@/components/void-field/useVoidFieldLocalPlayer";
+import BossSpawnBanner from "@/components/void-field/BossSpawnBanner";
+import KillFeed, { type KillFeedEntry } from "@/components/void-field/KillFeed";
 import ExtractionSummary from "@/components/field/ExtractionSummary";
 import { voidInfusionHudLine } from "@/features/status/voidInfusionMetaphor";
 import { getAscensionTensionChipLine } from "@/features/progression/ascensionStep";
@@ -341,6 +343,29 @@ export default function VoidFieldScreen() {
   const extractionLedgerShownRef = useRef<number | null>(null);
   const seenDeadMobIdsRef = useRef<Set<string>>(new Set());
 
+  // Kill feed + screen shake + boss banner state.
+  const [killFeedEntries, setKillFeedEntries] = useState<KillFeedEntry[]>([]);
+  const [screenShakeKey, setScreenShakeKey] = useState(0);
+  const mainRef = useRef<HTMLElement>(null);
+
+  const pushKillFeed = useCallback((text: string) => {
+    setKillFeedEntries((prev) => [
+      ...prev,
+      { id: `kf-${Date.now()}-${Math.random()}`, text, at: Date.now() },
+    ]);
+  }, []);
+
+  const triggerScreenShake = useCallback(() => {
+    setScreenShakeKey((k) => k + 1);
+    const el = mainRef.current;
+    if (el) {
+      el.classList.remove("void-field-screen-shake");
+      // Force reflow so the animation restarts.
+      void el.offsetWidth;
+      el.classList.add("void-field-screen-shake");
+    }
+  }, []);
+
   const onLootConsumed = useCallback(
     (id: string) => {
       const d = lootDrops.find((x) => x.id === id) ?? null;
@@ -422,11 +447,16 @@ export default function VoidFieldScreen() {
       const dealt = applyShellMobDamage(mobEntityId, dmg);
       if (dealt > 0) {
         pushLocalDamageFloat(mobEntityId, dealt);
+        // Screen shake on heavy hits (40+ damage).
+        if (dealt >= 40) {
+          triggerScreenShake();
+        }
       }
     },
     [
       applyShellMobDamage,
       pushLocalDamageFloat,
+      triggerScreenShake,
       registerSlashForMob,
       state.player,
     ],
@@ -532,13 +562,20 @@ export default function VoidFieldScreen() {
       if (seenDeadMobIdsRef.current.has(mob.mobEntityId)) continue;
       seenDeadMobIdsRef.current.add(mob.mobEntityId);
       added += 1;
+      // Kill feed entry for each downed mob.
+      pushKillFeed(`Defeated ${mob.mobLabel}`);
+      // Screen shake on boss kill.
+      if (mob.isBoss) {
+        triggerScreenShake();
+        pushKillFeed(`BOSS DOWN — ${mob.mobLabel}!`);
+      }
     }
     if (added > 0) {
       queueMicrotask(() => {
         setSessionKills((prev) => prev + added);
       });
     }
-  }, [mobsForField]);
+  }, [mobsForField, pushKillFeed, triggerScreenShake]);
 
   const extractionXNorm = zone.extractionPositionPct.x / 100;
   const extractionYNorm = zone.extractionPositionPct.y / 100;
@@ -622,8 +659,13 @@ export default function VoidFieldScreen() {
   );
 
   return (
-    <main className="fixed inset-0 overflow-hidden bg-black text-white">
+    <main
+      ref={mainRef}
+      className="fixed inset-0 overflow-hidden bg-black text-white void-field-deploy-fadein"
+    >
       {showDeployIntro ? <VoidFieldDeployIntro /> : null}
+      <BossSpawnBanner bossLabel={bossChip === "Boss roaming" ? "Boss Roaming" : null} />
+      <KillFeed entries={killFeedEntries} />
 
       <div className="absolute inset-0">
         <VoidFieldCanvas

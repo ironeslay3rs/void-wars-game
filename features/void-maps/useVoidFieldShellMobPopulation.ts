@@ -26,12 +26,17 @@ import { resolveShellHit } from "@/features/combat/shellHitResolution";
 import { spawnFieldMobsFromCreatures } from "@/features/field/mobSpawner";
 
 /**
- * Keep shell corpses visible until loot can finish homing (VoidFieldLootDrops hold+home ~1180ms).
+ * Keep shell corpses visible until loot can finish homing.
+ * Reduced from 1360 → 900ms for snappier death → respawn cycle.
  */
-export const VOID_FIELD_SHELL_CORPSE_VISIBLE_MS = 1_360;
+export const VOID_FIELD_SHELL_CORPSE_VISIBLE_MS = 900;
 
-/** After corpse removal, brief gap before replacement spawns (stable shell population). */
-export const VOID_FIELD_SHELL_RESPAWN_DELAY_MS = 520;
+/**
+ * After corpse removal, brief gap before replacement spawns.
+ * Reduced from 520 → 280ms for faster farming flow — mobs come
+ * back quicker so the field stays dense and engaging.
+ */
+export const VOID_FIELD_SHELL_RESPAWN_DELAY_MS = 280;
 
 // Ambient drift tuning for shell stand-ins (client-only).
 const SHELL_MOB_AMBIENT_TICK_MS = 80;

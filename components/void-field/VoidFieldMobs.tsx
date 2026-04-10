@@ -22,7 +22,8 @@ import {
 
 export type { EnemyFaction };
 
-const FIELD_MOB_CAP = 4;
+/** Increased from 4 → 6 for denser, more engaging fields. */
+const FIELD_MOB_CAP = 6;
 
 /** Lower on field = slightly larger (foreground). Subtle range to avoid distortion. */
 function depthScaleFromY(y: number): number {

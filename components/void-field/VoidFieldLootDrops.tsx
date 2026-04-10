@@ -6,6 +6,10 @@ import type { VoidFieldLootDropVfx } from "@/features/void-maps/voidFieldLootDro
 
 const HOLD_MS = 420;
 const HOME_MS = 760;
+/** Loot only homes when the player is within this % of the drop.
+ *  Creates a "go get it" loop — you have to walk near loot to pick it
+ *  up, which adds positioning gameplay. */
+const PICKUP_RADIUS_PCT = 18;
 
 function LootDropItem({
   drop,
@@ -16,15 +20,31 @@ function LootDropItem({
   playerPctRef: MutableRefObject<{ x: number; y: number }>;
   onConsumed: (id: string) => void;
 }) {
-  const [phase, setPhase] = useState<"hold" | "home">("hold");
+  const [phase, setPhase] = useState<"hold" | "waiting" | "home">("hold");
   const [x, setX] = useState(drop.xPct);
   const [y, setY] = useState(drop.yPct);
   const [opacity, setOpacity] = useState(1);
 
+  // After the hold phase, check proximity before homing.
+  // If the player is too far, the drop waits on the ground.
   useEffect(() => {
-    const t = window.setTimeout(() => setPhase("home"), HOLD_MS);
+    const t = window.setTimeout(() => setPhase("waiting"), HOLD_MS);
     return () => window.clearTimeout(t);
   }, []);
+
+  // Proximity check: poll every 200ms until player is close enough.
+  useEffect(() => {
+    if (phase !== "waiting") return;
+    const id = window.setInterval(() => {
+      const p = playerPctRef.current;
+      const dx = p.x - drop.xPct;
+      const dy = p.y - drop.yPct;
+      if (Math.hypot(dx, dy) <= PICKUP_RADIUS_PCT) {
+        setPhase("home");
+      }
+    }, 200);
+    return () => window.clearInterval(id);
+  }, [phase, drop.xPct, drop.yPct, playerPctRef]);
 
   useEffect(() => {
     if (phase !== "home") return;
@@ -69,7 +89,11 @@ function LootDropItem({
     >
       <div
         className={`flex flex-col items-center gap-1 ${
-          phase === "hold" ? "void-field-loot-pop" : ""
+          phase === "hold"
+            ? "void-field-loot-pop"
+            : phase === "waiting"
+              ? "void-field-loot-waiting"
+              : ""
         }`}
       >
         <div className="relative h-11 w-11 md:h-12 md:w-12">
