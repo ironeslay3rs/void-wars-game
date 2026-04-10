@@ -45,9 +45,18 @@ import VoidFieldControls from "@/components/void-field/VoidFieldControls";
 import VoidFieldDeployIntro from "@/components/void-field/VoidFieldDeployIntro";
 import VoidFieldHud from "@/components/void-field/VoidFieldHud";
 import { useVoidFieldLocalPlayer } from "@/components/void-field/useVoidFieldLocalPlayer";
+import BossSpawnBanner from "@/components/void-field/BossSpawnBanner";
+import KillFeed, { type KillFeedEntry } from "@/components/void-field/KillFeed";
 import ExtractionSummary from "@/components/field/ExtractionSummary";
 import { voidInfusionHudLine } from "@/features/status/voidInfusionMetaphor";
 import { getAscensionTensionChipLine } from "@/features/progression/ascensionStep";
+import { getManaDisplay } from "@/features/mana/manaSelectors";
+import {
+  SHELL_ABILITIES,
+  pruneExpiredShellBuffs,
+  type ShellAbilityId,
+} from "@/features/combat/shellAbilities";
+import type { AbilitySlot } from "@/components/void-field/VoidFieldControls";
 import { getActivePrepSurface } from "@/features/crafting/prepRunHooks";
 import { getFeastHallOfferById } from "@/features/black-market/feastHallData";
 import {
@@ -184,7 +193,12 @@ export default function VoidFieldScreen() {
   ]);
 
   const { mobsForField, applyShellMobDamage, bossChip } =
-    useVoidFieldShellMobPopulation(allocatedZone.id, realtime.mobs, state.player);
+    useVoidFieldShellMobPopulation(
+      allocatedZone.id,
+      realtime.mobs,
+      state.player,
+      selfPositionPctRef,
+    );
 
   const wsRealtimeMobIds = useMemo(
     () => new Set(realtime.mobs.map((m) => m.mobEntityId)),
@@ -329,6 +343,29 @@ export default function VoidFieldScreen() {
   const extractionLedgerShownRef = useRef<number | null>(null);
   const seenDeadMobIdsRef = useRef<Set<string>>(new Set());
 
+  // Kill feed + screen shake + boss banner state.
+  const [killFeedEntries, setKillFeedEntries] = useState<KillFeedEntry[]>([]);
+  const [screenShakeKey, setScreenShakeKey] = useState(0);
+  const mainRef = useRef<HTMLElement>(null);
+
+  const pushKillFeed = useCallback((text: string) => {
+    setKillFeedEntries((prev) => [
+      ...prev,
+      { id: `kf-${Date.now()}-${Math.random()}`, text, at: Date.now() },
+    ]);
+  }, []);
+
+  const triggerScreenShake = useCallback(() => {
+    setScreenShakeKey((k) => k + 1);
+    const el = mainRef.current;
+    if (el) {
+      el.classList.remove("void-field-screen-shake");
+      // Force reflow so the animation restarts.
+      void el.offsetWidth;
+      el.classList.add("void-field-screen-shake");
+    }
+  }, []);
+
   const onLootConsumed = useCallback(
     (id: string) => {
       const d = lootDrops.find((x) => x.id === id) ?? null;
@@ -410,11 +447,16 @@ export default function VoidFieldScreen() {
       const dealt = applyShellMobDamage(mobEntityId, dmg);
       if (dealt > 0) {
         pushLocalDamageFloat(mobEntityId, dealt);
+        // Screen shake on heavy hits (40+ damage).
+        if (dealt >= 40) {
+          triggerScreenShake();
+        }
       }
     },
     [
       applyShellMobDamage,
       pushLocalDamageFloat,
+      triggerScreenShake,
       registerSlashForMob,
       state.player,
     ],
@@ -520,13 +562,20 @@ export default function VoidFieldScreen() {
       if (seenDeadMobIdsRef.current.has(mob.mobEntityId)) continue;
       seenDeadMobIdsRef.current.add(mob.mobEntityId);
       added += 1;
+      // Kill feed entry for each downed mob.
+      pushKillFeed(`Defeated ${mob.mobLabel}`);
+      // Screen shake on boss kill.
+      if (mob.isBoss) {
+        triggerScreenShake();
+        pushKillFeed(`BOSS DOWN — ${mob.mobLabel}!`);
+      }
     }
     if (added > 0) {
       queueMicrotask(() => {
         setSessionKills((prev) => prev + added);
       });
     }
-  }, [mobsForField]);
+  }, [mobsForField, pushKillFeed, triggerScreenShake]);
 
   const extractionXNorm = zone.extractionPositionPct.x / 100;
   const extractionYNorm = zone.extractionPositionPct.y / 100;
@@ -559,9 +608,64 @@ export default function VoidFieldScreen() {
     setExtractionSummary(L);
   }, [state.player.lastVoidFieldExtractionLedger, zone.label]);
 
+  // ──── Ability slots for the control bar ────
+  const manaDisplay = getManaDisplay(state.player.factionAlignment);
+
+  const abilitySlots: AbilitySlot[] = useMemo(() => {
+    const now = Date.now();
+    const buffs = pruneExpiredShellBuffs(
+      state.player.activeShellBuffs ?? [],
+      now,
+    );
+    return (["surge", "wolf-leap"] as ShellAbilityId[]).map((id) => {
+      const def = SHELL_ABILITIES[id];
+      const activeBuff = buffs.find((b) => b.abilityId === id);
+      const cooldownSecondsLeft = activeBuff
+        ? Math.max(0, Math.ceil((activeBuff.expiresAt - now) / 1000))
+        : null;
+      const canActivate =
+        state.player.mana >= def.manaCost && cooldownSecondsLeft === null;
+      return {
+        id,
+        name: def.name,
+        manaCost: def.manaCost,
+        canActivate,
+        cooldownSecondsLeft,
+        tooltip: canActivate
+          ? `${def.name}: ${def.description}`
+          : cooldownSecondsLeft !== null
+            ? `${def.name}: active for ${cooldownSecondsLeft}s`
+            : `Need ${def.manaCost} ${manaDisplay.shortName}`,
+        accentClass:
+          id === "surge"
+            ? "border-orange-400/50 bg-orange-500/20 text-orange-50 hover:bg-orange-500/30"
+            : "border-red-400/50 bg-red-500/20 text-red-50 hover:bg-red-500/30",
+        disabledClass:
+          "cursor-not-allowed border-white/10 bg-black/30 text-white/30",
+      };
+    });
+  }, [state.player.mana, state.player.activeShellBuffs, manaDisplay.shortName]);
+
+  const handleActivateAbility = useCallback(
+    (abilityId: string) => {
+      dispatch({
+        type: "ACTIVATE_SHELL_ABILITY",
+        payload: {
+          abilityId: abilityId as ShellAbilityId,
+        },
+      });
+    },
+    [dispatch],
+  );
+
   return (
-    <main className="fixed inset-0 overflow-hidden bg-black text-white">
+    <main
+      ref={mainRef}
+      className="fixed inset-0 overflow-hidden bg-black text-white void-field-deploy-fadein"
+    >
       {showDeployIntro ? <VoidFieldDeployIntro /> : null}
+      <BossSpawnBanner bossLabel={bossChip === "Boss roaming" ? "Boss Roaming" : null} />
+      <KillFeed entries={killFeedEntries} />
 
       <div className="absolute inset-0">
         <VoidFieldCanvas
@@ -633,6 +737,11 @@ export default function VoidFieldScreen() {
           autoStrikeEngaged={autoStrikeEngaged}
           autoStrikeActive={autoStrikeActive}
           onAutoStrikeToggle={() => setAutoStrikeEngaged((v) => !v)}
+          mana={state.player.mana}
+          manaMax={state.player.manaMax}
+          manaDisplayName={manaDisplay.shortName}
+          abilities={abilitySlots}
+          onActivateAbility={handleActivateAbility}
         />
       </div>
 

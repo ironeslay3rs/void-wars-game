@@ -42,6 +42,8 @@ export type MobEntity = {
   // Client-enriched after mob_defeated; not sent by server.
   isBoss?: boolean;
   lootProfileId?: string;
+  /** Creature data ID for sprite resolution (shell mobs carry this from creature templates). */
+  creatureId?: string;
 
   /**
    * M4 combat texture: posture/expose/archetype — shell drills + void WS mobs.

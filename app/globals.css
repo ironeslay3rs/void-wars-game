@@ -515,3 +515,95 @@ button, a, [role="button"] {
 .void-field-player-loot-ping {
   animation: void-field-player-loot-ping 0.34s ease-out;
 }
+
+/* ─── SCREEN SHAKE (heavy hit feedback) ─── */
+@keyframes void-field-screen-shake {
+  0%, 100% { transform: translate(0, 0); }
+  10% { transform: translate(-2px, 1px); }
+  20% { transform: translate(3px, -1px); }
+  30% { transform: translate(-1px, 2px); }
+  40% { transform: translate(2px, -2px); }
+  50% { transform: translate(-3px, 0); }
+  60% { transform: translate(1px, 1px); }
+  70% { transform: translate(-1px, -1px); }
+  80% { transform: translate(2px, 0); }
+  90% { transform: translate(-1px, 1px); }
+}
+
+.void-field-screen-shake {
+  animation: void-field-screen-shake 200ms ease-out;
+}
+
+/* ─── DEPLOY FADE-IN CINEMATIC ─── */
+@keyframes void-field-deploy-fadein {
+  0% {
+    opacity: 0;
+    transform: scale(1.08);
+    filter: brightness(0.3) blur(6px);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.02);
+    filter: brightness(0.8) blur(1px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: brightness(1) blur(0);
+  }
+}
+
+.void-field-deploy-fadein {
+  animation: void-field-deploy-fadein 1.6s ease-out forwards;
+}
+
+/* ─── BOSS SPAWN DRAMATIC FLASH ─── */
+@keyframes void-field-boss-spawn-flash {
+  0% {
+    opacity: 0;
+    transform: scale(0.92) translateY(8px);
+  }
+  15% {
+    opacity: 1;
+    transform: scale(1.04) translateY(-2px);
+  }
+  30% {
+    transform: scale(1) translateY(0);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+}
+
+.void-field-boss-spawn-banner {
+  animation: void-field-boss-spawn-flash 3s ease-out forwards;
+}
+
+/* ─── HEALTH BAR DAMAGE FLASH ─── */
+@keyframes void-field-hp-damage-flash {
+  0% { background-color: rgba(239, 68, 68, 0.8); }
+  40% { background-color: rgba(239, 68, 68, 0.4); }
+  100% { background-color: transparent; }
+}
+
+.void-field-hp-damage-flash {
+  animation: void-field-hp-damage-flash 320ms ease-out;
+}
+
+/* ─── LOOT WAITING GLOW (on ground, waiting for pickup) ─── */
+@keyframes void-field-loot-waiting-glow {
+  0%, 100% {
+    filter: brightness(1) drop-shadow(0 0 8px rgba(56, 189, 248, 0.4));
+  }
+  50% {
+    filter: brightness(1.15) drop-shadow(0 0 16px rgba(56, 189, 248, 0.7));
+  }
+}
+
+.void-field-loot-waiting {
+  animation: void-field-loot-waiting-glow 1.5s ease-in-out infinite;
+}

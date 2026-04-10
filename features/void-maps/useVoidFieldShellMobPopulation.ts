@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MutableRefObject,
+} from "react";
 import type { MobEntity } from "@/features/void-maps/realtime/voidRealtimeProtocol";
 import {
   buildVoidFieldShellMobTemplates,
@@ -19,12 +26,17 @@ import { resolveShellHit } from "@/features/combat/shellHitResolution";
 import { spawnFieldMobsFromCreatures } from "@/features/field/mobSpawner";
 
 /**
- * Keep shell corpses visible until loot can finish homing (VoidFieldLootDrops hold+home ~1180ms).
+ * Keep shell corpses visible until loot can finish homing.
+ * Reduced from 1360 → 900ms for snappier death → respawn cycle.
  */
-export const VOID_FIELD_SHELL_CORPSE_VISIBLE_MS = 1_360;
+export const VOID_FIELD_SHELL_CORPSE_VISIBLE_MS = 900;
 
-/** After corpse removal, brief gap before replacement spawns (stable shell population). */
-export const VOID_FIELD_SHELL_RESPAWN_DELAY_MS = 520;
+/**
+ * After corpse removal, brief gap before replacement spawns.
+ * Reduced from 520 → 280ms for faster farming flow — mobs come
+ * back quicker so the field stays dense and engaging.
+ */
+export const VOID_FIELD_SHELL_RESPAWN_DELAY_MS = 280;
 
 // Ambient drift tuning for shell stand-ins (client-only).
 const SHELL_MOB_AMBIENT_TICK_MS = 80;
@@ -108,10 +120,20 @@ function formatMsAsClock(ms: number) {
  * Local-only shell field: death, corpse window (loot-friendly), removal, respawn.
  * When realtime mobs exist, returns server list unchanged and ignores damage.
  */
+/** Per-tick aggro pull toward the player (% of field per 80ms tick).
+ *  ~2.3% per second — slow enough to kite, fast enough to feel threatening. */
+const MOB_AGGRO_PULL_PER_TICK = 0.19;
+/** Stop approaching when this close to the player (% of field). */
+const MOB_AGGRO_MIN_DIST_PCT = 7;
+/** Boss approaches more slowly. */
+const BOSS_AGGRO_PULL_PER_TICK = 0.09;
+
 export function useVoidFieldShellMobPopulation(
   zoneId: VoidZoneId,
   realtimeMobs: MobEntity[],
   shellCombatPlayer: PlayerState | null,
+  /** Pass the player's position ref so mobs can approach them. */
+  selfPositionPctRef?: MutableRefObject<{ x: number; y: number }>,
 ): {
   mobsForField: MobEntity[];
   applyShellMobDamage: (mobEntityId: string, rawDamage: number) => number;
@@ -214,20 +236,33 @@ export function useVoidFieldShellMobPopulation(
     return () => window.clearTimeout(resetId);
   }, [shellMode, zoneId, template, bossConfig]);
 
-  // Ambient drifting for alive shell mobs (slow, no pathfinding).
+  // Aggro offset: accumulates per-mob drift toward the player.
+  // Ref so it persists across ticks without triggering re-renders.
+  const aggroOffsetRef = useRef(template.map(() => ({ x: 0, y: 0 })));
+
+  // Reset aggro offsets when the zone/template changes.
+  useEffect(() => {
+    aggroOffsetRef.current = template.map(() => ({ x: 0, y: 0 }));
+  }, [template]);
+
+  // Ambient drifting + aggro pull for alive shell mobs.
+  // Mobs slowly approach the player's position each tick, creating
+  // tension and making movement matter. The player must kite or die.
   useEffect(() => {
     if (!shellMode) return;
 
     const start = performance.now();
     const id = window.setInterval(() => {
       const t = (performance.now() - start) / 1000;
+      const playerPos = selfPositionPctRef?.current ?? { x: 50, y: 82 };
+
       setSlots((prev) =>
         prev.map((s, i) => {
           if (s.kind !== "alive") return s;
           const hp = homeParams[i];
           if (!hp) return s;
 
-          // Two gentle harmonics to avoid a mechanical "slide".
+          // Two gentle harmonics (existing ambient drift).
           const dx =
             Math.sin(t * hp.speedA + hp.phaseA) * hp.radiusX +
             Math.sin(t * hp.speedB * 0.7 + hp.phaseB) * (hp.radiusX * 0.35);
@@ -235,17 +270,33 @@ export function useVoidFieldShellMobPopulation(
             Math.cos(t * hp.speedA + hp.phaseB) * hp.radiusY +
             Math.cos(t * hp.speedB * 0.75 + hp.phaseA) * (hp.radiusY * 0.35);
 
+          // Aggro pull: slowly move toward the player. This is what
+          // makes the field feel alive — mobs don't just float, they
+          // HUNT you.
+          const ao = aggroOffsetRef.current[i] ?? { x: 0, y: 0 };
+          const currentBaseX = hp.homeX + ao.x;
+          const currentBaseY = hp.homeY + ao.y;
+          const toPlayerX = playerPos.x - currentBaseX;
+          const toPlayerY = playerPos.y - currentBaseY;
+          const dist = Math.hypot(toPlayerX, toPlayerY);
+          if (dist > MOB_AGGRO_MIN_DIST_PCT && dist > 0.1) {
+            const step = MOB_AGGRO_PULL_PER_TICK;
+            ao.x += (toPlayerX / dist) * step;
+            ao.y += (toPlayerY / dist) * step;
+            aggroOffsetRef.current[i] = ao;
+          }
+
           return {
             ...s,
             mob: {
               ...s.mob,
               x: voidFieldClamp(
-                hp.homeX + dx,
+                hp.homeX + ao.x + dx,
                 SHELL_MOB_CLAMP_MIN_PCT,
                 SHELL_MOB_CLAMP_MAX_PCT,
               ),
               y: voidFieldClamp(
-                hp.homeY + dy,
+                hp.homeY + ao.y + dy,
                 SHELL_MOB_CLAMP_MIN_PCT,
                 SHELL_MOB_CLAMP_MAX_PCT,
               ),
@@ -256,7 +307,7 @@ export function useVoidFieldShellMobPopulation(
     }, SHELL_MOB_AMBIENT_TICK_MS);
 
     return () => window.clearInterval(id);
-  }, [shellMode, homeParams]);
+  }, [shellMode, homeParams, selfPositionPctRef]);
 
   useEffect(() => {
     if (!shellMode) return;
