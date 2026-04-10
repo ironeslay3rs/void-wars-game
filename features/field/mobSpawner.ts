@@ -43,6 +43,7 @@ export function spawnFieldMobsFromCreatures(
       maxHp: baseHp,
       x,
       y,
+      creatureId: pick.id,
       shellArchetype: "skirmisher",
       shellPosture: 0,
       shellPostureMax: 40,

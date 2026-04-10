@@ -5,7 +5,10 @@ import type { PointerEvent } from "react";
 import MobToken from "@/components/field/MobToken";
 import { toggleTarget } from "@/features/combat/targetingState";
 import type { MobEntity } from "@/features/void-maps/realtime/voidRealtimeProtocol";
-import { voidFieldEnemySpriteSrc } from "@/features/void-maps/voidFieldEnemyAssets";
+import {
+  getMobSpriteSrc,
+  voidFieldEnemySpriteSrc,
+} from "@/features/void-maps/voidFieldEnemyAssets";
 import {
   isVoidFieldShellBossMobId,
   isVoidFieldShellMobId,
@@ -106,7 +109,6 @@ export default function VoidFieldMobs({
   mobHitUntilById?: Record<string, number>;
 }) {
   const enemyFaction = voidZoneEnemyFaction(zoneId);
-  const spriteSrc = voidFieldEnemySpriteSrc(enemyFaction);
   const visible = mobs.slice(0, FIELD_MOB_CAP);
 
   return (
@@ -125,6 +127,9 @@ export default function VoidFieldMobs({
         const exposedHits = mob.shellExposedHitsRemaining ?? 0;
         const motion = factionMotionClass(enemyFaction);
         const hpGrad = hpBarClass(enemyFaction);
+        // Per-mob sprite resolution: creature-specific if available,
+        // otherwise the generic faction fallback.
+        const spriteSrc = getMobSpriteSrc(mob, enemyFaction);
         const { ox, oy } =
           enemyFaction === "bio" ? organicOffsetPx(mob.mobEntityId) : { ox: 0, oy: 0 };
         const depth = depthScaleFromY(mob.y);
