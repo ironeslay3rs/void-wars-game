@@ -12,6 +12,7 @@ import {
 import { usePathname, useRouter } from "next/navigation";
 import { GameProvider } from "@/features/game/gameContext";
 import AnomalyToast from "@/components/shared/AnomalyToast";
+import RankUpBanner from "@/components/shared/RankUpBanner";
 import {
   clearStoredAuthSession,
   loadStoredAuthSession,
@@ -199,6 +200,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           <GameProvider>
             {children}
             <AnomalyToast />
+            <RankUpBanner />
           </GameProvider>
         </>
       );

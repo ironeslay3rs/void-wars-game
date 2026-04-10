@@ -111,6 +111,53 @@ export type SoundId =
   | "extract"
   | "ui-click";
 
+/** Ambient drone — continuous low tone that plays while on the void field.
+ *  Call startAmbient(freq) to begin, stopAmbient() to end.
+ *  Different zones pass different frequencies for zone identity. */
+let ambientOsc: OscillatorNode | null = null;
+let ambientGain: GainNode | null = null;
+
+export function startAmbient(freq: number, vol = 0.06) {
+  stopAmbient();
+  const c = getCtx();
+  if (!c || !masterGain) return;
+  ambientOsc = c.createOscillator();
+  ambientGain = c.createGain();
+  ambientOsc.type = "sine";
+  ambientOsc.frequency.value = freq;
+  ambientGain.gain.setValueAtTime(0, c.currentTime);
+  ambientGain.gain.linearRampToValueAtTime(vol, c.currentTime + 1.5);
+  ambientOsc.connect(ambientGain);
+  ambientGain.connect(masterGain);
+  ambientOsc.start();
+}
+
+export function stopAmbient() {
+  if (ambientGain) {
+    try {
+      const c = getCtx();
+      if (c) {
+        ambientGain.gain.linearRampToValueAtTime(0.001, c.currentTime + 0.5);
+      }
+    } catch { /* ignore */ }
+  }
+  if (ambientOsc) {
+    try {
+      ambientOsc.stop(getCtx()?.currentTime ? getCtx()!.currentTime + 0.6 : 0);
+    } catch { /* ignore */ }
+    ambientOsc = null;
+    ambientGain = null;
+  }
+}
+
+/** Zone → ambient frequency mapping. Lower = more ominous. */
+export const ZONE_AMBIENT_FREQ: Record<string, number> = {
+  "howling-scar": 55,    // Deep Bio growl
+  "ash-relay": 65,       // Mecha hum
+  "echo-ruins": 48,      // Pure void resonance
+  "rift-maw": 42,        // Deepest — the maw
+};
+
 export function playSound(id: SoundId) {
   switch (id) {
     case "hit":

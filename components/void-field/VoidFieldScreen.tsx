@@ -50,7 +50,12 @@ import KillFeed, { type KillFeedEntry } from "@/components/void-field/KillFeed";
 import ExtractionSummary from "@/components/field/ExtractionSummary";
 import { voidInfusionHudLine } from "@/features/status/voidInfusionMetaphor";
 import { getAscensionTensionChipLine } from "@/features/progression/ascensionStep";
-import { playSound } from "@/features/audio/soundEngine";
+import {
+  playSound,
+  startAmbient,
+  stopAmbient,
+  ZONE_AMBIENT_FREQ,
+} from "@/features/audio/soundEngine";
 import DeathOverlay from "@/components/void-field/DeathOverlay";
 import VirtualJoystick from "@/components/void-field/VirtualJoystick";
 import { getManaDisplay } from "@/features/mana/manaSelectors";
@@ -118,6 +123,13 @@ export default function VoidFieldScreen() {
 
   const allocatedZone = voidZoneById[initialZoneId];
   const zone = allocatedZone;
+
+  // Ambient zone drone — starts on field mount, stops on unmount.
+  useEffect(() => {
+    const freq = ZONE_AMBIENT_FREQ[initialZoneId] ?? 50;
+    startAmbient(freq);
+    return () => stopAmbient();
+  }, [initialZoneId]);
   const fieldMapSrc = voidFieldMapSrcForZone(allocatedZone.id);
 
   const activeHuntProcess =
@@ -496,6 +508,22 @@ export default function VoidFieldScreen() {
     state.player.voidRealtimeBinding,
   ]);
 
+  // Ability hotkey callback — maps index 0/1 to surge/wolf-leap.
+  const abilityHotkeyIds: ShellAbilityId[] = ["surge", "wolf-leap"];
+  const onActivateAbilityByIndex = useCallback(
+    (index: number) => {
+      const id = abilityHotkeyIds[index];
+      if (!id) return;
+      playSound("ability-activate");
+      dispatch({
+        type: "ACTIVATE_SHELL_ABILITY",
+        payload: { abilityId: id },
+      });
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [dispatch],
+  );
+
   const { performNearestStrike, tryDirectMobAttack } = useVoidFieldControls({
     multiplayerEnabled: true,
     connected: realtimeConnected,
@@ -509,6 +537,7 @@ export default function VoidFieldScreen() {
     targetedMobEntityIdRef,
     autoStrikeEnabled: autoStrikeActive,
     strikeRangePct,
+    onActivateAbilityByIndex,
   });
 
   const onFieldPointerDownWrapped = useCallback(

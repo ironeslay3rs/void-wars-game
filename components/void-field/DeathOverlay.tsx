@@ -3,24 +3,30 @@
 import Link from "next/link";
 import { useEffect } from "react";
 import { playSound } from "@/features/audio/soundEngine";
+import { useGame } from "@/features/game/gameContext";
 
 /**
  * Death overlay — shown when the player's condition reaches 0 on the
- * void field. Applies a visual darkening + message + forced return
- * link to the Black Market for recovery.
+ * void field. Dispatches APPLY_DEATH_PENALTY on mount (10% resource
+ * loss + condition reset to 20%), plays the death sound, then shows
+ * a forced retreat link to the Black Market.
  *
- * Design: death is NOT permanent. The player loses some resources
- * (applied by the reducer) and is forced to retreat. The overlay is
- * the narrative moment that gives combat STAKES.
+ * Design: death is NOT permanent. The penalty makes combat have STAKES
+ * — you lose real resources when you fall. Recovery happens in the
+ * Feast Hall or via time-based survival ticks.
  */
 export default function DeathOverlay({
   playerName,
 }: {
   playerName: string;
 }) {
+  const { dispatch } = useGame();
+
   useEffect(() => {
     playSound("death");
-  }, []);
+    // Apply the resource penalty + condition reset immediately on death.
+    dispatch({ type: "APPLY_DEATH_PENALTY" });
+  }, [dispatch]);
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/85 backdrop-blur-sm">
@@ -37,8 +43,8 @@ export default function DeathOverlay({
           for the next operative.
         </p>
         <div className="rounded-xl border border-red-400/30 bg-red-950/40 px-4 py-3 text-xs text-red-200/80">
-          Penalty: 10% of carried resources lost to the void.
-          Condition restored to 20% on return.
+          Penalty applied: 10% of carried resources lost to the void.
+          Condition restored to 20%.
         </div>
         <Link
           href="/bazaar/black-market"
