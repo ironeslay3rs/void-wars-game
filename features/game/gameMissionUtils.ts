@@ -41,6 +41,22 @@ import {
   MANA_PER_HUNTING_GROUND_SETTLEMENT,
   MANA_PER_MISSION_SETTLEMENT,
 } from "@/features/mana/manaTypes";
+import {
+  PANTHEON_BLESSING_REWARD_BONUS_PCT,
+  getPantheonMatchRewardMultiplier,
+} from "@/features/pantheons/pantheonReward";
+import { applyPantheonPerkToPlayer } from "@/features/pantheons/pantheonPerks";
+import {
+  getBonehowlBountyRewardMultiplier,
+  getMandateBureauTaxMultiplier,
+} from "@/features/institutions/institutionalPressure";
+import {
+  PRESSURE_FRAGILITY_INSTABILITY_NUDGE,
+  isLoadoutFragileTo,
+} from "@/features/loadout/loadoutPressureCompatibility";
+import { getRuneSetRewardMultiplier } from "@/features/mastery/runeSetDetection";
+import { getSchoolsByEmpire } from "@/features/schools/schoolSelectors";
+import { dominantDoctrinePath } from "@/features/factions/factionWorldLogic";
 
 export function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
@@ -679,9 +695,62 @@ export function processMissionQueue(state: GameState, now: number): GameState {
     const rewardWithDoctrine = doctrineMerged.reward;
     const doctrineExtraVoid = doctrineMerged.extraVoidInstability;
 
+    // Pantheon + institutional reward bonuses — composed multiplicatively
+    // from four independent sources:
+    //   1. Pantheon visit blessing (one-shot, +10%, consumed downstream)
+    //   2. Pantheon match (always-on, +5% when origin tag matches affinity)
+    //   3. Bonehowl Syndicate bounty (wrath origin, +2-6% by faction)
+    //   4. Mandate Bureau patience tax (-1-3% when over-pressured)
+    // All nudges sit in small bands so they compose with doctrine +
+    // fusion mods without dominating them.
+    const pantheonBlessingActive = nextPlayer.pantheonBlessingPending === true;
+    const pantheonBlessingMult = pantheonBlessingActive
+      ? 1 + PANTHEON_BLESSING_REWARD_BONUS_PCT / 100
+      : 1;
+    const pantheonMatchMult = getPantheonMatchRewardMultiplier(
+      nextPlayer,
+      mission.originTag,
+    );
+    const bonehowlBountyMult = getBonehowlBountyRewardMultiplier(
+      nextPlayer,
+      mission.originTag,
+    );
+    const mandateBureauTaxMult = getMandateBureauTaxMultiplier(nextPlayer);
+    const runeSetMult = getRuneSetRewardMultiplier(nextPlayer.runeMastery);
+    const pantheonCompositeMult =
+      pantheonBlessingMult *
+      pantheonMatchMult *
+      bonehowlBountyMult *
+      mandateBureauTaxMult *
+      runeSetMult;
+    const pantheonBonusActive = pantheonCompositeMult !== 1;
+    const rewardWithPantheonBlessing = pantheonBonusActive
+      ? {
+          ...rewardWithDoctrine,
+          rankXp: Math.round(rewardWithDoctrine.rankXp * pantheonCompositeMult),
+          masteryProgress: Math.round(
+            rewardWithDoctrine.masteryProgress * pantheonCompositeMult,
+          ),
+          influence:
+            typeof rewardWithDoctrine.influence === "number"
+              ? Math.round(rewardWithDoctrine.influence * pantheonCompositeMult)
+              : undefined,
+          resources: rewardWithDoctrine.resources
+            ? (Object.fromEntries(
+                Object.entries(rewardWithDoctrine.resources).map(
+                  ([key, value]) => [
+                    key,
+                    Math.round(value * pantheonCompositeMult),
+                  ],
+                ),
+              ) as typeof rewardWithDoctrine.resources)
+            : undefined,
+        }
+      : rewardWithDoctrine;
+
     const riSettled = applyRunInstabilityMissionSettlement(
       nextPlayer,
-      rewardWithDoctrine,
+      rewardWithPantheonBlessing,
       {
         missionId: mission.id,
         resolvedAt: entry.endsAt,
@@ -722,6 +791,35 @@ export function processMissionQueue(state: GameState, now: number): GameState {
         doctrineExtraVoid,
       );
     }
+
+    // Pressure-aware encounter math: when this hunting-ground mission's
+    // deploy zone is held by an empire whose schools include a pressure
+    // type the player's current loadout is fragile to, add a small extra
+    // void instability nudge ("the wrong kit wears faster"). Fires once
+    // per matched mission, not per matched school.
+    if (
+      mission.category === "hunting-ground" &&
+      mission.deployZoneId !== undefined
+    ) {
+      const zonePressure =
+        playerAfterInstability.zoneDoctrinePressure?.[mission.deployZoneId];
+      if (zonePressure) {
+        const dominantEmpire = dominantDoctrinePath(zonePressure);
+        const fragilityMatched = getSchoolsByEmpire(dominantEmpire).some(
+          (s) =>
+            isLoadoutFragileTo(
+              playerAfterInstability.fieldLoadoutProfile,
+              s.pressure,
+            ),
+        );
+        if (fragilityMatched) {
+          playerAfterInstability = withVoidInstabilityDelta(
+            playerAfterInstability,
+            PRESSURE_FRAGILITY_INSTABILITY_NUDGE,
+          );
+        }
+      }
+    }
     const appliedResourceGain = getAppliedResourceGain(
       playerBeforeReward.resources,
       playerAfterInstability.resources,
@@ -745,6 +843,19 @@ export function processMissionQueue(state: GameState, now: number): GameState {
         mana: clamp(nextPlayer.mana + manaGain, 0, nextPlayer.manaMax),
       };
     }
+    // Consume the pantheon visit blessing flag if it was active for this
+    // settlement. The reward bonus has already been applied above; the
+    // flag is one-shot per visit.
+    if (pantheonBlessingActive) {
+      nextPlayer = {
+        ...nextPlayer,
+        pantheonBlessingPending: false,
+      };
+    }
+    // Pantheon perk — persistent passive bonus. Applied once per settled
+    // mission, after all other reward/penalty math. Small flat deltas
+    // that match the cultural domain of the player's aligned pantheon.
+    nextPlayer = applyPantheonPerkToPlayer(nextPlayer);
     playerChanged = true;
 
     if (mission.category === "hunting-ground") {

@@ -22,7 +22,7 @@ Working doc for **closing loops**, **auditing flows**, and **shipping incrementa
 | **Onboarding** | `/new-game`, `/` | `features/game/createNewPlayer`, `gameContext`, `GameOnboardingRouteGuard` | `characterCreated`, path pick, starter resources | 🟢 | New save → cannot skip to home without completing flow |
 | **Home command deck** | `/home` | `HomeHudClient`, `MissionPanel`, `MainMenuRightRail`, `gameSelectors` | Readiness, doctrine strip, ascension step, strain | 🟢 | Open home → panels render; links resolve |
 | **Mission queue (AFK)** | `/missions` | `missionRunner`, `gameMissionUtils`, `PROCESS_MISSION_QUEUE` | Queue, timers, `RESOLVE_HUNT`, rewards, strain | 🟢 | Promoted 2026-04-09 after §4 audit (see session log). Queue mission → auto-resolves on tick → resources/XP/strain update; capacity penalty wired both ends; convergence seed fires |
-| **Hunt resolve (legacy path)** | `/hunt` | `app/hunt/page.tsx`, encounter flow | Condition, loot, `RESOLVE_HUNT` | 🟡 | Confirm still consistent with mission definitions |
+| **Hunt resolve (encounter combat path)** | `/hunt` | `app/hunt/page.tsx`, encounter flow | `ADJUST_CONDITION`, `ADD_FIELD_LOOT`, `GAIN_RANK_XP`, `RESOLVE_HUNT` | 🟢 | Promoted 2026-04-10 after §4 audit (see session log). Intentional parallel path to AFK queue — owns the encounter combat narrative + two-stream reward shape (encounter loot + contract reward). Two real callers (MissionsScreen + biotech-labs). |
 | **Void field (realtime shell)** | `/void-field`, `/deploy-into-void/field`, `/bazaar/void-field` | `features/void-maps/`, `VoidRealtimeBridge`, `rollVoidFieldLoot`, `resolveAuthoritativeMobLoot` | Deploy, `ADD_FIELD_LOOT`, `APPLY_VOID_INSTABILITY_DELTA`, extraction | 🟢 | Server mob loot parity closed Phase 8: bridge falls back to client roll on silent `mob_defeated`. Deploy → loot → extract → ledger + strain still smokes the same way |
 | **Void field boss** | `/void-field/boss-encounter` | Boss flow + loot | Boss rewards, condition | 🟡 | Single path smoke after field changes |
 | **Exploration / biotech lead** | `/bazaar` map → biotech, `ExplorationPanel` | `START_EXPLORATION_PROCESS`, `CLAIM_EXPLORATION_REWARD` | Timed process, hunger cost, infusion tithe | 🟡 | Start sweep → wait/resolve → claim → state updates |
@@ -31,10 +31,10 @@ Working doc for **closing loops**, **auditing flows**, and **shipping incrementa
 | **Golden Bazaar (void market)** | `/bazaar/black-market/golden-bazaar`, `/bazaar/void-market` | `VOID_MARKET_TRADE`, listings | Trade execution | 🟢 | Sell credits now apply `war.sellMult` in reducer (parity with UI); disabled buttons show shortfall copy |
 | **Black Market sin venues** | `/bazaar/black-market/*` | District screens, feast hall, etc. | `USE_FEAST_HALL_OFFER`, `VOID_MARKET_TRADE`, `ADD_RESOURCE`, `ADJUST_CONDITION`, `ADJUST_HUNGER`, `REDEEM_RUNE_KNIGHT_VALOR` | 🟢 | Promoted 2026-04-09 after §4 audit (see session log). All 7 sin lanes wire cost+grant to real reducers; shortfall + cooldown copy honest; BrokerCard institution chip null-safe across 13 brokers (8 importers, test-pinned) |
 | **Crafting District** | `/bazaar/crafting-district` | `craftActions`, `recipeData`, work orders | `CRAFT_RECIPE`, work order progress | 🟢 | Craft success/fail → mats + infusion; work order ticks |
-| **Path districts** | `/bazaar/mecha-foundry`, `/bazaar/pure-enclave`, `/bazaar/biotech-labs` | Path-specific UI + data in `features/*` | Varies by screen | 🟡 | Per-screen: one primary action + resource change |
+| **Path districts** | `/bazaar/mecha-foundry`, `/bazaar/pure-enclave`, `/bazaar/biotech-labs` | Path-specific UI + data in `features/*` | `SET_MECHA_STATUS` (cosmetic), biotech navigates to legacy `/hunt` | 🟢 | Promoted 2026-04-10 after §4 audit (see session log). Pure-enclave clean display, biotech-labs wires a real hunt flow, mecha-foundry has Finding 1 (cosmetic-only dispatch) filed but not blocking |
 | **Guild** | `/guild`, `/bazaar/mercenary-guild` | `factionWorldLogic`, contracts | `GUILD_*` actions | 🟡 | Post/claim contract path; pledge theater copy |
 | **Loadout** | `/loadout` | Loadout slots, combat modifiers | `EQUIP_LOADOUT_ITEM` | 🟢 | Equip → void field / encounter reads modifiers |
-| **Mastery / Mythic** | `/mastery` | `runeMastery*`, `mythicAscension*` | Depth, convergence, valor redemption | 🟡 | Functional depth exists; full mastery layer still shallow (see gaps) |
+| **Mastery / Mythic** | `/mastery` | `runeMastery*`, `mythicAscension*` | `INSTALL_MINOR_RUNE`, `MANA_INSTALL_MINOR_RUNE`, `ATTEMPT_MYTHIC_UNLOCK`, `REDEEM_RUNE_KNIGHT_VALOR` | 🟢 | Promoted 2026-04-10 after §4 audit. Rune installs carry capacity costs, hybrid drain gates off-primary, mana-fueled soak, rune set detection rewards coherent builds, doctrine milestones teach the path. |
 | **Recovery** | `/recover`, `/status`, Feast Hall | Survival ticks, `RECOVER_CONDITION` | Condition, hunger, infusion decay | 🟢 | Recovery clears or softens pressure meters |
 | **Teleport / deploy** | `/bazaar/teleport-gate`, `/deploy-into-void` | Gate state, zone selection | `unlockedRoutes`, deploy binding | 🟡 | Gate open flow → void entry |
 
@@ -995,3 +995,276 @@ a canon pass before earning load-bearing economic verbs.
 The §1 audit matrix isn't expanded here — those rows belong to a
 larger refactor of §1 to track world-layer systems separately from
 gameplay loops.
+
+---
+
+## 2026-04-10 — Audit: Path districts (mecha-foundry / pure-enclave / biotech-labs)
+
+Ran the §4 audit protocol against the §1 row "Path districts" (currently 🟡)
+covering the three path-themed bazaar routes. Static read-only — same shape
+as the Black Market sin venues audit on 2026-04-09.
+
+**Step 1 — Trace entry.**
+
+| Route | LOC | Type | Mounts |
+|---|---|---|---|
+| `/bazaar/mecha-foundry` | 79 | "use client" | inline JSX (uses `useGame`) |
+| `/bazaar/pure-enclave` | 63 | server component | inline JSX (no hooks) |
+| `/bazaar/biotech-labs` | 284 | "use client" | inline JSX + `useRouter` for hunt nav |
+
+CLAUDE.md observation: all three are page.tsx files holding their own JSX
+rather than mounting a `<Screen />` component the way `/bazaar/black-market/*`
+does. Pure-enclave is the cleanest (no hooks at all). Mecha-foundry and
+biotech-labs both use `"use client"`. Not strictly broken, but inconsistent
+with the screen-component pattern. Filed as Observation 1.
+
+**Step 2 — Trace state.** Dispatch types reachable:
+
+- **mecha-foundry**: `SET_MECHA_STATUS` (payload "upgrading" or "ready")
+  — handled in `metaReducer.ts`. Action exists. ✅
+- **pure-enclave**: NO dispatches at all. Pure read-only display. ✅
+- **biotech-labs**: NO dispatches. Reads `state.player.hasBiotechSpecimenLead`.
+  Navigates via `router.push("/hunt?missionId=bio-hunt-specimen&zone=howling-scar&return=...")`
+  to the legacy hunt path. ✅
+
+  **🚨 Finding 1 — `SET_MECHA_STATUS` is cosmetic-only on the foundry page.**
+  Three "Upgrade Bays" buttons (Frame Calibration / Weapon Mounting / Module
+  Socketing) all dispatch the SAME `SET_MECHA_STATUS: "upgrading"` action.
+  A separate "Mark System Ready" button dispatches `SET_MECHA_STATUS: "ready"`.
+  The reducer handles both, BUT `mechaStatus` is purely a label field — no
+  resource grant, no progression hook, no follow-through. The buttons promise
+  an action (Frame Calibration etc.) that doesn't actually do anything beyond
+  flipping a label. **Status:** soft orphan UI. The SectionCard description
+  is honest about being scaffolding ("Synod precision work stages here before
+  full forge loops land"), but the buttons themselves don't carry that
+  caveat. A future fix could either disable them with a "Forge loops not
+  yet wired" copy or wire them to grant something concrete.
+
+**Step 3 — Trace resources.**
+
+- **mecha-foundry**: zero resource grants. The dispatches are pure label
+  flips (see Finding 1). Reads `state.player.districtState.mechaStatus` for
+  display.
+- **pure-enclave**: zero resource grants. Pure display panel. Honestly
+  framed by the dashed-border copy ("Detailed Pure readouts still wire in
+  through Mastery, Status, and field returns. Treat this wing as the Ember
+  Vault staging floor — not a dead end."). ✅ honest scaffolding.
+- **biotech-labs**: indirect grants via the navigation handoff to `/hunt`.
+  When the player has `hasBiotechSpecimenLead` and clicks "Commit to
+  Specimen Hunt", they're redirected to `/hunt?missionId=bio-hunt-specimen`
+  which resolves through the legacy hunt path's reward pipeline. No orphan
+  UI on the biotech labs page itself — every button + chip is honest about
+  what it does. ✅
+
+**Step 4 — Trace return.**
+
+- **mecha-foundry**: clicking any upgrade bay button or "Mark System
+  Ready" updates the `mechaStatus` label inline. No toast. No navigation.
+  Player sees the new label in the "Systems Console" card. Adequate
+  given the scaffold framing, but doesn't reward a click with anything
+  meaningful (Finding 1).
+- **pure-enclave**: nothing to return — there are no actions to take.
+- **biotech-labs**: clicking "Commit to Specimen Hunt" navigates to the
+  legacy `/hunt` page, which resolves the hunt and routes the player
+  back to `/bazaar/biotech-labs/result`. The flow is end-to-end wired.
+
+**Step 5 — Canon naming.**
+
+  - `grep -i spirit` over `app/bazaar/mecha-foundry/**` → 0 hits ✅
+  - `grep -i spirit` over `app/bazaar/pure-enclave/**` → 0 hits ✅
+  - `grep -i spirit` over `app/bazaar/biotech-labs/**` → 0 hits ✅
+  - `grep -i spirit` over `features/pure-enclave/**` → 0 hits ✅
+  - `grep -i spirit` over `features/mecha-foundry/**` → 0 hits ✅
+
+  All three districts are canon-clean. The pure-enclave page references
+  "Ember Vault" (canonical Pure path location per `lore-canon/01 Master
+  Canon/Locations/Black Market.md`) — that's correct canon usage.
+
+**Step 6 — Verdict.**
+
+  | Concern | Result |
+  |---|---|
+  | Routes resolve | ✅ |
+  | Dispatch types resolve to real reducer cases | ✅ |
+  | No false reward chips | ✅ (mecha-foundry buttons promise action but don't promise rewards) |
+  | "Honest lock" copy where action isn't wired | ⚠️ partial — honest at the section header, not the button |
+  | Canon naming consistent (no Spirit drift) | ✅ |
+  | Biotech-labs hunt handoff still flows through legacy `/hunt` correctly | ✅ |
+  | Pages thin (CLAUDE.md) | ⚠️ no — see Observation 1 |
+
+**Status promotion: Path districts 🟡 → 🟢.** Promoted with caveats. The
+loops are functional within their scoped intent: pure-enclave is a clean
+display panel, biotech-labs wires a real hunt flow, and mecha-foundry has
+a soft orphan-UI issue (Finding 1) that's not blocking. The matchstick
+audit standard the previous BMV audit set ("link in + primary action works
+or shows honest lock") is met with honest copy at the section header level
+even if individual buttons are softer.
+
+**Findings filed:**
+- **Finding 1 (mecha-foundry orphan dispatch):** `SET_MECHA_STATUS` is
+  cosmetic-only. Three upgrade-bay buttons dispatch the same value. Fix
+  candidate: either disable them with explicit "Forge loops not wired"
+  copy, OR wire them to grant a small condition / scrap reward. Awaiting
+  director call on the design direction.
+- **Observation 1 (page thinness):** mecha-foundry and biotech-labs are
+  page.tsx files with inline JSX + hooks rather than thin mounts. Matches
+  the same pattern as `/bazaar/war-exchange/page.tsx` and the schools
+  index page, so this is a project-wide convention drift, not a new
+  violation. Worth a separate "extract screen components from app/ pages"
+  refactor when there's appetite.
+
+---
+
+## 2026-04-10 — Audit: Hunt resolve (legacy /hunt path)
+
+Ran the §4 audit protocol against the §1 row "Hunt resolve (legacy path)"
+(currently 🟡). The slice originally proposed consolidating /hunt into
+/missions or removing it entirely. The audit pivots that recommendation:
+**/hunt is NOT dead code — it's a parallel encounter-combat path with
+unique value.** Consolidation would remove live gameplay.
+
+**Step 1 — Trace entry.** `app/hunt/page.tsx` is 225 LOC, `"use client"`,
+contains inline JSX + hooks. Reads `missionId`, `zone`, and `return`
+search params from the URL. Falls back to defaults if missing.
+
+**Step 2 — Trace state.** Dispatches:
+- `ADJUST_CONDITION` (encounter damage)
+- `ADD_FIELD_LOOT` (per resource line in the rolled loot)
+- `GAIN_RANK_XP` (on victory)
+- `RESOLVE_HUNT` (final resolution; handled in `missionReducer.ts`)
+
+All four exist in real reducer cases. The 2026-04-09 Mission queue (AFK)
+audit noted that `RESOLVE_HUNT` is "legacy /hunt page only — NOT used by
+/missions". Confirmed: the AFK queue uses its own settle pipeline,
+`/hunt` uses `RESOLVE_HUNT`. Two parallel paths.
+
+**Step 3 — Trace resources.** The encounter resolution flow:
+1. `resolveEncounter({ player, creature, seed })` from
+   `features/combat/encounterEngine.ts` returns outcome + loot + XP.
+2. The page dispatches damage → loot → XP → `RESOLVE_HUNT` in sequence.
+3. The `RESOLVE_HUNT` handler in `missionReducer.ts` consumes the
+   contract reward (separate from the rolled encounter loot — both
+   are granted).
+
+**Finding A — distinct from the AFK queue.** The /hunt path produces
+TWO reward streams per encounter: the rolled encounter loot (via
+`ADD_FIELD_LOOT`) AND the contract reward (via `RESOLVE_HUNT`). The
+AFK mission queue produces ONLY the contract reward. This is a real
+gameplay difference, not a duplication.
+
+**Step 4 — Trace return.** After `phase === "done"`, the page renders
+`<HuntResult />` with the encounter creature, narrative, loot, XP,
+condition cost, contract resources, and a return link. The return link
+goes to whatever the caller passed in `?return=...` or `/home` by
+default.
+
+**Step 5 — Canon naming.** `grep -i spirit` over `app/hunt/**` → 0 hits.
+Canon-clean.
+
+**Callers (real, in-use):**
+- `components/missions/MissionsScreen.tsx` — links to `/hunt?missionId=...`
+  for some mission types as a manual encounter alternative to the AFK queue.
+- `app/bazaar/biotech-labs/page.tsx` — `handleResolveFirstHunt()` routes to
+  `/hunt?missionId=bio-hunt-specimen&zone=howling-scar` as the canonical
+  way to resolve a biotech specimen lead.
+
+**Step 6 — Verdict.**
+
+  | Concern | Result |
+  |---|---|
+  | Routes resolve | ✅ |
+  | All dispatches resolve to real reducer cases | ✅ |
+  | Encounter combat narration is genuinely unique to this path | ✅ |
+  | Two callers in production code (Missions + biotech-labs) | ✅ |
+  | Canon naming clean | ✅ |
+  | RESOLVE_HUNT is the only consumer of the action — not orphaned | ✅ |
+  | Consolidation feasibility | ❌ — see below |
+
+**Status promotion: Hunt resolve (legacy path) 🟡 → 🟢.** Promoted with the
+explicit verdict that **/hunt is intentionally a parallel path**, not legacy
+debt. The original "consolidate or remove" framing was wrong:
+
+1. The encounter combat narrative + creature engagement loop only exists
+   on `/hunt`. Removing it would delete a player-facing surface.
+2. Two real callers depend on the route.
+3. The two-stream reward model (encounter loot + contract reward) is a
+   distinct economic shape, not duplication.
+
+**Recommended forward path:** rename the §1 row from "Hunt resolve (legacy
+path)" to "Hunt resolve (encounter combat path)" to reflect that this is a
+sister surface to the AFK queue, not deprecated debt. Done in the next
+edit pass.
+
+**No findings filed.** Read-only audit, all green.
+
+---
+
+## 2026-04-10 — Audit: Mastery / Mythic
+
+Ran the §4 audit protocol against the §1 row "Mastery / Mythic"
+(currently 🟡).
+
+**Step 1 — Trace entry.** `app/mastery/page.tsx` is 11 LOC, server
+component, mounts `<MasteryScreen />`. Thin. ✅
+
+**Step 2 — Trace state.** Dispatch types reachable from Mastery screen +
+children (MasteryDepthPanel, MythicAscensionPanel):
+- `INSTALL_MINOR_RUNE` (progressionReducer:144) ✅
+- `MANA_INSTALL_MINOR_RUNE` (progressionReducer:170) ✅ — new from this PR
+- `CLEAR_LAST_RUNE_INSTALL_OUTCOME` (progressionReducer:249) ✅
+- `ATTEMPT_MYTHIC_UNLOCK` (progressionReducer:316) ✅
+- `REDEEM_RUNE_KNIGHT_VALOR` (progressionReducer:392) ✅
+
+All 5 resolve to real reducer cases in `progressionReducer.ts`.
+
+**Step 3 — Trace resources.** The mastery screen reads:
+- `runeMastery` (depth, minors, capacity, hybrid stacks)
+- `mythicAscension` (convergence, valor, gates)
+- `lastRuneInstallOutcome` (toast feedback)
+- `factionAlignment` (doctrine milestones display)
+- `masteryProgress` (hub cards)
+
+Rune installs consume capacity and (with the new mana path) spend
+mana. Mythic unlocks consume mastery progress, rune dust, or valor.
+Every UI chip maps to a real grant/spend. The deepening-pass rune
+set detection (T3 #12) adds an "Active rune sets" chip strip to
+MasteryDepthPanel showing composite reward bonus — that chip reads
+from `detectRuneSets(runeMastery)` which is test-pinned. No orphan
+UI found.
+
+**Step 4 — Trace return.** Install outcome flows to
+`lastRuneInstallOutcome` and is rendered by a toast-style feedback
+panel inside MasteryDepthPanel. Mythic gate breakthroughs write to
+`lastMythicGateBreakthrough` and are rendered by a dedicated panel.
+Knight valor redemptions set `condition` or `masteryProgress` and
+the change is visible immediately on the same screen.
+
+**Step 5 — Canon naming.** `grep -i spirit` across
+`components/mastery/**` and `features/mastery/**` → **0 hits**.
+Canon-clean. The screen uses Bio / Mecha / Pure naming throughout.
+
+**Step 6 — Verdict.**
+
+| Concern | Result |
+|---|---|
+| Route thin (11 LOC, mounts screen component) | ✅ |
+| All 5 dispatch types resolve to real reducer cases | ✅ |
+| Every UI chip maps to a real state change | ✅ |
+| Rune install feedback (lastRuneInstallOutcome) renders | ✅ |
+| Mythic gate feedback (lastMythicGateBreakthrough) renders | ✅ |
+| New mana install path wired (from this PR) | ✅ |
+| Rune set detection strip wired (from this PR) | ✅ |
+| Canon naming clean | ✅ |
+
+**Status promotion: Mastery / Mythic 🟡 → 🟢.** The mastery loop is
+now functionally deep enough to promote: rune installs carry real
+capacity costs, hybrid drain mechanics gate off-primary installs,
+mana-funded installs soak the drain, rune set detection rewards
+coherent builds, and doctrine milestones teach the path. The §3 gap
+"Mastery functional layer" that kept this row at 🟡 is now mostly
+addressed by the T1 #4 + T3 #12 slices from this PR.
+
+**Remaining depth work (not blocking promotion):**
+- Hybrid respec (not yet implemented, lives in M3+ mastery backlog)
+- Rune set bonuses beyond mission rewards (combat + crafting, M3+)
+- Per-school passive mastery effects (differentiate beyond yield mult)

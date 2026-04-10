@@ -601,6 +601,24 @@ export type PlayerState = {
 
   /** Broker interaction cooldowns — maps brokerId to last-interaction timestamp. */
   brokerCooldowns: Record<string, number>;
+
+  /**
+   * Pantheon visit blessing — one-shot token earned by visiting the
+   * pantheon HQ tied to the player's affinity school. Consumed by the
+   * next mission settlement, granting a flat reward bonus
+   * (`PANTHEON_BLESSING_REWARD_BONUS_PCT`). Foundation slice for the
+   * walkable pantheon layer.
+   */
+  pantheonBlessingPending: boolean;
+
+  /**
+   * Active shell combat buffs from `ACTIVATE_SHELL_ABILITY` (e.g. Surge).
+   * Each entry has an `expiresAt` timestamp; selectors prune expired
+   * entries lazily so no background tick is required. Foundation slice
+   * for the M3 combat engine integration; current realtime combat code
+   * does not yet read this list.
+   */
+  activeShellBuffs: import("@/features/combat/shellAbilities").ShellBuff[];
 };
 
 /* =========================
@@ -784,4 +802,36 @@ export type GameAction =
   | { type: "MANA_SPEND"; payload: { amount: number; reason?: string } }
   | { type: "MANA_RESTORE_FULL" }
   | { type: "VENT_MANA_TO_VOID_INSTABILITY" }
-  | { type: "SET_MANA_MAX"; payload: { max: number } };
+  | { type: "SET_MANA_MAX"; payload: { max: number } }
+  | { type: "MANA_BURN_FOR_MASTERY" }
+  | { type: "MANA_BURN_FOR_CONDITION" }
+  | { type: "MANA_BURN_FOR_HUNGER" }
+  | { type: "GRANT_PANTHEON_BLESSING"; payload: { pantheonId: string } }
+  | { type: "CLEAR_PANTHEON_BLESSING" }
+  | { type: "MANA_INSTALL_MINOR_RUNE"; payload: { school: PathType } }
+  | {
+      type: "ACTIVATE_SHELL_ABILITY";
+      payload: {
+        abilityId: import("@/features/combat/shellAbilities").ShellAbilityId;
+        nowMs?: number;
+      };
+    }
+  | {
+      type: "TRIGGER_CONVERGENCE_REVEAL";
+      payload?: { nowMs?: number };
+    }
+  | {
+      type: "STRIKE_BLACK_MARKET_DEAL";
+      payload: {
+        /** Stable id for the deal — used for telemetry + toast keying. */
+        dealId: string;
+        /** Resource cost (already adjusted for institutional pressures). */
+        costs: Partial<ResourcesState>;
+        /** Resource grant (already adjusted for institutional pressures). */
+        resourceGains?: Partial<ResourcesState>;
+        /** Optional condition delta to apply on success. */
+        conditionGain?: number;
+        /** Optional hunger delta to apply on success. */
+        hungerGain?: number;
+      };
+    };

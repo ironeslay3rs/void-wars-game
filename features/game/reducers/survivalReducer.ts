@@ -22,6 +22,7 @@ import {
   SURVIVAL_TICK_INTERVAL_MS,
 } from "@/features/status/survival";
 import { processStallRentCharges } from "@/features/economy/stallUpkeep";
+import { getIntiCourtCostMultiplier } from "@/features/institutions/institutionalPressure";
 import { MANA_PER_FEAST_HALL_OFFER } from "@/features/mana/manaTypes";
 import type { GameReducerResult } from "@/features/game/reducers/sharedReducerUtils";
 import { updateSingleResource } from "@/features/game/reducers/sharedReducerUtils";
@@ -261,9 +262,18 @@ export function handleSurvivalAction(
         };
       }
 
-      const offerCostEntries = Object.entries(offer.cost).filter(
-        (entry): entry is [ResourceKey, number] => typeof entry[1] === "number",
-      );
+      // Inti Court tribute discount: Pure-aligned operatives pay less
+      // for Feast Hall offers ("the Court feeds its own first").
+      const intiCostMult = getIntiCourtCostMultiplier(player.factionAlignment);
+      const offerCostEntries = (
+        Object.entries(offer.cost).filter(
+          (entry): entry is [ResourceKey, number] =>
+            typeof entry[1] === "number",
+        ) as Array<[ResourceKey, number]>
+      ).map<[ResourceKey, number]>(([resourceKey, amount]) => [
+        resourceKey,
+        Math.max(0, Math.ceil(amount * intiCostMult)),
+      ]);
 
       const canAffordOffer = offerCostEntries.every(
         ([resourceKey, amount]) => player.resources[resourceKey] >= amount,

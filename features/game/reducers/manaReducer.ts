@@ -1,7 +1,18 @@
+import {
+  getShellAbility,
+  pruneExpiredShellBuffs,
+  SURGE_DAMAGE_BONUS_PCT,
+} from "@/features/combat/shellAbilities";
 import { clamp } from "@/features/game/gameMissionUtils";
 import type { GameAction, GameState } from "@/features/game/gameTypes";
 import type { GameReducerResult } from "@/features/game/reducers/sharedReducerUtils";
 import {
+  MANA_BURN_CONDITION_COST,
+  MANA_BURN_CONDITION_GAIN,
+  MANA_BURN_HUNGER_COST,
+  MANA_BURN_HUNGER_GAIN,
+  MANA_BURN_MASTERY_COST,
+  MANA_BURN_MASTERY_GAIN,
   VENT_MANA_COST,
   VENT_MANA_INSTABILITY_RELIEF,
 } from "@/features/mana/manaTypes";
@@ -84,6 +95,86 @@ export function handleManaAction(
           ...state.player,
           manaMax: max,
           mana: Math.min(state.player.mana, max),
+        },
+      };
+    }
+
+    case "MANA_BURN_FOR_MASTERY": {
+      if (state.player.mana < MANA_BURN_MASTERY_COST) return state;
+      if (state.player.masteryProgress >= 100) return state;
+      return {
+        ...state,
+        player: {
+          ...state.player,
+          mana: state.player.mana - MANA_BURN_MASTERY_COST,
+          masteryProgress: clamp(
+            state.player.masteryProgress + MANA_BURN_MASTERY_GAIN,
+            0,
+            100,
+          ),
+        },
+      };
+    }
+
+    case "MANA_BURN_FOR_CONDITION": {
+      if (state.player.mana < MANA_BURN_CONDITION_COST) return state;
+      if (state.player.condition >= 100) return state;
+      return {
+        ...state,
+        player: {
+          ...state.player,
+          mana: state.player.mana - MANA_BURN_CONDITION_COST,
+          condition: clamp(
+            state.player.condition + MANA_BURN_CONDITION_GAIN,
+            0,
+            100,
+          ),
+        },
+      };
+    }
+
+    case "MANA_BURN_FOR_HUNGER": {
+      if (state.player.mana < MANA_BURN_HUNGER_COST) return state;
+      if (state.player.hunger >= 100) return state;
+      return {
+        ...state,
+        player: {
+          ...state.player,
+          mana: state.player.mana - MANA_BURN_HUNGER_COST,
+          hunger: clamp(
+            state.player.hunger + MANA_BURN_HUNGER_GAIN,
+            0,
+            100,
+          ),
+        },
+      };
+    }
+
+    case "ACTIVATE_SHELL_ABILITY": {
+      const ability = getShellAbility(action.payload.abilityId);
+      if (!ability) return state;
+      if (state.player.mana < ability.manaCost) return state;
+      const nowMs = action.payload.nowMs ?? Date.now();
+      const pruned = pruneExpiredShellBuffs(
+        state.player.activeShellBuffs ?? [],
+        nowMs,
+      );
+      // One stack per ability type — re-activating refreshes the
+      // expiry rather than stacking multiple buffs of the same id.
+      const filtered = pruned.filter((b) => b.abilityId !== ability.id);
+      return {
+        ...state,
+        player: {
+          ...state.player,
+          mana: state.player.mana - ability.manaCost,
+          activeShellBuffs: [
+            ...filtered,
+            {
+              abilityId: ability.id,
+              expiresAt: nowMs + ability.durationMs,
+              damageBonusPct: SURGE_DAMAGE_BONUS_PCT,
+            },
+          ],
         },
       };
     }

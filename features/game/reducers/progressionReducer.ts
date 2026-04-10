@@ -15,9 +15,24 @@ import {
   canUnlockL3RareRuneSet,
 } from "@/features/progression/mythicAscensionLogic";
 import { tryInstallMinorRune } from "@/features/mastery/runeMasteryLogic";
+import { getPrimaryRuneSchool } from "@/features/mastery/runeMasteryTypes";
 import { applyCrossSchoolExposureToPlayer } from "@/features/convergence/convergenceSeed";
+import { applyConvergenceReveal } from "@/features/convergence/convergenceReveal";
+import { getPharosConclaveRegistryFee } from "@/features/institutions/institutionalPressure";
+import {
+  MANA_HYBRID_INSTALL_COST_BASE,
+  MANA_HYBRID_INSTALL_COST_PURE,
+} from "@/features/mana/manaTypes";
 import type { GameReducerResult } from "@/features/game/reducers/sharedReducerUtils";
 import { updateSingleResource } from "@/features/game/reducers/sharedReducerUtils";
+
+function getManaHybridInstallCostForPlayer(
+  faction: GameState["player"]["factionAlignment"],
+): number {
+  return faction === "pure"
+    ? MANA_HYBRID_INSTALL_COST_PURE
+    : MANA_HYBRID_INSTALL_COST_BASE;
+}
 
 export function handleProgressionAction(
   state: GameState,
@@ -153,6 +168,76 @@ export function handleProgressionAction(
       return nextState;
     }
 
+    case "MANA_INSTALL_MINOR_RUNE": {
+      // Mana-funded rune install — pays the standard capacity cost AND a
+      // mana surcharge, in exchange for absorbing the hybrid drain stack
+      // bump that off-primary installs would normally incur. Pure-aligned
+      // operatives pay the cheapest mana rate (canonical "memory" school).
+      const school = action.payload.school;
+      const at = Date.now();
+      const manaCost = getManaHybridInstallCostForPlayer(
+        state.player.factionAlignment,
+      );
+
+      // Affordance check first — fail-soft if mana is short.
+      if (state.player.mana < manaCost) {
+        return {
+          ...state,
+          player: {
+            ...state.player,
+            lastRuneInstallOutcome: {
+              at,
+              school,
+              ok: false,
+              reason: `Need ${manaCost} mana to soak the hybrid drain.`,
+            },
+          },
+        };
+      }
+
+      // Snapshot pre-install hybrid drain stacks so we can detect whether
+      // the install would have bumped them.
+      const drainBefore = state.player.runeMastery.hybridDrainStacks;
+      const primary = getPrimaryRuneSchool(state.player.factionAlignment);
+      const isHybridInstall = primary !== null && school !== primary;
+
+      const r = tryInstallMinorRune(state.player, school);
+      if (!r.ok) {
+        return {
+          ...state,
+          player: {
+            ...state.player,
+            lastRuneInstallOutcome: { at, school, ok: false, reason: r.reason },
+          },
+        };
+      }
+
+      // Install succeeded. Spend the mana surcharge and roll back the
+      // hybrid drain bump if this was an off-primary install.
+      const drainAfter = r.player.runeMastery.hybridDrainStacks;
+      const drainSoak =
+        isHybridInstall && drainAfter > drainBefore
+          ? {
+              ...r.player.runeMastery,
+              hybridDrainStacks: drainBefore,
+            }
+          : r.player.runeMastery;
+
+      const newDepth = r.player.runeMastery.depthBySchool[school];
+      const nextState: GameState = {
+        ...state,
+        player: {
+          ...r.player,
+          mana: state.player.mana - manaCost,
+          runeMastery: drainSoak,
+          lastRuneInstallOutcome: { at, school, ok: true, newDepth },
+        },
+      };
+      // Silent convergence seed still fires for cross-school installs.
+      nextState.player = applyCrossSchoolExposureToPlayer(nextState, school);
+      return nextState;
+    }
+
     case "RECORD_CROSS_SCHOOL_EVENT": {
       const nextPlayer = applyCrossSchoolExposureToPlayer(
         state,
@@ -160,6 +245,15 @@ export function handleProgressionAction(
       );
       if (nextPlayer === state.player) return state;
       return { ...state, player: nextPlayer };
+    }
+
+    case "TRIGGER_CONVERGENCE_REVEAL": {
+      const revealedPlayer = applyConvergenceReveal(
+        state,
+        action.payload?.nowMs,
+      );
+      if (revealedPlayer === state.player) return state;
+      return { ...state, player: revealedPlayer };
     }
 
     case "CLEAR_LAST_RUNE_INSTALL_OUTCOME":
@@ -344,7 +438,14 @@ export function handleProgressionAction(
 
       if (action.payload === "ivory-prestige-rite") {
         const valorCost = 4;
-        const creditsCost = 120;
+        // Pharos Conclave registry surcharge — flat fee on top of the
+        // base 120 credit prestige price. Mecha-aligned operatives pay
+        // the cheapest registry fee (the Conclave is their institution).
+        const baseCreditsCost = 120;
+        const conclaveRegistryFee = getPharosConclaveRegistryFee(
+          p.factionAlignment,
+        );
+        const creditsCost = baseCreditsCost + conclaveRegistryFee;
         if (m.runeKnightValor < valorCost) return state;
         if ((p.resources.credits ?? 0) < creditsCost) return state;
         return {

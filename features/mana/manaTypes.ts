@@ -43,3 +43,63 @@ export const VENT_MANA_INSTABILITY_RELIEF = 10;
 export const MANA_PER_MISSION_SETTLEMENT = 5;
 export const MANA_PER_HUNTING_GROUND_SETTLEMENT = 7;
 export const MANA_PER_FEAST_HALL_OFFER = 8;
+
+/**
+ * Deepening slice — directed spends. Each is an atomic mana → benefit
+ * exchange that the reducer guards both ends of (afford check + cap check).
+ *
+ * - Mastery burn: pours mana into rune-school memory. Smaller bump than
+ *   a real install but always available.
+ * - Condition burn: a "self-stabilization" rite that turns positive
+ *   pressure into recovered condition without going through the citadel.
+ * - Hunger burn: distilled tribute, paid out of personal reserves.
+ *
+ * These three plus the existing void-instability vent give mana 4 total
+ * spend surfaces — enough that the resource feels load-bearing, not just
+ * decorative.
+ */
+export const MANA_BURN_MASTERY_COST = 15;
+export const MANA_BURN_MASTERY_GAIN = 5;
+
+export const MANA_BURN_CONDITION_COST = 20;
+export const MANA_BURN_CONDITION_GAIN = 8;
+
+export const MANA_BURN_HUNGER_COST = 15;
+export const MANA_BURN_HUNGER_GAIN = 12;
+
+/**
+ * Mana-funded rune install — pays mana on top of the normal capacity
+ * cost, and in exchange the install does NOT increment hybridDrainStacks
+ * for off-primary schools. Pure-aligned operatives pay the cheapest rate
+ * because the Pure empire is the canonical "memory" school.
+ *
+ * This is the first concrete coupling between mana and the mastery
+ * loop: mana absorbs the hybrid drain that would otherwise erode
+ * capacity over time.
+ */
+export const MANA_HYBRID_INSTALL_COST_BASE = 18;
+export const MANA_HYBRID_INSTALL_COST_PURE = 12;
+
+/**
+ * Loadout-aware mana max — different shell loadouts hold different
+ * amounts of mana. Foundation slice that couples mana to loadout
+ * identity without touching combat math yet.
+ *
+ * Assault: highest base damage, lowest mana cap (40)
+ *   — body-forward, less ritual buffer.
+ * Support: balanced damage, highest mana cap (60)
+ *   — supplies the team, holds the largest pool.
+ * Breach: bursty damage, baseline mana cap (50)
+ *   — middle of the road by design.
+ */
+import type { FieldLoadoutProfile } from "@/features/game/gameTypes";
+
+export const LOADOUT_MANA_MAX: Record<FieldLoadoutProfile, number> = {
+  assault: 40,
+  support: 60,
+  breach: 50,
+};
+
+export function getManaMaxForLoadout(profile: FieldLoadoutProfile): number {
+  return LOADOUT_MANA_MAX[profile];
+}

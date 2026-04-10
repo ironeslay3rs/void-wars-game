@@ -4,6 +4,12 @@ import { gameReducer } from "@/features/game/gameActions";
 import { initialGameState } from "@/features/game/initialGameState";
 import type { GameState } from "@/features/game/gameTypes";
 import {
+  MANA_BURN_CONDITION_COST,
+  MANA_BURN_CONDITION_GAIN,
+  MANA_BURN_HUNGER_COST,
+  MANA_BURN_HUNGER_GAIN,
+  MANA_BURN_MASTERY_COST,
+  MANA_BURN_MASTERY_GAIN,
   VENT_MANA_COST,
   VENT_MANA_INSTABILITY_RELIEF,
 } from "@/features/mana/manaTypes";
@@ -121,6 +127,93 @@ describe("VENT_MANA_TO_VOID_INSTABILITY", () => {
     });
     expect(next.player.mana).toBe(50);
     expect(next.player.voidInstability).toBe(0);
+  });
+});
+
+describe("MANA_BURN_FOR_MASTERY", () => {
+  it("spends the cost and bumps masteryProgress when affordable + below cap", () => {
+    const start = makeState({ mana: 30, masteryProgress: 40 });
+    const next = gameReducer(start, { type: "MANA_BURN_FOR_MASTERY" });
+    expect(next.player.mana).toBe(30 - MANA_BURN_MASTERY_COST);
+    expect(next.player.masteryProgress).toBe(40 + MANA_BURN_MASTERY_GAIN);
+  });
+
+  it("clamps masteryProgress to 100", () => {
+    const start = makeState({ mana: 30, masteryProgress: 98 });
+    const next = gameReducer(start, { type: "MANA_BURN_FOR_MASTERY" });
+    expect(next.player.masteryProgress).toBe(100);
+  });
+
+  it("is a no-op when underfunded", () => {
+    const start = makeState({ mana: 5, masteryProgress: 40 });
+    const next = gameReducer(start, { type: "MANA_BURN_FOR_MASTERY" });
+    expect(next.player.mana).toBe(5);
+    expect(next.player.masteryProgress).toBe(40);
+  });
+
+  it("is a no-op when masteryProgress is already 100", () => {
+    const start = makeState({ mana: 30, masteryProgress: 100 });
+    const next = gameReducer(start, { type: "MANA_BURN_FOR_MASTERY" });
+    expect(next.player.mana).toBe(30);
+    expect(next.player.masteryProgress).toBe(100);
+  });
+});
+
+describe("MANA_BURN_FOR_CONDITION", () => {
+  it("spends the cost and bumps condition when affordable + below cap", () => {
+    const start = makeState({ mana: 50, condition: 40 });
+    const next = gameReducer(start, { type: "MANA_BURN_FOR_CONDITION" });
+    expect(next.player.mana).toBe(50 - MANA_BURN_CONDITION_COST);
+    expect(next.player.condition).toBe(40 + MANA_BURN_CONDITION_GAIN);
+  });
+
+  it("clamps condition to 100", () => {
+    const start = makeState({ mana: 50, condition: 96 });
+    const next = gameReducer(start, { type: "MANA_BURN_FOR_CONDITION" });
+    expect(next.player.condition).toBe(100);
+  });
+
+  it("is a no-op when underfunded", () => {
+    const start = makeState({ mana: 19, condition: 40 });
+    const next = gameReducer(start, { type: "MANA_BURN_FOR_CONDITION" });
+    expect(next.player.mana).toBe(19);
+    expect(next.player.condition).toBe(40);
+  });
+
+  it("is a no-op when condition is already 100", () => {
+    const start = makeState({ mana: 50, condition: 100 });
+    const next = gameReducer(start, { type: "MANA_BURN_FOR_CONDITION" });
+    expect(next.player.mana).toBe(50);
+    expect(next.player.condition).toBe(100);
+  });
+});
+
+describe("MANA_BURN_FOR_HUNGER", () => {
+  it("spends the cost and bumps hunger when affordable + below cap", () => {
+    const start = makeState({ mana: 30, hunger: 40 });
+    const next = gameReducer(start, { type: "MANA_BURN_FOR_HUNGER" });
+    expect(next.player.mana).toBe(30 - MANA_BURN_HUNGER_COST);
+    expect(next.player.hunger).toBe(40 + MANA_BURN_HUNGER_GAIN);
+  });
+
+  it("clamps hunger to 100", () => {
+    const start = makeState({ mana: 30, hunger: 95 });
+    const next = gameReducer(start, { type: "MANA_BURN_FOR_HUNGER" });
+    expect(next.player.hunger).toBe(100);
+  });
+
+  it("is a no-op when underfunded", () => {
+    const start = makeState({ mana: 14, hunger: 40 });
+    const next = gameReducer(start, { type: "MANA_BURN_FOR_HUNGER" });
+    expect(next.player.mana).toBe(14);
+    expect(next.player.hunger).toBe(40);
+  });
+
+  it("is a no-op when hunger is already 100", () => {
+    const start = makeState({ mana: 30, hunger: 100 });
+    const next = gameReducer(start, { type: "MANA_BURN_FOR_HUNGER" });
+    expect(next.player.mana).toBe(30);
+    expect(next.player.hunger).toBe(100);
   });
 });
 

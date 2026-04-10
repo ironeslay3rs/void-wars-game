@@ -1,4 +1,5 @@
 import type { GameAction, GameState } from "@/features/game/gameTypes";
+import { getManaMaxForLoadout } from "@/features/mana/manaTypes";
 import {
   equipItem,
   sanitizeLoadoutForFaction,
@@ -29,14 +30,20 @@ export function handlePlayerIdentityAction(
         },
       };
 
-    case "SET_FIELD_LOADOUT_PROFILE":
+    case "SET_FIELD_LOADOUT_PROFILE": {
+      // Loadout-aware mana max: switching profiles re-caps the player's
+      // mana pool. Current mana is preserved up to the new cap.
+      const nextManaMax = getManaMaxForLoadout(action.payload);
       return {
         ...state,
         player: {
           ...state.player,
           fieldLoadoutProfile: action.payload,
+          manaMax: nextManaMax,
+          mana: Math.min(state.player.mana, nextManaMax),
         },
       };
+    }
 
     case "EQUIP_LOADOUT_ITEM":
       return {

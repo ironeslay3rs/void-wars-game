@@ -1,5 +1,6 @@
 import { addPartialResources } from "@/features/game/gameMissionUtils";
 import type { GameAction, GameState } from "@/features/game/gameTypes";
+import { appendGuildLedgerEntry } from "@/features/factions/factionWorldLogic";
 import {
   addGuildMember,
   createGuild,
@@ -136,14 +137,24 @@ export function handleSocialAction(
         x.id === c.id ? { ...x, status: "claimed" } : x,
       );
       const { accepted } = enforceCapacity(p.resources, c.reward);
+      // Guild contribution gap closure: claiming a guild contract now
+      // credits the guild ledger (guildContributionTotal + log). This was
+      // missing — the guild contract loop didn't feed back into the
+      // collective until this fix.
+      const GUILD_CLAIM_CONTRIBUTION_POINTS = 5;
+      const playerWithResources = {
+        ...p,
+        resources: addPartialResources(p.resources, accepted),
+        guildContracts: nextContracts,
+      };
+      const playerWithGuild = appendGuildLedgerEntry(playerWithResources, {
+        amount: GUILD_CLAIM_CONTRIBUTION_POINTS,
+        reason: `Guild contract claimed: ${c.templateId ?? c.id}`,
+      });
       return {
         ...state,
         player: bumpRunInstability(
-          {
-            ...p,
-            resources: addPartialResources(p.resources, accepted),
-            guildContracts: nextContracts,
-          },
+          playerWithGuild,
           RUN_INSTABILITY_DELTA_GUILD_CLAIM,
           "Guild contract paid out — collective heat rises.",
         ),

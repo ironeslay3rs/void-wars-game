@@ -34,7 +34,11 @@
  * canon offers today, and shipping it first proves the architecture.
  */
 
-import type { FactionAlignment, PlayerState } from "@/features/game/gameTypes";
+import type {
+  FactionAlignment,
+  MissionOriginTagId,
+  PlayerState,
+} from "@/features/game/gameTypes";
 
 /** Always-on baseline tithe rate the Ledger charges on every War Exchange buy. */
 export const VISHRAVA_LEDGER_BUY_TITHE_BASE = 1.02;
@@ -142,4 +146,156 @@ export function getVishravaLedgerPressureCopy(
     sellMult,
     loadBearing: true,
   };
+}
+
+/* =====================================================================
+ * BONEHOWL SYNDICATE — Wrath / canon-locked
+ *
+ * Hunting bounty: missions whose origin tag resolves to a wrath-aligned
+ * Bonehowl source pay a small bounty bonus on every reward channel. The
+ * Bonehowl is the Bio empire's wrath institution; Bio operatives get
+ * the heaviest version (their own pack pays more for blood debts).
+ * ===================================================================*/
+
+export const BONEHOWL_BOUNTY_MULT_BASE = 1.03;
+export const BONEHOWL_BOUNTY_MULT_BIO = 1.06;
+export const BONEHOWL_BOUNTY_MULT_OUTSIDER = 1.02;
+
+const BONEHOWL_ORIGIN_TAGS: ReadonlySet<MissionOriginTagId> = new Set([
+  "bonehowl-remnant",
+]);
+
+export function isBonehowlOriginTag(
+  tagId: MissionOriginTagId | undefined,
+): boolean {
+  return tagId !== undefined && BONEHOWL_ORIGIN_TAGS.has(tagId);
+}
+
+export function getBonehowlBountyMultiplierForFaction(
+  faction: FactionAlignment,
+): number {
+  if (faction === "bio") return BONEHOWL_BOUNTY_MULT_BIO;
+  if (faction === "mecha" || faction === "pure") {
+    return BONEHOWL_BOUNTY_MULT_OUTSIDER;
+  }
+  return BONEHOWL_BOUNTY_MULT_BASE;
+}
+
+/**
+ * Composite bounty multiplier for the mission settle pipeline. Returns
+ * 1 unless the mission's origin tag is a Bonehowl source.
+ */
+export function getBonehowlBountyRewardMultiplier(
+  player: Pick<PlayerState, "factionAlignment">,
+  originTagId: MissionOriginTagId | undefined,
+): number {
+  if (!isBonehowlOriginTag(originTagId)) return 1;
+  return getBonehowlBountyMultiplierForFaction(player.factionAlignment);
+}
+
+/* =====================================================================
+ * MANDATE BUREAU — Sloth / game-specific
+ *
+ * Patience tax: when the player is carrying high voidInstability the
+ * Bureau levies a small reward malus on mission settlements ("the cycle
+ * has not yet permitted your settlement"). Mecha-aligned operatives —
+ * the Bureau's own — pay a softer rate.
+ *
+ * Threshold sits at 50/100 instability so it only fires when the
+ * player has clearly overcommitted, not on routine runs.
+ * ===================================================================*/
+
+export const MANDATE_BUREAU_TAX_THRESHOLD = 50;
+export const MANDATE_BUREAU_TAX_MULT_BASE = 0.97;
+export const MANDATE_BUREAU_TAX_MULT_MECHA = 0.99;
+
+export function getMandateBureauTaxMultiplier(
+  player: Pick<PlayerState, "factionAlignment" | "voidInstability">,
+): number {
+  if (player.voidInstability < MANDATE_BUREAU_TAX_THRESHOLD) return 1;
+  if (player.factionAlignment === "mecha") {
+    return MANDATE_BUREAU_TAX_MULT_MECHA;
+  }
+  return MANDATE_BUREAU_TAX_MULT_BASE;
+}
+
+/* =====================================================================
+ * INTI COURT — Gluttony / game-specific
+ *
+ * Tribute discount: Pure-aligned operatives ("the Court feeds its own
+ * first") pay less for Feast Hall offers. Outsiders pay the listed
+ * price; Pure operatives get a small discount on every cost component.
+ * ===================================================================*/
+
+export const INTI_COURT_DISCOUNT_PURE = 0.85;
+export const INTI_COURT_DISCOUNT_OUTSIDER = 1.0;
+
+export function getIntiCourtCostMultiplier(
+  faction: FactionAlignment,
+): number {
+  if (faction === "pure") return INTI_COURT_DISCOUNT_PURE;
+  return INTI_COURT_DISCOUNT_OUTSIDER;
+}
+
+/* =====================================================================
+ * OLYMPUS CONCORD — Envy / game-specific
+ *
+ * Intel premium: Bio-aligned operatives get a small condition-gain
+ * bonus on Mirror House deals (the Concord's intel network rewards
+ * its own Aegean inheritors). Outsiders see the listed gain.
+ * ===================================================================*/
+
+export const OLYMPUS_CONCORD_BONUS_BIO = 1.2;
+export const OLYMPUS_CONCORD_BONUS_OUTSIDER = 1.0;
+
+export function getOlympusConcordConditionMultiplier(
+  faction: FactionAlignment,
+): number {
+  if (faction === "bio") return OLYMPUS_CONCORD_BONUS_BIO;
+  return OLYMPUS_CONCORD_BONUS_OUTSIDER;
+}
+
+/* =====================================================================
+ * ASTARTE VEIL — Lust / game-specific
+ *
+ * Cleansing tax: every Velvet Den deal pays a small Veil cleansing
+ * premium on top of the listed cost. Bio-aligned operatives pay the
+ * lowest premium because the Veil is their institution.
+ * ===================================================================*/
+
+export const ASTARTE_VEIL_TAX_BASE = 1.05;
+export const ASTARTE_VEIL_TAX_BIO = 1.02;
+export const ASTARTE_VEIL_TAX_OUTSIDER = 1.04;
+
+export function getAstarteVeilTaxMultiplier(
+  faction: FactionAlignment,
+): number {
+  if (faction === "bio") return ASTARTE_VEIL_TAX_BIO;
+  if (faction === "mecha" || faction === "pure") {
+    return ASTARTE_VEIL_TAX_OUTSIDER;
+  }
+  return ASTARTE_VEIL_TAX_BASE;
+}
+
+/* =====================================================================
+ * PHAROS CONCLAVE — Pride / game-specific
+ *
+ * Registry surcharge: the Ivory Tower's Knight Prestige rite costs a
+ * small extra credit fee — the Conclave's solar registry never lets
+ * a transaction pass un-stamped. Mecha-aligned operatives pay the
+ * cheapest rate (the Conclave is their institution).
+ * ===================================================================*/
+
+export const PHAROS_CONCLAVE_REGISTRY_BASE = 30;
+export const PHAROS_CONCLAVE_REGISTRY_MECHA = 15;
+export const PHAROS_CONCLAVE_REGISTRY_OUTSIDER = 25;
+
+export function getPharosConclaveRegistryFee(
+  faction: FactionAlignment,
+): number {
+  if (faction === "mecha") return PHAROS_CONCLAVE_REGISTRY_MECHA;
+  if (faction === "bio" || faction === "pure") {
+    return PHAROS_CONCLAVE_REGISTRY_OUTSIDER;
+  }
+  return PHAROS_CONCLAVE_REGISTRY_BASE;
 }

@@ -5,6 +5,7 @@ import { handleHydrationAction } from "@/features/game/reducers/hydrationReducer
 import { handleManaAction } from "@/features/game/reducers/manaReducer";
 import { handleMetaAction } from "@/features/game/reducers/metaReducer";
 import { handleMissionAction } from "@/features/game/reducers/missionReducer";
+import { handlePantheonAction } from "@/features/game/reducers/pantheonReducer";
 import { handlePlayerIdentityAction } from "@/features/game/reducers/playerIdentityReducer";
 import { handleProgressionAction } from "@/features/game/reducers/progressionReducer";
 import { handleSocialAction } from "@/features/game/reducers/socialReducer";
@@ -20,6 +21,7 @@ const reducerHandlers = [
   handleProgressionAction,
   handleVoidPressureAction,
   handleManaAction,
+  handlePantheonAction,
   handleSocialAction,
   handleMissionAction,
   handleMetaAction,

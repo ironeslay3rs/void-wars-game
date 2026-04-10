@@ -2,6 +2,11 @@ import { describe, expect, it } from "vitest";
 import { gameReducer } from "@/features/game/gameActions";
 import { initialGameState } from "@/features/game/initialGameState";
 import type { GameState } from "@/features/game/gameTypes";
+import { PHAROS_CONCLAVE_REGISTRY_BASE } from "@/features/institutions/institutionalPressure";
+
+const IVORY_PRESTIGE_BASE_COST = 120;
+const IVORY_PRESTIGE_TOTAL_COST_UNBOUND =
+  IVORY_PRESTIGE_BASE_COST + PHAROS_CONCLAVE_REGISTRY_BASE;
 
 function withConvergedKnight(
   valor: number,
@@ -68,8 +73,13 @@ describe("REDEEM_RUNE_KNIGHT_VALOR", () => {
     expect(n.player.influence).toBe(5);
   });
 
-  it("ivory-prestige-rite spends valor and credits, restores condition", () => {
-    const s = withConvergedKnight(6, 200, 0, 0);
+  it("ivory-prestige-rite spends valor and credits (incl. Pharos registry fee), restores condition", () => {
+    // Player is unbound by default → Pharos surcharge is the base 30 cr.
+    // Total cost = 120 (base) + 30 (registry) = 150.
+    const startingCredits = 200;
+    const expectedRemainingCredits =
+      startingCredits - IVORY_PRESTIGE_TOTAL_COST_UNBOUND;
+    const s = withConvergedKnight(6, startingCredits, 0, 0);
     const p = { ...s.player, condition: 40 };
     const s2 = { ...s, player: p };
     const n = gameReducer(s2, {
@@ -77,11 +87,12 @@ describe("REDEEM_RUNE_KNIGHT_VALOR", () => {
       payload: "ivory-prestige-rite",
     });
     expect(n.player.mythicAscension.runeKnightValor).toBe(2);
-    expect(n.player.resources.credits).toBe(80);
+    expect(n.player.resources.credits).toBe(expectedRemainingCredits);
     expect(n.player.condition).toBe(55);
   });
 
-  it("ivory-prestige-rite noop when credits insufficient", () => {
+  it("ivory-prestige-rite noop when credits insufficient (under registry-included total)", () => {
+    // 50 credits is below the post-Pharos 150-credit total → noop.
     const s = withConvergedKnight(6, 50, 0, 0);
     const n = gameReducer(s, {
       type: "REDEEM_RUNE_KNIGHT_VALOR",

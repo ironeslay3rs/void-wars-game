@@ -9,6 +9,7 @@ import { getBrokersByDistrict } from "@/features/lore/brokerData";
 import { resourceCostShortfall } from "@/features/black-market/sinLaneDealHelpers";
 import { useGame } from "@/features/game/gameContext";
 import type { ResourceKey } from "@/features/game/gameTypes";
+import { getPharosConclaveRegistryFee } from "@/features/institutions/institutionalPressure";
 
 type Deal = {
   id: string;
@@ -63,10 +64,17 @@ export default function IvoryTowerScreen() {
   const credits = state.player.resources.credits ?? 0;
   const runeDust = state.player.resources.runeDust ?? 0;
   const mythic = state.player.mythicAscension;
+  // Pharos Conclave registry surcharge: extra credit fee on top of the
+  // base 120-credit prestige rite. Mecha-aligned operatives pay less
+  // (the Conclave is their institution).
+  const conclaveRegistryFee = getPharosConclaveRegistryFee(
+    state.player.factionAlignment,
+  );
+  const ivoryRiteCreditsCost = 120 + conclaveRegistryFee;
   const ivoryValorAffordable =
     mythic.convergencePrimed &&
     mythic.runeKnightValor >= 4 &&
-    credits >= 120;
+    credits >= ivoryRiteCreditsCost;
 
   function canAfford(cost: Deal["cost"]) {
     if ((cost.credits ?? 0) > credits) return false;
@@ -76,11 +84,21 @@ export default function IvoryTowerScreen() {
 
   function handlePurchase(deal: Deal) {
     if (!canAfford(deal.cost)) return;
-    if (deal.cost.credits) dispatch({ type: "ADD_RESOURCE", payload: { key: "credits", amount: -deal.cost.credits } });
-    if (deal.cost.runeDust) dispatch({ type: "ADD_RESOURCE", payload: { key: "runeDust", amount: -deal.cost.runeDust } });
-    if (deal.grant.condition) dispatch({ type: "ADJUST_CONDITION", payload: deal.grant.condition });
-    if (deal.grant.runeDust) dispatch({ type: "ADD_RESOURCE", payload: { key: "runeDust", amount: deal.grant.runeDust } });
-    if (deal.grant.emberCore) dispatch({ type: "ADD_RESOURCE", payload: { key: "emberCore", amount: deal.grant.emberCore } });
+    // Atomic STRIKE_BLACK_MARKET_DEAL — replaces the previous hand-wired
+    // ADD_RESOURCE / ADJUST_CONDITION dispatch chain. Cost + grant land
+    // in one reducer pass.
+    dispatch({
+      type: "STRIKE_BLACK_MARKET_DEAL",
+      payload: {
+        dealId: `ivory-${deal.id}`,
+        costs: deal.cost as Partial<Record<ResourceKey, number>>,
+        resourceGains: {
+          ...(deal.grant.runeDust ? { runeDust: deal.grant.runeDust } : {}),
+          ...(deal.grant.emberCore ? { emberCore: deal.grant.emberCore } : {}),
+        },
+        conditionGain: deal.grant.condition,
+      },
+    });
     setToast(`${deal.title} — ascension recorded.`);
     window.setTimeout(() => setToast(null), 3000);
   }
@@ -131,7 +149,13 @@ export default function IvoryTowerScreen() {
             <div className="mt-4 space-y-1">
               <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">Cost</div>
               <div className="text-sm text-amber-200">
-                4 Knight valor · 120 credits
+                4 Knight valor · {ivoryRiteCreditsCost} credits
+              </div>
+              <div className="text-[10px] text-amber-100/55">
+                Base 120 cr + Pharos Conclave registry fee {conclaveRegistryFee} cr
+                {state.player.factionAlignment === "mecha"
+                  ? " (Mecha seat — cheapest)"
+                  : ""}
               </div>
               <div className="text-[11px] text-white/45">
                 You hold {mythic.runeKnightValor} valor · {credits.toLocaleString()} credits
@@ -148,7 +172,9 @@ export default function IvoryTowerScreen() {
               onClick={handleKnightPrestigeRite}
               className="mt-4 min-h-[44px] w-full touch-manipulation rounded-xl border border-amber-400/45 bg-amber-500/20 text-xs font-black uppercase tracking-[0.12em] text-amber-100 transition hover:bg-amber-500/30 disabled:cursor-not-allowed disabled:opacity-40 sm:max-w-md"
             >
-              {ivoryValorAffordable ? "Record rite" : "Need 4 valor and 120 credits"}
+              {ivoryValorAffordable
+                ? "Record rite"
+                : `Need 4 valor and ${ivoryRiteCreditsCost} credits`}
             </button>
             {!ivoryValorAffordable ? (
               <p className="mt-2 text-[11px] leading-snug text-rose-200/80">
@@ -156,7 +182,9 @@ export default function IvoryTowerScreen() {
                   mythic.runeKnightValor < 4
                     ? `Knight valor ${mythic.runeKnightValor}/4`
                     : null,
-                  credits < 120 ? `Credits ${credits}/120` : null,
+                  credits < ivoryRiteCreditsCost
+                    ? `Credits ${credits}/${ivoryRiteCreditsCost}`
+                    : null,
                 ]
                   .filter(Boolean)
                   .join(" · ")}

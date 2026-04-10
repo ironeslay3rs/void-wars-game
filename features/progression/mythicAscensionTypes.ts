@@ -9,6 +9,14 @@ export type MythicAscensionState = {
   /** Phase 9 bookmark — hybrid ladder primed for Rune Knight / Convergence arc staging. */
   convergencePrimed: boolean;
   /**
+   * T5 #19 / Convergence reveal: true when all three conditions fire
+   * (convergencePrimed + mismatchEncountered + 3 schools exposed). Once
+   * set, the narrative reveal has occurred and the player enters the
+   * convergence endgame. The actual payoff mechanics are M5 work; this
+   * flag is the trigger foundation.
+   */
+  convergenceRevealed: boolean;
+  /**
    * Phase 9 — Rune Knight prestige ledger (ranked/tournament SR wins while converged).
    * Display-only ladder fuel until full Knighthood mechanics ship.
    */
