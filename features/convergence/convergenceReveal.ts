@@ -17,6 +17,7 @@
  */
 
 import type { GameState, PlayerState } from "@/features/game/gameTypes";
+import { CONVERGENCE_MANA_MAX_BONUS } from "@/features/convergence/convergencePayoff";
 
 export const CONVERGENCE_REVEAL_HEADLINE =
   "The three paths are one. The separation was a lie.";
@@ -63,12 +64,17 @@ export function applyConvergenceReveal(
   const player = state.player;
   if (!canTriggerConvergenceReveal(player)) return player;
 
+  // Convergence payoff: one-time mana max boost on the reveal itself.
+  const boostedManaMax = player.manaMax + CONVERGENCE_MANA_MAX_BONUS;
+
   return {
     ...player,
     mythicAscension: {
       ...player.mythicAscension,
       convergenceRevealed: true,
     },
+    manaMax: boostedManaMax,
+    mana: Math.min(player.mana, boostedManaMax),
     lastAnomalyToast: {
       text: CONVERGENCE_REVEAL_HEADLINE,
       school: player.factionAlignment === "unbound" ? "bio" : player.factionAlignment,

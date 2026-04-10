@@ -46,6 +46,7 @@ import {
   getPantheonMatchRewardMultiplier,
 } from "@/features/pantheons/pantheonReward";
 import { applyPantheonPerkToPlayer } from "@/features/pantheons/pantheonPerks";
+import { getConvergenceRewardMultiplier } from "@/features/convergence/convergencePayoff";
 import {
   getBonehowlBountyRewardMultiplier,
   getMandateBureauTaxMultiplier,
@@ -717,12 +718,14 @@ export function processMissionQueue(state: GameState, now: number): GameState {
     );
     const mandateBureauTaxMult = getMandateBureauTaxMultiplier(nextPlayer);
     const runeSetMult = getRuneSetRewardMultiplier(nextPlayer.runeMastery);
+    const convergenceMult = getConvergenceRewardMultiplier(nextPlayer);
     const pantheonCompositeMult =
       pantheonBlessingMult *
       pantheonMatchMult *
       bonehowlBountyMult *
       mandateBureauTaxMult *
-      runeSetMult;
+      runeSetMult *
+      convergenceMult;
     const pantheonBonusActive = pantheonCompositeMult !== 1;
     const rewardWithPantheonBlessing = pantheonBonusActive
       ? {
