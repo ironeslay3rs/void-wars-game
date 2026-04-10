@@ -7,7 +7,10 @@ import {
   SHELL_ABILITIES,
   SURGE_DAMAGE_BONUS_PCT,
   SURGE_DURATION_MS,
+  WOLF_LEAP_DAMAGE_REDUCTION_PCT,
+  WOLF_LEAP_DURATION_MS,
   getActiveShellDamageBonusPct,
+  getActiveShellDamageReductionPct,
   getShellAbility,
   pruneExpiredShellBuffs,
   type ShellBuff,
@@ -46,8 +49,8 @@ describe("SHELL_ABILITIES table", () => {
 describe("pruneExpiredShellBuffs", () => {
   it("drops buffs whose expiresAt is in the past", () => {
     const buffs: ShellBuff[] = [
-      { abilityId: "surge", expiresAt: 100, damageBonusPct: 50 },
-      { abilityId: "surge", expiresAt: 200, damageBonusPct: 50 },
+      { abilityId: "surge", expiresAt: 100, damageBonusPct: 50, damageReductionPct: 0 },
+      { abilityId: "surge", expiresAt: 200, damageBonusPct: 50, damageReductionPct: 0 },
     ];
     const pruned = pruneExpiredShellBuffs(buffs, 150);
     expect(pruned).toHaveLength(1);
@@ -56,7 +59,7 @@ describe("pruneExpiredShellBuffs", () => {
 
   it("drops a buff exactly at expiry (strict greater-than)", () => {
     const buffs: ShellBuff[] = [
-      { abilityId: "surge", expiresAt: 100, damageBonusPct: 50 },
+      { abilityId: "surge", expiresAt: 100, damageBonusPct: 50, damageReductionPct: 0 },
     ];
     expect(pruneExpiredShellBuffs(buffs, 100)).toHaveLength(0);
   });
@@ -69,11 +72,37 @@ describe("getActiveShellDamageBonusPct", () => {
 
   it("sums active damage bonuses (and ignores expired)", () => {
     const buffs: ShellBuff[] = [
-      { abilityId: "surge", expiresAt: 50, damageBonusPct: 50 },
-      { abilityId: "surge", expiresAt: 200, damageBonusPct: 30 },
-      { abilityId: "surge", expiresAt: 300, damageBonusPct: 20 },
+      { abilityId: "surge", expiresAt: 50, damageBonusPct: 50, damageReductionPct: 0 },
+      { abilityId: "surge", expiresAt: 200, damageBonusPct: 30, damageReductionPct: 0 },
+      { abilityId: "surge", expiresAt: 300, damageBonusPct: 20, damageReductionPct: 0 },
     ];
     expect(getActiveShellDamageBonusPct(buffs, 100)).toBe(50);
+  });
+});
+
+describe("Wolf-Leap ability", () => {
+  it("has affordable mana cost and shorter duration than Surge", () => {
+    expect(SHELL_ABILITIES["wolf-leap"].manaCost).toBeLessThanOrEqual(15);
+    expect(WOLF_LEAP_DURATION_MS).toBeLessThan(SURGE_DURATION_MS);
+  });
+
+  it("grants damage reduction, not damage bonus", () => {
+    expect(WOLF_LEAP_DAMAGE_REDUCTION_PCT).toBeGreaterThan(0);
+  });
+
+  it("getActiveShellDamageReductionPct returns the reduction from active wolf-leap buffs", () => {
+    const buffs: ShellBuff[] = [
+      { abilityId: "wolf-leap", expiresAt: 200, damageBonusPct: 0, damageReductionPct: 30 },
+    ];
+    expect(getActiveShellDamageReductionPct(buffs, 100)).toBe(30);
+    expect(getActiveShellDamageReductionPct(buffs, 250)).toBe(0); // expired
+  });
+
+  it("getActiveShellDamageReductionPct returns 0 when only surge buffs are active", () => {
+    const buffs: ShellBuff[] = [
+      { abilityId: "surge", expiresAt: 200, damageBonusPct: 50, damageReductionPct: 0 },
+    ];
+    expect(getActiveShellDamageReductionPct(buffs, 100)).toBe(0);
   });
 });
 
@@ -111,7 +140,7 @@ describe("ACTIVATE_SHELL_ABILITY reducer", () => {
     const start = makeState({
       mana: 50,
       activeShellBuffs: [
-        { abilityId: "surge", expiresAt: 1_000_500, damageBonusPct: 50 },
+        { abilityId: "surge", expiresAt: 1_000_500, damageBonusPct: 50, damageReductionPct: 0 },
       ],
     });
     const next = gameReducer(start, {
@@ -126,11 +155,53 @@ describe("ACTIVATE_SHELL_ABILITY reducer", () => {
     expect(next.player.mana).toBe(50 - SHELL_ABILITIES.surge.manaCost);
   });
 
+  it("activating Wolf-Leap spends mana and adds a buff with damageReductionPct", () => {
+    const start = makeState({
+      mana: 30,
+      manaMax: 50,
+      activeShellBuffs: [],
+    });
+    const next = gameReducer(start, {
+      type: "ACTIVATE_SHELL_ABILITY",
+      payload: { abilityId: "wolf-leap", nowMs: 1_000_000 },
+    });
+    expect(next.player.mana).toBe(30 - SHELL_ABILITIES["wolf-leap"].manaCost);
+    expect(next.player.activeShellBuffs).toHaveLength(1);
+    expect(next.player.activeShellBuffs[0]).toMatchObject({
+      abilityId: "wolf-leap",
+      expiresAt: 1_000_000 + WOLF_LEAP_DURATION_MS,
+      damageBonusPct: 0,
+      damageReductionPct: WOLF_LEAP_DAMAGE_REDUCTION_PCT,
+    });
+  });
+
+  it("Surge and Wolf-Leap can be active simultaneously (no stack conflict)", () => {
+    const start = makeState({
+      mana: 50,
+      manaMax: 50,
+      activeShellBuffs: [
+        {
+          abilityId: "surge",
+          expiresAt: 1_005_000,
+          damageBonusPct: SURGE_DAMAGE_BONUS_PCT,
+          damageReductionPct: 0,
+        },
+      ],
+    });
+    const next = gameReducer(start, {
+      type: "ACTIVATE_SHELL_ABILITY",
+      payload: { abilityId: "wolf-leap", nowMs: 1_000_000 },
+    });
+    expect(next.player.activeShellBuffs).toHaveLength(2);
+    const ids = next.player.activeShellBuffs.map((b) => b.abilityId).sort();
+    expect(ids).toEqual(["surge", "wolf-leap"]);
+  });
+
   it("prunes expired buffs from other ability types when activating Surge", () => {
     const start = makeState({
       mana: 50,
       activeShellBuffs: [
-        { abilityId: "surge", expiresAt: 999_000, damageBonusPct: 50 },
+        { abilityId: "surge", expiresAt: 999_000, damageBonusPct: 50, damageReductionPct: 0 },
       ],
     });
     const next = gameReducer(start, {

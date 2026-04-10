@@ -3,7 +3,10 @@ import type { CreatureDefinition } from "@/features/combat/creatureData";
 import { getPathAlignedFieldLootMultiplier } from "@/features/economy/pathGatheringYield";
 import { rollVoidFieldLoot } from "@/features/void-maps/rollVoidFieldLoot";
 import { getPlayerLoadoutCombatModifiers } from "@/features/combat/loadoutCombatStats";
-import { getActiveShellDamageBonusPct } from "@/features/combat/shellAbilities";
+import {
+  getActiveShellDamageBonusPct,
+  getActiveShellDamageReductionPct,
+} from "@/features/combat/shellAbilities";
 
 export type EncounterOutcome = "victory" | "defeat" | "retreat";
 
@@ -89,9 +92,22 @@ export function resolveEncounter(params: {
 
   const victory = roll01 <= winChance;
 
+  // M3: Wolf-Leap (and future defensive buffs) reduce incoming condition
+  // cost from creature encounters. The reduction % applies to the final
+  // condition cost after all other multipliers.
+  const defReductionPct = getActiveShellDamageReductionPct(
+    player.activeShellBuffs ?? [],
+    Date.now(),
+  );
+  const defMult = Math.max(0, 1 - defReductionPct / 100);
+
   const baseCost = creature.rarity === "rare" ? 12 : creature.rarity === "uncommon" ? 8 : 5;
   const conditionCost = clamp(
-    Math.round((baseCost + (1 - conditionFactor) * 8) * loadout.conditionCostMultiplier),
+    Math.round(
+      (baseCost + (1 - conditionFactor) * 8) *
+        loadout.conditionCostMultiplier *
+        defMult,
+    ),
     3,
     25,
   );

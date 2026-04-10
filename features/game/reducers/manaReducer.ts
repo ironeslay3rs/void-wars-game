@@ -2,6 +2,7 @@ import {
   getShellAbility,
   pruneExpiredShellBuffs,
   SURGE_DAMAGE_BONUS_PCT,
+  WOLF_LEAP_DAMAGE_REDUCTION_PCT,
 } from "@/features/combat/shellAbilities";
 import { clamp } from "@/features/game/gameMissionUtils";
 import type { GameAction, GameState } from "@/features/game/gameTypes";
@@ -172,7 +173,12 @@ export function handleManaAction(
             {
               abilityId: ability.id,
               expiresAt: nowMs + ability.durationMs,
-              damageBonusPct: SURGE_DAMAGE_BONUS_PCT,
+              damageBonusPct:
+                ability.id === "surge" ? SURGE_DAMAGE_BONUS_PCT : 0,
+              damageReductionPct:
+                ability.id === "wolf-leap"
+                  ? WOLF_LEAP_DAMAGE_REDUCTION_PCT
+                  : 0,
             },
           ],
         },
