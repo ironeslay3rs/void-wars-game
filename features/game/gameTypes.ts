@@ -817,6 +817,10 @@ export type GameAction =
       };
     }
   | {
+      type: "TRIGGER_CONVERGENCE_REVEAL";
+      payload?: { nowMs?: number };
+    }
+  | {
       type: "STRIKE_BLACK_MARKET_DEAL";
       payload: {
         /** Stable id for the deal — used for telemetry + toast keying. */

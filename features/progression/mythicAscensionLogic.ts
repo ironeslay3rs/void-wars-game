@@ -9,6 +9,7 @@ export function initialMythicAscension(): MythicAscensionState {
     l3RareRuneSetUnlocked: false,
     runeCrafterLicense: false,
     convergencePrimed: false,
+    convergenceRevealed: false,
     runeKnightValor: 0,
     arenaRankedSeason1Rating: 1180,
     arenaEdgeSigils: 0,
@@ -23,6 +24,7 @@ export function normalizeMythicAscension(raw: unknown): MythicAscensionState {
     l3RareRuneSetUnlocked: o.l3RareRuneSetUnlocked === true,
     runeCrafterLicense: o.runeCrafterLicense === true,
     convergencePrimed: o.convergencePrimed === true,
+    convergenceRevealed: o.convergenceRevealed === true,
     runeKnightValor:
       typeof o.runeKnightValor === "number" && Number.isFinite(o.runeKnightValor)
         ? Math.max(0, Math.min(99, Math.floor(o.runeKnightValor)))

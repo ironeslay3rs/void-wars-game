@@ -17,6 +17,7 @@ import {
 import { tryInstallMinorRune } from "@/features/mastery/runeMasteryLogic";
 import { getPrimaryRuneSchool } from "@/features/mastery/runeMasteryTypes";
 import { applyCrossSchoolExposureToPlayer } from "@/features/convergence/convergenceSeed";
+import { applyConvergenceReveal } from "@/features/convergence/convergenceReveal";
 import { getPharosConclaveRegistryFee } from "@/features/institutions/institutionalPressure";
 import {
   MANA_HYBRID_INSTALL_COST_BASE,
@@ -244,6 +245,15 @@ export function handleProgressionAction(
       );
       if (nextPlayer === state.player) return state;
       return { ...state, player: nextPlayer };
+    }
+
+    case "TRIGGER_CONVERGENCE_REVEAL": {
+      const revealedPlayer = applyConvergenceReveal(
+        state,
+        action.payload?.nowMs,
+      );
+      if (revealedPlayer === state.player) return state;
+      return { ...state, player: revealedPlayer };
     }
 
     case "CLEAR_LAST_RUNE_INSTALL_OUTCOME":
