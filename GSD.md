@@ -34,7 +34,7 @@ Working doc for **closing loops**, **auditing flows**, and **shipping incrementa
 | **Path districts** | `/bazaar/mecha-foundry`, `/bazaar/pure-enclave`, `/bazaar/biotech-labs` | Path-specific UI + data in `features/*` | `SET_MECHA_STATUS` (cosmetic), biotech navigates to legacy `/hunt` | 🟢 | Promoted 2026-04-10 after §4 audit (see session log). Pure-enclave clean display, biotech-labs wires a real hunt flow, mecha-foundry has Finding 1 (cosmetic-only dispatch) filed but not blocking |
 | **Guild** | `/guild`, `/bazaar/mercenary-guild` | `factionWorldLogic`, contracts | `GUILD_*` actions | 🟡 | Post/claim contract path; pledge theater copy |
 | **Loadout** | `/loadout` | Loadout slots, combat modifiers | `EQUIP_LOADOUT_ITEM` | 🟢 | Equip → void field / encounter reads modifiers |
-| **Mastery / Mythic** | `/mastery` | `runeMastery*`, `mythicAscension*` | Depth, convergence, valor redemption | 🟡 | Functional depth exists; full mastery layer still shallow (see gaps) |
+| **Mastery / Mythic** | `/mastery` | `runeMastery*`, `mythicAscension*` | `INSTALL_MINOR_RUNE`, `MANA_INSTALL_MINOR_RUNE`, `ATTEMPT_MYTHIC_UNLOCK`, `REDEEM_RUNE_KNIGHT_VALOR` | 🟢 | Promoted 2026-04-10 after §4 audit. Rune installs carry capacity costs, hybrid drain gates off-primary, mana-fueled soak, rune set detection rewards coherent builds, doctrine milestones teach the path. |
 | **Recovery** | `/recover`, `/status`, Feast Hall | Survival ticks, `RECOVER_CONDITION` | Condition, hunger, infusion decay | 🟢 | Recovery clears or softens pressure meters |
 | **Teleport / deploy** | `/bazaar/teleport-gate`, `/deploy-into-void` | Gate state, zone selection | `unlockedRoutes`, deploy binding | 🟡 | Gate open flow → void entry |
 
@@ -1196,3 +1196,75 @@ sister surface to the AFK queue, not deprecated debt. Done in the next
 edit pass.
 
 **No findings filed.** Read-only audit, all green.
+
+---
+
+## 2026-04-10 — Audit: Mastery / Mythic
+
+Ran the §4 audit protocol against the §1 row "Mastery / Mythic"
+(currently 🟡).
+
+**Step 1 — Trace entry.** `app/mastery/page.tsx` is 11 LOC, server
+component, mounts `<MasteryScreen />`. Thin. ✅
+
+**Step 2 — Trace state.** Dispatch types reachable from Mastery screen +
+children (MasteryDepthPanel, MythicAscensionPanel):
+- `INSTALL_MINOR_RUNE` (progressionReducer:144) ✅
+- `MANA_INSTALL_MINOR_RUNE` (progressionReducer:170) ✅ — new from this PR
+- `CLEAR_LAST_RUNE_INSTALL_OUTCOME` (progressionReducer:249) ✅
+- `ATTEMPT_MYTHIC_UNLOCK` (progressionReducer:316) ✅
+- `REDEEM_RUNE_KNIGHT_VALOR` (progressionReducer:392) ✅
+
+All 5 resolve to real reducer cases in `progressionReducer.ts`.
+
+**Step 3 — Trace resources.** The mastery screen reads:
+- `runeMastery` (depth, minors, capacity, hybrid stacks)
+- `mythicAscension` (convergence, valor, gates)
+- `lastRuneInstallOutcome` (toast feedback)
+- `factionAlignment` (doctrine milestones display)
+- `masteryProgress` (hub cards)
+
+Rune installs consume capacity and (with the new mana path) spend
+mana. Mythic unlocks consume mastery progress, rune dust, or valor.
+Every UI chip maps to a real grant/spend. The deepening-pass rune
+set detection (T3 #12) adds an "Active rune sets" chip strip to
+MasteryDepthPanel showing composite reward bonus — that chip reads
+from `detectRuneSets(runeMastery)` which is test-pinned. No orphan
+UI found.
+
+**Step 4 — Trace return.** Install outcome flows to
+`lastRuneInstallOutcome` and is rendered by a toast-style feedback
+panel inside MasteryDepthPanel. Mythic gate breakthroughs write to
+`lastMythicGateBreakthrough` and are rendered by a dedicated panel.
+Knight valor redemptions set `condition` or `masteryProgress` and
+the change is visible immediately on the same screen.
+
+**Step 5 — Canon naming.** `grep -i spirit` across
+`components/mastery/**` and `features/mastery/**` → **0 hits**.
+Canon-clean. The screen uses Bio / Mecha / Pure naming throughout.
+
+**Step 6 — Verdict.**
+
+| Concern | Result |
+|---|---|
+| Route thin (11 LOC, mounts screen component) | ✅ |
+| All 5 dispatch types resolve to real reducer cases | ✅ |
+| Every UI chip maps to a real state change | ✅ |
+| Rune install feedback (lastRuneInstallOutcome) renders | ✅ |
+| Mythic gate feedback (lastMythicGateBreakthrough) renders | ✅ |
+| New mana install path wired (from this PR) | ✅ |
+| Rune set detection strip wired (from this PR) | ✅ |
+| Canon naming clean | ✅ |
+
+**Status promotion: Mastery / Mythic 🟡 → 🟢.** The mastery loop is
+now functionally deep enough to promote: rune installs carry real
+capacity costs, hybrid drain mechanics gate off-primary installs,
+mana-funded installs soak the drain, rune set detection rewards
+coherent builds, and doctrine milestones teach the path. The §3 gap
+"Mastery functional layer" that kept this row at 🟡 is now mostly
+addressed by the T1 #4 + T3 #12 slices from this PR.
+
+**Remaining depth work (not blocking promotion):**
+- Hybrid respec (not yet implemented, lives in M3+ mastery backlog)
+- Rune set bonuses beyond mission rewards (combat + crafting, M3+)
+- Per-school passive mastery effects (differentiate beyond yield mult)
