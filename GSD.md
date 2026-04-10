@@ -22,7 +22,7 @@ Working doc for **closing loops**, **auditing flows**, and **shipping incrementa
 | **Onboarding** | `/new-game`, `/` | `features/game/createNewPlayer`, `gameContext`, `GameOnboardingRouteGuard` | `characterCreated`, path pick, starter resources | 🟢 | New save → cannot skip to home without completing flow |
 | **Home command deck** | `/home` | `HomeHudClient`, `MissionPanel`, `MainMenuRightRail`, `gameSelectors` | Readiness, doctrine strip, ascension step, strain | 🟢 | Open home → panels render; links resolve |
 | **Mission queue (AFK)** | `/missions` | `missionRunner`, `gameMissionUtils`, `PROCESS_MISSION_QUEUE` | Queue, timers, `RESOLVE_HUNT`, rewards, strain | 🟢 | Promoted 2026-04-09 after §4 audit (see session log). Queue mission → auto-resolves on tick → resources/XP/strain update; capacity penalty wired both ends; convergence seed fires |
-| **Hunt resolve (legacy path)** | `/hunt` | `app/hunt/page.tsx`, encounter flow | Condition, loot, `RESOLVE_HUNT` | 🟡 | Confirm still consistent with mission definitions |
+| **Hunt resolve (encounter combat path)** | `/hunt` | `app/hunt/page.tsx`, encounter flow | `ADJUST_CONDITION`, `ADD_FIELD_LOOT`, `GAIN_RANK_XP`, `RESOLVE_HUNT` | 🟢 | Promoted 2026-04-10 after §4 audit (see session log). Intentional parallel path to AFK queue — owns the encounter combat narrative + two-stream reward shape (encounter loot + contract reward). Two real callers (MissionsScreen + biotech-labs). |
 | **Void field (realtime shell)** | `/void-field`, `/deploy-into-void/field`, `/bazaar/void-field` | `features/void-maps/`, `VoidRealtimeBridge`, `rollVoidFieldLoot`, `resolveAuthoritativeMobLoot` | Deploy, `ADD_FIELD_LOOT`, `APPLY_VOID_INSTABILITY_DELTA`, extraction | 🟢 | Server mob loot parity closed Phase 8: bridge falls back to client roll on silent `mob_defeated`. Deploy → loot → extract → ledger + strain still smokes the same way |
 | **Void field boss** | `/void-field/boss-encounter` | Boss flow + loot | Boss rewards, condition | 🟡 | Single path smoke after field changes |
 | **Exploration / biotech lead** | `/bazaar` map → biotech, `ExplorationPanel` | `START_EXPLORATION_PROCESS`, `CLAIM_EXPLORATION_REWARD` | Timed process, hunger cost, infusion tithe | 🟡 | Start sweep → wait/resolve → claim → state updates |
@@ -1112,3 +1112,87 @@ even if individual buttons are softer.
   index page, so this is a project-wide convention drift, not a new
   violation. Worth a separate "extract screen components from app/ pages"
   refactor when there's appetite.
+
+---
+
+## 2026-04-10 — Audit: Hunt resolve (legacy /hunt path)
+
+Ran the §4 audit protocol against the §1 row "Hunt resolve (legacy path)"
+(currently 🟡). The slice originally proposed consolidating /hunt into
+/missions or removing it entirely. The audit pivots that recommendation:
+**/hunt is NOT dead code — it's a parallel encounter-combat path with
+unique value.** Consolidation would remove live gameplay.
+
+**Step 1 — Trace entry.** `app/hunt/page.tsx` is 225 LOC, `"use client"`,
+contains inline JSX + hooks. Reads `missionId`, `zone`, and `return`
+search params from the URL. Falls back to defaults if missing.
+
+**Step 2 — Trace state.** Dispatches:
+- `ADJUST_CONDITION` (encounter damage)
+- `ADD_FIELD_LOOT` (per resource line in the rolled loot)
+- `GAIN_RANK_XP` (on victory)
+- `RESOLVE_HUNT` (final resolution; handled in `missionReducer.ts`)
+
+All four exist in real reducer cases. The 2026-04-09 Mission queue (AFK)
+audit noted that `RESOLVE_HUNT` is "legacy /hunt page only — NOT used by
+/missions". Confirmed: the AFK queue uses its own settle pipeline,
+`/hunt` uses `RESOLVE_HUNT`. Two parallel paths.
+
+**Step 3 — Trace resources.** The encounter resolution flow:
+1. `resolveEncounter({ player, creature, seed })` from
+   `features/combat/encounterEngine.ts` returns outcome + loot + XP.
+2. The page dispatches damage → loot → XP → `RESOLVE_HUNT` in sequence.
+3. The `RESOLVE_HUNT` handler in `missionReducer.ts` consumes the
+   contract reward (separate from the rolled encounter loot — both
+   are granted).
+
+**Finding A — distinct from the AFK queue.** The /hunt path produces
+TWO reward streams per encounter: the rolled encounter loot (via
+`ADD_FIELD_LOOT`) AND the contract reward (via `RESOLVE_HUNT`). The
+AFK mission queue produces ONLY the contract reward. This is a real
+gameplay difference, not a duplication.
+
+**Step 4 — Trace return.** After `phase === "done"`, the page renders
+`<HuntResult />` with the encounter creature, narrative, loot, XP,
+condition cost, contract resources, and a return link. The return link
+goes to whatever the caller passed in `?return=...` or `/home` by
+default.
+
+**Step 5 — Canon naming.** `grep -i spirit` over `app/hunt/**` → 0 hits.
+Canon-clean.
+
+**Callers (real, in-use):**
+- `components/missions/MissionsScreen.tsx` — links to `/hunt?missionId=...`
+  for some mission types as a manual encounter alternative to the AFK queue.
+- `app/bazaar/biotech-labs/page.tsx` — `handleResolveFirstHunt()` routes to
+  `/hunt?missionId=bio-hunt-specimen&zone=howling-scar` as the canonical
+  way to resolve a biotech specimen lead.
+
+**Step 6 — Verdict.**
+
+  | Concern | Result |
+  |---|---|
+  | Routes resolve | ✅ |
+  | All dispatches resolve to real reducer cases | ✅ |
+  | Encounter combat narration is genuinely unique to this path | ✅ |
+  | Two callers in production code (Missions + biotech-labs) | ✅ |
+  | Canon naming clean | ✅ |
+  | RESOLVE_HUNT is the only consumer of the action — not orphaned | ✅ |
+  | Consolidation feasibility | ❌ — see below |
+
+**Status promotion: Hunt resolve (legacy path) 🟡 → 🟢.** Promoted with the
+explicit verdict that **/hunt is intentionally a parallel path**, not legacy
+debt. The original "consolidate or remove" framing was wrong:
+
+1. The encounter combat narrative + creature engagement loop only exists
+   on `/hunt`. Removing it would delete a player-facing surface.
+2. Two real callers depend on the route.
+3. The two-stream reward model (encounter loot + contract reward) is a
+   distinct economic shape, not duplication.
+
+**Recommended forward path:** rename the §1 row from "Hunt resolve (legacy
+path)" to "Hunt resolve (encounter combat path)" to reflect that this is a
+sister surface to the AFK queue, not deprecated debt. Done in the next
+edit pass.
+
+**No findings filed.** Read-only audit, all green.
