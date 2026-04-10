@@ -29,7 +29,7 @@ Working doc for **closing loops**, **auditing flows**, and **shipping incrementa
 | **Arena** | `/arena`, `/arena/match`, `/bazaar/arena` | `features/combat`, arena SR, mythic valor | `APPLY_ARENA_RANKED_SR_DELTA`, valor gains when converged | 🟢 | Match → SR/valor change where applicable |
 | **War Exchange** | `/bazaar/war-exchange` | `marketActions`, `warDemandMarket`, `warEconomy` | `MARKET_BUY` / `MARKET_SELL`, demand multipliers | 🟢 | Buy/sell → credits + capacity enforced |
 | **Golden Bazaar (void market)** | `/bazaar/black-market/golden-bazaar`, `/bazaar/void-market` | `VOID_MARKET_TRADE`, listings | Trade execution | 🟢 | Sell credits now apply `war.sellMult` in reducer (parity with UI); disabled buttons show shortfall copy |
-| **Black Market sin venues** | `/bazaar/black-market/*` | District screens, feast hall, etc. | `USE_FEAST_HALL_OFFER`, district state | 🟡 | Each venue: link in + primary action works or shows honest lock |
+| **Black Market sin venues** | `/bazaar/black-market/*` | District screens, feast hall, etc. | `USE_FEAST_HALL_OFFER`, `VOID_MARKET_TRADE`, `ADD_RESOURCE`, `ADJUST_CONDITION`, `ADJUST_HUNGER`, `REDEEM_RUNE_KNIGHT_VALOR` | 🟢 | Promoted 2026-04-09 after §4 audit (see session log). All 7 sin lanes wire cost+grant to real reducers; shortfall + cooldown copy honest; BrokerCard institution chip null-safe across 13 brokers (8 importers, test-pinned) |
 | **Crafting District** | `/bazaar/crafting-district` | `craftActions`, `recipeData`, work orders | `CRAFT_RECIPE`, work order progress | 🟢 | Craft success/fail → mats + infusion; work order ticks |
 | **Path districts** | `/bazaar/mecha-foundry`, `/bazaar/pure-enclave`, `/bazaar/biotech-labs` | Path-specific UI + data in `features/*` | Varies by screen | 🟡 | Per-screen: one primary action + resource change |
 | **Guild** | `/guild`, `/bazaar/mercenary-guild` | `factionWorldLogic`, contracts | `GUILD_*` actions | 🟡 | Post/claim contract path; pledge theater copy |
@@ -151,7 +151,7 @@ WIP audit + 16 commits landed on `integrate-home-guide`. `npx tsc --noEmit` clea
 **Lore + brokers (`399926e`)**
 - New `features/lore/` (broker, broker interaction, canon lines, district, market events, nation, pressure voice, puppy onboarding, resource flavor, settlement flavor).
 - New shared components: `BrokerCard`, `BrokerInteractionModal`, `CanonQuote`, `LoadingQuote`, `ResourceTooltip`, `ScreenDataStatStrip`, `ScreenDataManualSections`.
-- BrokerCard rolled into 9 district screens (Arena, Ivory Tower, Mirror House, Silent Garden, Velvet Den, Golden Bazaar, Black Market Map, Hunting Ground, Inventory).
+- BrokerCard rolled into 8 district screens (Arena, Feast Hall via FeastHallBrokers, Mirror House, Velvet Den, Golden Bazaar, Ivory Tower, Silent Garden, Hunting Ground). *(Corrected 2026-04-09 by the Black Market sin venues audit — original entry over-counted to 9 by listing Black Market Map and Inventory, neither of which actually imports BrokerCard. See the audit session log below for the grep evidence.)*
 
 **Convergence seed (`7d7c721`, M5 prep)**
 - `features/convergence/{convergenceSeed,anomalyFlavorData}.ts` + `AnomalyToast`. Architecture in place; no reducer writes to it yet.
@@ -588,3 +588,410 @@ is now exhaustive enough to promote with confidence.
   (`mergeDoctrineWarIntoReward`, `withVoidInstabilityDelta`) deleted.
   Auto-resolve is the canonical mission-settle path. 114/114 tests
   still pass, typecheck clean.
+
+---
+
+## 2026-04-09 — Audit: Black Market sin venues
+
+Ran the §4 audit protocol against the §1 row "Black Market sin venues"
+(currently 🟡). Static read-only across **8 surfaces**: hub map +
+6 lane routes under `/bazaar/black-market/*` + the canon-adjacent
+`/bazaar/ember-vault` redirect. Arena/wrath lane is out of scope (it
+has its own 🟢 row at `/arena`). The §1 row scope explicitly maps to
+`/bazaar/black-market/*`, so this audit covers every screen in that
+subtree.
+
+**Step 1 — Trace entry.** Every page is thin (5-39 lines):
+
+| Route | LOC | Mounts |
+|---|---|---|
+| `/bazaar/black-market` | 45 | `BlackMarketMap` |
+| `/bazaar/black-market/feast-hall` | 5 | `FeastHallScreen` |
+| `/bazaar/black-market/golden-bazaar` | 39 | `GoldenBazaarExchange` |
+| `/bazaar/black-market/ivory-tower` | 5 | `IvoryTowerScreen` |
+| `/bazaar/black-market/mirror-house` | 5 | `MirrorHouseScreen` |
+| `/bazaar/black-market/silent-garden` | 5 | `SilentGardenScreen` |
+| `/bazaar/black-market/velvet-den` | 5 | `VelvetDenScreen` |
+
+The five 5-line wrappers do nothing but mount the client component.
+`golden-bazaar/page.tsx` adds an Auction House cross-link strip and
+the screen header. `black-market/page.tsx` (45 LOC) carries the M1
+loop guide copy + 7-district chip + Auction House link, then mounts
+`BlackMarketMap`. Routes thin across the board ✅.
+
+**Step 2 — Trace state.** Six dispatch types reachable from this
+loop. Every one resolves to a real reducer case:
+
+| Action | Source | Reducer case |
+|---|---|---|
+| `USE_FEAST_HALL_OFFER` | Feast Hall | `survivalReducer.ts:244` |
+| `VOID_MARKET_TRADE` | Golden Bazaar | `economyReducer.ts:239` |
+| `ADD_RESOURCE` | Ivory/Mirror/Silent/Velvet | `economyReducer.ts:32` |
+| `ADJUST_CONDITION` | Ivory/Mirror/Silent/Velvet | `survivalReducer.ts:77` |
+| `ADJUST_HUNGER` | Mirror/Silent/Velvet | `survivalReducer.ts:86` |
+| `REDEEM_RUNE_KNIGHT_VALOR` | Ivory (Knight rite) | `progressionReducer.ts:308` |
+
+`BlackMarketMap` is pure navigation — no dispatches, just `Link`
+components and a resource bar reading `state.player.resources`.
+
+  **Observation 1 — district deals are atomically client-trusted, not
+  reducer-bundled.** Ivory/Mirror/Silent/Velvet hand-wire each deal
+  as a sequence of `ADD_RESOURCE` (cost) → grant dispatches, gated
+  by an inline `canAfford` check. There's no `STRIKE_DEAL` reducer
+  bundling cost+grant atomically. Works correctly today because
+  `canAfford` runs client-side before the dispatch sequence and the
+  dispatches are sync, so a partial-failure window is impossible in
+  the current single-player local-state model. **Not a bug**, but
+  worth noting if a future server-authoritative pass tightens deal
+  semantics. Filed as observation, not finding.
+
+**Step 3 — Trace resources.** Every UI chip that promises a grant
+maps to a real reducer dispatch:
+
+- **Feast Hall** — `USE_FEAST_HALL_OFFER` runs the full offer
+  pipeline: cost debit, condition gain, hunger delta, lockout.
+  Cooldown via `useRecoveryCooldown(player.conditionRecoveryAvailableAt)`.
+  Shortfall lines via `resourceCostShortfall(offer.cost, player.resources)`
+  for unaffordable offers ([FeastHallScreen.tsx:131-135](components/black-market/FeastHallScreen.tsx#L131-L135)).
+- **Golden Bazaar** — `VOID_MARKET_TRADE` (buy/sell) reads
+  `quoteVoidMarketBuy/Sell` + `getVoidMarketWarAdjustments(player)`.
+  Both buy and sell display war-mult adjustment rows when active and
+  shortfall hints below disabled buttons. The 2026-04-09 toast PR
+  (`PR #46`) closed the sell-side partial-capacity surfacing gap.
+- **Ivory Tower** — three deal cards plus a Knight prestige rite
+  gated on `mythic.convergencePrimed && mythic.runeKnightValor >= 4
+  && credits >= 120`. Rite dispatches `REDEEM_RUNE_KNIGHT_VALOR`
+  with payload `"ivory-prestige-rite"`. Pre-Convergence saves see
+  the honest gate copy "Knight valor rites unlock after Convergence
+  is filed (Career → Mythic ladder)" — no false unlock.
+- **Mirror House / Silent Garden / Velvet Den** — 3 deal cards each.
+  Every deal: `canAfford` → cost dispatches → grant dispatches →
+  toast banner. All four district screens use the shared
+  `resourceCostShortfall` helper for shortfall lines.
+- **Black Market Map** — pure navigation + resource bar (Coin /
+  Scrap / Ember / Soul / Ichor). No grants, no orphan UI.
+
+No orphan reward chips found in any venue ✅.
+
+**Step 4 — Trace return.** Every venue surfaces "what changed":
+
+- Feast Hall: `serviceFeedback` string passed into
+  `OperativeReadiness` ([FeastHallScreen.tsx:51-53](components/black-market/FeastHallScreen.tsx#L51-L53))
+  + the live Condition / Hunger / Hall Access grid in the right
+  column. Player sees: meal name, +N condition, hunger delta, Ns
+  lockout — every one of those is a real reducer side-effect.
+- Golden Bazaar: live quote rows update on every state change; the
+  subsequent trade shows up in the bottom resource bar of
+  `BlackMarketMap` on return. Disabled-button shortfall copy is
+  honest about the missing delta.
+- Ivory / Mirror / Silent / Velvet: each has a 3-second
+  `setTimeout(() => setToast(null), 3000)` toast banner above the
+  deal grid, with deal-specific copy ("ascension recorded", "deal
+  struck", "stillness granted", "fulfilled"). Every grant is also
+  reflected by re-rendered live `state.player.resources` reads in
+  the headers (the `credits` / `runeDust` / `bioSamples` consts at
+  the top of each component).
+- Black Market Map: returns the player to navigation; resource bar
+  refreshes from `state.player.resources` on every render.
+
+No silent grants. No "what just happened?" mystery moments ✅.
+
+**Step 5 — Canon naming.** Clean across the entire subtree:
+
+- `grep -i "spirit"` over `components/black-market/**` → **0 hits**.
+- `grep -i "spirit"` over `app/bazaar/black-market/**` → **0 hits**.
+- All eyebrow strings use the canonical pattern `Black Market /
+  <Sin> Lane` (Pride, Envy, Sloth, Lust) or `<Sin> lane / <Lane
+  Name>` (Greed). `BlackMarketMap` titles each zone by canon sin
+  + lane name. The Feast Hall lore card uses canon school name
+  `Mouth of Inti` + canon location alias `Pure / Ember Vault`.
+- Hub copy reads "neutral citadel" / "underground city" — matches
+  the M2 doctrine. No Bio/Mecha/Pure drift; no "Spirit" anywhere.
+
+**Cross-cut — Phase 9 BrokerCard institution chip.**
+
+The user's "special focus": verify the chip renders correctly across
+all the screens that landed it in PR #47, and that the 3 chipless
+brokers (Mama Sol, The Warden, Nails) never crash the lookup.
+
+  **🚨 Finding 1 — M2 GSD log claim of "9 district screens with
+  BrokerCard" is stale by 1.** The 2026-04-09 M2 session log
+  (line ~154) reads:
+
+  > BrokerCard rolled into 9 district screens (Arena, Ivory Tower,
+  > Mirror House, Silent Garden, Velvet Den, Golden Bazaar, Black
+  > Market Map, Hunting Ground, Inventory).
+
+  Reality is **8 importing files**, not 9. Concrete grep:
+
+  | # | Importer | Sin / role |
+  |---|---|---|
+  | 1 | `components/arena/ArenaScreen.tsx` | Wrath |
+  | 2 | `components/black-market/feast-hall/FeastHallBrokers.tsx` | Gluttony |
+  | 3 | `components/black-market/MirrorHouseScreen.tsx` | Envy |
+  | 4 | `components/black-market/VelvetDenScreen.tsx` | Lust |
+  | 5 | `components/black-market/GoldenBazaarExchange.tsx` | Greed |
+  | 6 | `components/black-market/IvoryTowerScreen.tsx` | Pride |
+  | 7 | `components/black-market/SilentGardenScreen.tsx` | Sloth |
+  | 8 | `components/hunting-ground/HuntingGroundScreen.tsx` | non-sin venue |
+
+  `BlackMarketMap.tsx` and `components/inventory/InventoryScreen.tsx`
+  do **not** import `BrokerCard` — confirmed via `grep -n "BrokerCard"`
+  across both files. The M2 log either over-counted or BrokerCard
+  was removed from those two screens after the M2 commit landed.
+  Either way, this is **documentation drift, not a functional bug**:
+  every screen that imports `BrokerCard` renders it correctly, and
+  every sin lane (all 7) gets brokers — which is the load-bearing
+  player promise. **Verdict: log drift, not blocking promotion.**
+  Resolution: I'll quietly correct the count from "9" to "8" in the
+  M2 session log if you want a tidy edit, otherwise leave it as
+  archival history.
+
+  **Null-broker safety — confirmed safe in 3 layers:**
+
+  1. **`BrokerCard.tsx:38-40`** — `const institution =
+     broker.institutionId ? getInstitutionById(broker.institutionId)
+     : null;`. Null `institutionId` short-circuits the lookup.
+  2. **`BrokerCard.tsx:55`** — `{institution ? (<chip>) : null}`.
+     Falsy `institution` (null OR undefined) skips the chip render.
+  3. **`getInstitutionById` is total at the type level** but does an
+     `INSTITUTIONS[id]` lookup at runtime — if a future typo were to
+     squeeze a non-canonical id past the type system, it would return
+     `undefined`, and the `institution ?` check on line 55 would
+     still skip the chip silently. No crash path exists.
+
+  **Test pinning:** [features/lore/brokerInstitution.test.ts](features/lore/brokerInstitution.test.ts)
+  has 8 tests covering all 13 brokers. The chipless trio is pinned
+  by name in the test:
+
+  ```ts
+  it("the 3 faction-less brokers are Mama Sol, The Warden, and Nails", () => {
+    expect(factionlessIds).toEqual(["mama-sol", "nails", "the-warden"]);
+  });
+  ```
+
+  Plus the empire-alignment guard catches Bio/Mecha/Pure mismatch
+  for affiliated brokers and pins Iron Jaw as the explicit
+  cross-faction exception. Cross-cut is fully test-pinned.
+
+**Ember Vault sidebar.** `/bazaar/ember-vault/page.tsx` is a
+3-line `redirect("/bazaar/pure-enclave")` — Book 4 canon-name alias
+for the Pure path screen, not a sin venue. No BrokerCard, no
+dispatches, no UI of its own. **Out of scope** for this row, no
+audit needed. Flagged here so the canonical name is recorded.
+
+**Step 6 — Verdict.**
+
+  | Concern | Result |
+  |---|---|
+  | Routes thin (5-45 LOC each) | ✅ |
+  | All dispatch types resolve to real reducer cases (6/6) | ✅ |
+  | Every UI chip maps to a real grant — no orphan rewards | ✅ |
+  | Shortfall copy honest on disabled buttons (4 lanes use shared helper) | ✅ |
+  | Lockout / cooldown gates wired (Feast Hall) | ✅ |
+  | War-mult adjustments wired both ends (Golden Bazaar) | ✅ |
+  | Convergence-gated content honest about its lock (Ivory Knight rite) | ✅ |
+  | Toast / feedback surfaces "what changed" on every action | ✅ |
+  | Open-face cross-link present on all 7 sin lanes | ✅ |
+  | Canon naming consistent (no Spirit drift, 0 grep hits) | ✅ |
+  | BrokerCard institution chip null-safe in 3 layers | ✅ |
+  | Chipless brokers (Mama Sol / Warden / Nails) test-pinned | ✅ |
+  | M2 log claim of "9 BrokerCard screens" — actual count | ⚠️ 8, see Finding 1 |
+
+**Status promotion: Black Market sin venues 🟡 → 🟢.** Every venue
+in the subtree wires its primary action to a real reducer case,
+every cost is debited and every grant is granted, every shortfall
+is surfaced honestly, the cross-cut institution chip is null-safe
+and test-pinned across all 13 brokers, and canon naming is clean.
+The 🟡 hold ("link in + primary action works or shows honest lock")
+is exhaustively satisfied.
+
+**Debt filed (not blocking promotion):**
+- ~~**Finding 1 (doc drift):** M2 session log claims BrokerCard
+  landed on 9 district screens (incl. Black Market Map and
+  Inventory). Real count is 8 — neither of those two files imports
+  it.~~ **Resolved 2026-04-09.** M2 session log line corrected to
+  read "8 district screens (Arena, Feast Hall via FeastHallBrokers,
+  Mirror House, Velvet Den, Golden Bazaar, Ivory Tower, Silent
+  Garden, Hunting Ground)" with an inline correction note pointing
+  to this audit. Archival history preserved via the strikethrough
+  + corrected-by note pattern.
+- **Observation 1 (architecture):** the 4 district lanes hand-wire
+  cost+grant via raw `ADD_RESOURCE` instead of an atomic
+  `STRIKE_DEAL` reducer. Safe in single-player local-state today;
+  worth tightening if/when a server-authoritative pass arrives.
+  Not a current bug; not actionable now.
+
+---
+
+## 2026-04-09 — Mana + Pantheons + Vishrava Ledger pressure (3-slice depth pass)
+
+Single feature branch (`mana-pantheon-institutional-pressure`) shipping
+three independent slices in one PR. All authorized after the Black
+Market sin venues audit promoted the row to 🟢. Branch lands **3
+commits / 29 files / +1,824 / -9** off `main`. Full vitest suite went
+from **114 → 158 (+44 new tests)**. Typecheck clean after every commit.
+
+### Slice A — Mana mechanic (P1, foundation slice)
+
+Canon (`lore-canon/01 Master Canon/Mana/Mana System.md`) names mana as
+"tied to law, memory, power, adaptation, and the deeper structure of
+reality" but leaves mechanics open. Ships the canonical positive-pressure
+resource as a single universal pool with school-flavored display names
+(Bio: Ichor Flow, Mecha: Charge Stack, Pure: Will Reservoir, Unbound:
+Mana).
+
+**State layer**
+- `PlayerState.mana / manaMax` (default 50/50). New `manaReducer` handles
+  `MANA_GAIN`, `MANA_SPEND`, `MANA_RESTORE_FULL`,
+  `VENT_MANA_TO_VOID_INSTABILITY`, `SET_MANA_MAX`.
+- `gameStorage` normalizes mana on legacy saves (fills to cap if absent).
+- Reducer wired into the `gameActions.ts` handler chain.
+
+**Earn paths**
+- Mission settlement: +5 mana per operation, +7 per hunting-ground run
+  (clamped to manaMax) — wired in `gameMissionUtils` after archetype.
+- Feast Hall offers: +8 mana on top of the existing condition gain
+  (`survivalReducer.USE_FEAST_HALL_OFFER`).
+
+**Spend**
+- `VENT_MANA_TO_VOID_INSTABILITY`: spend 20 mana, reduce `voidInstability`
+  by 10. The canonical "positive pressure burns negative pressure"
+  exchange that makes the mana ↔ void axis explicit. Fail-soft when
+  underfunded or strain is already 0.
+
+**UI surfaces**
+- `StatusHeroCard` rank/mastery panel gains a third row: mana bar +
+  school-flavored vent button + honest block-reason copy.
+- New `ManaChip` on the home command deck (between AffinityBadge and
+  MarketEventHeadline) — passive readout with a "vent ready" hint that
+  links to /status when conditions hold.
+
+**Tests (+20):** `manaSelectors.test.ts` (6) + `manaReducer.test.ts` (14)
+covering all 5 actions, vent gates, clamps, display name fallback, and
+SET_MANA_MAX cap shrink/grow.
+
+**Out of scope** (M3+): combat hookup (mana spent on shell abilities),
+mastery hookup (rune install costs), passive regen ticks, per-school
+mana variants. Foundation only.
+
+### Slice B — Pantheon system (P3, walkable lore depth)
+
+Canon (`lore-canon/01 Master Canon/Pantheons/Pantheon Structure.md`)
+recognizes 7 cultural traditions as "shattered remnants of older divine
+civilizations" but does not name specific gods or define mechanics.
+Lore-canon depth report: **shallow**. Slice ships the data + walkable
+UI without inventing canon, leaving mechanics for a future revision.
+
+**Data layer**
+- `features/pantheons/{pantheonTypes,pantheonData,pantheonSelectors}.ts`.
+- 7 entries (norse, greek, canaanite, inca, hindu, egyptian, chinese)
+  pinned 1:1 to schools via `schoolId`. Each carries region, era,
+  abstract domain summary, "shattered remnants" line, and longForm lore.
+- All entries flagged `canonSource: "game-specific"` so a future canon
+  pass can edit lore without touching the structure.
+- Pantheon accent colors mirror the linked school's accent (test-pinned).
+
+**Selectors:** `getPantheonById`, `getAllPantheons`,
+`getPantheonForSchool`, `getPantheonsForEmpire`, `getPantheonRoute`,
+`getPantheonByDisplayName`.
+
+**Routes** (mirror `/schools` and `/empires` shape):
+- `/pantheons` index (empire-grouped card list).
+- `/pantheons/[pantheonId]` HQ (statically generated for all 7).
+
+**Components**
+- `PantheonListByEmpire` — empire-grouped card list, mirrors
+  `SchoolListByEmpire`.
+- `PantheonHqScreen` — full HQ with breadcrumbs, lore, cultural anchors,
+  inheritor school cross-link, sister pantheons, Canon/Game-lore source
+  chip.
+- `PantheonChip` — compact link chip surfacing pantheon → /pantheons/<id>.
+
+**Cross-links**
+- `SchoolHqScreen` breadcrumb row gains a `PantheonChip` between empire
+  and shadow-face links — every school HQ now jumps to its pantheon in
+  one click. School ↔ pantheon is a closed loop.
+- `homeMenuData.ts`: new "Pantheons" entry between Schools and Black
+  Market Exchange.
+
+**Tests (+12):** `pantheonSelectors.test.ts` covering structure
+(7-count, unique ids, real schoolIds), 1:1 join, lore field presence,
+accent parity, route building, and a round-trip check that every
+school's `school.pantheon` display string resolves to a real pantheon
+entry via `getPantheonByDisplayName`.
+
+**Out of scope** (future canon work): specific god names,
+inter-pantheon allied/opposed relationships, pantheon-gated mechanics,
+per-pantheon rite economy.
+
+### Slice C — Vishrava Ledger institutional pressure (Phase 9 follow-up)
+
+Phase 9 (PR #47) shipped the 7 Sin Institutions as data + UI only
+(broker chips, mission origin tooltips). This slice gives the **Vishrava
+Ledger** (Greed) its first concrete economic verb on the War Exchange,
+picked because canon hands it the strongest single trade hook of any
+institution:
+
+> "The Ledger runs the Pure Empire's hoard-vaults in the subcontinent
+> and operates the Golden Bazaar exchange floors in Blackcity. Every
+> trade routes through one of their abacuses; every loan accrues
+> interest in two currencies — credits and patience."
+
+Translation into game-side math: every War Exchange buy pays a small
+**abacus tithe** and every sell earns a small **patience interest**.
+Pure-aligned operatives see the heaviest version of both. Bio/Mecha
+buyers get softer outsider rates. Unbound players sit at baseline. All
+multipliers stay in the 1-5% nudge band so they compose with — not
+dominate — the existing war-front demand math.
+
+**New module**
+- `features/institutions/institutionalPressure.ts`: 6 named constants
+  (3-tier buy + 3-tier sell rates), per-faction selectors, PlayerState
+  wrappers, and `getVishravaLedgerPressureCopy` for the UI callout.
+- All multipliers test-pinned inside the 1-5% band.
+
+**Wiring**
+- `marketActions.quoteSellPriceCredits` stacks `ledgerSellMult` after
+  demand multiplier and before broker tithe; returns it on the quote.
+- `marketActions.applyMarketBuy` stacks `ledgerBuyMult` after war-front
+  demand in `priceCredits`.
+- `app/bazaar/war-exchange/page.tsx`:
+  - New institutional pressure callout chip below the Ironheart notice:
+    headline + buy/sell mult chips + faction-tailored detail tooltip.
+  - Buy listing card price line shows ` · ledger ×1.0X` alongside the
+    existing stall + war-front mults (card view + confirm modal).
+
+**Tests (+12):** `institutionalPressure.test.ts` pinning per-faction
+rates, hierarchy ordering (pure > base > outsider), nudge-band guard,
+PlayerState wrapper delegation, and copy-shape assertions for all 4
+faction states.
+
+**Out of scope:** the other 6 institutions stay flavor-only this slice.
+Bonehowl Syndicate's hooks live in hunting contracts (not the War
+Exchange); the remaining 5 are `canonSource: "game-specific"` and need
+a canon pass before earning load-bearing economic verbs.
+
+### Validation summary
+
+| Slice | Files | Tests added | Test total | tsc |
+|---|---|---|---|---|
+| A — Mana | 14 | +20 | 134 | ✅ |
+| B — Pantheons | 11 | +12 | 146 | ✅ |
+| C — Ledger pressure | 4 | +12 | 158 | ✅ |
+| **Branch total** | **29** | **+44** | **158** | ✅ |
+
+### Cells touched (no §1 promotions earned this session)
+
+- *War Exchange* (🟢): institutional pressure layer added; status
+  unchanged because the cell was already 🟢.
+- New cells implied (not yet added to §1):
+  - **Mana axis** — could earn its own row when combat hooks land.
+  - **Pantheons** — walkable lore layer; could be a "World cultural
+    layer" row when pantheon mechanics land.
+  - **Institutional pressure** — could be a row tracking which of the
+    7 institutions have load-bearing economic verbs (1 of 7 today).
+
+The §1 audit matrix isn't expanded here — those rows belong to a
+larger refactor of §1 to track world-layer systems separately from
+gameplay loops.
