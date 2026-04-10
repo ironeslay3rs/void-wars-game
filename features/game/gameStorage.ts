@@ -1017,6 +1017,13 @@ function normalizePlayer(value: unknown): PlayerState {
       typeof (raw as Record<string, unknown>).affinitySchoolId === "string"
         ? ((raw as Record<string, unknown>).affinitySchoolId as string)
         : null,
+
+    pantheonBlessingPending:
+      typeof (raw as Record<string, unknown>).pantheonBlessingPending ===
+      "boolean"
+        ? ((raw as { pantheonBlessingPending: boolean })
+            .pantheonBlessingPending as boolean)
+        : initialGameState.player.pantheonBlessingPending,
   };
 
   return {

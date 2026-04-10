@@ -601,6 +601,15 @@ export type PlayerState = {
 
   /** Broker interaction cooldowns — maps brokerId to last-interaction timestamp. */
   brokerCooldowns: Record<string, number>;
+
+  /**
+   * Pantheon visit blessing — one-shot token earned by visiting the
+   * pantheon HQ tied to the player's affinity school. Consumed by the
+   * next mission settlement, granting a flat reward bonus
+   * (`PANTHEON_BLESSING_REWARD_BONUS_PCT`). Foundation slice for the
+   * walkable pantheon layer.
+   */
+  pantheonBlessingPending: boolean;
 };
 
 /* =========================
@@ -787,4 +796,6 @@ export type GameAction =
   | { type: "SET_MANA_MAX"; payload: { max: number } }
   | { type: "MANA_BURN_FOR_MASTERY" }
   | { type: "MANA_BURN_FOR_CONDITION" }
-  | { type: "MANA_BURN_FOR_HUNGER" };
+  | { type: "MANA_BURN_FOR_HUNGER" }
+  | { type: "GRANT_PANTHEON_BLESSING"; payload: { pantheonId: string } }
+  | { type: "CLEAR_PANTHEON_BLESSING" };

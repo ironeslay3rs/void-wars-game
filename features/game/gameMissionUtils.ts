@@ -41,6 +41,9 @@ import {
   MANA_PER_HUNTING_GROUND_SETTLEMENT,
   MANA_PER_MISSION_SETTLEMENT,
 } from "@/features/mana/manaTypes";
+import {
+  PANTHEON_BLESSING_REWARD_BONUS_PCT,
+} from "@/features/pantheons/pantheonReward";
 
 export function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
@@ -679,9 +682,40 @@ export function processMissionQueue(state: GameState, now: number): GameState {
     const rewardWithDoctrine = doctrineMerged.reward;
     const doctrineExtraVoid = doctrineMerged.extraVoidInstability;
 
+    // Pantheon visit blessing — applied after doctrine merge so the bonus
+    // composes on top of every other reward modifier. Consumed downstream
+    // when we set `pantheonBlessingPending: false` on the settled player.
+    const pantheonBlessingActive = nextPlayer.pantheonBlessingPending === true;
+    const pantheonBlessingMult = pantheonBlessingActive
+      ? 1 + PANTHEON_BLESSING_REWARD_BONUS_PCT / 100
+      : 1;
+    const rewardWithPantheonBlessing = pantheonBlessingActive
+      ? {
+          ...rewardWithDoctrine,
+          rankXp: Math.round(rewardWithDoctrine.rankXp * pantheonBlessingMult),
+          masteryProgress: Math.round(
+            rewardWithDoctrine.masteryProgress * pantheonBlessingMult,
+          ),
+          influence:
+            typeof rewardWithDoctrine.influence === "number"
+              ? Math.round(rewardWithDoctrine.influence * pantheonBlessingMult)
+              : undefined,
+          resources: rewardWithDoctrine.resources
+            ? (Object.fromEntries(
+                Object.entries(rewardWithDoctrine.resources).map(
+                  ([key, value]) => [
+                    key,
+                    Math.round(value * pantheonBlessingMult),
+                  ],
+                ),
+              ) as typeof rewardWithDoctrine.resources)
+            : undefined,
+        }
+      : rewardWithDoctrine;
+
     const riSettled = applyRunInstabilityMissionSettlement(
       nextPlayer,
-      rewardWithDoctrine,
+      rewardWithPantheonBlessing,
       {
         missionId: mission.id,
         resolvedAt: entry.endsAt,
@@ -743,6 +777,15 @@ export function processMissionQueue(state: GameState, now: number): GameState {
       nextPlayer = {
         ...nextPlayer,
         mana: clamp(nextPlayer.mana + manaGain, 0, nextPlayer.manaMax),
+      };
+    }
+    // Consume the pantheon visit blessing flag if it was active for this
+    // settlement. The reward bonus has already been applied above; the
+    // flag is one-shot per visit.
+    if (pantheonBlessingActive) {
+      nextPlayer = {
+        ...nextPlayer,
+        pantheonBlessingPending: false,
       };
     }
     playerChanged = true;

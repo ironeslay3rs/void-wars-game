@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import PantheonBlessingPanel from "@/components/pantheons/PantheonBlessingPanel";
 import ScreenHeader from "@/components/shared/ScreenHeader";
 import SectionCard from "@/components/shared/SectionCard";
 import { getEmpireById } from "@/features/empires/empireSelectors";
@@ -130,6 +131,8 @@ export default function PantheonHqScreen({ pantheon }: PantheonHqScreenProps) {
             </div>
           </SectionCard>
         </div>
+
+        <PantheonBlessingPanel pantheon={pantheon} />
 
         <SectionCard
           title="The school that inherited the discipline"
