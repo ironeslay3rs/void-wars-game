@@ -9,6 +9,7 @@ import type { FactionAlignment, GameState } from "@/features/game/gameTypes";
 import ConditionWidget from "@/components/home/ConditionWidget";
 import HomeResourceStrip from "@/components/home/HomeResourceStrip";
 import UpgradeNudge from "@/components/home/UpgradeNudge";
+import HumanityKnownChip from "@/components/home/HumanityKnownChip";
 import MarketEventHeadline from "@/components/home/MarketEventHeadline";
 import AffinityBadge from "@/components/home/AffinityBadge";
 import ManaChip from "@/components/home/ManaChip";
@@ -218,6 +219,7 @@ export default function HomeHudClient() {
           <UpgradeNudge />
           <AffinityBadge />
           <ManaChip />
+          <HumanityKnownChip />
           <MarketEventHeadline />
           <p
             className="command-pressure-line"
