@@ -716,6 +716,11 @@ export type GameAction =
   | { type: "USE_EMERGENCY_RATION" }
   | { type: "MARKET_BUY"; payload: { listingId: string } }
   | { type: "MARKET_SELL"; payload: { key: ResourceKey; amount: number } }
+  | { type: "BLACK_MARKET_BUY"; payload: { listingId: string } }
+  | {
+      type: "BLACK_MARKET_SELL";
+      payload: { key: ResourceKey; amount: number };
+    }
   | { type: "CRAFT_RECIPE"; payload: { recipeId: string } }
   | { type: "CLEAR_LAST_CRAFT_OUTCOME" }
   | { type: "ACCEPT_CRAFT_WORK_ORDER"; payload: { definitionId: string } }
