@@ -198,6 +198,110 @@ export const brokerInteractions: BrokerInteraction[] = [
       "Buy 1 Ember Core from Ashveil for 90 Sinful Coin? The silk-wrapped piece. Never before sold.",
     requiresUnlock: "ashveil-personal-piece",
   },
+  // Block 2 batch 3 — Sable (Velvet Den).
+  {
+    brokerId: "sable",
+    type: "trade",
+    actionLabel: "Buy an introduction",
+    cost: 35,
+    effect: { kind: "grant_resource", resourceKey: "runeDust", amount: 1 },
+    cooldownMs: ONE_DAY,
+    resultToast:
+      "Sable writes a name and a time. \"Tell them I sent you. Don't lie about anything else.\"",
+    confirmText:
+      "Buy an introduction from Sable for 35 Sinful Coin? Trades as 1 Rune Dust — social leverage in material form.",
+  },
+  {
+    brokerId: "sable",
+    type: "trade",
+    actionLabel: "Buy the bond catalyst",
+    cost: 70,
+    effect: { kind: "grant_resource", resourceKey: "bioSamples", amount: 2 },
+    cooldownMs: ONE_DAY,
+    resultToast:
+      "Sable hands you the middle vial. \"Sparingly. With consent. I'll know.\"",
+    confirmText:
+      "Buy 2 Ichor (bond-catalyst grade) from Sable for 70 Sinful Coin?",
+    requiresUnlock: "sable-bond-catalyst",
+  },
+  // Block 2 batch 3 — Old Ivory (Ivory Tower).
+  {
+    brokerId: "old-ivory",
+    type: "trade",
+    actionLabel: "Buy a minor mark",
+    cost: 30,
+    effect: { kind: "grant_resource", resourceKey: "scrapAlloy", amount: 4 },
+    cooldownMs: ONE_DAY,
+    resultToast:
+      "Old Ivory polishes the mark one more time before handing it over. The gleam sells it.",
+    confirmText:
+      "Buy a minor Pharos mark from Old Ivory for 30 Sinful Coin? Trades as 4 Scrap Alloy (provenance premium).",
+  },
+  {
+    brokerId: "old-ivory",
+    type: "trade",
+    actionLabel: "Buy the prestige mark",
+    cost: 75,
+    effect: { kind: "grant_resource", resourceKey: "scrapAlloy", amount: 10 },
+    cooldownMs: ONE_DAY,
+    resultToast:
+      "Old Ivory hands over the real mark. \"People who see it pay attention. Earn it.\"",
+    confirmText:
+      "Buy the functional Prestige Mark from Old Ivory for 75 Sinful Coin? 10 Scrap Alloy equivalent — the real thing.",
+    requiresUnlock: "old-ivory-prestige-mark",
+  },
+  // Block 2 batch 3 — Tomo Wrench (Crafting District).
+  {
+    brokerId: "tomo-wrench",
+    type: "trade",
+    actionLabel: "Buy standard alloy",
+    cost: 20,
+    effect: { kind: "grant_resource", resourceKey: "scrapAlloy", amount: 3 },
+    cooldownMs: ONE_DAY,
+    resultToast:
+      "Tomo hands over the alloy wrapped in oiled cloth. Each fold of the cloth is precise.",
+    confirmText:
+      "Buy 3 Scrap Alloy from Tomo Wrench for 20 Sinful Coin? Mandate-grade, slow and clean.",
+  },
+  {
+    brokerId: "tomo-wrench",
+    type: "trade",
+    actionLabel: "Buy bespoke alloy",
+    cost: 50,
+    effect: { kind: "grant_resource", resourceKey: "scrapAlloy", amount: 8 },
+    cooldownMs: ONE_DAY,
+    resultToast:
+      "Tomo hands over the bespoke pour. \"Yours. Don't ask for it twice in one cycle.\"",
+    confirmText:
+      "Buy 8 Scrap Alloy (bespoke) from Tomo Wrench for 50 Sinful Coin? Shell-grade, one pour at a time.",
+    requiresUnlock: "tomo-bespoke-alloy",
+  },
+  // Block 2 batch 3 — Iron Jaw (Mercenary Guild).
+  {
+    brokerId: "iron-jaw",
+    type: "service",
+    actionLabel: "Post a hunt",
+    cost: 25,
+    effect: { kind: "grant_resource", resourceKey: "credits", amount: 60 },
+    cooldownMs: ONE_DAY,
+    resultToast:
+      "Iron Jaw stamps the contract. The bounty pays out on completion — you get advance on Guild standing.",
+    confirmText:
+      "Take a standard Guild contract from Iron Jaw for 25 Sinful Coin? Pays 60 credits on settlement.",
+  },
+  {
+    brokerId: "iron-jaw",
+    type: "service",
+    actionLabel: "Take a priority contract",
+    cost: 50,
+    effect: { kind: "grant_resource", resourceKey: "credits", amount: 160 },
+    cooldownMs: ONE_DAY,
+    resultToast:
+      "Iron Jaw hands over the leather-bound folder. \"You qualify. Don't make me wrong.\"",
+    confirmText:
+      "Take a Priority contract from Iron Jaw for 50 Sinful Coin? Pays 160 credits on settlement.",
+    requiresUnlock: "iron-jaw-priority-contracts",
+  },
 ];
 
 const interactionsByBroker = brokerInteractions.reduce<
@@ -244,14 +348,7 @@ export function getBestUnlockedBrokerInteraction(
 }
 
 /** Passive brokers — have a card but no gameplay interaction. */
-export const PASSIVE_BROKER_IDS = new Set([
-  "sable",
-  "old-ivory",
-  "root",
-  "nails",
-  "tomo-wrench",
-  "iron-jaw",
-]);
+export const PASSIVE_BROKER_IDS = new Set(["root", "nails"]);
 
 /** The Warden — silence IS the character. No interaction at all. */
 export const SILENT_BROKER_IDS = new Set(["the-warden"]);
