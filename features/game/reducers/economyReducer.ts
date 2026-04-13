@@ -12,6 +12,15 @@ import type { GameAction, GameState, ResourceKey } from "@/features/game/gameTyp
 import { getBestUnlockedBrokerInteraction } from "@/features/lore/brokerInteractionData";
 import { getDiscountedCost } from "@/features/broker-dialogue/rapportDiscount";
 import { detectHumanityKeepsakes } from "@/features/broker-dialogue/humanityKeepsake";
+
+/**
+ * Rapport gained per successful BROKER_INTERACT. Small — the serious
+ * rapport comes from dialogue. This is the "you came back" tax: every
+ * repeat visit is a relationship fact. Gated by the per-day cooldown on
+ * each interaction, so this never compounds faster than once per
+ * broker per day.
+ */
+export const BROKER_INTERACT_RAPPORT_GAIN = 2;
 import { computeFactionHqStipend, FACTION_HQ_STIPEND_COOLDOWN_MS } from "@/features/factions/factionWorldLogic";
 import { getVoidMarketWarAdjustments } from "@/features/factions/warEconomy";
 import { applyMarketBuy, applyMarketSell } from "@/features/market/marketActions";
@@ -474,6 +483,27 @@ export function handleEconomyAction(
         nextInstability = Math.max(0, p.runInstability - eff.amount);
       }
       // "show_tip" effect has no state change — tip is selected in the UI
+
+      // Rapport gain on successful transaction. Every repeat visit is
+      // a relationship fact, not just dialogue. Bounded by the
+      // interaction cooldown (once per day), so this grants at most
+      // BROKER_INTERACT_RAPPORT_GAIN per broker per day.
+      const currentRapport = p.brokerRapport[brokerId] ?? 0;
+      const nextRapport = Math.max(
+        0,
+        Math.min(100, currentRapport + BROKER_INTERACT_RAPPORT_GAIN),
+      );
+      // If this transaction nudges rapport past the Keepsake threshold,
+      // grant it here too — same idempotent detect.
+      const nextRapportMap =
+        nextRapport === currentRapport
+          ? p.brokerRapport
+          : { ...p.brokerRapport, [brokerId]: nextRapport };
+      const keepsakeResult = detectHumanityKeepsakes({
+        rapport: nextRapportMap,
+        keepsakes: p.brokerKeepsakes,
+      });
+
       return {
         ...state,
         player: {
@@ -486,6 +516,10 @@ export function handleEconomyAction(
             ...p.brokerLastContactAt,
             [brokerId]: now,
           },
+          brokerRapport: nextRapportMap,
+          brokerKeepsakes: keepsakeResult.changed
+            ? keepsakeResult.keepsakes
+            : p.brokerKeepsakes,
         },
       };
     }
