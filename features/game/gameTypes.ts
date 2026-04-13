@@ -603,6 +603,20 @@ export type PlayerState = {
   brokerCooldowns: Record<string, number>;
 
   /**
+   * Per-broker rapport score (0-100). Gated dialogue choices + unlocks
+   * read this. Block 2 — Broker Dialogue.
+   */
+  brokerRapport: Record<string, number>;
+
+  /**
+   * Per-broker unlocked dialogue keys. Lets dialogue trees + interaction
+   * registries gate deeper offers on narrative progress (e.g. Lars's
+   * canon "Moon-blessed" premium stock unlocks at rapport ≥ 50 via a
+   * specific dialogue path). Block 2 — Broker Dialogue.
+   */
+  brokerDialogueUnlocks: Record<string, string[]>;
+
+  /**
    * Pantheon visit blessing — one-shot token earned by visiting the
    * pantheon HQ tied to the player's affinity school. Consumed by the
    * next mission settlement, granting a flat reward bonus
@@ -793,6 +807,14 @@ export type GameAction =
   | { type: "VENT_RUN_INSTABILITY" }
   | { type: "PUSH_RUN_INSTABILITY"; payload?: { nowMs?: number } }
   | { type: "BROKER_INTERACT"; payload: { brokerId: string } }
+  | {
+      type: "ADJUST_BROKER_RAPPORT";
+      payload: { brokerId: string; delta: number };
+    }
+  | {
+      type: "GRANT_BROKER_DIALOGUE_UNLOCK";
+      payload: { brokerId: string; unlockKey: string };
+    }
   | { type: "SET_AFFINITY_SCHOOL"; payload: { schoolId: string | null } }
   | {
       type: "RECORD_CROSS_SCHOOL_EVENT";
