@@ -42,11 +42,13 @@ describe("V2 dialogue registry", () => {
     expect(hasBrokerDialogue("nails")).toBe(false);
   });
 
-  it("getAllBrokerDialogueTrees returns exactly the registered set", () => {
+  it("getAllBrokerDialogueTrees at least covers V2 set (expansion-safe)", () => {
     const all = getAllBrokerDialogueTrees();
-    expect(all.length).toBe(V2_BROKERS.length);
-    const ids = all.map((t) => t.brokerId).sort();
-    expect(ids).toEqual([...V2_BROKERS].sort());
+    expect(all.length).toBeGreaterThanOrEqual(V2_BROKERS.length);
+    const ids = new Set(all.map((t) => t.brokerId));
+    for (const id of V2_BROKERS) {
+      expect(ids.has(id)).toBe(true);
+    }
   });
 });
 
