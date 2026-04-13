@@ -58,6 +58,7 @@ import {
   isLoadoutFragileTo,
 } from "@/features/loadout/loadoutPressureCompatibility";
 import { getRuneSetRewardMultiplier } from "@/features/mastery/runeSetDetection";
+import { getRuneSetLevelRewardMultiplier } from "@/features/mastery/runeSetLevels";
 import { getSchoolsByEmpire } from "@/features/schools/schoolSelectors";
 import { dominantDoctrinePath } from "@/features/factions/factionWorldLogic";
 
@@ -720,6 +721,12 @@ export function processMissionQueue(state: GameState, now: number): GameState {
     );
     const mandateBureauTaxMult = getMandateBureauTaxMultiplier(nextPlayer);
     const runeSetMult = getRuneSetRewardMultiplier(nextPlayer.runeMastery);
+    // Canon rune set levels (Rune System.md) — L3 Rare adds an extra
+    // reward bonus on top of tier detection when the player holds
+    // hybrid progression across all three schools.
+    const runeSetLevelMult = getRuneSetLevelRewardMultiplier(
+      nextPlayer.runeMastery,
+    );
     const convergenceMult = getConvergenceRewardMultiplier(nextPlayer);
     const pantheonCompositeMult =
       pantheonBlessingMult *
@@ -727,6 +734,7 @@ export function processMissionQueue(state: GameState, now: number): GameState {
       bonehowlBountyMult *
       mandateBureauTaxMult *
       runeSetMult *
+      runeSetLevelMult *
       convergenceMult;
     const pantheonBonusActive = pantheonCompositeMult !== 1;
     const rewardWithPantheonBlessing = pantheonBonusActive

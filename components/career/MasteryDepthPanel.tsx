@@ -34,6 +34,11 @@ import {
   detectRuneSets,
   getRuneSetRewardMultiplier,
 } from "@/features/mastery/runeSetDetection";
+import {
+  detectRuneSetLevels,
+  getRuneSetLevelRewardMultiplier,
+  RUNE_SET_LEVEL_3_BONUS_PCT,
+} from "@/features/mastery/runeSetLevels";
 
 const SCHOOL_LABEL: Record<RuneSchool, string> = {
   bio: "Bio",
@@ -217,23 +222,40 @@ export default function MasteryDepthPanel() {
       {(() => {
         const activeSets = detectRuneSets(runeMastery);
         const setRewardMult = getRuneSetRewardMultiplier(runeMastery);
-        const setBonusPct = Math.round((setRewardMult - 1) * 100);
-        if (activeSets.length === 0) return null;
+        const setLevelMult = getRuneSetLevelRewardMultiplier(runeMastery);
+        const setBonusPct = Math.round(
+          (setRewardMult * setLevelMult - 1) * 100,
+        );
+        const levels = detectRuneSetLevels(runeMastery);
+        const rareActive = levels.some((l) => l.level === 3);
+        if (activeSets.length === 0 && !rareActive) return null;
         return (
           <div className="mt-5 rounded-xl border border-cyan-400/25 bg-cyan-500/8 px-4 py-3">
             <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-cyan-200/85">
               Active rune sets — +{setBonusPct}% mission rewards
             </div>
             <div className="mt-2 flex flex-wrap gap-2">
-              {activeSets.map((set) => (
+              {activeSets.map((set) => {
+                const canonLevel = set.tier === 3 ? "L2 · Executional" : "L1 · Standard War";
+                return (
+                  <span
+                    key={set.school}
+                    className="rounded border border-cyan-300/30 bg-cyan-500/12 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-cyan-100"
+                    title={`Canon rune set level (Rune System.md): ${canonLevel}`}
+                  >
+                    {SCHOOL_LABEL[set.school]} {set.tier}-set · {canonLevel} (+
+                    {set.rewardBonusPct}%)
+                  </span>
+                );
+              })}
+              {rareActive ? (
                 <span
-                  key={set.school}
-                  className="rounded border border-cyan-300/30 bg-cyan-500/12 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-cyan-100"
+                  className="rounded border border-amber-300/50 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-amber-100"
+                  title="Canon L3 Rare — 2+ minors in all three schools. Balanced hybrid progression."
                 >
-                  {SCHOOL_LABEL[set.school]} {set.tier}-set (+
-                  {set.rewardBonusPct}%)
+                  L3 · Rare · Balanced (+{RUNE_SET_LEVEL_3_BONUS_PCT}%)
                 </span>
-              ))}
+              ) : null}
             </div>
           </div>
         );
