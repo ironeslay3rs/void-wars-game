@@ -1301,3 +1301,37 @@ Three 🟡 rows promoted to 🟢 (Guild, Teleport, Void boss). Canon slice shipp
 **Memory-worthy notes (saved):**
 - Canon migration plan exists at `docs/canon-naming-migration-plan.md` and sequences the `spirit→pure` rename across phases — don't rename enum keys without hydration compat.
 - Wide-scope work gets an audit-first pass, not permission-ask.
+
+---
+
+## 2026-04-13 (late session) — Block 2 completion + canon slices + workflow hardening
+
+Massive session. 9 PRs shipped through the hardened branch+PR+CI pipeline.
+
+**Infrastructure (PRs #53, bundle, #54):**
+- Pre-commit hooks + PR template + WORKFLOW.md shipped.
+- Branch protection on main enforces PR + verify-green.
+- Vercel CLI installed; previews confirmed active per-branch.
+- Repo auto-merge enabled.
+
+**Block 2 vertical — Broker Dialogue (PRs #55, #56, #57, #58, #60, #61, #62, #63):**
+- V1 (Lars) + V2 (5 brokers) + Batch 3 (4 brokers) = **10 of 13 brokers** with branching dialogue.
+- Warden / Nails / Root stay silent/terse by canon-design.
+- Each tree is a 3-tier rapport arc (Acquainted / Familiar / Trusted) culminating in an unlock key consumed by a deeper `BrokerInteraction` offer.
+- **Rapport system deepened into a full loop:**
+  - Dialogue choices grant rapport.
+  - `BROKER_INTERACT` grants +2 rapport per successful transaction.
+  - Rapport decay: -1/day past a 7-day grace window (PR #57).
+  - Rapport discount tiers: −5/10/20% at Acquainted/Familiar/Trusted (PR #60).
+  - Humanity Keepsakes: +1% reward each, up to +10% total (PR #61).
+  - Humanity surface: ◆ Keepsake chip on BrokerCard + "Known by N / 10" home card with canon quote (PR #62).
+
+**Canon slices from the lore vault (PRs #59, #61):**
+- **Rune Set Levels** (#59) — Rune System.md canon. L1 Standard / L2 Executional / L3 Rare. L3 Rare (new) fires on balanced hybrid builds, +6% reward.
+- **Humanity Keepsakes** (#61) — Humanity Theme.md canon, "strength through the sacrifices made for them by others." Permanent, non-revokable reward tokens.
+
+**Earlier in the day:**
+- Exploration variance (#53) closed the final 🟡 row — §1 audit matrix is fully green.
+- Void Suppression canon slice (World Laws/The Void.md) — mana ÷2 while deployed.
+
+**Tests:** 345 → **471** (+126 new across the session). All green. tsc clean.
