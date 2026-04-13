@@ -24,7 +24,7 @@ Working doc for **closing loops**, **auditing flows**, and **shipping incrementa
 | **Mission queue (AFK)** | `/missions` | `missionRunner`, `gameMissionUtils`, `PROCESS_MISSION_QUEUE` | Queue, timers, `RESOLVE_HUNT`, rewards, strain | 🟢 | Promoted 2026-04-09 after §4 audit (see session log). Queue mission → auto-resolves on tick → resources/XP/strain update; capacity penalty wired both ends; convergence seed fires |
 | **Hunt resolve (encounter combat path)** | `/hunt` | `app/hunt/page.tsx`, encounter flow | `ADJUST_CONDITION`, `ADD_FIELD_LOOT`, `GAIN_RANK_XP`, `RESOLVE_HUNT` | 🟢 | Promoted 2026-04-10 after §4 audit (see session log). Intentional parallel path to AFK queue — owns the encounter combat narrative + two-stream reward shape (encounter loot + contract reward). Two real callers (MissionsScreen + biotech-labs). |
 | **Void field (realtime shell)** | `/void-field`, `/deploy-into-void/field`, `/bazaar/void-field` | `features/void-maps/`, `VoidRealtimeBridge`, `rollVoidFieldLoot`, `resolveAuthoritativeMobLoot` | Deploy, `ADD_FIELD_LOOT`, `APPLY_VOID_INSTABILITY_DELTA`, extraction | 🟢 | Server mob loot parity closed Phase 8: bridge falls back to client roll on silent `mob_defeated`. Deploy → loot → extract → ledger + strain still smokes the same way |
-| **Void field boss** | `/void-field/boss-encounter` | Boss flow + loot | Boss rewards, condition | 🟡 | Single path smoke after field changes |
+| **Void field boss** | `/void-field/boss-encounter` | Boss flow + loot | Boss rewards, condition | 🟢 | Promoted 2026-04-13 — BossSpawnBanner is now clickable, routes to `/void-field/boss-encounter?return=...`. Encounter engine applies condition/XP/loot/influence via resultAppliedRef guard. |
 | **Exploration / biotech lead** | `/bazaar` map → biotech, `ExplorationPanel` | `START_EXPLORATION_PROCESS`, `CLAIM_EXPLORATION_REWARD` | Timed process, hunger cost, infusion tithe | 🟡 | Start sweep → wait/resolve → claim → state updates |
 | **Arena** | `/arena`, `/arena/match`, `/bazaar/arena` | `features/combat`, arena SR, mythic valor | `APPLY_ARENA_RANKED_SR_DELTA`, valor gains when converged | 🟢 | Match → SR/valor change where applicable |
 | **War Exchange** | `/bazaar/war-exchange` | `marketActions`, `warDemandMarket`, `warEconomy` | `MARKET_BUY` / `MARKET_SELL`, demand multipliers | 🟢 | Buy/sell → credits + capacity enforced |
@@ -32,11 +32,11 @@ Working doc for **closing loops**, **auditing flows**, and **shipping incrementa
 | **Black Market sin venues** | `/bazaar/black-market/*` | District screens, feast hall, etc. | `USE_FEAST_HALL_OFFER`, `VOID_MARKET_TRADE`, `ADD_RESOURCE`, `ADJUST_CONDITION`, `ADJUST_HUNGER`, `REDEEM_RUNE_KNIGHT_VALOR` | 🟢 | Promoted 2026-04-09 after §4 audit (see session log). All 7 sin lanes wire cost+grant to real reducers; shortfall + cooldown copy honest; BrokerCard institution chip null-safe across 13 brokers (8 importers, test-pinned) |
 | **Crafting District** | `/bazaar/crafting-district` | `craftActions`, `recipeData`, work orders | `CRAFT_RECIPE`, work order progress | 🟢 | Craft success/fail → mats + infusion; work order ticks |
 | **Path districts** | `/bazaar/mecha-foundry`, `/bazaar/pure-enclave`, `/bazaar/biotech-labs` | Path-specific UI + data in `features/*` | `SET_MECHA_STATUS` (cosmetic), biotech navigates to legacy `/hunt` | 🟢 | Promoted 2026-04-10 after §4 audit (see session log). Pure-enclave clean display, biotech-labs wires a real hunt flow, mecha-foundry has Finding 1 (cosmetic-only dispatch) filed but not blocking |
-| **Guild** | `/guild`, `/bazaar/mercenary-guild` | `factionWorldLogic`, contracts | `GUILD_*` actions | 🟡 | Post/claim contract path; pledge theater copy |
+| **Guild** | `/guild`, `/bazaar/mercenary-guild` | `factionWorldLogic`, contracts | `GUILD_*` actions | 🟢 | Promoted 2026-04-13 — mercenary-guild page now mounts `MercenaryGuildContractStrip` below the hunting-ground contract board. Post/claim flow wired via `GUILD_POST_CONTRACT` + `GUILD_CLAIM_CONTRACT` (socialReducer). |
 | **Loadout** | `/loadout` | Loadout slots, combat modifiers | `EQUIP_LOADOUT_ITEM` | 🟢 | Equip → void field / encounter reads modifiers |
 | **Mastery / Mythic** | `/mastery` | `runeMastery*`, `mythicAscension*` | `INSTALL_MINOR_RUNE`, `MANA_INSTALL_MINOR_RUNE`, `ATTEMPT_MYTHIC_UNLOCK`, `REDEEM_RUNE_KNIGHT_VALOR` | 🟢 | Promoted 2026-04-10 after §4 audit. Rune installs carry capacity costs, hybrid drain gates off-primary, mana-fueled soak, rune set detection rewards coherent builds, doctrine milestones teach the path. |
 | **Recovery** | `/recover`, `/status`, Feast Hall | Survival ticks, `RECOVER_CONDITION` | Condition, hunger, infusion decay | 🟢 | Recovery clears or softens pressure meters |
-| **Teleport / deploy** | `/bazaar/teleport-gate`, `/deploy-into-void` | Gate state, zone selection | `unlockedRoutes`, deploy binding | 🟡 | Gate open flow → void entry |
+| **Teleport / deploy** | `/bazaar/teleport-gate`, `/deploy-into-void` | Gate state, zone selection | `unlockedRoutes`, deploy binding | 🟢 | Promoted 2026-04-13 — Void expedition deploy now consumes 25 credits via `ADD_RESOURCE`; deploy button disables with honest "Need 25 credits" copy when short. |
 
 ---
 
@@ -1268,3 +1268,36 @@ addressed by the T1 #4 + T3 #12 slices from this PR.
 - Hybrid respec (not yet implemented, lives in M3+ mastery backlog)
 - Rune set bonuses beyond mission rewards (combat + crafting, M3+)
 - Per-school passive mastery effects (differentiate beyond yield mult)
+
+---
+
+## 2026-04-13 — Block 1 close-out + canon Void Suppression slice
+
+Three 🟡 rows promoted to 🟢 (Guild, Teleport, Void boss). Canon slice shipped. Dev workflow hardened.
+
+**Status changes in §1:**
+- *Guild* 🟡→🟢 — mercenary-guild mounts `MercenaryGuildContractStrip` below the hunting-ground board. `GUILD_POST_CONTRACT` / `GUILD_CLAIM_CONTRACT` were already wired in socialReducer; the strip surfaces them.
+- *Teleport / deploy* 🟡→🟢 — void expedition deploy now consumes 25 credits (`VOID_DEPLOY_CREDIT_COST`) via `ADD_RESOURCE`. Deploy button disables + honest copy when short.
+- *Void field boss* 🟡→🟢 — `BossSpawnBanner` is clickable, routes to `/void-field/boss-encounter?return=...`. Completion flow was already wired via `resultAppliedRef` guard.
+
+**Still 🟡:** Exploration / biotech lead. Timed loop + hunger + infusion tithe all work; only gap is flat reward variance — deferred as a design call.
+
+**New canon-grounded mechanic: Void Suppression.**
+- Canon anchor: `lore-canon/01 Master Canon/World Laws/The Void.md` + `Mana/Mana System.md` — the Void partially suppresses mana for beings inside it.
+- Mechanic: `VOID_SUPPRESSION_MANA_MULT = 0.5` in `features/mana/manaTypes.ts`. Passive mana gains at mission settle are halved while the operative has an active `voidRealtimeBinding`. Lifted automatically on extraction.
+- Surface: indigo "Void Suppression · mana ÷2" chip on `VoidFieldHud` with canon-anchored tooltip.
+- Tests: `features/mana/voidSuppression.test.ts` (+4 tests; 349 total).
+
+**Polish shipped alongside:**
+- Toast system: `features/toast/toastBus.ts` + `components/shared/ToastHost.tsx` + `GameEventToaster.tsx`. Watches rune install outcomes, mythic breakthroughs, anomaly surfaces, death transitions, rank increments. Mounted globally in `AuthProvider`.
+- Settings page (`/settings`) now has a real volume slider + mute toggle, persisted to `localStorage` via new `getVolume/isMuted` on `soundEngine`.
+
+**Workflow hardening (2026-04-13 second pass):**
+- `.github/pull_request_template.md` — auto-populates new PRs with canon-anchor + GSD-impact + verification checkboxes.
+- `.githooks/pre-commit` + `.githooks/pre-push` — tsc+tests locally before commits; tsc on push. One-time setup: `git config core.hooksPath .githooks`.
+- `npm run typecheck` + `npm run verify` convenience scripts.
+- `WORKFLOW.md` at repo root captures the optimized dev loop.
+
+**Memory-worthy notes (saved):**
+- Canon migration plan exists at `docs/canon-naming-migration-plan.md` and sequences the `spirit→pure` rename across phases — don't rename enum keys without hydration compat.
+- Wide-scope work gets an audit-first pass, not permission-ask.

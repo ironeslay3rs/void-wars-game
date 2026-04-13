@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Pre-push: lighter safety net — just typecheck. Tests already ran at
+# pre-commit; this catches any amend/rebase that slipped without
+# re-running the hooks.
+set -e
+
+echo "[pre-push] typecheck..."
+npx tsc --noEmit
+
+echo "[pre-push] ok"

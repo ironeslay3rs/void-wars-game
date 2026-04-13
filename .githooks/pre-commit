@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Pre-commit: runs tsc + tests before letting the commit land.
+# Skip with:  git commit --no-verify   (use sparingly)
+# One-time setup:  git config core.hooksPath .githooks
+set -e
+
+echo "[pre-commit] typecheck..."
+npx tsc --noEmit
+
+echo "[pre-commit] tests..."
+npm test -- --run
+
+echo "[pre-commit] ok"
