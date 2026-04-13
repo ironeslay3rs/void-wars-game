@@ -392,14 +392,22 @@ export function handleEconomyAction(
       if (!delta) return state;
       const current = state.player.brokerRapport[brokerId] ?? 0;
       const next = Math.max(0, Math.min(100, current + delta));
-      if (next === current) return state;
+      // Always advance lastContactAt on engagement — the player
+      // touching the broker in any way counts as contact for decay.
       return {
         ...state,
         player: {
           ...state.player,
-          brokerRapport: {
-            ...state.player.brokerRapport,
-            [brokerId]: next,
+          brokerRapport:
+            next === current
+              ? state.player.brokerRapport
+              : {
+                  ...state.player.brokerRapport,
+                  [brokerId]: next,
+                },
+          brokerLastContactAt: {
+            ...state.player.brokerLastContactAt,
+            [brokerId]: Date.now(),
           },
         },
       };
@@ -416,6 +424,10 @@ export function handleEconomyAction(
           brokerDialogueUnlocks: {
             ...state.player.brokerDialogueUnlocks,
             [brokerId]: [...existing, unlockKey],
+          },
+          brokerLastContactAt: {
+            ...state.player.brokerLastContactAt,
+            [brokerId]: Date.now(),
           },
         },
       };
@@ -450,6 +462,10 @@ export function handleEconomyAction(
           condition: nextCondition,
           runInstability: nextInstability,
           brokerCooldowns: { ...p.brokerCooldowns, [brokerId]: now },
+          brokerLastContactAt: {
+            ...p.brokerLastContactAt,
+            [brokerId]: now,
+          },
         },
       };
     }
