@@ -2,6 +2,7 @@ import { maybeApplyExpeditionReadyStabilityToReward } from "@/features/expeditio
 import { buildExpeditionContractSnapshot } from "@/features/expedition/expeditionContractSnapshot";
 import { withPostSettlementMarketLegibility } from "@/features/expedition/postRunMarketPressure";
 import { phase1ExplorationReward } from "@/features/exploration/explorationData";
+import { rollExplorationReward } from "@/features/exploration/rollExplorationReward";
 import { applyPrimedPrepRunInstabilityTrim } from "@/features/crafting/prepRunHooks";
 import {
   huntIntensityFromMissionRankReward,
@@ -366,12 +367,12 @@ export function handleMissionAction(
         };
       }
 
+      const rolledReward = rollExplorationReward(
+        phase1ExplorationReward,
+        `exploration-${activeProcess.startedAt}`,
+      );
       const nextPlayer = applyActivityHungerCost(
-        applyMissionRewardWithVoidStrain(
-          player,
-          phase1ExplorationReward,
-          "neutral",
-        ),
+        applyMissionRewardWithVoidStrain(player, rolledReward, "neutral"),
         "exploration",
       );
 
