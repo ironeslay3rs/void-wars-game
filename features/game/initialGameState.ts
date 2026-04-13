@@ -138,6 +138,8 @@ export const initialGameState: GameState = {
     },
     lastAnomalyToast: null,
     brokerCooldowns: {},
+    brokerRapport: {},
+    brokerDialogueUnlocks: {},
     pantheonBlessingPending: false,
     activeShellBuffs: [],
   },

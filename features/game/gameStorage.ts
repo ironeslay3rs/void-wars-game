@@ -1013,6 +1013,36 @@ function normalizePlayer(value: unknown): PlayerState {
           ) as Record<string, number>)
         : {},
 
+    brokerRapport: isRecord((raw as Record<string, unknown>).brokerRapport)
+      ? (Object.fromEntries(
+          Object.entries(
+            (raw as Record<string, unknown>).brokerRapport as Record<string, unknown>,
+          )
+            .filter(
+              ([, v]) => typeof v === "number" && Number.isFinite(v as number),
+            )
+            .map(([k, v]) => [k, Math.max(0, Math.min(100, v as number))]),
+        ) as Record<string, number>)
+      : {},
+
+    brokerDialogueUnlocks: isRecord(
+      (raw as Record<string, unknown>).brokerDialogueUnlocks,
+    )
+      ? (Object.fromEntries(
+          Object.entries(
+            (raw as Record<string, unknown>).brokerDialogueUnlocks as Record<
+              string,
+              unknown
+            >,
+          )
+            .filter(([, v]) => Array.isArray(v))
+            .map(([k, v]) => [
+              k,
+              (v as unknown[]).filter((s): s is string => typeof s === "string"),
+            ]),
+        ) as Record<string, string[]>)
+      : {},
+
     affinitySchoolId:
       typeof (raw as Record<string, unknown>).affinitySchoolId === "string"
         ? ((raw as Record<string, unknown>).affinitySchoolId as string)

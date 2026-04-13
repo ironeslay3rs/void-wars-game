@@ -10,6 +10,8 @@ import {
 } from "@/features/lore/brokerInteractionData";
 import { getInstitutionById } from "@/features/institutions/institutionSelectors";
 import BrokerInteractionModal from "@/components/shared/BrokerInteractionModal";
+import BrokerDialogueModal from "@/components/shared/BrokerDialogueModal";
+import { getBrokerDialogueTree } from "@/features/broker-dialogue/brokerDialogueData";
 
 const SCHOOL_ACCENT: Record<PathType | "neutral", string> = {
   bio: "border-emerald-500/25 bg-emerald-500/5",
@@ -28,7 +30,9 @@ const SCHOOL_TEXT: Record<PathType | "neutral", string> = {
 export default function BrokerCard({ broker }: { broker: BrokerEntry }) {
   const [expanded, setExpanded] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const [dialogueOpen, setDialogueOpen] = useState(false);
   const [passiveMsg, setPassiveMsg] = useState(false);
+  const dialogueTree = getBrokerDialogueTree(broker.id);
   const accent = SCHOOL_ACCENT[broker.school];
   const textAccent = SCHOOL_TEXT[broker.school];
   const interaction = getBrokerInteraction(broker.id);
@@ -117,6 +121,17 @@ export default function BrokerCard({ broker }: { broker: BrokerEntry }) {
             </button>
           ) : null}
 
+          {/* Broker with a dialogue tree — "Talk" opens the branching dialogue */}
+          {dialogueTree ? (
+            <button
+              type="button"
+              onClick={() => setDialogueOpen(true)}
+              className="rounded-lg border border-fuchsia-400/25 bg-fuchsia-500/8 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-fuchsia-100/85 transition hover:border-fuchsia-300/40 hover:bg-fuchsia-500/14"
+            >
+              Talk
+            </button>
+          ) : null}
+
           {/* Passive broker — no gameplay yet */}
           {isPassive && !interaction ? (
             <button
@@ -146,6 +161,14 @@ export default function BrokerCard({ broker }: { broker: BrokerEntry }) {
           broker={broker}
           interaction={interaction}
           onClose={() => setModalOpen(false)}
+        />
+      ) : null}
+
+      {dialogueOpen && dialogueTree ? (
+        <BrokerDialogueModal
+          broker={broker}
+          tree={dialogueTree}
+          onClose={() => setDialogueOpen(false)}
         />
       ) : null}
     </>

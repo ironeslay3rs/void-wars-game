@@ -387,6 +387,40 @@ export function handleEconomyAction(
       };
     }
 
+    case "ADJUST_BROKER_RAPPORT": {
+      const { brokerId, delta } = action.payload;
+      if (!delta) return state;
+      const current = state.player.brokerRapport[brokerId] ?? 0;
+      const next = Math.max(0, Math.min(100, current + delta));
+      if (next === current) return state;
+      return {
+        ...state,
+        player: {
+          ...state.player,
+          brokerRapport: {
+            ...state.player.brokerRapport,
+            [brokerId]: next,
+          },
+        },
+      };
+    }
+
+    case "GRANT_BROKER_DIALOGUE_UNLOCK": {
+      const { brokerId, unlockKey } = action.payload;
+      const existing = state.player.brokerDialogueUnlocks[brokerId] ?? [];
+      if (existing.includes(unlockKey)) return state;
+      return {
+        ...state,
+        player: {
+          ...state.player,
+          brokerDialogueUnlocks: {
+            ...state.player.brokerDialogueUnlocks,
+            [brokerId]: [...existing, unlockKey],
+          },
+        },
+      };
+    }
+
     case "BROKER_INTERACT": {
       const brokerId = action.payload.brokerId;
       const interaction = getBrokerInteraction(brokerId);
