@@ -4,7 +4,7 @@ import { useState } from "react";
 import type { BrokerEntry } from "@/features/lore/brokerData";
 import type { PathType } from "@/features/game/gameTypes";
 import {
-  getBrokerInteraction,
+  getBestUnlockedBrokerInteraction,
   PASSIVE_BROKER_IDS,
   SILENT_BROKER_IDS,
 } from "@/features/lore/brokerInteractionData";
@@ -12,6 +12,8 @@ import { getInstitutionById } from "@/features/institutions/institutionSelectors
 import BrokerInteractionModal from "@/components/shared/BrokerInteractionModal";
 import BrokerDialogueModal from "@/components/shared/BrokerDialogueModal";
 import { getBrokerDialogueTree } from "@/features/broker-dialogue/brokerDialogueData";
+import { useGame } from "@/features/game/gameContext";
+import { getRapportBand } from "@/features/broker-dialogue/brokerDialogueTypes";
 
 const SCHOOL_ACCENT: Record<PathType | "neutral", string> = {
   bio: "border-emerald-500/25 bg-emerald-500/5",
@@ -35,7 +37,12 @@ export default function BrokerCard({ broker }: { broker: BrokerEntry }) {
   const dialogueTree = getBrokerDialogueTree(broker.id);
   const accent = SCHOOL_ACCENT[broker.school];
   const textAccent = SCHOOL_TEXT[broker.school];
-  const interaction = getBrokerInteraction(broker.id);
+  const { state } = useGame();
+  const unlocks = state.player.brokerDialogueUnlocks[broker.id] ?? [];
+  const rapport = state.player.brokerRapport[broker.id] ?? 0;
+  const rapportBand = dialogueTree ? getRapportBand(rapport) : null;
+  const interaction = getBestUnlockedBrokerInteraction(broker.id, unlocks);
+  const hasUnlockedOffer = !!interaction?.requiresUnlock;
   const isSilent = SILENT_BROKER_IDS.has(broker.id);
   const isPassive = PASSIVE_BROKER_IDS.has(broker.id);
   // Phase 9 / Sin Institutions: surface the operating org if any.
@@ -56,6 +63,14 @@ export default function BrokerCard({ broker }: { broker: BrokerEntry }) {
             </div>
           </div>
           <div className="flex shrink-0 flex-col items-end gap-1">
+            {rapportBand ? (
+              <span
+                className="rounded-md border border-fuchsia-400/25 bg-fuchsia-500/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.1em] text-fuchsia-100/80"
+                title={`Rapport ${rapport}/100 — ${rapportBand.hint}`}
+              >
+                {rapportBand.label} · {rapport}
+              </span>
+            ) : null}
             {institution ? (
               <span
                 className="rounded-md border px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.1em]"
@@ -110,12 +125,18 @@ export default function BrokerCard({ broker }: { broker: BrokerEntry }) {
             {expanded ? "Less" : "Backstory"}
           </button>
 
-          {/* Active broker — has a real interaction */}
+          {/* Active broker — has a real interaction. Unlocked premium
+              offers get a distinct gold-ish styling so the dialogue-
+              earned upgrade is legible at a glance. */}
           {interaction && !isSilent ? (
             <button
               type="button"
               onClick={() => setModalOpen(true)}
-              className="rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-white/70 transition hover:border-white/25 hover:bg-white/10"
+              className={
+                hasUnlockedOffer
+                  ? "rounded-lg border border-amber-300/45 bg-amber-500/12 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-amber-100 transition hover:border-amber-200/60 hover:bg-amber-500/20"
+                  : "rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-white/70 transition hover:border-white/25 hover:bg-white/10"
+              }
             >
               {interaction.actionLabel}
             </button>
