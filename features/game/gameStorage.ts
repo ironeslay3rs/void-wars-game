@@ -1043,6 +1043,21 @@ function normalizePlayer(value: unknown): PlayerState {
         ) as Record<string, string[]>)
       : {},
 
+    brokerLastContactAt: isRecord(
+      (raw as Record<string, unknown>).brokerLastContactAt,
+    )
+      ? (Object.fromEntries(
+          Object.entries(
+            (raw as Record<string, unknown>).brokerLastContactAt as Record<
+              string,
+              unknown
+            >,
+          ).filter(
+            ([, v]) => typeof v === "number" && Number.isFinite(v as number),
+          ),
+        ) as Record<string, number>)
+      : {},
+
     affinitySchoolId:
       typeof (raw as Record<string, unknown>).affinitySchoolId === "string"
         ? ((raw as Record<string, unknown>).affinitySchoolId as string)

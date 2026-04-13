@@ -3,6 +3,7 @@ import { buildExpeditionContractSnapshot } from "@/features/expedition/expeditio
 import { withPostSettlementMarketLegibility } from "@/features/expedition/postRunMarketPressure";
 import { phase1ExplorationReward } from "@/features/exploration/explorationData";
 import { rollExplorationReward } from "@/features/exploration/rollExplorationReward";
+import { applyRapportDecay } from "@/features/broker-dialogue/rapportDecay";
 import { applyPrimedPrepRunInstabilityTrim } from "@/features/crafting/prepRunHooks";
 import {
   huntIntensityFromMissionRankReward,
@@ -509,8 +510,26 @@ export function handleMissionAction(
       };
     }
 
-    case "PROCESS_MISSION_QUEUE":
-      return processMissionQueue(state, action.payload.now);
+    case "PROCESS_MISSION_QUEUE": {
+      const processed = processMissionQueue(state, action.payload.now);
+      // Rapport decay — brokers the player hasn't visited in a while
+      // lose rapport each tick. Cheap, pure, only updates state on an
+      // actual delta.
+      const decay = applyRapportDecay({
+        rapport: processed.player.brokerRapport,
+        lastContactAt: processed.player.brokerLastContactAt,
+        now: action.payload.now,
+      });
+      if (!decay.changed) return processed;
+      return {
+        ...processed,
+        player: {
+          ...processed.player,
+          brokerRapport: decay.rapport,
+          brokerLastContactAt: decay.lastContactAt,
+        },
+      };
+    }
 
     case "SET_EXPEDITION_READY_STABILITY_PENDING":
       return {
