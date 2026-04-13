@@ -33,6 +33,13 @@ export type PlayerBehaviorStats = {
 
 export type ResourceKey =
   | "credits"
+  /**
+   * Black Marks — daily city trade currency per vault CLAUDE.md.
+   * Distinct from Sinful Coin (credits / Black Market internal) and
+   * school currencies. Earned from broker stall sells + select
+   * mission rewards; spent at broker stalls.
+   */
+  | "blackMarks"
   | "ironOre"
   | "scrapAlloy"
   | "runeDust"

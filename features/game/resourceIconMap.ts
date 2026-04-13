@@ -3,6 +3,9 @@ import { assets } from "@/lib/assets";
 
 export const resourceIconMap: Record<ResourceKey, string> = {
   credits: assets.icons.generated.pureMaterials.sunSeal,
+  // Black Marks — daily city trade currency. Reuses the Sun Seal icon
+  // placeholder until a dedicated Black Marks asset is sliced.
+  blackMarks: assets.icons.generated.pureMaterials.sunSeal,
   ironOre: assets.icons.generated.mechaMaterials.alloyShard,
   scrapAlloy: assets.icons.generated.mechaMaterials.alloySpike,
   runeDust: assets.icons.generated.pureMaterials.amethystShard,

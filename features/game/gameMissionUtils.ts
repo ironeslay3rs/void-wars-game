@@ -127,6 +127,7 @@ export function addPartialResources(
 
   return {
     credits: current.credits + (accepted.credits ?? 0),
+    blackMarks: current.blackMarks + (accepted.blackMarks ?? 0),
     ironOre: current.ironOre + (accepted.ironOre ?? 0),
     scrapAlloy: current.scrapAlloy + (accepted.scrapAlloy ?? 0),
     runeDust: current.runeDust + (accepted.runeDust ?? 0),

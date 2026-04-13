@@ -73,12 +73,21 @@ describe("quoteBlackMarketBuyCredits", () => {
     expect(quoteBlackMarketBuyCredits("nonexistent")).toBeNull();
   });
 
-  it("applies the fusion markup to base price", () => {
+  it("applies the fusion markup to base price at 0 rapport", () => {
     const listing = BLACK_MARKET_LISTINGS[0];
     const quoted = quoteBlackMarketBuyCredits(listing.id);
-    expect(quoted).toBe(
+    expect(quoted!.finalPrice).toBe(
       Math.ceil(listing.priceCredits * BLACK_MARKET_BUY_MARKUP),
     );
+    expect(quoted!.rapportDiscountPct).toBe(0);
+  });
+
+  it("applies rapport discount at Trusted tier (rapport >= 60)", () => {
+    const listing = BLACK_MARKET_LISTINGS[0];
+    const base = quoteBlackMarketBuyCredits(listing.id, 0)!;
+    const trusted = quoteBlackMarketBuyCredits(listing.id, 60)!;
+    expect(trusted.rapportDiscountPct).toBe(20);
+    expect(trusted.finalPrice).toBeLessThan(base.finalPrice);
   });
 });
 
@@ -105,7 +114,7 @@ describe("BLACK_MARKET_BUY reducer integration", () => {
   it("deducts markup-adjusted price + grants listing contents", () => {
     const start = seedState();
     const listing = BLACK_MARKET_LISTINGS[0];
-    const price = quoteBlackMarketBuyCredits(listing.id)!;
+    const price = quoteBlackMarketBuyCredits(listing.id)!.finalPrice;
     const before = start.player.resources.credits;
     const after = gameReducer(start, {
       type: "BLACK_MARKET_BUY",
@@ -178,6 +187,53 @@ describe("BLACK_MARKET_SELL reducer integration", () => {
   });
 });
 
+describe("Rapport discount integration", () => {
+  it("buy costs less when player has high rapport with any broker", () => {
+    const listing = BLACK_MARKET_LISTINGS[0];
+    const noRapport = seedState();
+    const highRapport = {
+      ...seedState(),
+      player: {
+        ...seedState().player,
+        brokerRapport: { "discount-lars": 60 },
+      },
+    };
+    const afterNo = gameReducer(noRapport, {
+      type: "BLACK_MARKET_BUY",
+      payload: { listingId: listing.id },
+    });
+    const afterHigh = gameReducer(highRapport, {
+      type: "BLACK_MARKET_BUY",
+      payload: { listingId: listing.id },
+    });
+    const spentNo = noRapport.player.resources.credits - afterNo.player.resources.credits;
+    const spentHigh = highRapport.player.resources.credits - afterHigh.player.resources.credits;
+    expect(spentHigh).toBeLessThan(spentNo);
+  });
+
+  it("sell yields more when player has high rapport", () => {
+    const noRapport = seedState({ scrapAlloy: 20 });
+    const highRapport = {
+      ...seedState({ scrapAlloy: 20 }),
+      player: {
+        ...seedState({ scrapAlloy: 20 }).player,
+        brokerRapport: { "discount-lars": 60 },
+      },
+    };
+    const afterNo = gameReducer(noRapport, {
+      type: "BLACK_MARKET_SELL",
+      payload: { key: "scrapAlloy", amount: 10 },
+    });
+    const afterHigh = gameReducer(highRapport, {
+      type: "BLACK_MARKET_SELL",
+      payload: { key: "scrapAlloy", amount: 10 },
+    });
+    const earnedNo = afterNo.player.resources.credits - noRapport.player.resources.credits;
+    const earnedHigh = afterHigh.player.resources.credits - highRapport.player.resources.credits;
+    expect(earnedHigh).toBeGreaterThan(earnedNo);
+  });
+});
+
 describe("Black Market pricing is distinct from War Exchange", () => {
   it("BM sell always returns less than base price per unit (fence discount)", () => {
     const q = quoteBlackMarketSellCredits("emberCore", 1);
@@ -186,7 +242,7 @@ describe("Black Market pricing is distinct from War Exchange", () => {
 
   it("BM buy always costs more than base listing price (fusion markup)", () => {
     const listing = BLACK_MARKET_LISTINGS[0];
-    const bmPrice = quoteBlackMarketBuyCredits(listing.id)!;
+    const bmPrice = quoteBlackMarketBuyCredits(listing.id)!.finalPrice;
     expect(bmPrice).toBeGreaterThan(listing.priceCredits);
   });
 });

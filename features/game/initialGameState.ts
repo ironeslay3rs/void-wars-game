@@ -53,6 +53,7 @@ export const initialGameState: GameState = {
 
     resources: {
       credits: 0,
+      blackMarks: 0,
       ironOre: 0,
       scrapAlloy: 0,
       runeDust: 0,

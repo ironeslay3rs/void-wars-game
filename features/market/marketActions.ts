@@ -21,6 +21,11 @@ import {
   BLACK_MARKET_SELL_PREMIUM,
   getBlackMarketListingById,
 } from "@/features/market/blackMarketListings";
+import {
+  getBestBrokerRapport,
+  quoteBlackMarketBuy as quoteBlackMarketBuyWithRapport,
+  quoteBlackMarketSell as quoteBlackMarketSellWithRapport,
+} from "@/features/market/blackMarketPricing";
 
 /** Brokers take a flat cut on War Exchange sales (Phase 4 — market / tax visibility). */
 export const WAR_EXCHANGE_SELL_BROKER_CUT = 0.1;
@@ -203,7 +208,10 @@ export function applyBlackMarketBuy(state: GameState, listingId: string) {
     return { next: state, ok: false, reason: "Out of stock." };
   }
 
-  const priceCredits = Math.ceil(listing.priceCredits * BLACK_MARKET_BUY_MARKUP);
+  const bestRapport = getBestBrokerRapport(state.player.brokerRapport ?? {});
+  const quote = quoteBlackMarketBuyWithRapport(listingId, bestRapport);
+  if (!quote) return { next: state, ok: false, reason: "Listing missing." };
+  const priceCredits = quote.finalPrice;
 
   if (state.player.resources.credits < priceCredits) {
     return { next: state, ok: false, reason: "Insufficient Sinful Coin." };
@@ -274,11 +282,11 @@ export function applyBlackMarketSell(
     return { next: state, ok: false, reason: "Insufficient stock." };
   }
 
-  const basePerUnit = RESOURCE_BASE_PRICES[key] ?? 0;
-  if (basePerUnit <= 0) {
+  const bestRapport = getBestBrokerRapport(state.player.brokerRapport ?? {});
+  const sellQuote = quoteBlackMarketSellWithRapport(key, n, bestRapport);
+  if (sellQuote.net <= 0) {
     return { next: state, ok: false, reason: "No value." };
   }
-  const net = Math.max(1, Math.floor(basePerUnit * n * BLACK_MARKET_SELL_PREMIUM));
 
   return {
     next: {
@@ -288,13 +296,13 @@ export function applyBlackMarketSell(
         resources: {
           ...state.player.resources,
           [key]: Math.max(0, state.player.resources[key] - n),
-          credits: state.player.resources.credits + net,
+          credits: state.player.resources.credits + sellQuote.net,
         },
       },
     },
     ok: true,
     reason: null,
-    net,
+    net: sellQuote.net,
   };
 }
 
@@ -302,19 +310,21 @@ export function applyBlackMarketSell(
 export function quoteBlackMarketSellCredits(
   key: ResourceKey,
   amount: number,
-): { net: number } {
-  if (!canSellResource(key)) return { net: 0 };
-  const basePerUnit = RESOURCE_BASE_PRICES[key] ?? 0;
-  const n = Math.max(0, Math.floor(amount));
-  const net = Math.max(1, Math.floor(basePerUnit * n * BLACK_MARKET_SELL_PREMIUM));
-  return { net };
+  bestRapport = 0,
+): { net: number; rapportBonusPct: number } {
+  if (!canSellResource(key)) return { net: 0, rapportBonusPct: 0 };
+  const q = quoteBlackMarketSellWithRapport(key, amount, bestRapport);
+  return { net: q.net, rapportBonusPct: q.rapportBonusPct };
 }
 
 /** Quote a Black Market buy price without committing. */
-export function quoteBlackMarketBuyCredits(listingId: string): number | null {
-  const listing = getBlackMarketListingById(listingId);
-  if (!listing) return null;
-  return Math.ceil(listing.priceCredits * BLACK_MARKET_BUY_MARKUP);
+export function quoteBlackMarketBuyCredits(
+  listingId: string,
+  bestRapport = 0,
+): { finalPrice: number; markupPrice: number; rapportDiscountPct: number } | null {
+  const q = quoteBlackMarketBuyWithRapport(listingId, bestRapport);
+  if (!q) return null;
+  return { finalPrice: q.finalPrice, markupPrice: q.markupPrice, rapportDiscountPct: q.rapportDiscountPct };
 }
 
 export { BLACK_MARKET_LISTINGS };
