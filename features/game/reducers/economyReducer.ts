@@ -23,7 +23,12 @@ import { detectHumanityKeepsakes } from "@/features/broker-dialogue/humanityKeep
 export const BROKER_INTERACT_RAPPORT_GAIN = 2;
 import { computeFactionHqStipend, FACTION_HQ_STIPEND_COOLDOWN_MS } from "@/features/factions/factionWorldLogic";
 import { getVoidMarketWarAdjustments } from "@/features/factions/warEconomy";
-import { applyMarketBuy, applyMarketSell } from "@/features/market/marketActions";
+import {
+  applyBlackMarketBuy,
+  applyBlackMarketSell,
+  applyMarketBuy,
+  applyMarketSell,
+} from "@/features/market/marketActions";
 import {
   RUN_INSTABILITY_DELTA_GRAY_TRADE,
   bumpRunInstability,
@@ -156,6 +161,20 @@ export function handleEconomyAction(
 
     case "MARKET_SELL": {
       const result = applyMarketSell(
+        state,
+        action.payload.key,
+        action.payload.amount,
+      );
+      return result.next;
+    }
+
+    case "BLACK_MARKET_BUY": {
+      const result = applyBlackMarketBuy(state, action.payload.listingId);
+      return result.next;
+    }
+
+    case "BLACK_MARKET_SELL": {
+      const result = applyBlackMarketSell(
         state,
         action.payload.key,
         action.payload.amount,

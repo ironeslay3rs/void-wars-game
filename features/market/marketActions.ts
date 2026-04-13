@@ -15,6 +15,12 @@ import {
   getVishravaLedgerBuyMultiplierForFaction,
   getVishravaLedgerSellMultiplierForFaction,
 } from "@/features/institutions/institutionalPressure";
+import {
+  BLACK_MARKET_BUY_MARKUP,
+  BLACK_MARKET_LISTINGS,
+  BLACK_MARKET_SELL_PREMIUM,
+  getBlackMarketListingById,
+} from "@/features/market/blackMarketListings";
 
 /** Brokers take a flat cut on War Exchange sales (Phase 4 — market / tax visibility). */
 export const WAR_EXCHANGE_SELL_BROKER_CUT = 0.1;
@@ -26,6 +32,11 @@ export type MarketState = {
 export function createInitialMarketState(): MarketState {
   const stockByListingId: Record<string, number> = {};
   for (const listing of MARKET_LISTINGS) {
+    stockByListingId[listing.id] = listing.stock;
+  }
+  // Black Market shares the stockByListingId map — ids are namespaced
+  // (`bm-*`) to avoid collisions with War Exchange listings.
+  for (const listing of BLACK_MARKET_LISTINGS) {
     stockByListingId[listing.id] = listing.stock;
   }
   return { stockByListingId };
@@ -174,3 +185,136 @@ export function applyMarketSell(state: GameState, key: ResourceKey, amount: numb
   };
 }
 
+
+/**
+ * Black Market buy — canon: neutral mixed-provenance trade. Applies a
+ * fusion markup on top of the standard listing price to reflect risk.
+ * War-front demand multipliers are deliberately NOT applied here —
+ * the Black Market runs outside the faction economy by design
+ * (Black Market.md: "neutral or semi-neutral meeting ground").
+ */
+export function applyBlackMarketBuy(state: GameState, listingId: string) {
+  const listing = getBlackMarketListingById(listingId);
+  if (!listing) return { next: state, ok: false, reason: "Listing missing." };
+
+  const stock = (state.player.market?.stockByListingId?.[listingId] ??
+    listing.stock) as number;
+  if (stock <= 0) {
+    return { next: state, ok: false, reason: "Out of stock." };
+  }
+
+  const priceCredits = Math.ceil(listing.priceCredits * BLACK_MARKET_BUY_MARKUP);
+
+  if (state.player.resources.credits < priceCredits) {
+    return { next: state, ok: false, reason: "Insufficient Sinful Coin." };
+  }
+
+  const { accepted, blocked } = enforceCapacity(
+    state.player.resources,
+    listing.grant,
+  );
+  const acceptedKeys = Object.keys(accepted);
+  if (acceptedKeys.length === 0) {
+    const cap = checkCapacity(state.player.resources);
+    return {
+      next: state,
+      ok: false,
+      reason: cap.isOverloaded
+        ? "Storage overloaded. Sell or discard surplus."
+        : "No storage space for this purchase.",
+    };
+  }
+
+  const nextResources = { ...state.player.resources };
+  nextResources.credits = Math.max(0, nextResources.credits - priceCredits);
+  for (const [k, v] of Object.entries(accepted)) {
+    const key = k as ResourceKey;
+    const amount = typeof v === "number" ? v : 0;
+    nextResources[key] = Math.max(0, (nextResources[key] ?? 0) + amount);
+  }
+
+  const nextStockById = {
+    ...(state.player.market?.stockByListingId ?? {}),
+    [listingId]: Math.max(0, stock - 1),
+  };
+
+  return {
+    next: {
+      ...state,
+      player: {
+        ...state.player,
+        resources: nextResources,
+        market: { stockByListingId: nextStockById },
+      },
+    },
+    ok: true,
+    reason: blocked
+      ? "Partial storage accepted. Some units were blocked by capacity."
+      : null,
+  };
+}
+
+/**
+ * Black Market sell — flat 90% of the base resource price. No demand
+ * multiplier, no ledger tithe, no broker cut. Simpler than the War
+ * Exchange on purpose — the Black Market is a "survivor fence," not a
+ * tuned economy. Still respects SELLABLE_RESOURCE_KEYS.
+ */
+export function applyBlackMarketSell(
+  state: GameState,
+  key: ResourceKey,
+  amount: number,
+) {
+  if (!canSellResource(key)) {
+    return { next: state, ok: false, reason: "Not sellable here." };
+  }
+  const n = Math.max(0, Math.floor(amount));
+  if (n <= 0) return { next: state, ok: false, reason: "Invalid amount." };
+  if ((state.player.resources[key] ?? 0) < n) {
+    return { next: state, ok: false, reason: "Insufficient stock." };
+  }
+
+  const basePerUnit = RESOURCE_BASE_PRICES[key] ?? 0;
+  if (basePerUnit <= 0) {
+    return { next: state, ok: false, reason: "No value." };
+  }
+  const net = Math.max(1, Math.floor(basePerUnit * n * BLACK_MARKET_SELL_PREMIUM));
+
+  return {
+    next: {
+      ...state,
+      player: {
+        ...state.player,
+        resources: {
+          ...state.player.resources,
+          [key]: Math.max(0, state.player.resources[key] - n),
+          credits: state.player.resources.credits + net,
+        },
+      },
+    },
+    ok: true,
+    reason: null,
+    net,
+  };
+}
+
+/** Quote a Black Market sell without committing. */
+export function quoteBlackMarketSellCredits(
+  key: ResourceKey,
+  amount: number,
+): { net: number } {
+  if (!canSellResource(key)) return { net: 0 };
+  const basePerUnit = RESOURCE_BASE_PRICES[key] ?? 0;
+  const n = Math.max(0, Math.floor(amount));
+  const net = Math.max(1, Math.floor(basePerUnit * n * BLACK_MARKET_SELL_PREMIUM));
+  return { net };
+}
+
+/** Quote a Black Market buy price without committing. */
+export function quoteBlackMarketBuyCredits(listingId: string): number | null {
+  const listing = getBlackMarketListingById(listingId);
+  if (!listing) return null;
+  return Math.ceil(listing.priceCredits * BLACK_MARKET_BUY_MARKUP);
+}
+
+export { BLACK_MARKET_LISTINGS };

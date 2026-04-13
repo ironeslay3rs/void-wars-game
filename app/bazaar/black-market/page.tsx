@@ -21,7 +21,14 @@ export default function BlackMarketPage() {
             </p>
             <p className="mt-2 rounded-lg border border-white/[0.08] bg-black/30 px-3 py-2 text-[11px] leading-relaxed text-white/50">
               <span className="font-semibold text-amber-200/85">M1 loop:</span>{" "}
-              {blackMarketM1LoopGuide} For player listings, open the{" "}
+              {blackMarketM1LoopGuide} For fusion lots + resource fencing, open{" "}
+              <Link
+                href="/bazaar/black-market/exchange"
+                className="font-semibold text-fuchsia-200/90 underline decoration-fuchsia-500/35 underline-offset-2 hover:text-white"
+              >
+                The Exchange Floor
+              </Link>
+              . For player listings, open the{" "}
               <Link
                 href="/bazaar/auction-house"
                 className="font-semibold text-cyan-200/90 underline decoration-cyan-500/35 underline-offset-2 hover:text-white"
