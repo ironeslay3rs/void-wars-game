@@ -5,6 +5,10 @@ import { useGame } from "@/features/game/gameContext";
 import type { BrokerInteraction } from "@/features/lore/brokerInteractionData";
 import type { BrokerEntry } from "@/features/lore/brokerData";
 import type { PathType } from "@/features/game/gameTypes";
+import {
+  getDiscountedCost,
+  getRapportDiscountPct,
+} from "@/features/broker-dialogue/rapportDiscount";
 
 const SCHOOL_ACCENT: Record<PathType | "neutral", { border: string; bg: string; btn: string }> = {
   bio: { border: "border-emerald-500/40", bg: "bg-emerald-950/95", btn: "border-emerald-400/40 bg-emerald-500/15 text-emerald-100 hover:bg-emerald-500/25" },
@@ -25,7 +29,10 @@ export default function BrokerInteractionModal({ broker, interaction, onClose }:
   const accent = SCHOOL_ACCENT[broker.school];
 
   const credits = state.player.resources.credits;
-  const canAfford = credits >= interaction.cost;
+  const rapport = state.player.brokerRapport[broker.id] ?? 0;
+  const discountPct = getRapportDiscountPct(rapport);
+  const effectiveCost = getDiscountedCost(interaction.cost, rapport);
+  const canAfford = credits >= effectiveCost;
   const lastUsed = state.player.brokerCooldowns[broker.id] ?? 0;
   const now = Date.now();
   const onCooldown = interaction.cooldownMs > 0 && now - lastUsed < interaction.cooldownMs;
@@ -80,7 +87,21 @@ export default function BrokerInteractionModal({ broker, interaction, onClose }:
 
             <div className="flex items-center justify-between rounded-xl border border-white/10 bg-black/30 px-4 py-3">
               <span className="text-xs text-white/50">Cost</span>
-              <span className="text-sm font-bold text-white">{interaction.cost} Sinful Coin</span>
+              {discountPct > 0 ? (
+                <span className="flex items-center gap-2 text-sm font-bold text-white">
+                  <span className="text-xs text-white/40 line-through">
+                    {interaction.cost}
+                  </span>
+                  <span>{effectiveCost} Sinful Coin</span>
+                  <span className="rounded border border-emerald-400/40 bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest text-emerald-100">
+                    −{discountPct}%
+                  </span>
+                </span>
+              ) : (
+                <span className="text-sm font-bold text-white">
+                  {effectiveCost} Sinful Coin
+                </span>
+              )}
             </div>
 
             {onCooldown ? (
