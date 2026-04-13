@@ -617,6 +617,14 @@ export type PlayerState = {
   brokerDialogueUnlocks: Record<string, string[]>;
 
   /**
+   * Last-contact timestamp per broker. Used by the rapport decay
+   * system — brokers whose rapport stays warm only if the player
+   * visits within the grace window. Advances on any broker
+   * interaction or dialogue choice. Block 2 — Rapport Decay.
+   */
+  brokerLastContactAt: Record<string, number>;
+
+  /**
    * Pantheon visit blessing — one-shot token earned by visiting the
    * pantheon HQ tied to the player's affinity school. Consumed by the
    * next mission settlement, granting a flat reward bonus
