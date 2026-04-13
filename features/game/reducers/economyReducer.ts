@@ -9,7 +9,8 @@ import {
 } from "@/features/economy/craftWorkOrderData";
 import { addPartialResources, clamp } from "@/features/game/gameMissionUtils";
 import type { GameAction, GameState, ResourceKey } from "@/features/game/gameTypes";
-import { getBrokerInteraction } from "@/features/lore/brokerInteractionData";
+import { getBestUnlockedBrokerInteraction } from "@/features/lore/brokerInteractionData";
+import { getDiscountedCost } from "@/features/broker-dialogue/rapportDiscount";
 import { computeFactionHqStipend, FACTION_HQ_STIPEND_COOLDOWN_MS } from "@/features/factions/factionWorldLogic";
 import { getVoidMarketWarAdjustments } from "@/features/factions/warEconomy";
 import { applyMarketBuy, applyMarketSell } from "@/features/market/marketActions";
@@ -435,14 +436,21 @@ export function handleEconomyAction(
 
     case "BROKER_INTERACT": {
       const brokerId = action.payload.brokerId;
-      const interaction = getBrokerInteraction(brokerId);
-      if (!interaction) return state;
       const p = state.player;
-      if (p.resources.credits < interaction.cost) return state;
+      // Pick the best currently-unlocked offer (dialogue-gated tier
+      // when the player has earned it; base tier otherwise) and apply
+      // the rapport discount to the charge. Stranger pays full; Trusted
+      // pays 80%. Floor 1 — every transaction has friction.
+      const unlocks = p.brokerDialogueUnlocks[brokerId] ?? [];
+      const interaction = getBestUnlockedBrokerInteraction(brokerId, unlocks);
+      if (!interaction) return state;
+      const rapport = p.brokerRapport[brokerId] ?? 0;
+      const effectiveCost = getDiscountedCost(interaction.cost, rapport);
+      if (p.resources.credits < effectiveCost) return state;
       const now = Date.now();
       const lastUsed = p.brokerCooldowns[brokerId] ?? 0;
       if (interaction.cooldownMs > 0 && now - lastUsed < interaction.cooldownMs) return state;
-      let nextResources = { ...p.resources, credits: p.resources.credits - interaction.cost };
+      let nextResources = { ...p.resources, credits: p.resources.credits - effectiveCost };
       let nextCondition = p.condition;
       let nextInstability = p.runInstability;
       const eff = interaction.effect;
