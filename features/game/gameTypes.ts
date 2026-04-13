@@ -44,7 +44,21 @@ export type ResourceKey =
   | "ashSynodRelic"
   | "vaultLatticeShard"
   /** M6: restricted-war / mythic forge metal (boss-named pool). */
-  | "ironHeart";
+  | "ironHeart"
+  /** Empire apex materials (Bio, Pure) — breakthrough gates. */
+  | "bloodvein"
+  | "ashveil"
+  /**
+   * Phase 2 named materials — lesser/shard forms of the apex set.
+   * Canon anchor: lore-canon/CLAUDE.md Currency Hierarchy
+   * ("Lesser forms: Veinshards, Heart-Iron, Veil Ash, Meldshards").
+   * These feed Hollowfang prestige rewards and school crafting sinks
+   * below the apex tier (Bloodvein / Ironheart / Ashveil / Meldheart).
+   */
+  | "veinshard"
+  | "heartIron"
+  | "veilAsh"
+  | "meldshard";
 
 export type RunArchetype = "safe" | "balanced" | "greedy" | "volatile";
 

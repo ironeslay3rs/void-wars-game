@@ -97,6 +97,48 @@ const resourceFlavors: Record<ResourceKey, ResourceFlavor> = {
     originHint: "Mecha / Chrome Synod",
     school: "neutral",
   },
+  // Session-layer apex (March 17 design session adaptation name, not book canon)
+  bloodvein: {
+    displayName: "Bloodvein",
+    flavorLine: "A thread of the Verdant Coil's own pulse, bottled and sealed. Still warm.",
+    originHint: "Bio / Verdant Coil apex",
+    school: "bio",
+  },
+  // Session-layer apex (March 17 design session adaptation name, not book canon)
+  ashveil: {
+    displayName: "Ashveil",
+    flavorLine: "Soot skimmed from the Ember Vault's highest flame. Each grain remembers a prayer.",
+    originHint: "Pure / Ember Vault apex",
+    school: "pure",
+  },
+  // CANON SOURCE: lore-canon/CLAUDE.md Currency Hierarchy — "Lesser forms: Veinshards..."
+  veinshard: {
+    displayName: "Veinshard",
+    flavorLine: "A chip of Bloodvein that never quite sealed. Verdant Coil huntresses wear them as piercings until a real vein is earned.",
+    originHint: "Bio / Verdant Coil — lesser form of Bloodvein",
+    school: "bio",
+  },
+  // CANON SOURCE: lore-canon/CLAUDE.md Currency Hierarchy — "Heart-Iron"
+  heartIron: {
+    displayName: "Heart-Iron",
+    flavorLine: "Ironheart that failed the forge — still remembers being something else, but louder, and angrier about it. Chrome Synod apprentices cut their teeth on it.",
+    originHint: "Mecha / Chrome Synod — lesser form of Ironheart",
+    school: "mecha",
+  },
+  // CANON SOURCE: lore-canon/CLAUDE.md Currency Hierarchy — "Veil Ash"
+  veilAsh: {
+    displayName: "Veil Ash",
+    flavorLine: "Ashveil before the final skim. Ember Vault acolytes sweep it from the lower braziers and trade it for wisdom they have not yet lived.",
+    originHint: "Pure / Ember Vault — lesser form of Ashveil",
+    school: "pure",
+  },
+  // CANON SOURCE: lore-canon/CLAUDE.md Currency Hierarchy — "Meldshards" (Black Market fusion)
+  meldshard: {
+    displayName: "Meldshard",
+    flavorLine: "A splinter of Meldheart — the Black Market's cross-school fusion slag. Three schools argue whose it is; the market keeps selling it anyway.",
+    originHint: "Black Market / Blackcity — lesser form of Meldheart",
+    school: "neutral",
+  },
 };
 
 export function getResourceFlavor(key: ResourceKey): ResourceFlavor {

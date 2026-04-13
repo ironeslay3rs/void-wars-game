@@ -13,6 +13,12 @@ export const resourceIconMap: Record<ResourceKey, string> = {
   ashSynodRelic: assets.icons.generated.mechaMaterials.arcReactor,
   vaultLatticeShard: assets.icons.generated.pureMaterials.prismFrame,
   ironHeart: assets.icons.generated.mechaMaterials.alloySpike,
+  bloodvein: assets.icons.generated.bioMaterials.sporeVial,
+  ashveil: assets.icons.generated.pureMaterials.solarOrb,
+  veinshard: assets.icons.generated.bioMaterials.thornHeart,
+  heartIron: assets.icons.generated.mechaMaterials.alloyShard,
+  veilAsh: assets.icons.generated.pureMaterials.scorchedShard,
+  meldshard: assets.icons.generated.pureMaterials.voidOrb,
 };
 
 export function getResourceIcon(

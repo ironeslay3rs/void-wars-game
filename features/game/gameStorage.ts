@@ -93,6 +93,30 @@ function normalizeResources(value: unknown): ResourcesState {
       typeof raw.ironHeart === "number"
         ? raw.ironHeart
         : initialGameState.player.resources.ironHeart,
+    bloodvein:
+      typeof raw.bloodvein === "number"
+        ? raw.bloodvein
+        : initialGameState.player.resources.bloodvein,
+    ashveil:
+      typeof raw.ashveil === "number"
+        ? raw.ashveil
+        : initialGameState.player.resources.ashveil,
+    veinshard:
+      typeof raw.veinshard === "number"
+        ? raw.veinshard
+        : initialGameState.player.resources.veinshard,
+    heartIron:
+      typeof raw.heartIron === "number"
+        ? raw.heartIron
+        : initialGameState.player.resources.heartIron,
+    veilAsh:
+      typeof raw.veilAsh === "number"
+        ? raw.veilAsh
+        : initialGameState.player.resources.veilAsh,
+    meldshard:
+      typeof raw.meldshard === "number"
+        ? raw.meldshard
+        : initialGameState.player.resources.meldshard,
   };
 }
 
@@ -127,6 +151,24 @@ function normalizePartialResources(
   }
   if (typeof value.ironHeart === "number") {
     result.ironHeart = value.ironHeart;
+  }
+  if (typeof value.bloodvein === "number") {
+    result.bloodvein = value.bloodvein;
+  }
+  if (typeof value.ashveil === "number") {
+    result.ashveil = value.ashveil;
+  }
+  if (typeof value.veinshard === "number") {
+    result.veinshard = value.veinshard;
+  }
+  if (typeof value.heartIron === "number") {
+    result.heartIron = value.heartIron;
+  }
+  if (typeof value.veilAsh === "number") {
+    result.veilAsh = value.veilAsh;
+  }
+  if (typeof value.meldshard === "number") {
+    result.meldshard = value.meldshard;
   }
 
   return result;

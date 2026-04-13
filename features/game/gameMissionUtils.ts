@@ -139,6 +139,12 @@ export function addPartialResources(
     vaultLatticeShard:
       current.vaultLatticeShard + (accepted.vaultLatticeShard ?? 0),
     ironHeart: current.ironHeart + (accepted.ironHeart ?? 0),
+    bloodvein: current.bloodvein + (accepted.bloodvein ?? 0),
+    ashveil: current.ashveil + (accepted.ashveil ?? 0),
+    veinshard: current.veinshard + (accepted.veinshard ?? 0),
+    heartIron: current.heartIron + (accepted.heartIron ?? 0),
+    veilAsh: current.veilAsh + (accepted.veilAsh ?? 0),
+    meldshard: current.meldshard + (accepted.meldshard ?? 0),
   };
 }
 
