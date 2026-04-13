@@ -5,6 +5,10 @@ import { glassDialogueTree } from "@/features/broker-dialogue/glassDialogueTree"
 import { kessler9DialogueTree } from "@/features/broker-dialogue/kessler9DialogueTree";
 import { hazelDialogueTree } from "@/features/broker-dialogue/hazelDialogueTree";
 import { ashveilDialogueTree } from "@/features/broker-dialogue/ashveilDialogueTree";
+import { sableDialogueTree } from "@/features/broker-dialogue/sableDialogueTree";
+import { oldIvoryDialogueTree } from "@/features/broker-dialogue/oldIvoryDialogueTree";
+import { tomoWrenchDialogueTree } from "@/features/broker-dialogue/tomoWrenchDialogueTree";
+import { ironJawDialogueTree } from "@/features/broker-dialogue/ironJawDialogueTree";
 
 /**
  * Registry of broker dialogue trees.
@@ -27,6 +31,10 @@ const REGISTRY: Record<string, BrokerDialogueTree> = {
   [kessler9DialogueTree.brokerId]: kessler9DialogueTree,
   [hazelDialogueTree.brokerId]: hazelDialogueTree,
   [ashveilDialogueTree.brokerId]: ashveilDialogueTree,
+  [sableDialogueTree.brokerId]: sableDialogueTree,
+  [oldIvoryDialogueTree.brokerId]: oldIvoryDialogueTree,
+  [tomoWrenchDialogueTree.brokerId]: tomoWrenchDialogueTree,
+  [ironJawDialogueTree.brokerId]: ironJawDialogueTree,
 };
 
 export function getBrokerDialogueTree(brokerId: string): BrokerDialogueTree | null {
