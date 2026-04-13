@@ -11,6 +11,7 @@ import { addPartialResources, clamp } from "@/features/game/gameMissionUtils";
 import type { GameAction, GameState, ResourceKey } from "@/features/game/gameTypes";
 import { getBestUnlockedBrokerInteraction } from "@/features/lore/brokerInteractionData";
 import { getDiscountedCost } from "@/features/broker-dialogue/rapportDiscount";
+import { detectHumanityKeepsakes } from "@/features/broker-dialogue/humanityKeepsake";
 import { computeFactionHqStipend, FACTION_HQ_STIPEND_COOLDOWN_MS } from "@/features/factions/factionWorldLogic";
 import { getVoidMarketWarAdjustments } from "@/features/factions/warEconomy";
 import { applyMarketBuy, applyMarketSell } from "@/features/market/marketActions";
@@ -395,21 +396,32 @@ export function handleEconomyAction(
       const next = Math.max(0, Math.min(100, current + delta));
       // Always advance lastContactAt on engagement — the player
       // touching the broker in any way counts as contact for decay.
+      const nextRapport =
+        next === current
+          ? state.player.brokerRapport
+          : {
+              ...state.player.brokerRapport,
+              [brokerId]: next,
+            };
+      // Humanity Keepsake detection — if this adjustment lifts the
+      // broker over the 80-rapport threshold, grant the Keepsake.
+      // Canon: the gift of someone believing in you cannot be un-given.
+      const keepsakeResult = detectHumanityKeepsakes({
+        rapport: nextRapport,
+        keepsakes: state.player.brokerKeepsakes,
+      });
       return {
         ...state,
         player: {
           ...state.player,
-          brokerRapport:
-            next === current
-              ? state.player.brokerRapport
-              : {
-                  ...state.player.brokerRapport,
-                  [brokerId]: next,
-                },
+          brokerRapport: nextRapport,
           brokerLastContactAt: {
             ...state.player.brokerLastContactAt,
             [brokerId]: Date.now(),
           },
+          brokerKeepsakes: keepsakeResult.changed
+            ? keepsakeResult.keepsakes
+            : state.player.brokerKeepsakes,
         },
       };
     }

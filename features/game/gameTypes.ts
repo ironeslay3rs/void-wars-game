@@ -625,6 +625,15 @@ export type PlayerState = {
   brokerLastContactAt: Record<string, number>;
 
   /**
+   * Humanity Keepsakes — per-broker flag set when rapport reaches
+   * 80. Grants +1% reward bonus each, stacking up to the cap. Canon
+   * source: Humanity Theme.md ("strength through the sacrifices
+   * made for them by others"). Not revokable — rapport decay does
+   * not remove a granted Keepsake.
+   */
+  brokerKeepsakes: Record<string, boolean>;
+
+  /**
    * Pantheon visit blessing — one-shot token earned by visiting the
    * pantheon HQ tied to the player's affinity school. Consumed by the
    * next mission settlement, granting a flat reward bonus

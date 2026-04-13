@@ -1058,6 +1058,19 @@ function normalizePlayer(value: unknown): PlayerState {
         ) as Record<string, number>)
       : {},
 
+    brokerKeepsakes: isRecord(
+      (raw as Record<string, unknown>).brokerKeepsakes,
+    )
+      ? (Object.fromEntries(
+          Object.entries(
+            (raw as Record<string, unknown>).brokerKeepsakes as Record<
+              string,
+              unknown
+            >,
+          ).filter(([, v]) => v === true),
+        ) as Record<string, boolean>)
+      : {},
+
     affinitySchoolId:
       typeof (raw as Record<string, unknown>).affinitySchoolId === "string"
         ? ((raw as Record<string, unknown>).affinitySchoolId as string)
