@@ -113,16 +113,26 @@ function VoidExpeditionScreenInner() {
     ? `Next lock: ${nextLocked.label} at rank ${nextLocked.threatLevel}`
     : "All realms unlocked by rank.";
 
+  const VOID_DEPLOY_CREDIT_COST = 25;
+  const hasDeployCredits =
+    (state.player.resources.credits ?? 0) >= VOID_DEPLOY_CREDIT_COST;
+
   function handleDeployThisZone() {
     if (
       !isUnlocked ||
       !masteryGatesOk ||
       !isDeployMissionCanonUnlocked ||
       !doctrineQueueGate.canQueue ||
-      activeHunt
+      activeHunt ||
+      !hasDeployCredits
     ) {
       return;
     }
+
+    dispatch({
+      type: "ADD_RESOURCE",
+      payload: { key: "credits", amount: -VOID_DEPLOY_CREDIT_COST },
+    });
 
     const SESSION_BUCKET_MS = 2 * 60 * 1000;
     const sessionBucketId = Math.floor(Date.now() / SESSION_BUCKET_MS);
@@ -172,7 +182,8 @@ function VoidExpeditionScreenInner() {
     !masteryGatesOk ||
     !isDeployMissionCanonUnlocked ||
     !doctrineQueueGate.canQueue ||
-    !!activeHunt;
+    !!activeHunt ||
+    !hasDeployCredits;
 
   const deployLabel = !isUnlocked
     ? "Locked Zone"
@@ -186,7 +197,9 @@ function VoidExpeditionScreenInner() {
             ? "Stabilize First"
             : activeHunt
               ? "Hunt Active"
-              : `Deploy into ${selected.label}`;
+              : !hasDeployCredits
+                ? `Need ${VOID_DEPLOY_CREDIT_COST} credits`
+                : `Deploy into ${selected.label} · ${VOID_DEPLOY_CREDIT_COST}c`;
 
   const masteryGateFailures = getZoneMasteryGateFailureLines(
     state.player,
@@ -217,6 +230,11 @@ function VoidExpeditionScreenInner() {
     <span>{doctrineQueueGate.reason}</span>
   ) : activeHunt ? (
     <span>Finish or open the active hunt before deploying again.</span>
+  ) : !hasDeployCredits ? (
+    <span>
+      Deploy consumes {VOID_DEPLOY_CREDIT_COST} credits for gate charge. Sell
+      salvage at the War Exchange before returning.
+    </span>
   ) : null;
 
   return (

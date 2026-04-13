@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type React from "react";
 import { useEffect, useRef, useState } from "react";
 import BazaarSubpageNav from "@/components/bazaar/BazaarSubpageNav";
 import ScreenHeader from "@/components/shared/ScreenHeader";
@@ -229,10 +230,12 @@ function buildCompletionFeedback(completedMissions: MissionDefinition[]): Comple
 
 type HuntingGroundScreenProps = {
   header?: HuntingGroundScreenHeader;
+  slotBelow?: React.ReactNode;
 };
 
 export default function HuntingGroundScreen({
   header = huntingGroundScreenData,
+  slotBelow,
 }: HuntingGroundScreenProps) {
   const { state, dispatch } = useGame();
   const [now, setNow] = useState(() => Date.now());
@@ -938,6 +941,7 @@ export default function HuntingGroundScreen({
             </div>
           </div>
         ) : null}
+        {slotBelow}
       </div>
     </main>
   );
