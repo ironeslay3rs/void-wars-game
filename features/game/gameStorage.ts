@@ -53,6 +53,10 @@ function normalizeResources(value: unknown): ResourcesState {
       typeof raw.credits === "number"
         ? raw.credits
         : initialGameState.player.resources.credits,
+    blackMarks:
+      typeof raw.blackMarks === "number"
+        ? raw.blackMarks
+        : initialGameState.player.resources.blackMarks,
     ironOre:
       typeof raw.ironOre === "number"
         ? raw.ironOre
@@ -104,6 +108,9 @@ function normalizePartialResources(
   const result: Partial<ResourcesState> = {};
 
   if (typeof value.credits === "number") result.credits = value.credits;
+  if (typeof value.blackMarks === "number") {
+    result.blackMarks = value.blackMarks;
+  }
   if (typeof value.ironOre === "number") result.ironOre = value.ironOre;
   if (typeof value.scrapAlloy === "number") {
     result.scrapAlloy = value.scrapAlloy;

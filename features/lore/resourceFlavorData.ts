@@ -27,6 +27,15 @@ const resourceFlavors: Record<ResourceKey, ResourceFlavor> = {
     originHint: "Black Market / Blackcity",
     school: "neutral",
   },
+  // Canon (vault CLAUDE.md): "Black Marks = daily city trade".
+  // Session-layer currency — distinct from Sinful Coin. Earned + spent
+  // at broker stalls; never at the War Exchange or faction HQs.
+  blackMarks: {
+    displayName: "Black Marks",
+    flavorLine: "Paper chits with no seal — the daily currency of stall commerce. Everyone takes them. Nobody owes on them.",
+    originHint: "Broker stalls / daily trade",
+    school: "neutral",
+  },
   ironOre: {
     // NON-CANON PLACEHOLDER — no book source for this resource name
     displayName: "Iron Ore",
