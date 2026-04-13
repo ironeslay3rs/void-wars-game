@@ -40,6 +40,7 @@ import { withPostSettlementMarketLegibility } from "@/features/expedition/postRu
 import {
   MANA_PER_HUNTING_GROUND_SETTLEMENT,
   MANA_PER_MISSION_SETTLEMENT,
+  VOID_SUPPRESSION_MANA_MULT,
 } from "@/features/mana/manaTypes";
 import {
   PANTHEON_BLESSING_REWARD_BONUS_PCT,
@@ -838,10 +839,17 @@ export function processMissionQueue(state: GameState, now: number): GameState {
     // with hunting-ground runs paying slightly more (more cycles, more
     // pressure absorbed). Capped to manaMax to avoid overflow.
     {
-      const manaGain =
+      const baseManaGain =
         mission.category === "hunting-ground"
           ? MANA_PER_HUNTING_GROUND_SETTLEMENT
           : MANA_PER_MISSION_SETTLEMENT;
+      // Void Suppression — while deployed in a void realm, mana gains
+      // are halved. Canon: the Void suppresses mana for operatives
+      // inside it. Extraction lifts the penalty.
+      const isDeployed = nextPlayer.voidRealtimeBinding != null;
+      const manaGain = isDeployed
+        ? Math.floor(baseManaGain * VOID_SUPPRESSION_MANA_MULT)
+        : baseManaGain;
       nextPlayer = {
         ...nextPlayer,
         mana: clamp(nextPlayer.mana + manaGain, 0, nextPlayer.manaMax),

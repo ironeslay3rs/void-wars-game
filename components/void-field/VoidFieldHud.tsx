@@ -23,6 +23,7 @@ export default function VoidFieldHud({
   combatHudLine = null,
   encounterBrief = null,
   voidStrainChip = null,
+  voidSuppressionChip = null,
   runHeatChip = null,
   runStyleChip = null,
   ascensionTensionChip = null,
@@ -53,6 +54,8 @@ export default function VoidFieldHud({
   encounterBrief?: string | null;
   /** Phase 3 — elevated Void infusion readout while deployed. */
   voidStrainChip?: string | null;
+  /** Canon chip: mana gain is halved while deployed in the Void. */
+  voidSuppressionChip?: string | null;
   /** Per-run heat (hunts / raids / gray trades). */
   runHeatChip?: string | null;
   /** Detected run posture (safe / balanced / greedy / volatile). */
@@ -114,6 +117,14 @@ export default function VoidFieldHud({
           {voidStrainChip ? (
             <span className="rounded-full border border-violet-400/30 bg-violet-950/40 px-2.5 py-1 text-violet-100">
               {voidStrainChip}
+            </span>
+          ) : null}
+          {voidSuppressionChip ? (
+            <span
+              title="The Void suppresses mana. Half passive gains until extraction."
+              className="rounded-full border border-indigo-400/30 bg-indigo-950/50 px-2.5 py-1 text-indigo-100"
+            >
+              {voidSuppressionChip}
             </span>
           ) : null}
           {runHeatChip ? (

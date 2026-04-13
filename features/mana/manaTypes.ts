@@ -45,6 +45,19 @@ export const MANA_PER_HUNTING_GROUND_SETTLEMENT = 7;
 export const MANA_PER_FEAST_HALL_OFFER = 8;
 
 /**
+ * Void Suppression — canon reading from World Laws/The Void:
+ * "The Void is a containment world... higher beings cannot exist in it
+ * normally... how mana behaves inside the Void." Mana is partially
+ * present, not native. While the operative is deployed into a void
+ * realm (active `voidRealtimeBinding`), passive mana grants are
+ * multiplied by this factor. Extraction lifts the suppression.
+ *
+ * 0.5 = half gain. Enough to feel tactical ("burn mana before you
+ * deploy, refill at home") without punishing the loop.
+ */
+export const VOID_SUPPRESSION_MANA_MULT = 0.5;
+
+/**
  * Deepening slice — directed spends. Each is an atomic mana → benefit
  * exchange that the reducer guards both ends of (afford check + cap check).
  *
