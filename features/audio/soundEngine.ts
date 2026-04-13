@@ -17,6 +17,23 @@ let masterGain: GainNode | null = null;
 let volume = 0.3;
 let muted = false;
 
+const VOLUME_STORAGE_KEY = "vw:audio:volume";
+const MUTED_STORAGE_KEY = "vw:audio:muted";
+
+if (typeof window !== "undefined") {
+  try {
+    const storedVol = window.localStorage.getItem(VOLUME_STORAGE_KEY);
+    if (storedVol !== null) {
+      const parsed = Number.parseFloat(storedVol);
+      if (Number.isFinite(parsed)) volume = Math.max(0, Math.min(1, parsed));
+    }
+    const storedMute = window.localStorage.getItem(MUTED_STORAGE_KEY);
+    if (storedMute === "1") muted = true;
+  } catch {
+    // ignore storage errors
+  }
+}
+
 function getCtx(): AudioContext | null {
   if (typeof window === "undefined") return null;
   if (ctx) return ctx;
@@ -47,11 +64,33 @@ if (typeof window !== "undefined") {
 export function setVolume(v: number) {
   volume = Math.max(0, Math.min(1, v));
   if (masterGain) masterGain.gain.value = muted ? 0 : volume;
+  if (typeof window !== "undefined") {
+    try {
+      window.localStorage.setItem(VOLUME_STORAGE_KEY, String(volume));
+    } catch {
+      // ignore
+    }
+  }
 }
 
 export function setMuted(m: boolean) {
   muted = m;
   if (masterGain) masterGain.gain.value = muted ? 0 : volume;
+  if (typeof window !== "undefined") {
+    try {
+      window.localStorage.setItem(MUTED_STORAGE_KEY, muted ? "1" : "0");
+    } catch {
+      // ignore
+    }
+  }
+}
+
+export function getVolume(): number {
+  return volume;
+}
+
+export function isMuted(): boolean {
+  return muted;
 }
 
 function tone(

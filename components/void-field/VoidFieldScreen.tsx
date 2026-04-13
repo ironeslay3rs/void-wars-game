@@ -770,6 +770,9 @@ export default function VoidFieldScreen() {
         combatHudLine={combatHudLine}
         encounterBrief={encounterBrief}
         voidStrainChip={voidInfusionHudLine(state.player.voidInstability)}
+        voidSuppressionChip={
+          state.player.voidRealtimeBinding ? "Void Suppression · mana ÷2" : null
+        }
         runHeatChip={formatRunInstabilityChip(state.player.runInstability)}
         runStyleChip={formatRunStyleLabel(state.player.runArchetype)}
         ascensionTensionChip={ascensionTensionChip}

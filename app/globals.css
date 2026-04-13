@@ -607,3 +607,25 @@ button, a, [role="button"] {
 .void-field-loot-waiting {
   animation: void-field-loot-waiting-glow 1.5s ease-in-out infinite;
 }
+
+@keyframes void-toast-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+  15% {
+    opacity: 1;
+    transform: translateY(0) scale(1.02);
+  }
+  30% {
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.void-toast-pop {
+  animation: void-toast-pop 0.28s ease-out both;
+}
