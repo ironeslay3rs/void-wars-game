@@ -141,6 +141,7 @@ export const initialGameState: GameState = {
     brokerRapport: {},
     brokerDialogueUnlocks: {},
     brokerLastContactAt: {},
+    brokerKeepsakes: {},
     pantheonBlessingPending: false,
     activeShellBuffs: [],
   },

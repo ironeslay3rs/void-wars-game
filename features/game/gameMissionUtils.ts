@@ -59,6 +59,7 @@ import {
 } from "@/features/loadout/loadoutPressureCompatibility";
 import { getRuneSetRewardMultiplier } from "@/features/mastery/runeSetDetection";
 import { getRuneSetLevelRewardMultiplier } from "@/features/mastery/runeSetLevels";
+import { getKeepsakeRewardMultiplier } from "@/features/broker-dialogue/humanityKeepsake";
 import { getSchoolsByEmpire } from "@/features/schools/schoolSelectors";
 import { dominantDoctrinePath } from "@/features/factions/factionWorldLogic";
 
@@ -727,6 +728,13 @@ export function processMissionQueue(state: GameState, now: number): GameState {
     const runeSetLevelMult = getRuneSetLevelRewardMultiplier(
       nextPlayer.runeMastery,
     );
+    // Humanity Keepsakes — canon from Humanity Theme.md. Each Trusted
+    // broker relationship compounds a small reward bonus, capped at 10
+    // keepsakes = +10%. "Strength through the sacrifices made for them
+    // by others."
+    const keepsakeMult = getKeepsakeRewardMultiplier(
+      nextPlayer.brokerKeepsakes,
+    );
     const convergenceMult = getConvergenceRewardMultiplier(nextPlayer);
     const pantheonCompositeMult =
       pantheonBlessingMult *
@@ -735,6 +743,7 @@ export function processMissionQueue(state: GameState, now: number): GameState {
       mandateBureauTaxMult *
       runeSetMult *
       runeSetLevelMult *
+      keepsakeMult *
       convergenceMult;
     const pantheonBonusActive = pantheonCompositeMult !== 1;
     const rewardWithPantheonBlessing = pantheonBonusActive
